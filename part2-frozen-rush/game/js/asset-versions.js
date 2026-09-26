@@ -6,7 +6,7 @@
  * node tools/build-bundle.mjs whenever anything under game/assets changes; tests/bundle.spec
  * fails if this is out of date. */
 export const ASSET_V = {
-  "assets/art/Bubble.svg": "5f1ee1ef",
+  "assets/art/Bubble.svg": "523bce06",
   "assets/art/cover.webp": "e0c7a5db",
   "assets/audio/bgm-ice-hunt.mp3": "3fdf4d24",
   "assets/audio/bgm-ice-hunt.ogg": "9ee115a7",
@@ -89,12 +89,12 @@ export const ASSET_V = {
   "assets/sky/07-dusk.webp": "d511553c",
   "assets/sky/08-night.webp": "fdbec669",
   "assets/ui/btn-play.webp": "e75de185",
-  "assets/ui/icons/hint.svg": "2eb235fd",
-  "assets/ui/icons/pause.svg": "7d4d26a9",
-  "assets/ui/icons/play.svg": "058a4e07",
-  "assets/ui/icons/restart.svg": "34740a8f",
-  "assets/ui/icons/sound-off.svg": "4c1711d1",
-  "assets/ui/icons/sound-on.svg": "53f86786",
+  "assets/ui/icons/hint.svg": "9ceb8f16",
+  "assets/ui/icons/pause.svg": "660fcd36",
+  "assets/ui/icons/play.svg": "573fd2b0",
+  "assets/ui/icons/restart.svg": "0133f671",
+  "assets/ui/icons/sound-off.svg": "9d167e38",
+  "assets/ui/icons/sound-on.svg": "a375910d",
   "assets/ui/icons/touch.png": "d05ff66d",
   "assets/ui/plank-l.webp": "1b2cb44b",
   "assets/ui/plank-m.webp": "3b1338a9",

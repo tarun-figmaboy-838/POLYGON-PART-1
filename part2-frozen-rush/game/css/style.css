@@ -1258,12 +1258,12 @@ a:hover { color: var(--ice-pale); }
    `/css/assets/ui/...` and every glyph 404'd. Declaring them in this file makes the
    relative path correct, and a data attribute picks between them — which also means
    the icon set is enumerable in one place. */
-.icon-btn[data-icon="hint"]      .icon-btn-glyph { -webkit-mask-image: url("../assets/ui/icons/hint.svg?v=2eb235fd");      mask-image: url("../assets/ui/icons/hint.svg?v=2eb235fd"); }
-.icon-btn[data-icon="sound-on"]  .icon-btn-glyph { -webkit-mask-image: url("../assets/ui/icons/sound-on.svg?v=53f86786");  mask-image: url("../assets/ui/icons/sound-on.svg?v=53f86786"); }
-.icon-btn[data-icon="sound-off"] .icon-btn-glyph { -webkit-mask-image: url("../assets/ui/icons/sound-off.svg?v=4c1711d1"); mask-image: url("../assets/ui/icons/sound-off.svg?v=4c1711d1"); }
-.icon-btn[data-icon="pause"]     .icon-btn-glyph { -webkit-mask-image: url("../assets/ui/icons/pause.svg?v=7d4d26a9");     mask-image: url("../assets/ui/icons/pause.svg?v=7d4d26a9"); }
-.icon-btn[data-icon="play"]      .icon-btn-glyph { -webkit-mask-image: url("../assets/ui/icons/play.svg?v=058a4e07");      mask-image: url("../assets/ui/icons/play.svg?v=058a4e07"); }
-.icon-btn[data-icon="restart"]   .icon-btn-glyph { -webkit-mask-image: url("../assets/ui/icons/restart.svg?v=34740a8f");   mask-image: url("../assets/ui/icons/restart.svg?v=34740a8f"); }
+.icon-btn[data-icon="hint"]      .icon-btn-glyph { -webkit-mask-image: url("../assets/ui/icons/hint.svg?v=9ceb8f16");      mask-image: url("../assets/ui/icons/hint.svg?v=9ceb8f16"); }
+.icon-btn[data-icon="sound-on"]  .icon-btn-glyph { -webkit-mask-image: url("../assets/ui/icons/sound-on.svg?v=a375910d");  mask-image: url("../assets/ui/icons/sound-on.svg?v=a375910d"); }
+.icon-btn[data-icon="sound-off"] .icon-btn-glyph { -webkit-mask-image: url("../assets/ui/icons/sound-off.svg?v=9d167e38"); mask-image: url("../assets/ui/icons/sound-off.svg?v=9d167e38"); }
+.icon-btn[data-icon="pause"]     .icon-btn-glyph { -webkit-mask-image: url("../assets/ui/icons/pause.svg?v=660fcd36");     mask-image: url("../assets/ui/icons/pause.svg?v=660fcd36"); }
+.icon-btn[data-icon="play"]      .icon-btn-glyph { -webkit-mask-image: url("../assets/ui/icons/play.svg?v=573fd2b0");      mask-image: url("../assets/ui/icons/play.svg?v=573fd2b0"); }
+.icon-btn[data-icon="restart"]   .icon-btn-glyph { -webkit-mask-image: url("../assets/ui/icons/restart.svg?v=0133f671");   mask-image: url("../assets/ui/icons/restart.svg?v=0133f671"); }
 
 /* The verdict mark (a tick or a cross over the crossing) is gone: a right answer
    throws confetti from the engine and a wrong one gets no mark. See cutShape(). */
