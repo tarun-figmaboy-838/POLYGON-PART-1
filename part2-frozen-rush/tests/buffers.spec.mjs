@@ -25,6 +25,10 @@ test.describe('the pointer, the buffers and the voice', () => {
       const want = L.unfilled[0];
       const target = L.shapes.find(s => s.kind === want && s.state === 'hang');
       const z = G.zoom, fx = G.zoomVX, fy = G.zoomVY;
+      /* Held by reference: the right chunk wedges into the crevasse and leaves L.shapes, and
+         since the frame loop keeps real time on a slow renderer (sub-stepped, not capped) it
+         can be seated inside the 250ms below at fast:2. The objects outlive the list. */
+      const hanging = L.shapes.filter(s => s.state === 'hang');
       // the rope's cut stretch, mapped the way the renderer maps it — i.e. where the eye sees it
       const wx = target.anchorX, wy = (target.y - target.h / 2) - 60;
       const sx = fx + (wx - fx) * z, sy = fy + (wy - fy) * z;
@@ -37,7 +41,7 @@ test.describe('the pointer, the buffers and the voice', () => {
       c.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: b.x, clientY: b.y, pointerId: 21, pointerType: 'touch', isPrimary: true }));
       await new Promise(res => setTimeout(res, 250));
       const after = g.debug().l1;
-      return { want, zoom: z, cut: after ? after.shapes.filter(s => s.cut).map(s => s.kind) : [], stubs: after ? after.stubs.length : 0 };
+      return { want, zoom: z, cut: hanging.filter(s => s.cut).map(s => s.kind), stubs: after ? after.stubs.length : 0 };
     });
     expect(r.zoom, 'the puzzle really is pushed in').toBeGreaterThan(1.15);
     expect(r.stubs, 'the swipe parted a rope').toBe(1);
@@ -108,7 +112,7 @@ test.describe('the pointer, the buffers and the voice', () => {
     expect(a.textH, 'readable against the stage').toBeGreaterThan(0.03);
   });
 
-  test('the voice is one recording cut into fifteen windows, none overlapping', async ({ page }) => {
+  test('the voice is one recording cut into twenty-five windows, none overlapping', async ({ page }) => {
     await boot(page);
     const r = await page.evaluate(async () => {
       const m = await import('/js/engine.js');
@@ -147,13 +151,14 @@ test.describe('the pointer, the buffers and the voice', () => {
        'win-title' and 'win-sub' were cut with the banner that showed them, taking it to
        14 — and then 'win-yay' was found in the take and wired up, which put it back to
        15. This number was left at 14 and the suite has been red on it since. */
-    expect(r.n, 'every line the learner is shown').toBe(15);
+    expect(r.n, 'every line the learner is shown').toBe(25);
     expect(r.bad).toEqual([]);
     expect(r.unnamed, 'every crossing names the line that will speak it').toEqual([]);
     expect(r.status, 'the recording ships').toBe(200);
     expect(r.oggStatus, 'and so does the ogg the browser prefers').toBe(200);
-    /* 36.2, the length of the take that ships. It was 39.1 — the take before it — which
-       is a bound no window could have crossed and so was not checking anything. */
-    expect(r.last, 'the last window is inside the take').toBeLessThan(36.2);
+    /* 67.1, the length of the take that ships: the original 36.13s with Part 2's ten lines
+       appended (tools/assemble-part2-vo.mjs). It was 36.2 before they were added, and 39.1
+       before that — a bound left at an old take stops checking anything. */
+    expect(r.last, 'the last window is inside the take').toBeLessThan(67.1);
   });
 });

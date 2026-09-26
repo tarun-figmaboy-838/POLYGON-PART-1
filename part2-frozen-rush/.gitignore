@@ -22,3 +22,12 @@ qa-report/
 art-source/char-sheets/idle-sheet.png
 *.tmp.mjs
 
+
+# Scratch from making Part 2's voice and jump: pitch and style probes, a draft take and a
+# review screenshot. The real sources are art-source/audio-source/part2-vo/ (read by
+# tools/assemble-part2-vo.mjs) and the GIF that tools/build-jump-cycle.mjs slices.
+art-source/audio-source/*-probe.pcm
+art-source/audio-source/*-probe.wav
+art-source/audio-source/*-draft.wav
+art-source/audio-source/vo-style-sample.mp3
+art-source/jump-landing-review.png

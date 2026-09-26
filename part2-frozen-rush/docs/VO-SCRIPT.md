@@ -90,3 +90,21 @@ instruction sentences live in `CFG.levelOne.phases[].instruction` in `game/js/en
 nowhere else, and a test holds that each one names the shape its slots are cut for. Change a
 sentence in the config and the sign, the highlighted word and this script must all move
 together.
+
+## 6. Part 2 — generated lines
+
+These ten lines follow the original take. See [VO-PART2.md](VO-PART2.md) for delivery and build details.
+
+| # | id | say this |
+|---|----|----------|
+| 1 | `p2-1-diagonal` | Cut along a diagonal. |
+| 2 | `p2-2-diagonals` | Draw all the diagonals. |
+| 3 | `p2-3-samevertex` | Draw 2 diagonals from one corner. |
+| 4 | `p2-4-concave` | Cut the concave polygon. |
+| 5 | `p2-5-convex` | Cut the convex polygon. |
+| 6 | `p2-6-concave-pentagon` | Cut the concave pentagon. |
+| 7 | `p2-7-convex-hexagon` | Cut the convex hexagon. |
+| 8 | `p2-8-all-concave` | Cut all the concave ones. |
+| 9 | `p2-9-all-convex` | Cut all the convex ones. |
+| 10 | `p2-tut-6-cut` | Cut this ice block to fix the path. |
+

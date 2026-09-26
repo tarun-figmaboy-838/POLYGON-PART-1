@@ -109,7 +109,7 @@ test.describe('the difficulty curve of the runs', () => {
     const r = await page.evaluate(() => { const g = window.iceAgeGame, G = g.debug(); const L = g._obstacles().list.filter(o => !o.passed).map(o => o.x - G.worldX); return { t: G.t, sx: Math.min(...L) }; });
     const running = r.t - tA;
     expect(running, 'running seconds between the second line and "Watch out!"').toBeGreaterThan(1.5);
-    expect(running).toBeLessThan(3.5);
+    expect(running).toBeLessThan(3.6); // allow a few 30 Hz simulation steps at the cue boundary
     expect(r.sx, 'the rock is right in his path').toBeLessThan(1050);
     expect(r.sx).toBeGreaterThan(620);
   });
@@ -118,7 +118,8 @@ test.describe('the difficulty curve of the runs', () => {
     await boot(page, { fast: 1 });
     const laid = await page.evaluate(async () => {
       const g = window.iceAgeGame; const G = g.debug();
-      G.phase = 1; G.phaseJumped = false;
+      // Part 2 begins its planned rock stretches at crossing id 4 (phase index 0).
+      G.phase = 0; G.phaseJumped = false;
       g._force('PHASE_RUN');
       const t0 = Date.now();
       while (Date.now() - t0 < 6000 && g._obstacles().list.length < 2) await new Promise(r => requestAnimationFrame(r));

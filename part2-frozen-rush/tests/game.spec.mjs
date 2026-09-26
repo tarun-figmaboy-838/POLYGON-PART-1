@@ -589,12 +589,9 @@ test.describe('layout', () => {
     expect(m.overflowY).toBe(false);
   });
 
-  test('the leap travels forward and lands ahead, without moving the collider', async ({ page }) => {
-    /* The character's world position is fixed and the ground scrolls, so a jump used to
-       be a pure vertical — he came down on the pixel he left. The drawn character now
-       carries a forward offset through the flight (CFG.jumpLead) and the frame eases back
-       to him afterwards. Two things are held here: that the arc really travels, and that
-       ONLY the drawing does — mammothX is the collider and it may never move. */
+  test('the leap travels forward with a continuous opaque jump sequence', async ({ page }) => {
+    /* The character travels forward during flight and eases back after landing.
+       The collider follows the same horizontal position as the visible body. */
     await boot(page);
     await waitState(page, 'RUN_SEGMENT_1');
     await page.waitForFunction('window.iceAgeGame.debug().jumpEnabled === true');
@@ -605,7 +602,10 @@ test.describe('layout', () => {
       const seen = [];
       for (let i = 0; i < 200; i++) {
         await new Promise(res => requestAnimationFrame(res));
-        seen.push({ dx: p.drawX - mammothX, y: p.y, air: p.airborne });
+        g._renderOnce();
+        seen.push({ dx: p.drawX - mammothX, y: p.y, air: p.airborne,
+          frame: p.lastFrame, sheet: p.lastSheet, blend: p.lastBlend,
+          cross: p.lastCross, under: p.lastUnder });
         if (seen.length > 4 && !p.airborne) break;
       }
       const air = seen.filter(s => s.air);
@@ -616,14 +616,19 @@ test.describe('layout', () => {
         peakDx: Math.max(...seen.map(s => s.dx)),
         landedDx: landed.dx,
         monotonic: air.every((s, i) => i === 0 || s.dx >= air[i - 1].dx - 0.5),
+        frames: [...new Set(air.filter(s => s.sheet === 'jump').map(s => s.frame))],
+        translucent: seen.filter(s => s.air || s.sheet === 'jump')
+          .some(s => s.blend > 0.01 || s.cross > 0.01 || s.under > 0.01),
         colliderX: mammothX
       };
     });
-    expect(arc.rose, 'he actually left the ground').toBeLessThan(-100);
+    expect(arc.rose, 'the wider arc still reaches its intended height').toBeLessThan(-335);
     expect(arc.takeoff, 'the arc starts where he stood').toBeLessThan(12);
-    expect(arc.peakDx, 'and travels a real distance forward').toBeGreaterThan(60);
-    expect(arc.landedDx, 'so the touchdown is ahead of the take-off').toBeGreaterThan(40);
+    expect(arc.peakDx, 'and travels a substantial distance forward').toBeGreaterThan(285);
+    expect(arc.landedDx, 'so the touchdown is visibly ahead of the take-off').toBeGreaterThan(285);
     expect(arc.monotonic, 'forward the whole way, never backwards mid-air').toBe(true);
+    expect(arc.frames.length, 'the flight uses consecutive drawings').toBeGreaterThanOrEqual(8);
+    expect(arc.translucent, 'no blended or fading jump silhouette').toBe(false);
 
     // and the frame catches up: after a stride of running he is back on his own mark
     await page.waitForFunction('window.iceAgeGame._player().dx < 1', null, { timeout: 10_000 });
@@ -634,6 +639,25 @@ test.describe('layout', () => {
     expect(Math.abs(back.dx), 'the offset is spent').toBeLessThan(1);
     // ...to within the same pixel the wait above stopped at: this is the ease arriving, not a snap
     expect(Math.abs(back.drawX - arc.colliderX), 'and he is drawn on the collider again').toBeLessThan(1.2);
+  });
+
+  test('an immediate second jump keeps Momo in place on screen', async ({ page }) => {
+    await boot(page);
+    await waitState(page, 'RUN_SEGMENT_1');
+    await page.waitForFunction('window.iceAgeGame.debug().jumpEnabled === true');
+    const handoff = await page.evaluate(async () => {
+      const g = window.iceAgeGame, p = g._player();
+      g.jump();
+      for (let i = 0; i < 180 && p.airborne; i++)
+        await new Promise(resolve => requestAnimationFrame(resolve));
+      const before = p.drawX;
+      g.jump();
+      for (let i = 0; i < 3; i++) await new Promise(resolve => requestAnimationFrame(resolve));
+      return { before, after: p.drawX, state: p.state };
+    });
+    expect(handoff.before).toBeGreaterThan(700);
+    expect(handoff.state).toMatch(/^JUMP_/);
+    expect(handoff.after - handoff.before, 'no sudden backward teleport').toBeGreaterThan(-40);
   });
 
   test('the tap target is the whole stage, and it is thumb-sized by definition', async ({ page }) => {

@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 test.describe('the voice and the crossing order', () => {
   test.setTimeout(300_000);
 
-  test('fifteen windows, inside the take, none overlapping, one per scripted line', async ({ page }) => {
+  test('twenty-five windows, inside the take, none overlapping, one per scripted line', async ({ page }) => {
     await boot(page);
     const r = await page.evaluate(async () => {
       const m = await import('/js/engine.js');
@@ -25,7 +25,7 @@ test.describe('the voice and the crossing order', () => {
        back to fifteen. The number here was left at fourteen and the suite has been red on it
        since; the seconds 'win-title' and 'win-sub' occupy are still in the take with no window
        pointing at them, which is what this count is really guarding. */
-    expect(r.lines.length, 'fifteen lines').toBe(15);
+    expect(r.lines.length, 'all tutorial, crossing and cheer lines').toBe(25);
     const ordered = r.lines.slice().sort((a, b) => a[1][0] - b[1][0]);
     let prevEnd = 0;
     for (const [id, [at, dur]] of ordered) {
@@ -45,7 +45,7 @@ test.describe('the voice and the crossing order', () => {
     await page.evaluate(() => window.iceAgeGame.sfx('ui'));         // unlocks the context
     await page.waitForFunction(() => window.iceAgeGame._voice().ready, null, { timeout: 60_000 });
     // 15: the ending's two sentences went with the banner, and the cheer (win-yay) came back
-    expect((await page.evaluate(() => window.iceAgeGame._voice())).lines).toBe(15);
+    expect((await page.evaluate(() => window.iceAgeGame._voice())).lines).toBe(25);
     const r = await page.evaluate(async () => {
       const m = await import('/js/engine.js');
       /* THE SECOND SENTENCE, not the whole line. The box shows one sentence at a time now
@@ -56,7 +56,6 @@ test.describe('the voice and the crossing order', () => {
       const want = 'He needs to find his friend.';
       const t0 = Date.now();
       while (Date.now() - t0 < 120000 && document.getElementById('tut-text').textContent.trim() !== want) await new Promise(res => setTimeout(res, 80));
-      await new Promise(res => setTimeout(res, 200));
       const el = document.getElementById('tut-text');
       const ws = [...el.querySelectorAll('.w')];
       const delays = ws.map(w => parseFloat(getComputedStyle(w).animationDelay));

@@ -79,119 +79,21 @@ export const CFG = {
   surfaceY: 840,
   mammothX: 430,
   runSpeed: 520,
-  /* THE JUMP WINDOW, widened — it was genuinely too tight, and the reason is not the
-   * clearance height, which is what it looks like.
-   *
-   * Worked through with the old numbers: the apex is jumpVel^2/2g = 295px and a rock
-   * only has to be cleared by 45% of its 140px height, so the character is above the
-   * bar for 0.79s of a 0.887s flight. That part was never the problem. The rock,
-   * though, crosses the danger zone — its own width plus the 136px body box — in about
-   * 0.58s at 520px/s. So the press has to land inside 0.79 - 0.58 = ~0.2s. Two tenths
-   * of a second is a reflex test, not a jump, and it is the first thing the game asks
-   * anyone to do.
-   *
-   * Every term is loosened rather than one of them a lot: more airtime, a lower bar, a
-   * narrower body, and more forgiving input. Together they roughly double the margin,
-   * measured rather than estimated — see the note on the collider below.
-   *
-   * gravity is left alone: it sets the FEEL of the arc, and a floatier jump on the
-   * same airtime reads as the character being lighter, which is not the fix. */
-  /* A WIDER ARC, AND IT IS THE AIRTIME THAT WIDENS — the height cannot.
-
-     Asked for: make the jump easier to land. The obvious lever is a higher jump and it
-     is not available: at the apex it already has, his feet are 360px up and his head is
-     at y 10, a hair from the top of the frame. Any more and he leaves the picture.
-
-     What actually decides whether a jump is easy is not how high it goes but how long
-     the press window is — the time he spends above the bar, less the time the rock
-     takes to cross him. So the apex is held at exactly 360 and the airtime stretched
-     from 0.98s to 1.30s, which takes the window from 0.45s to about 0.75s. Two thirds
-     more time to get the tap right, and he still fits on screen.
-
-     Holding the apex while stretching the airtime fixes both numbers: apex = v^2/2g and
-     airtime = 2v/g, so v = 4*apex/T and g = 8*apex/T^2. That is where these two come
-     from — they are solved, not tuned.
-
-     It reads floatier, and that is the trade. A lighter-feeling mammoth is the price of
-     a jump a child can actually land, and for this game that is the right way round.
-     The leap now covers 676px rather than 510; the rock spacing is derived from the
-     leap (see runRoomS) so the stretches re-space themselves and nothing else moves. */
-  /* AND THAT TRADE WAS TAKEN TOO FAR. 1.30s was called slow, which it is: it is a third
-     of a second longer than the 0.98 it came from and the extra is all spent hanging at
-     the top, where the arc is flattest and the character moves least.
-
-     So the stretch is halved rather than undone. T = 1.08 by the same two formulas —
-     v = 4*apex/T, g = 8*apex/T^2 — with the apex still pinned at 360 because his head
-     is still at y 10 there.
-
-     What that costs and keeps, measured the same way as above: he is above the bar for
-     T*sqrt(1 - 63/360) = 0.98s, the rock crosses him in 0.44s, so the press window is
-     0.54s. It was 0.45s before any of this and 0.75s at 1.30 — so two thirds of the
-     easing is kept, and the flight is a fifth shorter than the one that read as slow.
-     coyoteMs and bufferMs are untouched and add another 0.45s of their own on top.
-
-     The other half of "slow" was not the physics at all — see the JUMP_AIR poses, which
-     were keyed to absolute vertical speeds and so held one static frame for longer and
-     longer as the airtime grew. They are keyed to the fraction of the flight now. */
-  /* AND SHORTER AGAIN, to 0.96s. Called slow twice more after the drop to 1.08, and the
-     arithmetic says why it would be: at 1.08s each of the four flight drawings was on
-     screen for 270ms. Six drawings (see the JUMP_AIR keys) and a 0.96s flight puts each
-     at 160ms, which is six frames at 60Hz — the rate an animation is actually drawn at.
-     Same two formulas, apex still pinned at 360 because his head is at y 10 there:
-     v = 4*apex/T, g = 8*apex/T^2.
-     The press window comes to T*sqrt(1 - 63/360) - 0.44 = 0.43s, which is where it was
-     before any of this widening started, and coyoteMs + bufferMs add 0.45s of their own
-     on top of it. */
-  /* AND BACK UP TO 1.12s, NOW THAT IT IS ACTUALLY BEING DRAWN.
-
-     This was cut three times chasing "the jump looks slow" — 1.30 to 1.08 to 0.96 —
-     and the cause turned out not to be the arc at all: the game was filling 2.25x the
-     pixels the screen could show and running at 20fps (see wantScale in main.js). At
-     20fps a 0.96s flight is drawn about 19 times. At the 49fps it renders at now it is
-     drawn 47.
-
-     Each of those cuts also shortened the LEAP, because leap is runSpeed x airtime —
-     676px at 1.30, 499 at 0.96 — which is the "the arc is small" report. That trade
-     bought nothing, so most of it is given back: 1.12s is a 582px leap, 86% of the
-     widest it ever had, while staying 14% shorter than the flight that was called slow
-     — and it is drawn at two and a half times the frame rate that one was.
-
-     Same two formulas, apex still pinned at 360 (his head is at y 10 there):
-     v = 4*apex/T, g = 8*apex/T^2. Press window T*sqrt(1 - 63/360) - 0.44 = 0.58s, with
-     coyoteMs + bufferMs adding 0.45s on top. Obstacle spacing derives from the leap
-     (see runRoomS), so the stretches re-space themselves. */
-  gravity: 2296,
-  jumpVel: -1286,          // apex 360px (unchanged), airtime 1.12s, leap 582px
+  /* A 360px apex within the 1080px scene, reached in about 0.525s.
+     The new continuous source frames make that fast arc legible. A moving hit box
+     follows the visible mammoth while he travels forward across the obstacle. */
+  gravity: 2612,
+  jumpVel: -1371,          // 360px apex, 1.05s airtime
   coyoteMs: 200,           // pressed a moment late off the ground still counts
   bufferMs: 250,           // pressed a moment early still fires on landing
-  /* THE LEAP GOES FORWARD, AND LANDS FORWARD.
-   *
-   * The character's world position is fixed at mammothX and the ground scrolls past
-   * him, which is the standard runner arrangement and is what keeps the collider, the
-   * obstacle spacing and every distance in the game arithmetic rather than simulation.
-   * The cost of it is that a jump was a pure vertical: he rose 360px and came down on
-   * the very pixel he left, like a character bouncing on a treadmill. Nothing about the
-   * take-off read as LEAPING OVER the rock — he hopped and the rock slid under him.
-   *
-   * So the drawn character carries a forward offset through the flight: 0 at the
-   * take-off, `jumpLead` px ahead by the landing, linear in time — which, against a
-   * parabolic height, is exactly a projectile's arc. He touches down visibly ahead of
-   * where he left, and over the next `jumpLeadBackS` of running the frame eases back to
-   * him (the world catching up with a runner who has just gained on it), so nothing
-   * accumulates over a stretch of four rocks and he never drifts across the screen.
-   *
-   * IT IS A DRAW OFFSET AND NOTHING ELSE — the same rule the whole comedy layer follows.
-   * The collider is still the fixed box at mammothX, the arc's height, airtime and
-   * press window are untouched, and the jump is exactly as hard as it was tuned to be.
-   * 120px is about a quarter of the ground a leap covers (520px/s x 0.98s = 510), which
-   * reads as travel without putting him a body-length from his own hit box. */
-  // a quarter of the ground a leap now covers (676), so the arc still reads as travel
-  jumpLead: 165, jumpLeadBackS: 0.9,
+  /* The draw and collision positions travel forward together during the jump.
+     Ease the lead away after landing so the runner returns to his screen mark. */
+  jumpLead: 300, jumpLeadBackS: 0.9,
   /* The most of the run speed the frame may slide backwards at while it catches up after
      a landing. At 0.3 he appears to run at about seventy per cent for a moment; above
      roughly 1.0 the drawing would move back faster than the world moves forward and he
      would travel backwards, which is what 0.9s of easeInOut was doing. */
-  leadBackMax: 0.3,
+  leadBackMax: 0.6,
   totalDistance: 11200,
   // surfaceRatio anchors the path image to surfaceY. The art's faint top fringe starts
   // at src y~216 but its SOLID snow edge is at ~227, so the old 0.406 left the feet
@@ -450,7 +352,7 @@ export const CFG = {
          three moments than it was. Add a shake/hurt GIF and they come straight back. */
       sheets: {
         run: 'assets/char/mammoth-run.webp',
-        jump: 'assets/char/mammoth-jump.webp',
+        jump: 'assets/char/mammoth-jump-v2.webp',
         skid: 'assets/char/mammoth-skid.webp',
         /* THE FRIGHT (mammoth-shake, from art-source/gif/ditch-new.gif) IS SHELVED, not
            deleted: on request the arrival at the edge is the trample instead, so SHAKE and
@@ -509,12 +411,12 @@ export const CFG = {
       /* Straight from tools/slice-char.mjs — the sheets are built to these counts, so
          the two move together. The run is 20 because the source art had 20 and the
          cycle is distance-driven, so it is simply smoother; nothing else changes. */
-      frames: { run: 36, jump: 10, skid: 36, hurt: 36, idle: 12, tremble: 12 },
+      frames: { run: 36, jump: 24, skid: 36, hurt: 36, idle: 12, tremble: 12 },
       /* The same seven sheets at 1.5x, listed in full rather than derived from the paths
          above so the asset tests see and fetch them (a built string is invisible to the
          scanner). Loaded instead of `sheets` when CFG.sprite.hd applies; see there. */
       hd: {
-        run: 'assets/char/hd/mammoth-run.webp', jump: 'assets/char/hd/mammoth-jump.webp',
+        run: 'assets/char/hd/mammoth-run.webp', jump: 'assets/char/hd/mammoth-jump-v2.webp',
         skid: 'assets/char/hd/mammoth-skid.webp',
         hurt: 'assets/char/hd/mammoth-hurt.webp', idle: 'assets/char/hd/mammoth-idle.webp',
         tremble: 'assets/char/hd/mammoth-tremble.webp'
@@ -1412,6 +1314,18 @@ export const CFG = {
          Padded the way every other window here is — 60ms before the attack, 120ms after
          the tail — which is well inside the silence either side. */
       'win-yay':            [34.70, 1.08, [0.06]],
+      /* Part 2 speech, appended to the original take. Word starts came from the
+         synthesizer's SpeakProgress events during generation. */
+      'p2-1-diagonal': [36.777, 2.144, [0.137, 0.433, 0.888, 0.991]], // Cut along a diagonal.
+      'p2-2-diagonals': [39.572, 2.234, [0.137, 0.454, 0.798, 0.943]], // Draw all the diagonals.
+      'p2-3-samevertex': [42.456, 2.864, [0.137, 0.454, 0.792, 1.701, 2.018, 2.328]], // Draw two diagonals from one corner.
+      'p2-4-concave': [45.970, 2.364, [0.137, 0.454, 0.571, 1.301]], // Cut the concave polygon.
+      'p2-5-convex': [48.984, 2.334, [0.137, 0.454, 0.571, 1.260]], // Cut the convex polygon.
+      'p2-6-concave-pentagon': [51.968, 2.384, [0.137, 0.454, 0.571, 1.301]], // Cut the concave pentagon.
+      'p2-7-convex-hexagon': [55.002, 2.369, [0.137, 0.454, 0.571, 1.260]], // Cut the convex hexagon.
+      'p2-8-all-concave': [58.021, 2.444, [0.137, 0.461, 0.812, 0.950, 1.694]], // Cut all the concave ones.
+      'p2-9-all-convex': [61.115, 2.404, [0.137, 0.461, 0.812, 0.950, 1.632]], // Cut all the convex ones.
+      'p2-tut-6-cut': [64.169, 2.844, [0.137, 0.454, 0.716, 1.046, 1.508, 1.666, 2.087, 2.211]], // Cut this ice block to fix the path.
       /* THE ENDING SPEAKS NO MORE. 'win-title' ("You did it!") and 'win-sub' ("Momo crossed
          the Frozen Pass!") lived here and were cut with the banner that showed them: the
          ending is the dance now, the camera pushes in on it, and a voice over the top was
@@ -3751,13 +3665,9 @@ class PlayerController {
   }
   reset() {
     this.state = 'RUN'; this.t = 0; this.y = 0; this.vy = 0;
-    /* THE FORWARD OFFSET OF A LEAP (CFG.jumpLead). `dx` is where the drawing is,
-       relative to mammothX; `dxFrom`/`dxT` are the ease back to zero after the landing.
-       `exitRunF` is the run pose he left the ground in, so the crouch can dissolve over
-       it rather than replacing it on one frame; -1 when he did not take off from a run.
-       Draw only — see the note in CFG. */
-    this.dx = 0; this.dxFrom = 0; this.dxT = 0;
-    this.exitRunF = -1;
+    // Horizontal position shared by the drawing and obstacle hit test. The value
+    // eases toward the stable runner mark after each landing.
+    this.dx = 0; this.dxFrom = 0; this.dxT = 0; this.jumpStartDx = 0;
     this.airborne = false; this.lastGround = 0; this.bufferedJump = -1;
     this.squash = 1; this.tilt = 0; this.hop = 0; this.airSq = 1;
     this.runDist = 0; this.lastStepFrame = -1;
@@ -3853,13 +3763,9 @@ class PlayerController {
     this.bufferedJump = now; return false;
   }
   doJump() {
-    /* THE POSE HE IS LEAVING, captured before the state changes. The run cycle is drawn
-       from runDist, so this is the exact frame that was on screen the instant he pushed
-       off — and it is what the crouch dissolves over. Only from a run: a jump out of an
-       idle has no stride to hand over from. */
-    this.exitRunF = this.state === 'RUN' && this.F && this.F.run
-      ? Math.floor((this.runDist / this.stride) * this.F.run) % this.F.run
-      : -1;
+    // A second jump can start during the first landing's screen-position recovery.
+    // Continue from that exact position; resetting to zero teleported Momo backward.
+    this.jumpStartDx = this.dx || 0;
     this.vy = CFG.jumpVel; this.airborne = true; this.setState('JUMP_START');
     if (this.onJump) this.onJump();
     /* STRETCH off the ground, not squash. It set 0.92 — shorter — which is the pose
@@ -3883,8 +3789,11 @@ class PlayerController {
 
     }
     if (this.airborne) {
+      // Integrate with the average velocity. Using the new velocity for the entire
+      // frame shortened the arc and made its apex/landing depend on frame rate.
+      const oldVy = this.vy;
       this.vy += CFG.gravity * dt;
-      this.y += this.vy * dt;
+      this.y += (oldVy + this.vy) * 0.5 * dt;
       /* THE ARC TRAVELS. How far through the flight he is, read off the vertical speed
          rather than a clock: vy runs from jumpVel to +|jumpVel| over the airtime, so
          this is 0 at the take-off and 1 at the touchdown, is linear in time (vy is), and
@@ -3892,7 +3801,7 @@ class PlayerController {
          against a parabolic height IS the arc. Cut short by a rock, it simply stops
          where it was. */
       const u = clamp((this.vy - CFG.jumpVel) / Math.max(1, -2 * CFG.jumpVel), 0, 1);
-      this.dx = (CFG.jumpLead || 0) * u;
+      this.dx = this.jumpStartDx + ((CFG.jumpLead || 0) - this.jumpStartDx) * u;
       if (this.state === 'JUMP_START' && this.t > 0.08) this.setState('JUMP_AIR');
       if (this.y >= 0) {
         // he has landed AHEAD; the frame eases back to him over the next stride
@@ -3961,7 +3870,18 @@ class PlayerController {
       /* 0.12, not 0.18: the last 90 ms of a 180 ms landing was the absorb pose held still, which
          is a stand rather than a landing — the owner's note on jump-to-run. The absorb still
          reads (it fills 60 ms and dissolves into the run), the weight is still in the squash. */
-      if (this.state === 'LAND' && this.t > 0.12) this.setState(moving ? 'RUN' : 'IDLE_LOOK');
+      if (this.state === 'LAND' && this.t > 0.12) {
+        if (moving && this.F.run) {
+          // Run frame 24 has the closest grounded silhouette to the last landing
+          // frame. Resume the stride there instead of popping to an arbitrary pose.
+          const stride = this.stride;
+          const cycle = Math.floor(this.runDist / stride);
+          const target = 24 / this.F.run;
+          const phase = this.runDist / stride - cycle;
+          this.runDist = (cycle + (phase > target ? 1 : 0) + target) * stride + 0.001;
+        }
+        this.setState(moving ? 'RUN' : 'IDLE_LOOK');
+      }
     }
     /* Footfalls are fired by the CYCLE, not by a timer. On a timer the crunch and the
        snow puff drift out of phase with the legs, which is most of why a run reads as
@@ -4161,32 +4081,8 @@ class PlayerController {
                        : lerp(this.breath || 0, 0, clamp(dt * 8, 0, 1));
     // snappier recovery: a squash that eases back slowly reads as a wobble in the art
     this.squash = lerp(this.squash, 1, clamp(dt * 12, 0, 1));
-    /* THE ARC IS ROTATED AND STRETCHED, CONTINUOUSLY — and this is what finally stops
-     * the jump reading as slow.
-     *
-     * The delivered sheet has FOUR drawings for the whole flight (rise, apex, fall,
-     * preLand; the run has thirty-six). At 1.08s that is 270ms a drawing, and no amount
-     * of retuning the physics or crossfading the poses changes the fact that the
-     * underlying picture only changes four times. Dissolving between two stills reads
-     * as ghosting, which is what "slow frames, lagging" is describing.
-     *
-     * What was here made it worse: the tilt had TWO values, -0.1 going up and +0.05
-     * coming down, so it was one more thing that changed discretely — and it was eased
-     * at dt*7, a 140ms constant, so it lagged behind even that.
-     *
-     * Both are continuous functions of where he is in the flight now, so EVERY FRAME IS
-     * A DIFFERENT PICTURE however few drawings there are underneath. `u` runs 0 to 1
-     * across the arc and is linear in time (vy is), the same value the poses key off.
-     *
-     *   tilt     nose up off the ground, level at the apex, nose down into the landing.
-     *            One sweep through the arc rather than a switch at the top.
-     *   airSq    squash and stretch, driven by SPEED: elongated when he is moving fast
-     *            at either end, rounded at the apex where he is barely moving. Squared,
-     *            so it is subtle through most of the arc and only reads at the extremes.
-     *            Folded into the draw's own `sq`, which preserves volume on X for free.
-     *
-     * Draw only. The collider is a fixed box at mammothX and the physics are global —
-     * see CFG.jumpVel — so none of this can make a jump easier or harder to land. */
+    /* Tilt and squash follow vertical speed continuously while the source drawings
+       advance in order. These transforms affect appearance only. */
     if (this.airborne) {
       const u = clamp((this.vy - CFG.jumpVel) / Math.max(1, -2 * CFG.jumpVel), 0, 1);
       const spd = clamp(Math.abs(this.vy) / Math.max(1, Math.abs(CFG.jumpVel)), 0, 1);
@@ -4199,11 +4095,8 @@ class PlayerController {
     }
   }
   get feetY() { return CFG.surfaceY + this.y - this.hop; }
-  /* WHERE HE IS DRAWN. mammothX is where the COLLIDER is and it never moves; this is
-     that plus the leap's forward offset (see CFG.jumpLead). Everything that has to
-     appear under his feet — the contact shadow, the take-off and landing clouds, the
-     footfall spray — reads this, so those effects travel with the arc instead of being
-     left behind at the take-off point. Nothing that DECIDES anything reads it. */
+  /* Visual and obstacle collision position during a leap; eases to the screen mark
+     after landing. Shadows and landing particles use this same position. */
   get drawX() { return CFG.mammothX + (this.dx || 0); }
   /* `bare` draws the character ALONE — no contact shadow. The tutorial re-draws him on
      its focus canvas and puts a glow round whatever has alpha there; a shadow ellipse
@@ -4248,99 +4141,20 @@ class PlayerController {
         f = Math.floor((this.runDist / this.stride) * F.run) % F.run;
         break;
       case 'JUMP_START':
-        /* THE TAKE-OFF IS A DISSOLVE TOO, and it was the one handoff in the leap that
-         * was not.
-         *
-         * Everything after this point crossfades — the crouch into the launch just
-         * below, and the six flight poses into one another in JUMP_AIR, all of it done
-         * precisely so the jump reads as one movement. The take-off itself was a hard
-         * cut: one frame he is mid-stride on the RUN sheet, the next he is crouched on
-         * the JUMP sheet. Different sheet, different pose, no overlap — and it lands on
-         * the exact frame the player is looking at, because they have just pressed.
-         *
-         * 22ms is a frame and a half at 60fps: long enough to read as a body turning
-         * rather than a substitution, and finished before the crouch hands on to the
-         * launch at 22ms, so the two dissolves never fight over the one blend slot. */
-        if (this.t < 0.022 && this.exitRunF >= 0) {
-          sheet = img; f = this.exitRunF;
-          blendSheet = this.jumpSheet; blendF = J.crouch;
-          const c = clamp(this.t / 0.022, 0, 1);
-          blendU = c * c * (3 - 2 * c);
-        } else {
-          // crouch, launch: the launch dissolves in over the crouch's second half
-          f = this.t < 0.045 ? J.crouch : J.launch;
-          if (f === J.crouch && this.t > 0.022) { blendF = J.launch; blendU = (this.t - 0.022) / 0.023; }
-        }
+        // Source GIF frame 16: push-off. One opaque drawing, with no dissolve.
+        f = 12;
         break;
       case 'JUMP_AIR': {
-        /* The pose follows the vertical speed; each hands over to the next by a dissolve across
-           the 180 units of speed before its threshold, so the four flight poses read as one arc
-           instead of four cuts. */
-        /* KEYED TO THE FRACTION OF THE FLIGHT, NOT TO ABSOLUTE SPEEDS.
-         *
-         * The thresholds used to be -420, 160 and 760 px/s with a 180-wide dissolve, and
-         * those numbers were chosen against a particular jumpVel. Retuning the jump
-         * moves the range they sit in but not the numbers, so the poses drift: when the
-         * airtime went to 1.30s the apex pose alone covered a third of a second of held,
-         * unchanging frame. That is half of what "the jump looks slow and laggy" was —
-         * not the arc, the animation standing still in the middle of it.
-         *
-         * `u` is 0 at take-off and 1 at touchdown and is linear in time (vy is), so the
-         * same fractions divide the flight identically at any tuning: rise for the first
-         * 36%, apex to 55%, fall to 76%, preLand home. They are the fractions the old
-         * absolute numbers worked out to at the jumpVel they were written for, so the
-         * arc looks as it was drawn to look — it just cannot come adrift again. */
+        /* Consecutive drawings from the original performance (GIF frames 17-24).
+           Vertical speed advances the sequence with the arc. The previous dissolve
+           drew two transparent mammoths at once, causing the visible blink. */
         const u = clamp((this.vy - CFG.jumpVel) / Math.max(1, -2 * CFG.jumpVel), 0, 1);
-        /* AND IT CROSSFADES THE WHOLE WAY, rather than holding each pose and dissolving
-         * at the last moment.
-         *
-         * This is the other half of "the jump looks slow and lag", and the bigger half.
-         * There are four poses for a flight that now lasts 1.08s. The dissolve used to
-         * span 6% of that, so each pose was HELD, unchanging, for between 0.2 and 0.4
-         * seconds and then swapped over five frames. Twelve to twenty-four identical
-         * frames in a row is not slow motion, it is a stall, and no amount of retuning
-         * the physics fixes it — at the old 1.30s airtime the apex pose alone held for
-         * a third of a second.
-         *
-         * So the poses are keyframes at fixed points in the flight and the draw is
-         * always a dissolve between the two that bracket where he is. Every frame is a
-         * different picture. Smoothstepped rather than linear, so he still settles into
-         * each pose and moves quickly between them — a linear fade between four frames
-         * reads as a dip to half-opacity, which is mush; eased, it reads as a body
-         * turning over.
-         *
-         * The keys sit at the middles of the old bands rather than at their edges,
-         * because a keyframe is the moment a pose is TRUE, not the moment it starts. */
-        /* SIX DRAWINGS ACROSS THE FLIGHT, NOT FOUR — and this is the half of "the frames
-         * look slow" that the transform could not fix.
-         *
-         * The sheet holds ten poses; the flight was using four of them. Making the tilt
-         * and the stretch continuous means every FRAME differs, which is necessary and
-         * was not sufficient: the underlying PICTURE still only changed four times in
-         * about a second, and a long crossfade between two stills is a dissolve, not an
-         * animation.
-         *
-         * `launch` and `land` were sitting unused in the middle of the arc's own story —
-         * launch belongs to leaving the ground and land to arriving, and both were being
-         * shown only in the 80ms JUMP_START and the LAND state either side. Bringing
-         * them into the flight adds 50% more distinct drawings for nothing: no new art,
-         * no new frames, just the ones that were already there put where they belong. */
-        const KEY = [[0.00, J.launch], [0.18, J.rise], [0.42, J.apex],
-                     [0.63, J.fall], [0.82, J.preLand], [1.00, J.land]];
-        if (u <= KEY[0][0]) f = KEY[0][1];
-        else if (u >= KEY[KEY.length - 1][0]) f = KEY[KEY.length - 1][1];
-        else {
-          let i = 0;
-          while (i < KEY.length - 2 && u > KEY[i + 1][0]) i++;
-          const [ua, fa] = KEY[i], [ub, fb] = KEY[i + 1];
-          const t = clamp((u - ua) / (ub - ua), 0, 1);
-          f = fa; blendF = fb; blendU = t * t * (3 - 2 * t);
-        }
+        f = 12 + Math.min(8, Math.floor(u * 9));
         break;
       }
       case 'LAND':
-        f = this.t < 0.09 ? J.land : J.absorb;
-        if (this.t > 0.05 && this.t < 0.09) { blendF = J.absorb; blendU = (this.t - 0.05) / 0.04; }
+        // Source GIF frames 25-27: impact, compression, recovery.
+        f = 21 + Math.min(2, Math.floor(this.t / 0.04));
         break;
       case 'SKID_STOP':
         if (this.skidSheet) { sheet = this.skidSheet; f = Math.min(F.skid - 1, Math.floor(this.skidP * F.skid)); }
@@ -4510,7 +4324,8 @@ class PlayerController {
                  (this.state === 'RUN' && this.fromSheet !== this.sheet) ||
                  // and so does the celebration's crouch, briefly — the crouch is itself the anticipation
                  this.state === 'CELEBRATE';
-    if (SOFT && SP.handover && this.fromSheet && this.t < SP.handover &&
+    if (SOFT && !FAST &&
+        SP.handover && this.fromSheet && this.t < SP.handover &&
         (this.fromSheet !== sheet || this.fromFrame !== f)) {
       underSheet = this.fromSheet; underF = this.fromFrame;
       // the crouch is short and has its own dissolve out, so the way in is quicker
@@ -4579,8 +4394,10 @@ class PlayerController {
        character, blocks and particles gone. Draw whatever sheet did load, or nothing. */
     if (!sheet) sheet = this.sheet || this.jumpSheet || this.idleSheet || null;
     if (sheet) {
+      const alpha = ctx.globalAlpha;
       ctx.drawImage(sheet, (f % COLS) * CW, Math.floor(f / COLS) * CH, CW, CH,
                     -CW * S / 2, -CH * S + CFG.sprite.baseGap * kc * S + lift, CW * S, CH * S);
+      ctx.globalAlpha = alpha;
       if (blendF >= 0 && blendU > 0.01) {
         const base = ctx.globalAlpha;
         ctx.globalAlpha = base * blendU;
@@ -5699,6 +5516,8 @@ class ObstacleController {
         o.telegraph += dt * 1.6;
         if (!this.chimed.has(o.id)) { this.chimed.add(o.id); this.audio.crystal(); }
       }
+      // Completion is relative to the runner's stable screen mark. A transient jump
+      // lead must not mark a rock passed while it is still ahead of that mark.
       if (sx < CFG.mammothX - 200) o.passed = true;
       // collision — driven by the normalised size, never by the chosen art
       /* EACH VARIANT COLLIDES AT ITS OWN WIDTH. this.w is the FIRST kind's width, and
@@ -5726,7 +5545,7 @@ class ObstacleController {
          chest, and at 28% of 140px the feet are 39px up, which is plainly over a rock
          the eye reads as knee-high. What they buy is that a press slightly early or
          slightly late still clears it. */
-      if (live && o.grace <= 0 && o.hits < 3 && ox0 < CFG.mammothX + 52 && ox1 > CFG.mammothX - 52 && feet > CFG.surfaceY - oh * 0.28) {
+      if (live && o.grace <= 0 && o.hits < 3 && ox0 < mammoth.drawX + 52 && ox1 > mammoth.drawX - 52 && feet > CFG.surfaceY - oh * 0.28) {
         o.hits++; o.grace = 1.1; onHit(o, sx);
         if (o.hits >= 3) o.crumble = 0;
       }
@@ -6103,6 +5922,13 @@ export function createGame(canvas, hooks = {}) {
       /* A tutorial line is a SENTENCE, not a question: it is too long for the plank's left band,
          so the HUD widens and centres the plank for it (see .instruction.banner). */
       signBanner: !!G.signSay,
+      // The HUD uses these measured word starts for Part 2's spoken instruction.
+      // The audio clock itself is read outside the diffed HUD payload.
+      voId: G.signSay
+        ? (G.signSay === 'Cut this ice block to fix the path.' ? 'p2-tut-6-cut' : '')
+        : G.l2 && L2_PUZZLE_STATES.includes(G.state) ? p2Cfg().voId
+        : G.l1 && ['PHASE_INTRO', 'PHASE_ACTIVE', 'PHASE_WRONG', 'PHASE_SUCCESS'].includes(G.state)
+          ? phaseCfg().voId : '',
       /* NO SECOND LINE. It was added so the two-answer crossings could say 'both' when
          their sentence is singular, and it reads as a second instruction competing with
          the first — which is the thing Part 1 removed on purpose and was right to. The
@@ -6169,6 +5995,7 @@ export function createGame(canvas, hooks = {}) {
       view: { k: G.zoom, x: G.zoomVX, y: G.zoomVY },
       soundOn: !!audio.enabled
     };
+    h.voWords = h.voId ? (audio.voLine(h.voId)?.words || null) : null;
     const s = JSON.stringify(h);
     if (s !== lastHud) { lastHud = s; hooks.onHud && hooks.onHud(h); }
   }
@@ -12557,13 +12384,11 @@ export function createGame(canvas, hooks = {}) {
     let dt = (ts - last) / 1000; last = ts;
     if (paused) return;
     guardScale(dt);                       // on the wall-clock interval, before the cap
-    dt = Math.min(dt, 1 / 30);
-    /* Fast-forward STEPS the simulation; it does not scale dt. Multiplying dt would
-       give the same game time with each step that much coarser, which changes the jump
-       arc and everything that depends on it — a fast-forward that quietly alters
-       physics is worse than none. Rendering once per frame is what makes it cheap:
-       rendering is the expensive half. */
-    for (let i = 0; i < fastForward; i++) update(dt);
+    // Keep elapsed time on slower devices; small steps preserve collision accuracy.
+    dt = Math.min(Math.max(dt, 0), 0.2);
+    const steps = Math.max(1, Math.ceil(dt * 30));
+    for (let i = 0; i < fastForward; i++)
+      for (let step = 0; step < steps; step++) update(dt / steps);
     /* NOT PAINTED BEHIND THE ROTATE PROMPT. Turning a phone to portrait puts an opaque panel
        over the stage, and the game deliberately keeps running so it resumes exactly where it
        was — but it was also still painting a full frame behind that panel, the most expensive

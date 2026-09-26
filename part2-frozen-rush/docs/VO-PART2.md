@@ -1,11 +1,12 @@
-# Part 2 — the nine lines to record
+# Part 2 — generated voice lines
 
-Nine sentences, one per level. **Record them in this order, as ONE continuous take**,
-the way Part 1's were: the game downloads a single file and cuts it into windows, so
-one take is one request and one decode instead of nine.
+The nine crossing prompts and the rewritten tutorial line are appended to the original
+voice take. The new lines use the local male English voice at a measured speaking pace.
+They match the original's broad delivery style, though they are not the original speaker.
+The game downloads one file and cuts it into windows.
 
-Leave **a clear second of silence between lines** — the split tool finds the gaps by
-energy, and anything under about half a second runs two lines together.
+The build inserts 0.65 seconds of silence between generated lines. Word starts come
+from the synthesizer's SpeakProgress events and are stored in `CFG.vo.lines`.
 
 | # | id | say this |
 |---|----|----------|
@@ -42,21 +43,13 @@ voice.
 Lines 8 and 9 say **"all"** and mean it — the crossing wants every matching shape, so
 that word is doing work.
 
-## What happens to the file
+## Regenerate
 
-1. Drop the take in `art-source/audio-source/` as a WAV or MP3.
-2. `node tools/vo-split.mjs <file>` measures the gaps and writes a window per line.
-3. Add the windows to `CFG.vo.lines` in `game/js/engine.js`, keyed by the ids above.
-4. `node tools/make-ogg.mjs` writes the Ogg twin; the game picks whichever the browser
-   takes (Safari under 17.4 cannot play Ogg, so both ship).
-5. `node tools/build-bundle.mjs`.
-
-## Until then
-
-Every line is **silent and harmless**. `audio.say()` returns 0 for an id it has no
-window for and logs it as `no-window`; the board still reveals its words on the
-fallback pace and nothing waits on a voice that is not coming. So the game is
-playable now and the recordings drop in without touching any other code.
+1. Run `tools/generate-part2-vo.ps1` on Windows. It writes ten source WAVs and
+   `timings.json` to `art-source/audio-source/part2-vo/`.
+2. Run `node tools/assemble-part2-vo.mjs`. It appends the WAVs to the original take,
+   writes MP3 and Ogg, and reports the windows in `windows.json`.
+3. Keep the reported windows in `CFG.vo.lines` and run `node tools/build-bundle.mjs`.
 
 ## Not needed any more
 

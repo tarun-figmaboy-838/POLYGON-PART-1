@@ -210,6 +210,10 @@ const game = createGame(canvas, {
   }
 });
 
+// The voice clock keeps moving on a slow drawing frame. Check short word onsets
+// between renders so the sign does not wait for the next full canvas paint.
+setInterval(() => hud.syncVoice(game), 25);
+
 /* THE TUTORIAL'S OWN TICK, on its own animation frame rather than inside onHud.
 
    Two reasons, and both are the kind that only show up once it is wired the other
@@ -281,6 +285,7 @@ function startTutorial() {
   let wasOn = false;
   const tick = () => {
     requestAnimationFrame(tick);
+    hud.syncVoice(game);
     if (!veil || !focus) return;
     let on = false;
     try { on = !!game.debug().p2Focus; } catch (e) { on = false; }

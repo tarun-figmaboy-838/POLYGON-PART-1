@@ -439,10 +439,15 @@ export class Hud {
     if (!el) return;
     const m = this._plain ? null : KEY_WORD.exec((message || '').trim());
     el.textContent = '';
+    this._voiceSpans = [];
+    this._voiceTail = null;
+    this._voiceScheduled = false;
+    this._voiceWaitingAt = performance.now();
     let n = 0;
     /* IN STEP WITH THE VOICE, like the dialogue: when the question is spoken the reveal is
        spread across the clip. The engine hands the seconds over in the HUD state. */
     const words = (message || '').trim().split(/\s+/).filter(Boolean).length || 1;
+    this._voiceMeasured = !!(this._voId && this._voWords && this._voWords.length === words && this._soundOn);
     // spread across the whole spoken line, measured on the last word (see Tutorial.setWords)
     /* WITHOUT A VOICE THE REVEAL WAS 0.21 SECONDS. The stagger falls back to 0.07s a
        word, so a four-word question finished revealing in 0.21s while each word's own
@@ -457,7 +462,13 @@ export class Hud {
       if (!text) return;
       if (space && el.childNodes.length) el.appendChild(document.createTextNode(' '));
       const s = document.createElement('span');
-      s.className = cls;
+      const punctuation = /^[.!?]+$/.test(text);
+      s.className = this._voiceMeasured ? 'vo-pending' + (cls.includes('key') ? ' key' : '') : cls;
+      if (this._voiceMeasured) {
+        s.dataset.voiceClass = cls;
+        if (punctuation) this._voiceTail = s;
+        else this._voiceSpans.push(s);
+      }
       s.style.setProperty('--i', n++);
       s.style.setProperty('--wd', step.toFixed(3) + 's');
       s.textContent = text;
@@ -472,6 +483,41 @@ export class Hud {
     word((m[2] + m[3]).toUpperCase(), 'iw key', true);
     word(m[4], 'iw', false);                                  // the sentence keeps its full stop
     this.fitInstruction();
+  }
+
+  /** Schedule each word against the real audio clock. CSS carries the timing after
+      this one call, so a slow render frame cannot delay two short words at once. */
+  syncVoice(game) {
+    if (!this._voiceMeasured || !this._voiceSpans?.length || !game) return;
+    const at = game.voAt(this._voId);
+    const all = this._voiceTail ? [...this._voiceSpans, this._voiceTail] : this._voiceSpans;
+    if (!this._voiceScheduled && at >= 0) {
+      for (let i = 0; i < all.length; i++) {
+        const s = all[i];
+        s.style.animationDelay = ((this._voWords[Math.min(i, this._voWords.length - 1)] - at)).toFixed(3) + 's';
+        s.className = s.dataset.voiceClass;
+      }
+      this._voiceScheduled = true;
+    }
+    if (this._voiceScheduled) {
+      const state = game.paused ? 'paused' : 'running';
+      for (const s of all) s.style.animationPlayState = state;
+      if (at >= 0 && !game.paused) for (let i = 0; i < all.length; i++) {
+        const onset = this._voWords[Math.min(i, this._voWords.length - 1)];
+        if (at < onset + 0.025) continue;
+        const animation = all[i].getAnimations()[0];
+        if (animation && animation.effect.getComputedTiming().progress == null)
+          all[i].style.animationDelay = (-Math.min(0.42, at - onset)).toFixed(3) + 's';
+      }
+      return;
+    }
+    if (!game.soundOn() || performance.now() - this._voiceWaitingAt > 5000) {
+      for (const s of all) {
+        s.style.animationDelay = '-1s';
+        s.className = s.dataset.voiceClass;
+      }
+      this._voiceScheduled = true;
+    }
   }
 
   /* THE SENTENCE IS FITTED TO THE BOARD — the board is never fitted to the sentence.
@@ -718,7 +764,10 @@ export class Hud {
                   !!h.steps && !h.complete && !!h.playing, !!message);
 
     const el = this.el.instruction;
-    this._voDur = h.voDur || 0;          // paces the word reveal, see setInstruction
+    this._voDur = h.voDur || 0;          // paces the fallback reveal
+    this._voId = h.voId || '';
+    this._voWords = h.voWords || null;
+    this._soundOn = !!h.soundOn;
     /* A BANNER IS A SENTENCE, NOT A QUESTION. The key-word treatment takes the noun after "the"
        and sets it in capitals and blue — right for "Cut the TRIANGLE.", wrong for the teaching
        line, where it produced "Use the right ice piece to fix the PATH." */
