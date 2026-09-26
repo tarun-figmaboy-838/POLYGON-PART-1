@@ -3803,6 +3803,65 @@
     });
   }
 
+  /* PART 2 LOADS WHILE THE SUMMARY PLAYS. Frozen Rush holds its PLAY button
+     until its whole art set is in — 6.5MB, about thirteen seconds on a 5 Mbps
+     school line — and the lesson hands straight over to it, so the child sat
+     on "Loading…" at the one moment the two parts should feel like one game.
+     The summary is a minute of cards and voice that needs almost nothing new,
+     so from its first beat the files Part 2 will ask for are fetched quietly,
+     three at a time and at low priority, into the browser's cache.
+
+     The list is Part 2's own (game/js/asset-versions.js), with the ?v= hash
+     each file is requested by, so its requests hit exactly what is warmed: the
+     same hd-or-not choice (its wantHd in main.js) and ogg-or-mp3 choice
+     (playsOgg in engine.js). Only inside the combined project — the page sits
+     in /part1-swiftee-lesson/ over http — because the lesson's own test
+     servers and file:// have no Part 2 beside them. Nothing waits on it: a
+     file that fails only costs a slower cover. */
+  var warmed = false;
+  function warmPart2() {
+    if (warmed || !continueBtn || typeof global.fetch !== 'function') return;
+    var loc = global.location || {};
+    if (!/^https?:$/.test(loc.protocol || '') || !/\/part1-swiftee-lesson\//.test(loc.pathname || '')) return;
+    warmed = true;
+    var base = new URL('.', continueBtn.href).href;          // …/part2-frozen-rush/game/
+    var get = function (url) {
+      return global.fetch(url, { priority: 'low' }).then(function (r) { return r.ok ? r.arrayBuffer() : null; });
+    };
+    get(base + 'js/asset-versions.js').then(function (buf) {
+      if (!buf) return;
+      var src = new TextDecoder().decode(buf), v = {}, m;
+      var re = /"(assets\/[^"]+)":\s*"([0-9a-f]+)"/g;
+      while ((m = re.exec(src))) v[m[1]] = m[2];
+      var ogg = false;
+      try { ogg = !!new Audio().canPlayType('audio/ogg; codecs="vorbis"'); } catch (e) {}
+      var w = Math.min(global.innerWidth, global.innerHeight * 16 / 9);
+      var mem = global.navigator && navigator.deviceMemory;
+      var hd = w * (global.devicePixelRatio || 1) / 1920 >= 1.15 && w >= 1000 && !(mem && mem < 4);
+      var art = [], sound = [];
+      Object.keys(v).forEach(function (p) {
+        // the hd character sheets replace the base ones on a big sharp screen, never both
+        if (/\/hd\//.test(p) ? !hd : hd && /^assets\/char\/[^/]+$/.test(p) && v[p.replace('assets/char/', 'assets/char/hd/')]) return;
+        if (/\.(mp3|ogg)$/.test(p)) {
+          var twin = /\.mp3$/.test(p) ? p.replace(/\.mp3$/, '.ogg') : p.replace(/\.ogg$/, '.mp3');
+          if (v[twin] && (/\.ogg$/.test(p) !== ogg)) return;   // only the one it will play
+          sound.push(p);
+        } else art.push(p);
+      });
+      // the code first (it revalidates, so this spares the download), then the
+      // art that gates PLAY, then the sounds, the music bed last
+      var queue = ['index.html', 'css/style.css', 'css/screens.css', 'js/main.js', 'js/engine.js',
+                   'js/hud.js', 'js/tutorial.js'].map(function (f) { return base + f; })
+        .concat(art.concat(sound.sort(function (a, b) { return /bgm/.test(a) - /bgm/.test(b); }))
+          .map(function (p) { return base + p + '?v=' + v[p]; }));
+      var next = function () {
+        var url = queue.shift();
+        if (url) return get(url).catch(function () {}).then(next);
+      };
+      next(); next(); next();
+    }).catch(function () {});
+  }
+
   function restart() {
     // THE OLD RUN ENDS NOW, not when the new one starts 200 ms later: a
     // restart pressed during the snow let the old loop's next screen, and
@@ -3919,6 +3978,8 @@
     // feedbackSettleMs 900: a right answer is held for the polish pass's
     // 700–1100ms, long enough for his "Nice!", then the lesson moves on.
     director = Director.create(handlers(), { msPerWord: 300, sayMinMs: 900, readablePauseMs: 0, feedbackSettleMs: 900 });
+    // the last screen is the summary: Part 2 starts loading behind it (warmPart2)
+    director.on('start', function () { if (current === Screens.list.length - 1) warmPart2(); });
     if (Stage.onEvent) Stage.onEvent(function (name, payload) {
       director.emit(name, payload);
       if (name === 'hint:show') hintGesture(payload);

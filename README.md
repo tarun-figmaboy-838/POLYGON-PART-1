@@ -91,14 +91,22 @@ developed on its own exactly as before.
 
 ## Where Part 1 hands over to Part 2
 
-All of it is in Part 1; Part 2 is exactly the original game.
+All of it is in Part 1. Part 2 needs nothing extra for the hand-over.
 
 | Where | What it does |
 |---|---|
 | `part1-swiftee-lesson/index.html`, `#continue` | the Part 2 ▶ button; its `href` is the one place Part 2's address is written |
-| `part1-swiftee-lesson/src/game/game.js`, `finish()` | shows the button, and once the finale's last line is spoken, waits `ONWARD_MS` and calls `goOn()` |
+| `part1-swiftee-lesson/src/game/game.js`, `warmPart2()` | from the first beat of the summary (the last screen), fetches the files Part 2 will ask for into the browser cache, three at a time at low priority |
+| same file, `finish()` | shows the button, and once the finale's last line is spoken, waits `ONWARD_MS` and calls `goOn()` |
 | same file, `goOn()` | `Transition.cover()` (the lesson's snowfall), then opens Part 2 |
 | same file, `restart()` | Play again / restart cancel the move |
+
+**Why the warm-up.** Frozen Rush holds PLAY until its art is in. That is 6.5 MB, about 13 s on a
+5 Mbps school connection, so the child sat on "Loading…" right after the lesson. Warmed during
+the summary, the cover is ready in about 0.6 s. `warmPart2()` reads Part 2's own
+`game/js/asset-versions.js`, so it requests each file by the same `?v=` address Part 2 uses. It
+makes the same HD and Ogg choices as Part 2. It only runs inside this combined project over
+http, and anything that fails just means a slower cover.
 
 ## Tests
 
