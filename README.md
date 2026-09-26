@@ -5,7 +5,7 @@ A two-part browser game about polygons, set in one frozen world.
 | | Part | What the child does | Folder |
 |---|---|---|---|
 | **1** | **Swiftee & the Polygons** (learn) | A narrated story lesson. Swiftee introduces vertices, sides, angles and diagonals, then convex vs concave and regular vs irregular, and ends on a summary of every idea. | [`part1-swiftee-lesson/`](part1-swiftee-lesson/) |
-| **2** | **Frozen Rush** (play) | An ice runner. Momo the mammoth is stopped by crevasses. Level 1: swipe a rope to drop the block with the right number of sides. Level 2: cut a slab along its diagonal to bridge two gaps. | [`part2-frozen-rush/`](part2-frozen-rush/) |
+| **2** | **Frozen Rush** (play) | An ice runner. Momo the mammoth is stopped by crevasses, nine in all. The first three are drawing crossings: cut the slab along a diagonal, draw all the diagonals, draw two from one corner. The last six are rope crossings: swipe a rope to drop the convex or concave block that fits. The ice path is mended with geometry. | [`part2-frozen-rush/`](part2-frozen-rush/) |
 
 They play as one game, in order, with no menu in front:
 
@@ -16,7 +16,7 @@ open the game ─► Part 1: Swiftee's title ─► the lesson ─► finale
                  Part 2: Frozen Rush title ◄── the snow closes in
                           │ PLAY
                           ▼
-                 Level 1 (which shape) ─► Level 2 (where to cut) ─► the ending
+                 3 diagonal crossings ─► 6 convex/concave crossings ─► the ending
 ```
 
 The root [`index.html`](index.html) sends the player straight into Part 1. At the lesson's
@@ -48,7 +48,22 @@ recorded sounds (browsers block those on `file://`).
 | `/` | the game, from the start (it opens Part 1) |
 | `/part1-swiftee-lesson/` | Part 1 |
 | `/part2-frozen-rush/game/` | Part 2 on its own, for testing it without playing the lesson |
-| `/?dev=1` | Part 1 with its screen picker, to jump near the finale |
+| `/?dev=1` | the game in dev mode (below) |
+
+## Dev mode: jump to any screen
+
+Add `?dev=1` to the address (`http://localhost:8000/?dev=1`). A small **DEV** bar appears at the
+top of both parts, and stays on as you move between them. Without `?dev=1` a player never sees it.
+
+| Part | The DEV bar |
+|---|---|
+| Part 1 | **◀ / ▶** one screen back or on · a list of all 31 screens · **Part 2 ▶** |
+| Part 2 | **◀ Part 1** · a list of the title screen, the nine crossings (by their instruction) and the ending |
+
+A Part 1 jump restores the screen as it was left (`goTo()` in `game.js`). A Part 2 jump reloads the
+page at `?dev=1&at=N`, so each one starts from a clean run. It enters the crossing the way the
+journey reaches it (`skipToCrossing()` in `engine.js`). Part 2's own dev extras still work with it:
+**Skip to ending** in the corner, `?p2=1`, `?skip=1`, `?fast=1-8`.
 
 ## Layout
 

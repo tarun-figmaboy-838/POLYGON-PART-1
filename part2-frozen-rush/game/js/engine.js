@@ -12664,6 +12664,32 @@ export function createGame(canvas, hooks = {}) {
       setState('GLACIER_BREAK_2');
       return true;
     },
+    /** STRAIGHT TO ANY ONE CROSSING, for the review picker (?dev=1&at=N, see main.js).
+     *
+     *  N counts the crossings as the player meets them: first Part 2's drawing crossings
+     *  (p2i), then the rope ones (phase) — the order the trail's stones light in. Each is
+     *  entered the way the journey reaches it, so what is reviewed is the real sequence: a
+     *  drawing crossing through its collapse, as skipToPartTwo does, and a rope crossing
+     *  through the run up to it, as BRIDGE_2_COMPLETE hands over. The count of crossings
+     *  done is left where playing up to N would have left it. Playtest control only. */
+    skipToCrossing(n) {
+      if (G.state === 'BOOT' || G.complete) return false;
+      const k = p2Count(), all = k + L1.phases.length;
+      n = clamp(Math.floor(Number(n) || 0), 0, all - 1);
+      G.l1 = null; G.gapsThisPhase = null; G.l2 = null; G.gapA = null; G.gapB = null;
+      G.oops = false; G.hitObstacle = null; G.hitReturn = null; G.hitFx = 0;
+      G.hitCount = 0; G.phaseJumped = false;
+      obstacles.reset();
+      if (n < k) {
+        G.p2i = n; G.phase = 0; G.phasesDone = n;
+        setState('GLACIER_BREAK_2');
+      } else {
+        G.p2i = k; G.phase = n - k; G.phasesDone = Math.max(k, n - k);
+        G.moving = true; G.jumpEnabled = true; G.speedFactor = 1;
+        setState('PHASE_RUN');
+      }
+      return true;
+    },
     /** TEMPORARY, for reviewing the ending without playing seven phases: every crossing
         is counted as mended and the run home starts with the friend a short way ahead, so
         the real sequence plays — arrival, cross-fade into the dance, confetti, the banner

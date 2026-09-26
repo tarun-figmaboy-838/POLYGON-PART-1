@@ -13608,6 +13608,32 @@ function createGame(canvas, hooks = {}) {
       setState('GLACIER_BREAK_2');
       return true;
     },
+    /** STRAIGHT TO ANY ONE CROSSING, for the review picker (?dev=1&at=N, see main.js).
+     *
+     *  N counts the crossings as the player meets them: first Part 2's drawing crossings
+     *  (p2i), then the rope ones (phase) — the order the trail's stones light in. Each is
+     *  entered the way the journey reaches it, so what is reviewed is the real sequence: a
+     *  drawing crossing through its collapse, as skipToPartTwo does, and a rope crossing
+     *  through the run up to it, as BRIDGE_2_COMPLETE hands over. The count of crossings
+     *  done is left where playing up to N would have left it. Playtest control only. */
+    skipToCrossing(n) {
+      if (G.state === 'BOOT' || G.complete) return false;
+      const k = p2Count(), all = k + L1.phases.length;
+      n = clamp(Math.floor(Number(n) || 0), 0, all - 1);
+      G.l1 = null; G.gapsThisPhase = null; G.l2 = null; G.gapA = null; G.gapB = null;
+      G.oops = false; G.hitObstacle = null; G.hitReturn = null; G.hitFx = 0;
+      G.hitCount = 0; G.phaseJumped = false;
+      obstacles.reset();
+      if (n < k) {
+        G.p2i = n; G.phase = 0; G.phasesDone = n;
+        setState('GLACIER_BREAK_2');
+      } else {
+        G.p2i = k; G.phase = n - k; G.phasesDone = Math.max(k, n - k);
+        G.moving = true; G.jumpEnabled = true; G.speedFactor = 1;
+        setState('PHASE_RUN');
+      }
+      return true;
+    },
     /** TEMPORARY, for reviewing the ending without playing seven phases: every crossing
         is counted as mended and the run home starts with the friend a short way ahead, so
         the real sequence plays — arrival, cross-fade into the dance, confetti, the banner
@@ -16285,6 +16311,13 @@ let front = null;
 let tut = null;
 let lastComplete = false;
 
+/* ?at= — WHERE THE REVIEW BAR JUMPED TO, and only with ?dev=1: a crossing number counted
+   from 0 in the order they are met, or 'end'. The bar reloads the page for every jump, so
+   each one starts from a clean run instead of from whatever state the last left behind.
+   No cover and no tutorial on a jump, the same as ?p2=1. */
+const jumpAt = options.dev ? params.get('at') : null;
+let devSel = null;       // the bar's picker, kept in step with the crossing being played
+
 /* THE TUTORIAL RUNS EVERY TIME, and the remembering is gone on purpose.
  *
  * It was suppressed after the first play, held in localStorage. That is the
@@ -16376,6 +16409,12 @@ const game = createGame(canvas, {
        read, the slab lights up, the question is asked. The tutorial is skipped with it,
        because it teaches Part 1's controls and would freeze the game over the top. */
     if (flag('p2', false)) { game.begin(); game.skipToPartTwo(); return; }
+    // the review bar's jump (?dev=1&at=N): into the run, then straight to that crossing
+    if (jumpAt !== null) {
+      game.begin();
+      if (jumpAt === 'end') game.skipToEnd(); else game.skipToCrossing(Number(jumpAt));
+      return;
+    }
     if (flag('skip', false)) { game.begin(); startTutorial(); return; }
     /* THE COVER IS ALREADY UP (see below); the art has finished loading, so PLAY goes live.
        Before this the cover itself waited for the whole art set — five to six seconds of
@@ -16384,6 +16423,7 @@ const game = createGame(canvas, {
   },
   onHud: state => {
     hud.update(state);
+    if (devSel) devSel.value = state.complete ? 'end' : state.playing ? String(state.step) : '';
     /* The Ouch panel used to be fed the explorer's own hurt frames from here. Both
        the panel and the frame pump are gone: the crash animation plays on the CANVAS
        now, from the delivered knockout sheet, which is where it always belonged.
@@ -16534,11 +16574,54 @@ game.setOptions(options);
 /* THE COVER SHOWS AT ONCE, with PLAY held until the art has loaded. The cover needs only
    its own picture and the PLAY art, which the stylesheet fetches on its own, so there is no
    reason to sit on a blank page while the sheets and sounds arrive behind it. */
-if (!flag('skip', false)) {
+if (!flag('skip', false) && jumpAt === null) {
   front = new Frontend(document, game);
   front.init({ onStart: () => { game.begin(); startTutorial(); } });
   front.setLoading(true);
 }
+
+/* THE REVIEW BAR (?dev=1) — the same bar the Swiftee lesson has, so the two parts are
+   reviewed the same way: back to the lesson, and a picker for every screen of this game.
+   The title, each crossing by its own instruction in the order they are met, the ending.
+   The list is read from CFG, so a crossing added or reordered there shows up here.
+
+   Built here rather than written into index.html, so a shipped page carries none of it,
+   and marked data-dev so a suite can tell a review tool from the game. */
+if (options.dev) {
+  const bar = document.createElement('div');
+  bar.className = 'dev-bar';
+  bar.setAttribute('data-dev', '1');
+  const tag = document.createElement('span');
+  tag.className = 'dev-tag'; tag.textContent = 'DEV';
+  const back = document.createElement('a');
+  back.className = 'dev-go';
+  back.href = '../../part1-swiftee-lesson/index.html?dev=1';
+  back.textContent = '◀ Part 1';
+  const sel = document.createElement('select');
+  sel.setAttribute('aria-label', 'Jump to screen');
+  const drawing = (CFG.levelTwo && CFG.levelTwo.levels) || [];
+  const rope = (CFG.levelOne && CFG.levelOne.phases) || [];
+  const items = [['', 'Title screen']]
+    .concat(drawing.map((c, i) => [String(i), (i + 1) + '. ' + c.instruction]))
+    .concat(rope.map((p, i) => [String(drawing.length + i), (drawing.length + i + 1) + '. ' + p.instruction]))
+    .concat([['end', 'Ending']]);
+  for (const [value, label] of items) {
+    const o = document.createElement('option');
+    o.value = value; o.textContent = label;
+    sel.appendChild(o);
+  }
+  sel.value = jumpAt === null ? '' : jumpAt;
+  sel.addEventListener('change', () => {
+    const q = new URLSearchParams(location.search);
+    q.set('dev', '1');
+    if (sel.value === '') q.delete('at'); else q.set('at', sel.value);
+    location.search = q.toString();
+  });
+  bar.append(tag, back, sel);
+  document.body.appendChild(bar);
+  devSel = sel;
+}
+
 /* Re-pick the backbuffer scale when the window changes (a zoom, a monitor swap, a rotate).
    The art set stays as chosen at boot; only the pixel count follows. */
 {

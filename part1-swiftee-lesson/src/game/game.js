@@ -4103,6 +4103,11 @@
     // a jump drops whatever he was doing, at once (and anything a sequence was
     // holding for him: the rebuild below lets go of the measuring walk)
     if (global.Swiftee && Swiftee.settle) Swiftee.settle({ now: true });
+    // and a jump back from the finale takes its buttons down; playGen has
+    // already called off the move to Part 2
+    clearTimeout(onwardTimer);
+    hud.querySelector('.replay').classList.remove('show');
+    if (continueBtn) continueBtn.classList.remove('show');
 
     // THE SCREEN AS IT WAS, if the child has been there: put back exactly,
     // with him on this screen's own mark.
@@ -4168,12 +4173,30 @@
       o.textContent = (i + 1) + '. ' + s.id;
       box.appendChild(o);
     });
+    // Before Start the title curtain is still down, and a screen played behind
+    // it would be heard and not seen: so a jump from the title presses Start
+    // first (inside this click, so the sound unlocks too), then jumps.
+    function jump(n) {
+      n = Math.max(0, Math.min(Screens.list.length - 1, n));
+      if (loadEl && !loadEl.classList.contains('gone')) {
+        var s = $('#start'); if (s) s.click();
+        setTimeout(function () { goTo(n); }, 600);
+      } else goTo(n);
+    }
     box.addEventListener('change', function () {
       // The picker and the Back button change screen the same way: goTo().
       var n = +box.value;
       box.blur();                       // so the arrow keys go back to the lesson
-      goTo(n);
+      jump(n);
     });
+    // one screen back or on, from wherever the lesson is
+    Array.prototype.forEach.call(host2.querySelectorAll('.dev-step'), function (b) {
+      b.addEventListener('click', function () {
+        jump(current + (+b.getAttribute('data-step')));   // (from the title, either way is screen 1)
+      });
+    });
+    // and the hand-over to Part 2 keeps dev on, so its own bar is there too
+    if (continueBtn) continueBtn.search = '?dev=1';
     if (director && director.on) {
       director.on('start', function () {
         if (current >= 0 && +box.value !== current) box.value = current;

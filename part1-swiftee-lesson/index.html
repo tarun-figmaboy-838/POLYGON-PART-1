@@ -499,14 +499,34 @@
        the card can never pass 49% and the HUD starts at the right edge. */
     position: fixed; top: 6px; left: 52%; z-index: 60;
     max-width: calc(48vw - 96px);
-    opacity: .3; transition: opacity .18s ease;
+    /* THE REVIEW BAR, drawn the same in both parts (Part 2: .dev-bar in its
+       style.css): a small dark pill of plain system type, so it can never be
+       mistaken for one of the lesson's own buttons. */
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 6px; border-radius: 999px;
+    background: rgba(10, 30, 60, .82); box-shadow: 0 2px 10px rgba(0, 0, 0, .3);
+    font: 600 13px/1 system-ui, sans-serif; color: #fff;
+    opacity: .85; transition: opacity .18s ease;
   }
+  #jump[hidden] { display: none; }
   #jump:hover, #jump:focus-within { opacity: 1; }
+  #jump .dev-tag {
+    padding: 5px 8px; border-radius: 999px; background: #ff7a0e; color: #fff;
+    font-weight: 800; letter-spacing: .06em;
+  }
+  #jump .dev-step {
+    width: 30px; height: 30px; flex: none; border: 0; border-radius: 50%;
+    font: inherit; color: #0a1e3c; background: #eaf6ff; cursor: pointer;
+  }
+  #jump .dev-go {
+    display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 999px;
+    color: #0a1e3c; background: #eaf6ff; text-decoration: none; white-space: nowrap;
+  }
+  #jump .dev-step:hover, #jump .dev-go:hover { background: #fff; }
   #jump select {
-    width: 100%; max-width: 240px; height: 34px;
-    font: 600 13px/1 system-ui, sans-serif; color: #17324d;
-    background: rgba(255, 255, 255, .94);
-    border: 2px solid #9fd6fb; border-radius: 9px;
+    min-width: 0; width: 100%; max-width: 240px; height: 30px;
+    font: inherit; color: #0a1e3c;
+    background: #fff; border: 0; border-radius: 8px;
     padding: 0 6px; cursor: pointer;
   }
   /* Under a phone width there is no clear strip, so it drops below the HUD
@@ -844,8 +864,13 @@
        wireJump() in game.js would still change nothing about the lesson.
        Marked data-dev so the suites can tell a review tool from the game. -->
   <div id="jump" data-dev="1" hidden>
+    <span class="dev-tag">DEV</span>
+    <button type="button" class="dev-step" data-step="-1" aria-label="Previous screen">&#9664;</button>
     <label class="sr-only" for="jump-sel">Jump to screen</label>
     <select id="jump-sel"></select>
+    <button type="button" class="dev-step" data-step="1" aria-label="Next screen">&#9654;</button>
+    <!-- straight into Part 2's own review bar, with dev kept on -->
+    <a class="dev-go" href="../part2-frozen-rush/game/index.html?dev=1">Part 2 &#9654;</a>
   </div>
   
   <button id="next" type="button" aria-label="Next"><span>Next</span><span class="chev" aria-hidden="true">&#9654;</span></button>
