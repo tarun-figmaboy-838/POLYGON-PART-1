@@ -1,0 +1,27 @@
+# The repo stores LF and every checkout gets LF, on every OS.
+#
+# This matters beyond tidy diffs: Part 2's build (part2-frozen-rush/tools/build-bundle.mjs)
+# puts a content hash of every file under game/assets into asset-versions.js and the
+# stylesheets. The SVG icons are text, so a Windows checkout that turned them into CRLF
+# hashed differently from a Mac one, and the "is the build up to date" check failed on
+# whichever machine had not made the last build.
+* text=auto eol=lf
+
+# Windows scripts keep Windows line endings, or cmd.exe misreads them
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# art, audio and fonts are never touched
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.mp3   binary
+*.ogg   binary
+*.wav   binary
+*.woff  binary
+*.woff2 binary
+*.riv   binary

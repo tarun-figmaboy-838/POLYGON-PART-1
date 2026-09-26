@@ -1,0 +1,17 @@
+{
+  "name": "polygon-adventure",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Polygon Adventure: a two-part game about polygons. Part 1 (Swiftee & the Polygons) is a narrated story lesson; Part 2 (Frozen Rush) is an ice runner where the same ideas mend the path. Both are plain static sites with no build step.",
+  "scripts": {
+    "start": "node serve.js",
+    "setup": "npm --prefix part1-swiftee-lesson install && npm --prefix part2-frozen-rush install",
+    "test": "npm run test:part1 && npm run check:part2",
+    "test:part1": "npm --prefix part1-swiftee-lesson test",
+    "test:part1:browser": "npm --prefix part1-swiftee-lesson run test:browser",
+    "test:part2": "npm --prefix part2-frozen-rush test -- --workers=1",
+    "test:part2:level2": "npm --prefix part2-frozen-rush run test:level2",
+    "check:part2": "node part2-frozen-rush/tools/build-bundle.mjs --check",
+    "bundle:part2": "node part2-frozen-rush/tools/build-bundle.mjs"
+  }
+}

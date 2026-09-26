@@ -1,0 +1,44 @@
+# Only what a URL fetches is deployed: the home page, Part 1's index.html + src/ +
+# assets/, and Part 2's game/. Everything below is a development gate, a build input
+# or a note, and would only be dead weight on the CDN.
+
+node_modules
+.claude
+.vercel
+README.md
+package.json
+package-lock.json
+serve.js
+serve.ps1
+START GAME.bat
+
+# Part 1 — the site is its index.html, src/ and assets/
+/part1-swiftee-lesson/tests
+/part1-swiftee-lesson/tools
+/part1-swiftee-lesson/docs
+/part1-swiftee-lesson/artifacts
+/part1-swiftee-lesson/assets/source
+/part1-swiftee-lesson/assets/vo/take
+/part1-swiftee-lesson/swiftee-in-use
+/part1-swiftee-lesson/preview
+/part1-swiftee-lesson/review
+/part1-swiftee-lesson/vercel.json
+/part1-swiftee-lesson/.vercelignore
+
+# Part 2 — the site is game/ and nothing else
+/part2-frozen-rush/art-source
+/part2-frozen-rush/drafts
+/part2-frozen-rush/tests
+/part2-frozen-rush/tools
+/part2-frozen-rush/docs
+/part2-frozen-rush/RUNNER.md
+/part2-frozen-rush/playwright.config.mjs
+/part2-frozen-rush/playwright.part2.config.mjs
+/part2-frozen-rush/test-results
+/part2-frozen-rush/playwright-report
+/part2-frozen-rush/blob-report
+/part2-frozen-rush/qa-report
+/part2-frozen-rush/vercel.json
+/part2-frozen-rush/game/vercel.json
+/part2-frozen-rush/game/.vercelignore
+/part2-frozen-rush/game/README.md

@@ -1,0 +1,12 @@
+# Each part keeps its own .gitignore beside it (part1-swiftee-lesson/.gitignore,
+# part2-frozen-rush/.gitignore) for its generated files and test output. These are
+# the ones that apply to the whole repository.
+
+node_modules/
+.vercel/
+
+# editor / OS litter
+.DS_Store
+Thumbs.db
+.vscode/
+*.code-workspace
