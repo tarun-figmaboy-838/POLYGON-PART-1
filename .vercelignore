@@ -1,4 +1,4 @@
-# Only what a URL fetches is deployed: the home page, Part 1's index.html + src/ +
+# Only what a URL fetches is deployed: the root index.html, Part 1 index.html + src/ +
 # assets/, and Part 2's game/. Everything below is a development gate, a build input
 # or a note, and would only be dead weight on the CDN.
 

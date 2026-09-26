@@ -157,8 +157,6 @@ async function act(spec){
   t('played to the end and the replay button appeared', done, 'stopped at screen '+w.Game.screen+' ('+(w.Screens.list[w.Game.screen]||{}).id+')');
   // the way on to Part 2 opens with the finale, in the corner Next has left
   t('the finale offers Part 2, and Next is gone', !!d.querySelector('#continue.show') && !d.querySelector('#next.show'));
-  const saved=(()=>{try{return JSON.parse(w.localStorage.getItem('polygon-adventure:v1')||'{}');}catch(e){return {};}})();
-  t('the finished lesson is recorded for the home page', !!saved.lesson, JSON.stringify(saved));
   t('no runtime errors across the whole game', errors.length===0, errors.slice(0,3).join(' | '));
   t('all '+N+' screens were visited', screensSeen.size===N, screensSeen.size+'/'+N);
   const types=new Set(asked.map(a=>a.type));

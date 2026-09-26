@@ -729,29 +729,6 @@
 .btn-replay:hover .btn-chunky-face { filter: brightness(1.07); }
 .btn-replay:active .btn-chunky-face { filter: brightness(.88); }
 
-/* HOME, the way back to the adventure's home page. The same rim-and-face construction,
-   recoloured through the family's own variables to the ice blue of the world — amber is
-   the thing to do, blue is the way out — and a size down, in the bottom-left corner, so
-   Play again stays the one control the ending points at. It pops in just after Play
-   again and then holds still, for the same reason Play again does not bob. */
-.btn-home {
-  --top:    #E2F7FF;
-  --body-a: #6CCBF6;
-  --body-b: #2B92D8;
-  --edge:   #175F9E;
-  --ink:    #0E3F6B;
-  --halo:   rgba(96, 196, 255, 0.5);
-  position: absolute;
-  left: 2.2%;
-  bottom: 1.4%;
-  pointer-events: auto;
-  text-decoration: none;
-  animation: cardPop 420ms cubic-bezier(.2, 1.5, .4, 1) 180ms both;
-}
-.btn-home .btn-chunky-face { padding: clamp(8px, 0.8vw, 16px) clamp(22px, 2.2vw, 44px); }
-.btn-home .btn-chunky-label { font-size: clamp(17px, calc(1.8 * var(--u)), 68px); }
-@media (prefers-reduced-motion: reduce) { .btn-home { animation: none; } }
-
 /* the panels themselves read as game furniture, not a web modal */
 .card {
   border-width: clamp(4px, 0.42vw, 8px) !important;

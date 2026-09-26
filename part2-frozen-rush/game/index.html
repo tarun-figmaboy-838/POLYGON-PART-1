@@ -263,13 +263,6 @@
           <button class="btn-chunky btn-replay" id="btn-replay" type="button">
             <span class="btn-chunky-face"><span class="btn-chunky-label">Play again</span></span>
           </button>
-          <!-- THE WAY HOME: back to the adventure's home page at the repo root, where Part 1
-               and Part 2 are both ticked off. Smaller, ice blue and in the corner, because
-               Play again is still the thing to do here and this is only the way out. A link,
-               so it works off the disk as well as over http. -->
-          <a class="btn-chunky btn-home" id="btn-home" href="../../index.html" aria-label="Home: back to the Polygon Adventure">
-            <span class="btn-chunky-face"><span class="btn-chunky-label">Home</span></span>
-          </a>
         </div>
 
         <div class="overlay rotate" id="rotate" hidden>
@@ -349,29 +342,6 @@
         s.src = 'js/main.js';
       }
       document.head.appendChild(s);
-    })();
-  </script>
-  <!-- PART 2 IS DONE, for the home page at the repo root. It ticks off the parts it finds
-       under this key: { lesson: <time finished>, rush: <time finished> } — Part 1 writes
-       `lesson`, this writes `rush`, the first time the ending opens.
-
-       It watches #complete rather than being told by the HUD, so the modules in js/ (and
-       the file:// bundle generated from them) are untouched. Storage that throws — a
-       private window, a locked-down school browser — only costs the tick. -->
-  <script>
-    (function () {
-      var el = document.getElementById('complete');
-      if (!el || !window.MutationObserver) return;
-      var mo = new MutationObserver(function () {
-        if (el.hidden) return;
-        mo.disconnect();
-        try {
-          var key = 'polygon-adventure:v1';
-          var s = JSON.parse(localStorage.getItem(key) || '{}') || {};
-          if (!s.rush) { s.rush = Date.now(); localStorage.setItem(key, JSON.stringify(s)); }
-        } catch (e) {}
-      });
-      mo.observe(el, { attributes: true, attributeFilter: ['hidden'] });
     })();
   </script>
   <!-- POSITIONED, or nobody reads it. This paragraph used to sit in normal flow after

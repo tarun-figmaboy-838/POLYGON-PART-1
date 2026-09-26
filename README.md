@@ -7,16 +7,31 @@ A two-part browser game about polygons, set in one frozen world.
 | **1** | **Swiftee & the Polygons** (learn) | A narrated story lesson. Swiftee introduces vertices, sides, angles and diagonals, then convex vs concave and regular vs irregular, and ends on a summary of every idea. | [`part1-swiftee-lesson/`](part1-swiftee-lesson/) |
 | **2** | **Frozen Rush** (play) | An ice runner. Momo the mammoth is stopped by crevasses. Level 1: swipe a rope to drop the block with the right number of sides. Level 2: cut a slab along its diagonal to bridge two gaps. | [`part2-frozen-rush/`](part2-frozen-rush/) |
 
-The home page ([`index.html`](index.html)) joins them: Part 1 first, then Part 2. The lesson's
-finale has a **Part 2 ▶** button in the corner where *Next* sat all lesson, and Frozen Rush's
-ending has a **Home** button. The home page ticks off each part as it is finished.
+They play as one game, in order, with no menu in front:
+
+```
+open the game ─► Part 1: Swiftee's title ─► the lesson ─► finale
+                                                             │  his last words, then a few seconds
+                                                             ▼
+                 Part 2: Frozen Rush title ◄── the snow closes in
+                          │ PLAY
+                          ▼
+                 Level 1 (which shape) ─► Level 2 (where to cut) ─► the ending
+```
+
+The root [`index.html`](index.html) sends the player straight into Part 1. At the lesson's
+finale, 4 seconds after Swiftee's last word (`ONWARD_MS` in `game.js`), the lesson's own
+snowfall covers the screen and Part 2 opens. A **Part 2 ▶** button stands in the corner
+*Next* held all lesson, for a child who does not want to wait, and **Play again** calls the move
+off. Part 2 opens on its title screen: its PLAY tap is also the gesture that lets the browser
+start its music.
 
 No framework and no build step. Everything is plain static files.
 
 ## Play it
 
 **Windows, no installs:** double-click **`START GAME.bat`**. It starts a small local server
-(`serve.ps1`) and opens the home page in Edge.
+(`serve.ps1`) and opens the game in Edge.
 
 **With Node:**
 
@@ -30,14 +45,15 @@ recorded sounds (browsers block those on `file://`).
 
 | URL | Opens |
 |---|---|
-| `/` | the home page |
-| `/part1-swiftee-lesson/` | Part 1 directly |
-| `/part2-frozen-rush/game/` | Part 2 directly |
+| `/` | the game, from the start (it opens Part 1) |
+| `/part1-swiftee-lesson/` | Part 1 |
+| `/part2-frozen-rush/game/` | Part 2 on its own, for testing it without playing the lesson |
+| `/?dev=1` | Part 1 with its screen picker, to jump near the finale |
 
 ## Layout
 
 ```
-index.html              the home page: both parts, progress, what they teach
+index.html              the way in: opens Part 1
 serve.js                local server for the whole thing (npm start)
 serve.ps1               the same, for Windows with no Node (START GAME.bat)
 vercel.json             one static deploy for everything; cache rules for both parts
@@ -56,23 +72,18 @@ part2-frozen-rush/      PART 2, as its own project: game/ is the site
 ```
 
 Each part keeps its own README, tests, tools and `.gitignore`, and each can still be
-developed on its own exactly as before. The merge added only the home page, the root tooling,
-and the three small hooks listed below.
+developed on its own exactly as before.
 
-## How the parts talk to each other
+## Where Part 1 hands over to Part 2
 
-There is one shared thing: a `localStorage` key, `polygon-adventure:v1`, holding
-`{ lesson: <time finished>, rush: <time finished> }`.
+All of it is in Part 1; Part 2 is exactly the original game.
 
 | Where | What it does |
 |---|---|
-| `part1-swiftee-lesson/src/game/game.js`, `finish()` | writes `lesson`; shows `#continue` (Part 2 ▶) |
-| `part2-frozen-rush/game/index.html`, inline script | watches `#complete` and writes `rush` when the ending opens |
-| `index.html` (home) | reads the key: ticks finished parts, marks the next one, offers "Start the adventure over" |
-
-It is only decoration. If a browser blocks storage (private window, locked-down school
-machine), both games still play and the home page just points at Part 1. Part 2's own modules
-and its generated `game.bundle.js` were not touched: the hook lives in its `index.html`.
+| `part1-swiftee-lesson/index.html`, `#continue` | the Part 2 ▶ button; its `href` is the one place Part 2's address is written |
+| `part1-swiftee-lesson/src/game/game.js`, `finish()` | shows the button, and once the finale's last line is spoken, waits `ONWARD_MS` and calls `goOn()` |
+| same file, `goOn()` | `Transition.cover()` (the lesson's snowfall), then opens Part 2 |
+| same file, `restart()` | Play again / restart cancel the move |
 
 ## Tests
 

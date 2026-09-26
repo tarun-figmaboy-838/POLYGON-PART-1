@@ -35,9 +35,11 @@
   var playGen = 0;
   var refitTimer = null, refitRaf = 0;
   var SAVE_KEY = 'swiftee.audio';
-  /* Shared with Part 2 and the home page at the repo root, which ticks off the
-     parts listed here: { lesson: <time finished>, rush: <time finished> }. */
-  var ADVENTURE_KEY = 'polygon-adventure:v1';
+  /* THE LESSON IS PART 1 OF ONE GAME. When the finale has had its moment, the
+     snow closes in and Part 2 (Frozen Rush, beside this folder) opens behind it.
+     The wait is counted from his last word, so it never cuts the finale off. */
+  var ONWARD_MS = 4000;
+  var onwardTimer = null, leaving = false;
   var quest = Quest.create(), rewardTimer;
 
   /**
@@ -2332,14 +2334,6 @@
   function saveAudio() {
     try { if (global.SFX) localStorage.setItem(SAVE_KEY, JSON.stringify(SFX.state())); } catch (e) {}
   }
-  // The lesson is finished: the home page shows Part 1 ticked and Part 2 next.
-  // Only a decoration there, so a browser that refuses storage loses nothing.
-  function saveFinished() {
-    try {
-      var s = JSON.parse(localStorage.getItem(ADVENTURE_KEY) || '{}') || {};
-      if (!s.lesson) { s.lesson = Date.now(); localStorage.setItem(ADVENTURE_KEY, JSON.stringify(s)); }
-    } catch (e) {}
-  }
 
   /* ------------------------------------------------------------------ *
    * Per-tap feedback — fire-and-forget beats, no awaiting.
@@ -3770,10 +3764,18 @@
     if (global.Music) Music.mood('win');   // the tune lifts for the last screen
     var won = quest.snapshot();
     var score = won.xp + ' XP and ' + won.badges.length + (won.badges.length === 1 ? ' badge' : ' badges') + '.';
-    // spoken and word by word, one voice at a time, his last words kept up
+    // spoken and word by word, one voice at a time, his last words kept up —
+    // and once they are said, a moment to enjoy it, then on to Part 2. A
+    // replay, a restart or a screen picked in the review tool bumps playGen
+    // and so calls the move off.
+    var gen = playGen;
     pop([{ t: FINALE[0].t, vo: FINALE[0].vo, mood: 'win' },
          { t: score, mood: 'win' },
-         { t: FINALE[1].t, vo: FINALE[1].vo, mood: 'win' }], { keep: true });
+         { t: FINALE[1].t, vo: FINALE[1].vo, mood: 'win' }], { keep: true }).then(function () {
+      if (gen !== playGen) return;
+      clearTimeout(onwardTimer);
+      onwardTimer = setTimeout(function () { if (gen === playGen) goOn(); }, ONWARD_MS);
+    });
     // one burst, wide, for the finale — two from different points read as a stutter
     if (global.Juice) Juice.confetti(Stage.svg, { count: 72, spread: 2.6 });
     if (global.SFX) SFX.sequence(['drumroll', 1.2, 'levelUp', 0.3, 'sparkle']);
@@ -3781,9 +3783,24 @@
     // settles into `proud`. Everywhere else `celebrate` is the ceiling.
     Swiftee.play('excited').then(function () { return Swiftee.play('proud'); });
     hud.querySelector('.replay').classList.add('show');
-    // and on to Part 2, from the corner Next has held all lesson
+    // and on to Part 2, from the corner Next has held all lesson — for a child
+    // who does not want to wait for it
     if (continueBtn) continueBtn.classList.add('show');
-    saveFinished();
+  }
+
+  /* ON TO PART 2: the lesson's own snowfall closes over the finale, and Frozen
+     Rush opens behind it, whose title screen is snowing too. Once only; with
+     reduced motion there is no snow and it simply goes. */
+  function goOn() {
+    if (leaving || !continueBtn) return;
+    leaving = true;
+    clearTimeout(onwardTimer);
+    var gen = playGen, href = continueBtn.href;
+    var snow = global.Transition && Transition.cover ? Transition.cover() : Promise.resolve();
+    snow.then(function () {
+      if (gen !== playGen) { leaving = false; return; }
+      try { global.location.assign(href); } catch (e) { leaving = false; }
+    });
   }
 
   function restart() {
@@ -3805,6 +3822,7 @@
     if (global.SFX && SFX.cancelSequences) SFX.cancelSequences();
     hud.querySelector('.replay').classList.remove('show');
     if (continueBtn) continueBtn.classList.remove('show');
+    clearTimeout(onwardTimer);   // (playGen has moved on, so a snow already falling stays here too)
     Stage.apply({ kind: 'vista' });
     Swiftee.place('left', 'large');
     setTimeout(function () { play(0); }, 200);
@@ -3818,6 +3836,12 @@
     root = $('#game'); stageEl = $('#stage'); hud = $('#hud'); bubble = $('#bubble');
     instruction = $('#instruction'); progress = $('#progress'); loadEl = $('#loading'); nextBtn = $('#next');
     continueBtn = $('#continue');
+    // pressed, it goes the same way as waiting does: through the snow
+    if (continueBtn) continueBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (global.SFX) SFX.play('select');
+      goOn();
+    });
 
     Stage.mount(stageEl);
     Swiftee.mount(root, { layout: layout });

@@ -1,9 +1,9 @@
 @echo off
 rem Double-click this to play the whole Polygon Adventure with sound.
 rem
-rem It starts a small local server (serve.ps1, no installs needed) and opens the home
-rem page, where Part 1 (the Swiftee lesson) and Part 2 (Frozen Rush) are both one click
-rem away. index.html also opens straight off the disk, but then the lesson uses the
+rem It starts a small local server (serve.ps1, no installs needed) and opens the game.
+rem Part 1 (the Swiftee lesson) plays first, and carries on into Part 2 (Frozen Rush)
+rem when it is finished. index.html also opens straight off the disk, but then the lesson uses the
 rem browser's voice instead of the recorded one and Frozen Rush plays without music.
 
 title Polygon Adventure - local server

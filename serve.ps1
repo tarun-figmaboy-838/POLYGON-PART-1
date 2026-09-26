@@ -1,4 +1,4 @@
-# Tiny static file server for the whole adventure: the home page and both parts.
+# Tiny static file server for the whole game: Part 1, and Part 2 after it.
 # No Node or Python needed — START GAME.bat runs this for you.
 #
 #   Right-click this file -> "Run with PowerShell"

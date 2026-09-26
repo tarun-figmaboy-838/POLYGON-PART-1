@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*!
- * serve.js — run the whole adventure locally: the home page and both parts.
+ * serve.js — run the whole game locally: Part 1, and Part 2 after it.
  *
  *   npm start            then open the URL it prints
  *   node serve.js 8000   to choose the port
@@ -81,7 +81,7 @@ http.createServer((req, res) => {
   });
 }).listen(PORT, '127.0.0.1', () => {
   console.log('');
-  console.log('  Polygon Adventure  ->  http://localhost:' + PORT + '/');
+  console.log('  Polygon Adventure  ->  http://localhost:' + PORT + '/   (starts at Part 1)');
   console.log('    Part 1  Swiftee & the Polygons   /part1-swiftee-lesson/');
   console.log('    Part 2  Frozen Rush              /part2-frozen-rush/game/');
   console.log('');
