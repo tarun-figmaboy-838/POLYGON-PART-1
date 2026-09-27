@@ -78,6 +78,47 @@
     return el;
   }
 
+  /**
+   * AN SVG POSITION IS AN ATTRIBUTE, AND NOT EVERY ENGINE ADDS TO IT.
+   *
+   * Most of the stage is placed by `transform="translate(x,y)"`, and ADDITIVE
+   * above counts on the effect being added to that. Chrome adds to it. Safari
+   * starts the addition from `none`: the pop on a card dropped in its bin
+   * replaced translate(600,400) with a bare scale(1.18), so for the length of
+   * the pop the card was drawn at the stage's top-left corner, and bounced
+   * there. (The separate `scale` property is no way round it: it scales about
+   * the parent's origin, and slid the same card 85px.)
+   *
+   * So while an effect runs, the attribute is copied into the inline style,
+   * where every engine adds to it. Same property and same origin, so the copy
+   * draws exactly where the attribute did. It is kept in step if the scene
+   * moves the element meanwhile (a card dragged again during its recoil), and
+   * the last effect to end takes it away and leaves the attribute in charge.
+   */
+  function holdBase(el, a) {
+    if (!el.transform || !el.transform.baseVal || !a || !a.finished) return;
+    var h = el._juiceBase;
+    if (!h) {
+      if (el.style.transform) return;              // a CSS transform of its own is already the base
+      var sync = function () {
+        var t = el.transform.baseVal.consolidate(), m = t && t.matrix;
+        el.style.transform = m ? 'matrix(' + [m.a, m.b, m.c, m.d, m.e, m.f].join(',') + ')' : '';
+      };
+      if (!el.transform.baseVal.numberOfItems) return;
+      sync();
+      h = el._juiceBase = { n: 0, watch: global.MutationObserver ? new MutationObserver(sync) : null };
+      if (h.watch) h.watch.observe(el, { attributes: true, attributeFilter: ['transform'] });
+    }
+    h.n++;
+    var release = function () {
+      if (--h.n > 0) return;
+      if (h.watch) h.watch.disconnect();
+      el.style.transform = '';
+      el._juiceBase = null;
+    };
+    a.finished.then(release, release);
+  }
+
   function run(el, frames, opts) {
     if (!can(el)) return { finished: Promise.resolve(), cancel: function () {} };
     centred(el);
@@ -87,6 +128,7 @@
     } catch (e) {
       return { finished: Promise.resolve(), cancel: function () {} };
     }
+    try { holdBase(el, a); } catch (e) {}
     return a;
   }
 
