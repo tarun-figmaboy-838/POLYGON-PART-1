@@ -93,8 +93,8 @@ def main():
             "-af", filt, "-ar", "44100", "-ac", "1", "-c:a", "libmp3lame", "-b:a", "64k",
             str(args.out / src.name))
         run("ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(wav),
-            "-af", filt, "-ar", "44100", "-ac", "1", "-c:a", "libvorbis", "-q:a", "1",
-            str(args.out / f"{src.stem}.ogg"))
+            "-af", filt, "-ar", "48000", "-ac", "1", "-c:a", "libopus", "-b:a", "40k", "-vbr", "on",
+            "-application", "voip", str(args.out / f"{src.stem}.ogg"))
         wav.unlink()
         print(f"{src.stem}: {duration(src):.2f}s -> {duration(args.out / src.name):.2f}s", flush=True)
     print(f"Converted {len(clips)} feedback lines into {args.out}")

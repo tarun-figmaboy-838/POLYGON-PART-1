@@ -23,10 +23,12 @@ import { ASSET_V } from './asset-versions.js';
    makes a changed file a new fetch and an unchanged one a cache hit. Generated at build
    time (tools/build-bundle.mjs -> js/asset-versions.js). Paths in CFG stay bare. */
 /* AND EVERY MP3 LEAVES AS AN OGG, WHERE THE BROWSER TAKES ONE.
-   The audio ships as both (tools/make-ogg.mjs): ogg vorbis is what the game is asked to use
-   and it is 28% smaller across the set, but Safari only learned to play it in 17.4, so an
-   iPad on iOS 16 would have gone silent. The choice is made ONCE, here, rather than at each
-   of the fifty call sites, and only the chosen file is ever fetched.
+   The audio ships as both (tools/make-ogg.mjs): Ogg Opus is what the game is asked to use —
+   under half the mp3's size across the set — and Chrome, Edge, Firefox and Android play it;
+   Safari gets the mp3 unless it says it plays Opus in Ogg, so an iPad on an older iOS keeps
+   its sound. The choice is made ONCE, here, rather than at each of the fifty call sites, and
+   only the chosen file is ever fetched. A browser that says yes and then cannot decode one
+   falls back to that file's mp3 (mp3Url, and the three places that load audio).
 
    canPlayType returns 'probably' | 'maybe' | '' — '' is the only answer that means no, and
    'maybe' is what several browsers say about a codec they do play, so anything non-empty is
@@ -43,10 +45,16 @@ function playsOgg() {
          silent. The mp3 loads there and is already the format the rest of the file-scheme
          handling assumes, so the negotiation simply does not apply. */
       if (typeof location !== 'undefined' && location.protocol === 'file:') oggOk = false;
-      else oggOk = !!new Audio().canPlayType('audio/ogg; codecs="vorbis"');
+      else oggOk = !!new Audio().canPlayType('audio/ogg; codecs="opus"');
     } catch (e) { oggOk = false; }
   }
   return oggOk;
+}
+
+/** The mp3 itself, whatever the negotiation chose: the fallback for an ogg that will not decode. */
+export function mp3Url(src) {
+  const v = ASSET_V[src];
+  return v ? src + '?v=' + v : src;
 }
 
 export function assetUrl(src) {
@@ -2092,6 +2100,14 @@ class AudioManager {
       const el = new Audio(assetUrl(M.src));
       el.loop = true;
       el.preload = 'auto';
+      // an ogg this browser said it would play, and will not: its mp3, once
+      if (el.src && !/\.mp3(\?|$)/.test(el.src)) {
+        el.addEventListener('error', () => {
+          el.src = mp3Url(M.src);
+          const q = el.play();
+          if (q && q.catch) q.catch(() => {});
+        }, { once: true });
+      }
       if (direct) {
         el.volume = 0;                        // faded in below
         this.music = { el, gain: null };
@@ -2173,9 +2189,17 @@ class AudioManager {
       try {
         if (!byUrl.has(cue.src)) {
           byUrl.set(cue.src, (async () => {
-            const res = await fetch(assetUrl(cue.src));
-            if (!res.ok) throw new Error(res.status + ' ' + cue.src);
-            return this.ctx.decodeAudioData(await res.arrayBuffer());
+            const get = async (u) => {
+              const res = await fetch(u);
+              if (!res.ok) throw new Error(res.status + ' ' + cue.src);
+              return this.ctx.decodeAudioData(await res.arrayBuffer());
+            };
+            try { return await get(assetUrl(cue.src)); }
+            catch (e) {
+              // the ogg would not decode here (or was not there): the mp3 twin, once
+              if (assetUrl(cue.src) === mp3Url(cue.src)) throw e;
+              return get(mp3Url(cue.src));
+            }
           })());
         }
         const buf = await byUrl.get(cue.src);
@@ -2350,7 +2374,16 @@ class AudioManager {
       if (!this.ctx) { this.voLoading = false; return; }     // try again when the context opens
       if (!this.voBytes) await this.fetchVo();
       if (!this.voBytes) throw new Error('no voice bytes');
-      this.vo = await this.ctx.decodeAudioData(this.voBytes.slice(0));
+      try { this.vo = await this.ctx.decodeAudioData(this.voBytes.slice(0)); }
+      catch (e) {
+        // the ogg take would not decode here: its mp3 twin, fetched now and decoded once
+        if (this.voFellBack || assetUrl(V.src) === mp3Url(V.src)) throw e;
+        this.voFellBack = true;
+        const res = await fetch(mp3Url(V.src));
+        if (!res.ok) throw new Error(res.status + ' ' + V.src);
+        this.voBytes = await res.arrayBuffer();
+        this.vo = await this.ctx.decodeAudioData(this.voBytes.slice(0));
+      }
       this._sayPending();
     } catch (e) {
       // let a later attempt try again: a decode that failed once is not fatal

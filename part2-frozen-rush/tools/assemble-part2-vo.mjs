@@ -66,7 +66,7 @@ const all = Buffer.concat(parts);
 const input = ['-f', 's16le', '-ar', String(rate), '-ac', '1', '-i', '-'];
 const audioDir = path.join(root, 'game/assets/audio');
 run([...input, '-c:a', 'libmp3lame', '-b:a', '128k', path.join(audioDir, 'vo-lines.mp3')], all);
-run([...input, '-c:a', 'libvorbis', '-q:a', '4', path.join(audioDir, 'vo-lines.ogg')], all);
+run([...input, '-c:a', 'libopus', '-b:a', '40k', '-vbr', 'on', '-application', 'voip', path.join(audioDir, 'vo-lines.ogg')], all);
 fs.writeFileSync(path.join(dir, 'windows.json'), JSON.stringify(windows, null, 2) + '\n');
 console.log(`Appended ${rows.length} lines at ${factor.toFixed(2)}x gain. ${windows.length} windows through ${(samples / rate).toFixed(2)}s.`);
 for (const w of windows) console.log(`${w.id}: [${w.at}, ${w.dur}, [${w.words.join(', ')}]]`);

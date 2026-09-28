@@ -1167,7 +1167,7 @@ a:hover { color: var(--ice-pale); }
      being on the dashes. Translating by the tip's own place in the box lands the tip on
      the point the engine gives, at any size. One image change is one edit here. */
   transform: translate(calc(-1 * var(--tip-x)), calc(-1 * var(--tip-y)));
-  background: url("../assets/ui/icons/touch.png?v=d05ff66d") center / contain no-repeat;
+  background: url("../assets/ui/icons/touch.webp?v=f6d2fb65") center / contain no-repeat;
   pointer-events: none;
   z-index: 5;
   filter: drop-shadow(0 clamp(2px, calc(0.21 * var(--u)), 8px) clamp(4px, calc(0.42 * var(--u)), 16px) rgba(6, 26, 56, 0.45));

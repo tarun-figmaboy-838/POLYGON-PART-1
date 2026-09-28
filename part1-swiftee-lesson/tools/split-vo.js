@@ -57,7 +57,7 @@
  * lagging behind the voice.
  *
  * Encoded as every clip in assets/vo is, straight from the take: mono, 64k mp3 for
- * Safari, Vorbis q1 for everyone else.
+ * Safari, Opus at 40k for everyone else.
  */
 'use strict';
 const fs = require('node:fs');
@@ -191,7 +191,7 @@ cuts.forEach((c) => {
              (c.pad > 0.005 ? ',apad=pad_dur=' + (c.pad / TEMPO).toFixed(3) : '');
   const common = ['-ss', c.start.toFixed(3), '-t', dur.toFixed(3), '-i', wav, '-af', af, '-ac', '1'];
   ff(common.concat(['-c:a', 'libmp3lame', '-b:a', '64k', path.join(VO, c.id + '.mp3')]));
-  ff(common.concat(['-c:a', 'libvorbis', '-q:a', '1', path.join(VO, c.id + '.ogg')]));
+  ff(common.concat(['-c:a', 'libopus', '-b:a', '40k', '-vbr', 'on', '-application', 'voip', path.join(VO, c.id + '.ogg')]));
   timings[c.id] = c.words.map((w) => Math.max(0, Math.round((w.start - c.start) * 1000 / TEMPO - w.lead)));
   c.snaps = c.words.filter((w) => !w.lead).length;
   console.log(c.id.padEnd(6) + ' ' + c.start.toFixed(2).padStart(7) + ' +' + (out + c.pad / TEMPO).toFixed(2) + 's  first word at ' +

@@ -368,7 +368,7 @@
      being on the dashes. Translating by the tip's own place in the box lands the tip on
      the point the engine gives, at any size. One image change is one edit here. */
   translate: calc(-1 * var(--tip-x)) calc(-1 * var(--tip-y));
-  background: url("../assets/ui/icons/touch.png?v=d05ff66d") center / contain no-repeat;
+  background: url("../assets/ui/icons/touch.webp?v=f6d2fb65") center / contain no-repeat;
   filter: drop-shadow(0 clamp(3px, calc(0.31 * var(--u)), 12px) clamp(6px, calc(0.63 * var(--u)), 24px) rgba(4, 20, 44, 0.6));
   pointer-events: none;
 }

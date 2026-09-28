@@ -36,7 +36,7 @@
  * THE LEVEL. Each clip is brought to TARGET LUFS, the level the take's clips
  * are cut at (split-vo.js), so a cheer is never louder than the line before
  * it — and written straight out in the game's formats (mono 64k mp3 for
- * Safari, Vorbis q1 for everyone else), so no encode step follows.
+ * Safari, Opus at 40k for everyone else), so no encode step follows.
  *
  * THE WORDS SHOWN AND THE WORDS SPOKEN can differ ("Atleast" is said "at
  * least"; "Hmm…" is said "Hmm"). Each word of the bubble takes the start of
@@ -306,7 +306,7 @@ function cues(text, heard) {
     if (lv.peak != null) gain = Math.min(gain, PEAK_DB - lv.peak);
     const af = 'volume=' + gain.toFixed(2) + 'dB';
     ff(['-i', t.file, '-af', af, '-ac', '1', '-c:a', 'libmp3lame', '-b:a', '64k', path.join(VO, l.id + '.mp3')]);
-    ff(['-i', t.file, '-af', af, '-ac', '1', '-c:a', 'libvorbis', '-q:a', '1', path.join(VO, l.id + '.ogg')]);
+    ff(['-i', t.file, '-af', af, '-ac', '1', '-c:a', 'libopus', '-b:a', '40k', '-vbr', 'on', '-application', 'voip', path.join(VO, l.id + '.ogg')]);
     if (t.file !== TMP) { try { fs.unlinkSync(t.file); } catch (e) {} }
     const c0 = cues(l.text, res.words);
     const c = c0 ? snapCues(c0, path.join(VO, l.id + '.ogg')) : null;

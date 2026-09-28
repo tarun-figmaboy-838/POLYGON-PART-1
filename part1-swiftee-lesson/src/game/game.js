@@ -3914,7 +3914,7 @@
       var re = /"(assets\/[^"]+)":\s*"([0-9a-f]+)"/g;
       while ((m = re.exec(src))) v[m[1]] = m[2];
       var ogg = false;
-      try { ogg = !!new Audio().canPlayType('audio/ogg; codecs="vorbis"'); } catch (e) {}
+      try { ogg = !!new Audio().canPlayType('audio/ogg; codecs="opus"'); } catch (e) {}   // as engine.js playsOgg asks
       var w = Math.min(global.innerWidth, global.innerHeight * 16 / 9);
       var mem = global.navigator && navigator.deviceMemory;
       var hd = w * (global.devicePixelRatio || 1) / 1920 >= 1.15 && w >= 1000 && !(mem && mem < 4);

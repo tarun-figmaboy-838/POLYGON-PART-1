@@ -16,17 +16,22 @@
   'use strict';
   var BASE = 'assets/vo/';
   // THE FORMAT THE BROWSER CAN ACTUALLY PLAY. Every clip is written twice —
-  // Vorbis in an .ogg, which Chrome, Firefox and Android take and which is
-  // about half the size, and an .mp3, which Safari and iOS are the only ones
-  // that need. Asking canPlayType once means nobody downloads the format
-  // they cannot use. Unknown answers fall back to mp3, which plays anywhere.
+  // Opus in an .ogg (tools/make-opus.js), which Chrome, Edge, Firefox and
+  // Android play and which is under half the size, and an .mp3 for everyone
+  // else (Safari, unless it says it plays Opus in Ogg). Asking canPlayType
+  // once means nobody downloads the format they cannot use. Unknown answers
+  // fall back to mp3, which plays anywhere.
   var EXT = (function () {
     try {
       var a = document.createElement('audio');
-      if (a.canPlayType && a.canPlayType('audio/ogg; codecs=\"vorbis\"')) return '.ogg';
+      if (a.canPlayType && a.canPlayType('audio/ogg; codecs=\"opus\"')) return '.ogg';
     } catch (e) {}
     return '.mp3';
   }());
+  /* AND A BROWSER THAT SAID YES AND WAS WRONG hears the mp3: the first .ogg that will not
+     play is retried as the mp3 (play, start), and every clip after it is asked for as one. */
+  var oggFailed = false;
+  function ext() { return oggFailed ? '.mp3' : EXT; }
   var current = null, known = {};   // known[id] = false once a clip has failed to load
   var liveId = null;                // the id of the clip `current` is playing
   // THE INDEX. assets/vo/index.json lists the clips that exist; only those
@@ -100,7 +105,7 @@
   function url(id) {
     var v = revs[id];
     // (off the disk there is no cache to outwit, and no query on a file path)
-    return BASE + id + EXT + (v && !offDisk ? '?v=' + v : '');
+    return BASE + id + ext() + (v && !offDisk ? '?v=' + v : '');
   }
 
   function muted() { return !!(global.SFX && SFX.isMuted && SFX.isMuted()); }
@@ -228,13 +233,27 @@
     } else {
       try { a = new Audio(url(id)); } catch (e) { return null; }
     }
+    return start(a, id);
+  }
+
+  /** Put one element on air for a line: its end, its failure, and the play itself. */
+  function start(a, id) {
     a.preload = 'auto';
     a.volume = 0.95;
     if (hiddenNow()) a.muted = true;
     a.addEventListener('error', function () {
+      if (current !== a) return;              // an element already replaced is nothing to us
+      // the Opus file would not play here: once, the mp3 of the same line (and mp3 from now on)
+      if (!oggFailed && EXT === '.ogg' && /\.ogg(\?|$)/.test(a.src || '')) {
+        oggFailed = true;
+        if (global.console) console.warn('[VO] ogg will not play here, using mp3: ' + id);
+        var b = null;
+        try { b = new Audio(url(id)); } catch (e) { b = null; }
+        if (b) { start(b, id); return; }
+      }
       known[id] = false;
       if (global.console) console.warn('[VO] missing or failed: ' + url(id));
-      if (current === a) { current = null; liveId = null; voiceBus(false); done(); }
+      current = null; liveId = null; voiceBus(false); done();
     });
     a.addEventListener('ended', function () { if (current === a) { current = null; liveId = null; voiceBus(false); done(); } });
     current = a;
@@ -276,7 +295,11 @@
       try {
         var a = new Audio(url(id));
         a.preload = 'auto';
-        a.addEventListener('error', function () { known[id] = false; delete warm[id]; });
+        a.addEventListener('error', function () {
+          delete warm[id];
+          if (!oggFailed && EXT === '.ogg') { oggFailed = true; return; }   // play() asks for the mp3 now
+          known[id] = false;
+        });
         warm[id] = a;
         warmOrder.push(id);
         while (warmOrder.length > WARM_MAX) { var old = warmOrder.shift(); if (old !== id) delete warm[old]; }

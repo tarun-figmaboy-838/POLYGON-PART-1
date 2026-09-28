@@ -155,7 +155,7 @@ test.describe('assets', () => {
          carry their own rim, gloss and lettering, and their pressed state is drawn
          rather than restyled. A vector version of one of those is not a thing that
          exists. Everything else under assets/ui stays SVG. */
-      const RASTER_OK = ['assets/ui/icons/touch.png',
+      const RASTER_OK = ['assets/ui/icons/touch.webp',
                          'assets/ui/plank-l.webp', 'assets/ui/plank-m.webp', 'assets/ui/plank-r.webp',
                          'assets/ui/btn-normal.webp', 'assets/ui/btn-pressed.webp',
                          'assets/ui/btn-play.webp',
@@ -198,13 +198,13 @@ test.describe('assets', () => {
         const mp3 = await fetch('/' + src, { method: 'HEAD' });
         if (!mp3.ok) out.missingMp3.push(src);
       }
-      out.playsOgg = !!new Audio().canPlayType('audio/ogg; codecs="vorbis"');
+      out.playsOgg = !!new Audio().canPlayType('audio/ogg; codecs="opus"');   // as engine.js playsOgg asks
       return out;
     });
 
     expect(r.notMp3, 'the config names its audio by the fallback file').toEqual([]);
     expect(r.missingOgg, 'every cue has an ogg to be served').toEqual([]);
-    /* THE MP3 IS NOT DEAD WEIGHT. Safari only plays ogg from 17.4, so an iPad on iOS 16
+    /* THE MP3 IS NOT DEAD WEIGHT. Safari plays Opus-in-Ogg only lately, so an older iPad
        needs the mp3 to have any sound at all. Both files must exist; only one is fetched. */
     expect(r.missingMp3, 'and the fallback the old iPad needs is still there').toEqual([]);
 
