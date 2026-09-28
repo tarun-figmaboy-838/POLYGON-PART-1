@@ -148,6 +148,49 @@ async function act(spec){
 
   // react to every input request the director makes
   let pending=null; w.Game.director.on('input',({spec})=>{ pending=spec; });
+
+  /* THE STORY COMES FIRST (src/story/story.js): Momo and Popo, five scenes, each moved on
+     with Next — and only once it has been told — then the lesson's screen 1, once. The
+     script is written out here on purpose: it is the approved text, and the story must
+     say exactly it, by exactly these speakers, in exactly this order. */
+  const SCRIPT=[
+    [1,'narrator','It was a great day, and Momo and Popo were deciding what to do.'],
+    [1,'momo','Popo, let’s go for a picnic!'],
+    [1,'popo','Great idea, Momo!'],
+    [2,'momo','I’ll bring the snacks!'],
+    [2,'popo','I’ll go ahead and find us a nice spot.'],
+    [3,'narrator','Momo wanted to get there quickly, so he took the shortest route— through Frozen Pass.'],
+    [4,'momo','This path looks trickier than last time!'],
+    [5,'narrator','Momo needs your help to reach Popo. But first, you’ll need to learn a little more about polygons.']
+  ];
+  let lessonDuringStory=false, screen1Starts=0;
+  w.Game.director.on('start',()=>{ if(w.Story&&w.Story.active) lessonDuringStory=true; if(w.Game.screen===0) screen1Starts++; });
+  await until(()=>w.Story&&w.Story.active, 5000);
+  const storyRan=!!(w.Story&&w.Story.active);
+  const scenesSeen=[], presses=[]; let lastScene=0, earlyNext=false, refused=0, acceptedEarly=0;
+  const ts=Date.now();
+  while(w.Story&&w.Story.active&&Date.now()-ts<60000){
+    const s=w.Story.state;
+    if(s.scene!==lastScene){ scenesSeen.push(s.scene); lastScene=s.scene; }
+    if(d.querySelector('#next.show')&&!s.canAdvance) earlyNext=true;
+    // a press while a line is still being told does nothing
+    if(s.phase==='dialogue'&&!s.canAdvance){ if(w.Story.next()) acceptedEarly++; else refused++; }
+    if(s.canAdvance&&d.querySelector('#next.show')){
+      presses.push(s.scene);
+      const nb=d.getElementById('next'); nb.click(); nb.click();   // and a double tap is one press
+    }
+    await sleep(10);
+  }
+  const told=w.Story?w.Story.state.lines.map(l=>[l.scene,l.who,l.text]):[];
+  t('the story plays before the lesson: all five scenes, in order, each once', storyRan&&JSON.stringify(scenesSeen)==='[1,2,3,4,5]', JSON.stringify(scenesSeen));
+  t('every line of the script, word for word, by its own speaker, in order', JSON.stringify(told)===JSON.stringify(SCRIPT), JSON.stringify(told));
+  t('Next only once a scene is told; an early press and a second tap change nothing',
+    !earlyNext&&refused>0&&acceptedEarly===0&&JSON.stringify(presses)==='[1,2,3,4,5]', JSON.stringify({earlyNext,refused,acceptedEarly,presses}));
+  await until(()=>w.Game.screen===0, 5000);
+  t('then the lesson, from screen 1, once, and not while the story was up',
+    !(w.Story&&w.Story.active)&&!lessonDuringStory&&w.Game.screen===0&&screen1Starts===1&&d.getElementById('story').hidden&&!d.getElementById('game').classList.contains('story-on'),
+    JSON.stringify({lessonDuringStory,screen:w.Game.screen,screen1Starts,hidden:d.getElementById('story').hidden}));
+
   const N=w.Screens.list.length; const t0=Date.now();
   while(!d.querySelector('#hud .replay.show') && Date.now()-t0<180000){
     if(pending){ const sp=pending; pending=null; try{ await act(sp); }catch(e){ errors.push('act '+sp.type+' on screen '+w.Game.screen+': '+e.message); } }

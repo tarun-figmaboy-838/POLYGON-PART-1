@@ -42,7 +42,9 @@ const t = (label, cond, extra) => {
 };
 
 function world() {
-  const dom = new JSDOM(html, { runScripts: 'outside-only', pretendToBeVisual: true, url: 'http://localhost/' });
+  // ?story=0: this is about the connect screen, not the Momo and Popo story before the
+  // lesson (tests/playthrough.jsdom.js plays that), so Start goes straight to screen 1
+  const dom = new JSDOM(html, { runScripts: 'outside-only', pretendToBeVisual: true, url: 'http://localhost/?story=0' });
   const w = dom.window, d = w.document;
   const anim = () => ({ finished: Promise.resolve(), cancel() {}, playbackRate: 1, effect: { getKeyframes: () => [{ composite: 'add' }] } });
   w.Element.prototype.animate = function () { return anim(); };

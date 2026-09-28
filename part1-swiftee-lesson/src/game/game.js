@@ -843,6 +843,8 @@
       var sw = 1000 * s;
       g0.style.setProperty('--svw', (sw / 100).toFixed(3) + 'px');
       g0.style.setProperty('--u', Math.max(0.7, Math.min(1.4, sw / 1920)).toFixed(4));
+      // the story's paintings are drawn at their own 1672 wide and scaled onto this board
+      g0.style.setProperty('--story-k', (sw / 1672).toFixed(5));
     }
   }
 
@@ -3941,6 +3943,23 @@
   }
 
   function restart() {
+    resetLesson();
+    setTimeout(function () { play(0); }, 200);
+  }
+  /* THE STORY AGAIN, then the lesson from screen 1: the review tool's "Story" (wireJump).
+     Play again and the HUD's restart start the lesson itself, as they always have — the
+     story opens the game once, and a child who has heard it is not made to sit through it
+     again to replay the lesson. */
+  function restartStory() {
+    if (!global.Story || !Story.start) { restart(); return; }
+    resetLesson();
+    current = -1;
+    if (global.Swiftee && Swiftee.visible) Swiftee.visible(false);   // he flies in on screen 1, after it
+    Story.start({ lift: function () {}, done: function () { play(0); } });
+  }
+  function resetLesson() {
+    // a restart from inside the story (the review tool) ends it first
+    if (global.Story && Story.active) Story.stop();
     // THE OLD RUN ENDS NOW, not when the new one starts 200 ms later: a
     // restart pressed during the snow let the old loop's next screen, and
     // its voice, play over the new opening
@@ -3962,7 +3981,6 @@
     leaveReady();   // (playGen has moved on, so a snow already falling stays here too)
     Stage.apply({ kind: 'vista' });
     Swiftee.place('left', 'large');
-    setTimeout(function () { play(0); }, 200);
   }
 
   /* ------------------------------------------------------------------ *
@@ -4111,9 +4129,11 @@
       if (global.VO && VO.playing) { try { VO.playing.muted = m; } catch (e) {} }
       this.classList.toggle('on', m); this.setAttribute('aria-pressed', String(m)); saveAudio();
     });
-    // on the finale, Next opens the hand-over screen; everywhere else it reads on
+    // on the finale, Next opens the hand-over screen; during the story it turns its page;
+    // everywhere else it reads on
     var onNext = function () {
       if (global.SFX) SFX.play('select');
+      if (global.Story && Story.active) { Story.next(); return; }
       if (finaleOn) { readyScene(); return; }
       if (global.Input) Input.advance();
     };
@@ -4146,6 +4166,11 @@
       document.fonts.ready.then(relayout, function () {});
     }
 
+    /* THE STORY BEFORE THE LESSON (src/story/story.js): its layer is built and its
+       paintings start loading now, behind the title, so they are in when Start is pressed.
+       It moves on with this game's own Next, at this game's own pace. */
+    if (global.Story && Story.mount) Story.mount({ root: root, next: showNext, pace: paceScale });
+
     loadEl.classList.add('ready');
     if (global.TitleFx) TitleFx.mount(loadEl);
 
@@ -4176,6 +4201,8 @@
     });
 
     startEl.addEventListener('click', function () {
+      // once the story is under way, a second tap on Play (the title is still lifting) is nothing
+      if (global.Story && Story.active) return;
       // The gesture that unlocks audio is also the first thing that should
       // make a sound. Unlock, then play on the same tick — the context is
       // resumed by the gesture, so the cue lands with the press rather than
@@ -4190,16 +4217,35 @@
       // the music bus, so the mute button and every duck already reach it.
       if (global.Music) Music.start();
       if (global.TitleFx) { TitleFx.pressUp(); TitleFx.press(); }
-      // A beat before the curtain, so the burst is something the child sees
-      // rather than something the transition eats.
-      setTimeout(function () { loadEl.classList.add('gone'); }, 120);
-      // The title screen's weather is thirty infinite animations. Nothing can
-      // see them once the curtain is down, so they are cancelled rather than
-      // left running behind the lesson for the rest of the session.
-      setTimeout(function () { if (global.TitleFx) TitleFx.stop(); }, 640);
+      var curtain = function () {
+        // A beat before the curtain, so the burst is something the child sees
+        // rather than something the transition eats.
+        setTimeout(function () { loadEl.classList.add('gone'); }, 120);
+        // The title screen's weather is thirty infinite animations. Nothing can
+        // see them once the curtain is down, so they are cancelled rather than
+        // left running behind the lesson for the rest of the session.
+        setTimeout(function () { if (global.TitleFx) TitleFx.stop(); }, 640);
+      };
+      /* THE STORY COMES FIRST: Momo and Popo, five scenes, then Swiftee's screen 1. The
+         title lifts once the first painting is in (the story calls curtain), and the
+         lesson starts when the story ends — once. Without it (?story=0, or the review
+         tool jumping straight to a screen) Start goes on exactly as it always has. */
+      var skip = storySkip; storySkip = false;
+      if (!skip && global.Story && Story.enabled && Story.enabled()) {
+        var lifted = false;
+        Story.start({
+          lift: function () { if (!lifted) { lifted = true; curtain(); } },
+          done: function () { play(0); }
+        });
+        return;
+      }
+      curtain();
       setTimeout(function () { play(0); }, 430);
     });
   }
+  /* A jump from the title in the review tool goes straight to its screen, not through the
+     story first (wireJump). */
+  var storySkip = false;
 
   /**
    * THE SCREEN PICKER — a review tool, off unless the address asks for it.
@@ -4235,6 +4281,8 @@
    */
   function goTo(n) {
     if (!(n >= 0 && n < Screens.list.length)) return;
+    // a jump from inside the story ends it here: no Scene 5 hand-over after it
+    if (global.Story && Story.active) Story.stop();
     playGen++; popGen++; popping = false; cheerUntil = 0; holdForReply = false;
     if (Stage.hold) Stage.hold(false);
     flightGen++; entering = null;
@@ -4309,6 +4357,13 @@
     } catch (e) { dev = false; }
     if (!dev) { var host = $('#jump'); if (host) host.remove(); return; }
     var host2 = $('#jump'); if (host2) host2.removeAttribute('hidden');
+    // the Momo and Popo story that opens the game, from its first scene (restartStory)
+    if (global.Story && Story.enabled && Story.enabled()) {
+      var so = document.createElement('option');
+      so.value = 'story';
+      so.textContent = '0. story (Momo & Popo)';
+      box.appendChild(so);
+    }
     Screens.list.forEach(function (s, i) {
       var o = document.createElement('option');
       o.value = i;
@@ -4321,15 +4376,22 @@
     function jump(n) {
       n = Math.max(0, Math.min(Screens.list.length - 1, n));
       if (loadEl && !loadEl.classList.contains('gone')) {
+        // straight to the screen asked for, not through the story first
+        storySkip = true;
         var s = $('#start'); if (s) s.click();
         setTimeout(function () { goTo(n); }, 600);
       } else goTo(n);
     }
     box.addEventListener('change', function () {
-      // The picker and the Back button change screen the same way: goTo().
-      var n = +box.value;
       box.blur();                       // so the arrow keys go back to the lesson
-      jump(n);
+      // the story: from the title that is Start itself; from the lesson, the story again
+      if (box.value === 'story') {
+        if (loadEl && !loadEl.classList.contains('gone')) { var s0 = $('#start'); if (s0) s0.click(); }
+        else restartStory();
+        return;
+      }
+      // The picker and the Back button change screen the same way: goTo().
+      jump(+box.value);
     });
     // one screen back or on, from wherever the lesson is
     Array.prototype.forEach.call(host2.querySelectorAll('.dev-step'), function (b) {

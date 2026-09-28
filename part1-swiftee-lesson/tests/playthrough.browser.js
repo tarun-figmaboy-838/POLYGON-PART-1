@@ -74,7 +74,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   };
 
   const { server, port } = await serve();
-  const URL = `http://127.0.0.1:${port}/index.html`;
+  // ?story=0: this plays the lesson; the story before it is played by tests/playthrough.jsdom.js
+  const URL = `http://127.0.0.1:${port}/index.html?story=0`;
 
   const browser = await chromium.launch({
     channel: 'chrome',

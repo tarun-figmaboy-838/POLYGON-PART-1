@@ -2,13 +2,32 @@
 
 _Generated from the storyboard by `node tools/vo-script.js`; do not edit by hand._
 
-Every line Swiftee says, **in the order a child hears it**, with the file the game plays. Save each clip as `assets/vo/<id>.mp3`, then run `npm run build:vo`: the game plays it as the words appear and paces the bubbles by the recording. A clip that is not there yet is silent, so they can be added a few at a time.
+Every line the game says — the story’s three voices first, then Swiftee’s — **in the order a child hears it**, with the file the game plays. Save each clip as `assets/vo/<id>.mp3`, then run `npm run build:vo`: the game plays it as the words appear and paces the bubbles by the recording. A clip that is not there yet is silent, so they can be added a few at a time.
 
 **Voice:** Swiftee, a small, warm, playful teal bird talking to a seven-year-old. Clear, unhurried and smiling, never shouty. Lines end with a smile, not a drop.
 
 **Files:** mono MP3, 44.1 kHz, 128 kbps or better, about −16 LUFS, no more than 0.2 s of silence at either end. Aim for about 0.4 s per word plus 0.4 s.
 
 **Breaths:** record every line as ONE clip, read naturally, with a short breath at each `/` in the Breaths column. On screen each sentence is one bubble; the breaths are where the words pause inside it.
+
+## The story (8), before the lesson — in its own voices
+
+Five painted scenes of Momo and Popo play between Start and Swiftee’s first screen. None of these lines is Swiftee’s; each speaker has a voice of their own:
+
+- **narrator** — the storyteller: warm, clear and unhurried, a grown-up reading a picture book aloud
+- **momo** — Momo the mammoth: a cute cartoon kid, big-hearted and eager
+- **popo** — Popo the polar bear: a cute cartoon kid, bright and bouncy, plainly not the same child as Momo
+
+| # | Scene | Speaker | File | Line | Recorded |
+|---|-------|---------|------|------|----------|
+| 1 | 1 | narrator | `assets/vo/st1-narrator.mp3` | It was a great day, and Momo and Popo were deciding what to do. | yes |
+| 2 | 1 | momo | `assets/vo/st1-momo.mp3` | Popo, let’s go for a picnic! | yes |
+| 3 | 1 | popo | `assets/vo/st1-popo.mp3` | Great idea, Momo! | yes |
+| 4 | 2 | momo | `assets/vo/st2-momo.mp3` | I’ll bring the snacks! | yes |
+| 5 | 2 | popo | `assets/vo/st2-popo.mp3` | I’ll go ahead and find us a nice spot. | yes |
+| 6 | 3 | narrator | `assets/vo/st3-narrator.mp3` | Momo wanted to get there quickly, so he took the shortest route— through Frozen Pass. | yes |
+| 7 | 4 | momo | `assets/vo/st4-momo.mp3` | This path looks trickier than last time! | yes |
+| 8 | 5 | narrator | `assets/vo/st5-narrator.mp3` | Momo needs your help to reach Popo. But first, you’ll need to learn a little more about polygons. | yes |
 
 ## Lesson lines (50), in timeline order
 

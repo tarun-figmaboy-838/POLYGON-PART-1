@@ -86,7 +86,8 @@ const LUM = `(function (c) {
 
   console.log('\n  QA — the game played badly, on purpose\n');
 
-  await page.goto(`http://127.0.0.1:${port}/index.html`);
+  // ?story=0: the lesson, played badly; the story before it is tests/playthrough.jsdom.js's
+  await page.goto(`http://127.0.0.1:${port}/index.html?story=0`);
   await page.waitForSelector('#loading.ready #start', { timeout: 30000 });
 
   /* ---- 1. the title screen, mashed ------------------------------- */

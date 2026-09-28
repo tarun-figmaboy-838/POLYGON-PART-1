@@ -15,7 +15,8 @@
  * cannot drift, because a line the game cannot reach is not in the list and a
  * line it can reach always is.
  *
- * Three places carry a clip id:
+ * Four places carry a clip id:
+ *   src/story/story-data.js  the story before the lesson: narrator, Momo, Popo
  *   src/game/screens.js   every beat with `vo:` — the narration and the
  *                         instructions, nested inside on/otherwise/feedback
  *   src/game/game.js      PRAISE and NUDGE, the answers to right and wrong
@@ -78,8 +79,27 @@ function fromPairs(file, where) {
   return out;
 }
 
+/* THE STORY BEFORE THE LESSON (src/story/story-data.js): its lines, each with who says
+   it — the narrator, Momo or Popo, who are not Swiftee and do not speak in his voice
+   (tools/make-vo.js STORY). Run the same way as the deck: a plain script over window. */
+function fromStory() {
+  const g = {};
+  const src = fs.readFileSync(path.join(ROOT, 'src', 'story', 'story-data.js'), 'utf8');
+  new Function('window', src)(g);
+  const out = [];
+  ((g.StoryData && g.StoryData.scenes) || []).forEach((s, i) => {
+    (s.lines || []).forEach((l) => {
+      if (!l.vo) return;
+      out.push({ id: l.vo, text: String(l.text), kind: 'story', speaker: l.who,
+                 where: 'story scene ' + (i + 1) + ', ' + l.who });
+    });
+  });
+  return out;
+}
+
 function lines() {
-  const all = fromDeck()
+  const all = fromStory()
+    .concat(fromDeck())
     .concat(fromPairs('game.js', 'said after an answer (game.js)'))
     .concat(fromPairs('stage.js', 'said when a try falls short (stage.js)'));
   // one row per id; keep the first place it is used and note the rest
