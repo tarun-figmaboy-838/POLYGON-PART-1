@@ -623,6 +623,7 @@
   // one only speaks — one face per answer, not two in a row.
   // `o.final`: the question's own verdict (its input is over), after any
   // per-tap ones. `o.tries`: how many times THIS card has now been missed.
+  var replyUp = null;   // the reply react() last started: { kind, teach, gen } (gen: its pop)
   function react(kind, said, o) {
     o = o || {};
     if (kind === 'wrong' && !o.late) { missesHere++; streak = 0; cheeredAt = 0; }
@@ -636,6 +637,12 @@
          lesson's next line knows to wait for him (replying()). */
       var plan = replyFor(kind, said, o);
       if (plan) {
+        /* A REPLY THAT NOW SAYS THE OPPOSITE GOES WITH THE TAP. Where a card can be pressed
+           while he is still answering the last one (multi-select: Stage tapThrough), his
+           "Try again!" left up over a card that has just turned green — or a cheer over a red
+           one — contradicted the verdict until his next line came. Not a teaching moment:
+           that one has a card to put back first. */
+        if (popping && replyUp && replyUp.gen === popGen && replyUp.kind !== kind && !replyUp.teach) { popGen++; popping = false; say(null); }
         if (inputLive) holdInput(true);
         cheerUntil = Math.max(cheerUntil, Date.now() + REACT_MS + 400);
       }
@@ -679,9 +686,9 @@
       } catch (e) {}
     };
     if (!reply) { face(); return; }
-    if (reply.teach) { pop(reply.lines, teachHooks(reply.teach)); return; }
-    reply.lines[0].face = face;
-    pop(reply.lines);
+    if (reply.teach) pop(reply.lines, teachHooks(reply.teach));
+    else { reply.lines[0].face = face; pop(reply.lines); }
+    replyUp = { kind: kind, teach: !!reply.teach, gen: popGen };
   }
 
   /* THE TEACHING MOMENT'S SHAPE (pop hooks): the card lifted to the middle
@@ -4290,8 +4297,10 @@
       .then(function () { P.seal(); });
     P.done.then(ready);
   }
-  // the faces the lesson's words are set in (index.html's Google Fonts request)
-  var FACES = ['600 1em Nunito', '700 1em Nunito', '800 1em Nunito', '500 1em Fredoka', '600 1em Fredoka', '700 1em Fredoka'];
+  /* the faces the lesson's words are set in (index.html's Google Fonts request) — only those a
+     line is actually drawn in: measured over every screen, the story and the finale, nothing is
+     set in Nunito 600 or Fredoka 500, so neither is requested any more (two files fewer) */
+  var FACES = ['700 1em Nunito', '800 1em Nunito', '600 1em Fredoka', '700 1em Fredoka'];
 
   /**
    * THE SCREEN PICKER — a review tool, off unless the address asks for it.

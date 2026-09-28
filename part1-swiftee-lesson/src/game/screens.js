@@ -70,10 +70,11 @@
    * the child made concave, the angles matching, the pentagon built — gets
    * the full celebration, or another face as big (`face`). Every answer
    * celebrating the same way is how a celebration stops meaning anything. */
-  function correct(extra, face) {
+  function correct(extra, face, o) {
     extra = extra || [];
     var sounds = extra.some(function (b) { return b && b.sfx; });
-    var bursts = extra.some(function (b) { return b && b.juice === 'confetti'; });
+    // (o.burst false: each right answer already threw its own as it was given — perTap)
+    var bursts = (o && o.burst === false) || extra.some(function (b) { return b && b.juice === 'confetti'; });
     // A BURST FROM THE ANSWER. The audit's child got a chime and a face for a
     // right answer and nothing that said so on the screen; now the answer
     // throws a small burst from its own edges — one, from the thing that
@@ -223,9 +224,15 @@
         // Multi-select: each tap is judged on its own so a child learns per
         // shape, and the screen completes when both polygons are selected.
         { input: { type: 'multi-select', until: 'all-correct-selected' } },
-        { feedback: correct() }
+        // no second burst when the last polygon is found: its own press already threw one
+        { feedback: correct([], null, { burst: false }) }
       ],
-      perTap: { correct: [{ juice: 'pop', target: 'option' }, { sfx: 'correct' }],
+      /* EVERY RIGHT CARD CELEBRATES ITSELF, as it is pressed: it glows green, pops, rings and
+         throws a burst of confetti from behind its own edges — one burst per card, only from
+         the card that was pressed (a found card cannot be pressed again). A wrong card glows
+         red and shrinks back. */
+      perTap: { correct: [{ juice: 'pop', target: 'option' }, { sfx: 'correct' },
+                          { juice: 'confetti', target: 'option', count: 18, fromEdge: true }],
                 wrong:   WRONG }
     },
 

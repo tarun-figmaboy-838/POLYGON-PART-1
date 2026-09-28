@@ -3632,9 +3632,19 @@ class AudioManager {
       g.gain.value = Math.min(1, (CFG.vo.gain || 1)) * this.duck;
       src.connect(g); g.connect(this.master);
       src.start(this.ctx.currentTime, L.at, L.dur);
-      src.onended = () => { if (this.saying && this.saying.src === src) done(); };
+      src.onended = () => { if (this.saying && this.saying.src === src) { clearTimeout(this.saying.timer); done(); } };
       this.setDuck(0.35);
-      this.saying = { id, at: L.at, src, gain: g, startedAt: this.ctx.currentTime };
+      /* AND A WATCHDOG, because only `ended` ends a line, and the line in progress holds every
+         line after it (above): an `ended` that never came would leave the voice silent for the
+         rest of the run. It keeps the CONTEXT's time, not the wall's, so a context that is only
+         suspended (a hidden tab) is waited for rather than talked over; once the line's length
+         and a second and a half have really played out, it ends the line itself. */
+      const watch = () => {
+        if (!this.saying || this.saying.src !== src) return;
+        if (this.ctx.state === 'running' && this.ctx.currentTime >= this.saying.startedAt + L.dur + 1.5) { done(); return; }
+        this.saying.timer = setTimeout(watch, 1000);
+      };
+      this.saying = { id, at: L.at, src, gain: g, startedAt: this.ctx.currentTime, timer: setTimeout(watch, (L.dur + 1.5) * 1000) };
       return L.dur;
     } catch (e) { return 0; }
   }
@@ -16723,9 +16733,11 @@ const wantScale = () => {
    in a fallback face for a moment. document.fonts.load starts the fetch now, behind the
    cover. The two pressed button pictures used to be <link rel=preload>, which Chrome
    warns about on every load because they are not painted within seconds; an Image()
-   fetch is the same warm-up without the warning. */
+   fetch is the same warm-up without the warning. The three weights are the only ones any
+   text in the game is set in (index.html asks Google Fonts for these three and no more):
+   a fourth warmed here is a download nothing draws. */
 if (document.fonts && document.fonts.load) {
-  for (const w of [600, 700, 800, 900]) document.fonts.load(w + ' 20px "Baloo 2"').catch(() => {});
+  for (const w of [700, 800, 900]) document.fonts.load(w + ' 20px "Baloo 2"').catch(() => {});
 }
 /* Nothing to warm here any more: the PLAY button is a single take, so there is no second
    picture that has to be in the cache before the first press. */

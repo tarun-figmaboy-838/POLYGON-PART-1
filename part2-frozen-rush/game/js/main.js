@@ -152,9 +152,11 @@ const wantScale = () => {
    in a fallback face for a moment. document.fonts.load starts the fetch now, behind the
    cover. The two pressed button pictures used to be <link rel=preload>, which Chrome
    warns about on every load because they are not painted within seconds; an Image()
-   fetch is the same warm-up without the warning. */
+   fetch is the same warm-up without the warning. The three weights are the only ones any
+   text in the game is set in (index.html asks Google Fonts for these three and no more):
+   a fourth warmed here is a download nothing draws. */
 if (document.fonts && document.fonts.load) {
-  for (const w of [600, 700, 800, 900]) document.fonts.load(w + ' 20px "Baloo 2"').catch(() => {});
+  for (const w of [700, 800, 900]) document.fonts.load(w + ' 20px "Baloo 2"').catch(() => {});
 }
 /* Nothing to warm here any more: the PLAY button is a single take, so there is no second
    picture that has to be in the cache before the first press. */

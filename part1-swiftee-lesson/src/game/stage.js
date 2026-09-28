@@ -538,7 +538,17 @@
     container.appendChild(svg);
     // a finger on the glass: while it is down the board is the child's, and
     // a vocabulary word does not light anything under their hand (emphasize)
-    svg.addEventListener('pointerdown', function (e) { if (holdOn) { e.stopPropagation(); e.preventDefault(); } }, true);
+    /* THE HOLD WHILE HE ANSWERS swallows a press — except on a card of a choose-all question
+       (multi-select, st.tapThrough). There each card is its own answer, and a child who has
+       found one polygon reaches straight for the next: that press was swallowed while he was
+       still saying "Great job!", so the second right card never lit up, which read as the
+       green glow being gone. Every card press is answered on the card, at once. */
+    svg.addEventListener('pointerdown', function (e) {
+      if (!holdOn) return;
+      var through = st.tapThrough;
+      for (var t = e.target; through && t && t !== svg; t = t.parentNode) if (through.indexOf(t) >= 0) return;
+      e.stopPropagation(); e.preventDefault();
+    }, true);
     svg.addEventListener('pointerdown', function () { pressed = true; });
     var lift = function () { pressed = false; };
     (container.ownerDocument && container.ownerDocument.defaultView || global).addEventListener('pointerup', lift);
@@ -3610,12 +3620,8 @@
         if (state === 'correct') g.classList.add('mark-good');
         if (state === 'wrong') g.classList.add('mark-bad');
       }
-      // A GLINT, NOT A PARTY. One right card among four is not a milestone;
-      // the confetti is kept for the moments that are (a sort finished, a
-      // shape built, the lesson over), so those still feel like something.
-      if (state === 'correct' && global.Juice && Juice.sparkle && !reduced()) {
-        try { Juice.sparkle(g); } catch (e) {}
-      }
+      // (a right card's confetti bursts from its own edges as it is pressed: the screen's
+      // perTap in screens.js — one burst, from the card that earned it)
       if (state && !reduced() && g.animate) {
         g.style.transformBox = 'fill-box';
         g.style.transformOrigin = 'center';
@@ -5885,10 +5891,16 @@
           pulse: function () { return pulseHint(inPlay()); },
           demo: function () { return pulseHint(inPlay(), { strong: true }); }
         });
+        // every card answers its own press, even while he is still speaking (see the hold, mount)
+        st.tapThrough = st.cards.slice();
+        cleanup.push(function () { st.tapThrough = null; });
         st.cards.forEach(function (c) {
           c.style.cursor = 'pointer';
           on(c, 'pointerdown', function (e) {
-            e.preventDefault(); if (c._done || c._off) return; st.lastEl = c;
+            e.preventDefault(); if (c._done || c._off) return;
+            // ONE PRESS, ONE ANSWER: a double click on a wrong card is one miss, not two
+            var at = Date.now(); if (c._pressedAt && at - c._pressedAt < 450) return; c._pressedAt = at;
+            st.lastEl = c;
             evt('answer:selected', { option: c._opt.id, correct: !!c._opt.correct });
             if (c._opt.correct) {
               c._done = true; got++; c.style.cursor = '';
@@ -5907,7 +5919,8 @@
               var out = c._misses >= 2;
               if (c._card) c._card._mark('wrong');
               if (out) { c._off = true; c.style.cursor = ''; c.style.pointerEvents = 'none'; }
-              later(500, function () {
+              // the red stays up long enough to be seen (it was half a second)
+              later(1100, function () {
                 if (c._card) c._card._mark(null);
                 // (the entrance left an inline opacity on it; the class decides now)
                 if (out && c.classList) { c.style.opacity = ''; c.classList.add('card-off'); }

@@ -1017,8 +1017,8 @@ a:hover { color: var(--ice-pale); }
 /* NO JUMP BUTTON — the stage is the control (see index.html). About ninety lines of
    rules went with it: the two-state art, the pressed swap, the hover light, the face and
    its unused label, the expanding tap ring, the focus outline and the pulse. They are not
-   parked here commented out; the art pair is still in assets/ui and tools/make-buttons.mjs
-   still knows how to rebuild it, which is the only part worth keeping. */
+   parked here commented out, and the art pair is gone from assets/ui too (nothing drew it);
+   tools/make-buttons.mjs still knows how to rebuild it, which is the only part worth keeping. */
 
 /* ---------- overlays ---------- */
 .overlay {
