@@ -14393,6 +14393,11 @@ class Hud {
    * one constant value for every question, and a long sentence is simply set smaller on
    * the same board.
    *
+   * UPDATE: the board hugs its sentence again, but without the smear. Its WIDTH follows
+   * the words, capped at the fixed length this describes, and the middle art is cropped
+   * at its own aspect instead of stretched (see .instruction-pill::before). The TYPE SIZE
+   * is still fitted as below, against that cap, so it stays one size for the game.
+   *
    * Measured rather than guessed, because the font is loaded late and its metrics are
    * not knowable from the string: the words are laid out at full size, the overflow is
    * read off the layout, and --fit scales the type down only if there is one. Most
@@ -14436,11 +14441,23 @@ class Hud {
     this.fitInstruction();
   }
 
+  /* THE ROOM ON THE LONGEST BOARD, not on the board as it stands. The plank hugs its
+     sentence now (see .instruction-pill), so its current width is the words it happens
+     to hold, and fitting to that would only ever confirm the size already set. The
+     ceiling is max-width; clientWidth is kept as the "is it laid out at all" check,
+     because a hidden board measures nothing and must not cache a fit of 1. */
+  _room(pill) {
+    if (!(pill.clientWidth > 0)) return 0;
+    const cs = getComputedStyle(pill);
+    const ceil = parseFloat(cs.maxWidth);
+    const w = ceil > 0 ? ceil : pill.clientWidth;
+    return w - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  }
+
   /** Widest-sentence fit for the board as it is currently classed. */
   _measureFit(mode) {
     const el = this.el.text, pill = this.el.pill;
-    const cs = getComputedStyle(pill);
-    const avail = pill.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const avail = this._room(pill);
     if (!(avail > 0)) return null;
     /* NINETY-FOUR PER CENT OF THE SPACE, NOT ALL OF IT. Filling it exactly means the
        sentence that sets the size ends up flush against the caps with no clear wood at
@@ -14497,8 +14514,7 @@ class Hud {
        question's. */
     const run = () => {
       const raw = banner ? (() => {
-        const cs = getComputedStyle(pill);
-        const avail = pill.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+        const avail = this._room(pill);
         const need = el.scrollWidth;
         return (avail > 0 && need > 0) ? (avail * 0.94) / need : null;
       })() : this._measureFit(mode);

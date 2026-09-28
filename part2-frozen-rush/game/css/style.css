@@ -682,9 +682,9 @@ a:hover { color: var(--ice-pale); }
      art, its place and its clearance of the ropes, and the sentence stays on one line. */
   max-width: 46%;
 }
-/* A teaching line is a whole sentence, so its board is longer — but still a FIXED
-   length, for the same reason the question board is (see .instruction-pill). */
-.instruction.banner .instruction-pill { width: calc(44 * var(--u)); }
+/* A teaching line is a whole sentence, so its board may run longer. Like the question
+   board this is a ceiling; the board still hugs the line it's showing. */
+.instruction.banner .instruction-pill { --pill-w: calc(44 * var(--u)); }
 .instruction.banner .instruction-text { font-size: calc(168 * var(--k) * 0.85 * var(--fit, 1)); }
 /* AND IT IS LIT while it speaks (asked for): a soft icy glow around the plank, breathing, so the
    eye goes to the words being read out. It is the panel that glows, not the words. */
@@ -864,9 +864,30 @@ a:hover { color: var(--ice-pale); }
    * units and so is everything it has to miss. */
   /* --pill-w lets .instruction.centered widen the board without restating any of the
      rest of this rule; 33u stays the default for the left band. */
-  width: var(--pill-w, calc(33 * var(--u)));
+  /* THE BOARD HUGS ITS SENTENCE NOW, AND --pill-w IS ITS CEILING, NOT ITS WIDTH.
+   *
+   * Fixed, a short line like "Cut along a diagonal." sat in the middle of a 40u board
+   * with about a third of the wood empty on each side (reported: "right and left
+   * negative space ... make this dynamic"). Now the width is the words plus the same
+   * padding on every question, so the clear wood each side is one constant.
+   *
+   * The type is still ONE size for the whole game: Hud.fitInstruction measures every
+   * question against this ceiling, so the longest line fills it and the rest set at
+   * that same size on a shorter board.
+   *
+   * The grain can't smear the way it did when this was last shrink-to-fit, because the
+   * middle is no longer stretched to fit: it's drawn at its own aspect and cropped
+   * (see ::before), and it only stretches past that for a line wider than the art,
+   * which is never by more than the fixed board used to stretch it. */
+  max-width: var(--pill-w, calc(33 * var(--u)));
+  /* A floor so a very short line can't turn the board into a crate: three heights of
+     board is still clearly a plank. No question in the game comes near it. */
+  min-width: calc(3 * var(--sign-h));
 
   position: relative;
+  /* The wood is drawn by ::before and ::after at z-index -1; isolation keeps them in
+     this box's own stack, under the words and above nothing else on the stage. */
+  isolation: isolate;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -887,14 +908,9 @@ a:hover { color: var(--ice-pale); }
      and UNDER them, so the boundary pixel is always covered by the middle and there is
      no seam for a resampler to find. The caps keep their natural size (auto 100%) and
      only the middle stretches, exactly as before. */
-  background:
-    url("../assets/ui/plank-l.webp?v=1b2cb44b") left center / auto 100% no-repeat,
-    url("../assets/ui/plank-r.webp?v=553400cc") right center / auto 100% no-repeat,
-    /* +24px, not +2: at a phone's fractional device pixels the middle's edge landed on a
-       half-covered column and what was behind the plank showed through as a thin line at the
-       seam ("the blue cut line"). Twelve pixels under each opaque cap leaves no column for a
-       resampler to expose. */
-    url("../assets/ui/plank-m.webp?v=3b1338a9") center center / calc(100% - 626 * var(--k) + 24px) 100% no-repeat;
+  /* The three layers are now two pseudo-elements (below) rather than backgrounds on this
+     box: the middle has to be CLIPPED to the room between the caps so it can be cropped
+     instead of squashed, and a background layer can't be clipped on its own. */
 
   /* CENTRED ON THE WOOD, both ways, and the padding is where that is done.
 
@@ -921,6 +937,37 @@ a:hover { color: var(--ice-pale); }
   /* linear, because each keyframe of signDrop carries its own curve — the fall its gravity,
      the bobs their springs — and an outer curve on top would bend all of them again */
   animation: signDrop 760ms linear both;
+}
+/* THE WOOD, AS TWO LAYERS UNDER THE WORDS. Same three files, same stacking as the three
+   backgrounds were: the middle first, the caps drawn over it.
+
+   THE MIDDLE is its own box, spanning the room between the caps plus 12px under each
+   (the +24px that closed "the blue cut line" at a phone's fractional pixels), so it's
+   clipped there and can't show through the caps' transparent rope ends.
+
+   It's drawn at the art's OWN aspect whenever the board is shorter than the art (cropped
+   from the centre, not squeezed), and stretched only when the board is longer:
+   max(100%, 1498k) is exactly that. */
+.instruction-pill::before,
+.instruction-pill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.instruction-pill::before {
+  left: calc(313 * var(--k) - 12px);
+  right: calc(313 * var(--k) - 12px);
+  background: url("../assets/ui/plank-m.webp?v=3b1338a9") center center / max(100%, 1498 * var(--k)) 100% no-repeat;
+}
+.instruction-pill::after {
+  left: 0;
+  right: 0;
+  background:
+    url("../assets/ui/plank-l.webp?v=1b2cb44b") left center / auto 100% no-repeat,
+    url("../assets/ui/plank-r.webp?v=553400cc") right center / auto 100% no-repeat;
 }
 
 /* THE SENTENCE. It is the whole instruction, and it has to sit inside the plank's safe
