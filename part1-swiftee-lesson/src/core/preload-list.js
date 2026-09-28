@@ -33,8 +33,8 @@ window.PreloadList = {
   "assets/ui/plank.webp?v=ef53d389",
   "assets/ui/play.webp",
   "assets/ui/snowflake.webp",
-  "assets/ui/zone-irregular.webp?v=e11f2045",
-  "assets/ui/zone-regular.webp?v=5cd0058e"
+  "assets/ui/zone-irregular.webp?v=3aed40b0",
+  "assets/ui/zone-regular.webp?v=b52e2d9d"
  ],
  "sizes": {
   "assets/bg/ice-vista.webp": 816574,
@@ -237,8 +237,8 @@ window.PreloadList = {
   "assets/ui/plank.webp": 73866,
   "assets/ui/play.webp": 19602,
   "assets/ui/snowflake.webp": 30856,
-  "assets/ui/zone-irregular.webp": 30244,
-  "assets/ui/zone-regular.webp": 19020,
+  "assets/ui/zone-irregular.webp": 55050,
+  "assets/ui/zone-regular.webp": 156802,
   "assets/vo/fb01.mp3": 15508,
   "assets/vo/fb01.ogg": 8574,
   "assets/vo/fb03.mp3": 15926,

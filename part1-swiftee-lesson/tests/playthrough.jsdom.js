@@ -127,9 +127,11 @@ async function act(spec){
         // to say why; the zones answer nothing until he is down (game.js pop())
         await until(()=>!St().swipe || w.Input.mode()!=='locked', 8000);
         if(first){ tapEl(zoneOf(wrong)); wrongTried++; first=false; await sleep(120); await until(()=>!St().swipe || w.Input.mode()!=='locked', 8000); }
+        if(!St().swipe) break;
         const before=St().swipe.i;
         tapEl(zoneOf(right));
-        await until(()=>!St().swipe || St().swipe.i>before, 1500).catch(()=>{});
+        // a right card is held a moment with its verdict on it before it flies (about 1.7s in all)
+        await until(()=>!St().swipe || St().swipe.i>before, 4000).catch(()=>{});
         await sleep(40);
       }
       return;

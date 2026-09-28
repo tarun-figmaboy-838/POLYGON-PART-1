@@ -2009,10 +2009,14 @@
       case 'chevron':   return [{ x: cx - r, y: cy + r * .7 }, { x: cx, y: cy - r * .8 }, { x: cx + r, y: cy + r * .7 }, { x: cx, y: cy + r * .1 }];
       case 'l-shape':   return [{ x: cx - r * .8, y: cy - r * .8 }, { x: cx - r * .1, y: cy - r * .8 }, { x: cx - r * .1, y: cy + r * .1 }, { x: cx + r * .8, y: cy + r * .1 }, { x: cx + r * .8, y: cy + r * .8 }, { x: cx - r * .8, y: cy + r * .8 }];
       // A RECTANGLE: every angle the same, the sides not — irregular for the
-      // opposite reason to the rhombus beside it in the swipe deck
-      case 'rectangle': return [{ x: cx - r, y: cy - r * 0.58 }, { x: cx + r, y: cy - r * 0.58 }, { x: cx + r, y: cy + r * 0.58 }, { x: cx - r, y: cy + r * 0.58 }];
+      // opposite reason to the rhombus beside it in the swipe deck. Exactly two
+      // to one, so the card's "6 cm" and "3 cm" are the drawing's own proportions.
+      case 'rectangle': return [{ x: cx - r, y: cy - r * 0.5 }, { x: cx + r, y: cy - r * 0.5 }, { x: cx + r, y: cy + r * 0.5 }, { x: cx - r, y: cy + r * 0.5 }];
       case 'star': { var o = []; for (var i = 0; i < 10; i++) { var a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .42 : r; o.push({ x: cx + Math.cos(a) * rr, y: cy + Math.sin(a) * rr }); } return o; }
-      case 'stretched-hexagon': { var h = Poly.regular(6, r, cx, cy); return h.map(function (p) { return { x: cx + (p.x - cx) * 1.35, y: p.y }; }); }
+      // stretched until its slanting sides are exactly 4/3 of its upright ones
+      // (sqrt(0.75 s^2 + 0.25) = 4/3): the card's "4 cm" and "3 cm" are then the
+      // drawing's own, and its corners 136 and 112 degrees, which add to 720
+      case 'stretched-hexagon': { var h = Poly.regular(6, r, cx, cy), s = Math.sqrt((16 / 9 - 0.25) / 0.75); return h.map(function (p) { return { x: cx + (p.x - cx) * s, y: p.y }; }); }
       default: return Poly.regular(5, r, cx, cy);
     }
   }
@@ -2407,22 +2411,32 @@
        * corridor they leave is the stage now, and the card in it is where the
        * eye goes first.
        */
-      var ZW = 232, ZH = 268, ZY = TOP + 26;
-      [{ id: 'regular', x: 38 },
-       { id: 'irregular', x: W - 38 - ZW }].forEach(function (z) {
+      /* BIGGER, AND IN THEIR OWN PROPORTIONS. They were 232 x 268 — a nearly square card
+         stretched a sixth taller than it is drawn — with a 460 corridor between them and the
+         outer third of each half of the screen empty. They are 286 wide now, as tall as their
+         artwork says, and level with the card in hand, twelve in from each edge; the corridor
+         left is the card's width and a margin either side. */
+      var ZW = 286, ZM = 12;
+      [{ id: 'regular', x: ZM },
+       { id: 'irregular', x: W - ZM - ZW }].forEach(function (z) {
         var def = (spec.zones || []).filter(function (d) { return d.id === z.id; })[0] || { id: z.id, label: z.id };
         var c = CONCEPT[z.id] || CONCEPT.regular;
+        // the Regular card is the supplied orange one: its word is lettered in the card's own
+        // colours, not the teal the concept uses elsewhere
+        if (ZONE_TONE[z.id]) c = Object.assign({}, c, ZONE_TONE[z.id]);
         var tone = [c.wash, c.face, c.ink];
+        var Z0 = global.CardFrame && CardFrame[z.id];
+        var ZH = Z0 ? Math.round(ZW * Z0.h / Z0.w) : 268, ZY = Math.round(SWIPE_HOME.y - ZH / 2);
         var g = mk('g', { 'class': 'zone', 'data-zone': z.id }, layers.ui);
 
         /* THE ZONE IS THE ARTWORK, AND THE WORD IS LETTERED ON ITS GLASS.
          *
-         * The frames are blank ice — a cyan rim for regular, a violet one for
-         * irregular, the concept's own colours — so the title is drawn here,
-         * in the concept's ink on a band of its wash, inside the top of the
-         * pane. The shelf for what the child has caught begins under it. */
-        var Z = global.CardFrame && CardFrame[z.id];
-        var TITLE_H = 46, titleBottom = 0;
+         * The frames are blank cards — the supplied orange one for regular, a
+         * violet one for irregular — so the title is drawn here, in the card's
+         * ink on a band of its colour, inside the top of the pane. The shelf
+         * for what the child has caught begins under it. */
+        var Z = Z0;
+        var TITLE_H = 50, titleBottom = 0;
         /* THE WHOLE ZONE TAKES A TAP. The artwork is not hit-testable (its
            transparent corners must not catch taps meant for the card), so a
            tap anywhere on the glass found nothing under it and did nothing —
@@ -2433,14 +2447,16 @@
         if (Z) {
           var im = mk('image', {
             x: z.x, y: ZY, width: ZW, height: ZH,
-            preserveAspectRatio: 'none', 'pointer-events': 'none'
+            preserveAspectRatio: 'xMidYMid meet', 'pointer-events': 'none'
           }, g);
           im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', Z.src);
           im.setAttribute('href', Z.src);
           var pane = Z.pane || { x: 0.06, y: 0.09, w: 0.88, h: 0.82 };
           var px0 = z.x + ZW * pane.x, pw = ZW * pane.w, py0 = ZY + ZH * pane.y + 10;
-          mk('rect', { x: px0 + 14, y: py0, width: pw - 28, height: TITLE_H, rx: 14, fill: c.face, opacity: 0.30 }, g);
-          mk('text', { x: z.x + ZW / 2, y: py0 + 32, 'text-anchor': 'middle', 'font-size': 27,
+          mk('rect', { x: px0 + 14, y: py0, width: pw - 28, height: TITLE_H, rx: 15, fill: c.face, opacity: 0.30 }, g);
+          // (the baseline a third of the way below the band's middle: the band's optical centre
+          // for a capital-led word with no descenders)
+          mk('text', { x: z.x + ZW / 2, y: py0 + TITLE_H / 2 + 10.5, 'text-anchor': 'middle', 'font-size': 30,
                        'font-weight': 800, fill: c.ink, text: def.label }, g);
           titleBottom = py0 + TITLE_H + 8;
         } else {
@@ -2998,8 +3014,232 @@
      corridor; the corridor is 460 now, so the card is 304 across and the
      shape inside it is nearly three times the area it was. Kept in one place
      because the pile behind it is drawn from the same number. */
-  var SWIPE_HALF = 152;
+  /* 176 NOW: the zones are bigger (swipe-sort) and the corridor between them is the card and
+     a margin either side, and the figure on it was the smallest thing it could be — a pentagon
+     a quarter the card's area in a lot of empty glass. */
+  var SWIPE_HALF = 176;
   var SWIPE_HOME = { x: W / 2, y: 300 };   // level with the middle of the zones
+
+  /* ------------------------------------------------------------------ *
+   * THE SWIPE CARD'S FACE — top to bottom: its name, the figure as big
+   * as the glass allows, and (once it is judged) what was found.
+   * ------------------------------------------------------------------ */
+
+  /* A CARD IS NAMED FOR WHAT IT IS BY ITS SIDES, never by what the question asks: "rhombus" or
+     "rectangle" would be half the answer before the shape had been read. */
+  var POLY_NAME = { 3: 'Triangle', 4: 'Quadrilateral', 5: 'Pentagon', 6: 'Hexagon', 7: 'Heptagon', 8: 'Octagon' };
+  /* THE SHORTEST SIDE OF EACH CARD, IN CENTIMETRES. Every other side is printed in proportion to
+     it, so the numbers are the drawing's own. They were read off a fixed scale and rounded to the
+     centimetre, which labelled a rectangle drawn 1.7 to 1 "6 cm" by "3 cm" and a hexagon's 1.27
+     to 1 sides "4 cm" and "3 cm" — and would have changed every number the moment the figure was
+     drawn bigger. */
+  var SWIPE_CM = { pentagon: 3, rhombus: 3, triangle: 5, 'stretched-hexagon': 3, square: 4,
+                   rectangle: 3, hexagon: 3, 'l-shape': 7 };
+  // the type and the corner marks, at SWIPE_HALF
+  var SWF = { title: 21, side: 15.5, angle: 14, arc: 15, right: 11, tag: 15 };
+
+  function cmText(x) {
+    var t = Math.round(x * 10) / 10;
+    return (Math.abs(t - Math.round(t)) < 0.05 ? String(Math.round(t)) : t.toFixed(1)) + ' cm';
+  }
+  function textW(s, size) { return String(s).length * size * 0.54 + 4; }
+
+  /** Where things go on a swipe card of this half-width, in the card's own coordinates (it is
+      drawn centred on 0,0): the name's baseline, and the glass under it the figure may use. */
+  function swipeArea(half) {
+    var F = global.CardFrame && CardFrame.option;
+    var halfH = half * (F ? F.h / F.w : 1);
+    var p = (F && F.pane) || { x: 0.08, y: 0.09, w: 0.84, h: 0.8 };
+    var k = half / SWIPE_HALF;
+    var gl = -half + half * 2 * p.x, gw = half * 2 * p.w;
+    var gt = -halfH + halfH * 2 * p.y, gh = halfH * 2 * p.h;
+    // (the figure starts a clear twelve below the name's descenders — "Hexagon" has a g — so a
+    // top side's length is never read as part of the name)
+    return { halfH: halfH, titleY: gt + 23 * k,
+             l: gl + 4 * k, r: gl + gw - 4 * k, t: gt + 40 * k, b: gt + gh - 4 * k };
+  }
+
+  /** Each side's length label at its first-choice place: just off the middle of the side,
+      outside the shape, as far out as the label is deep in that direction. */
+  function sideLabelBoxes(v, texts, size) {
+    var n = v.length, out = [];
+    for (var i = 0; i < n; i++) {
+      var a = v[i], b = v[(i + 1) % n];
+      var len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+      var tx = (b.x - a.x) / len, ty = (b.y - a.y) / len;
+      var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      var nx = -ty, ny = tx;
+      // outward is away from the inside of THIS side — asked of the shape itself, which is
+      // right for the inner sides of a concave one, where "away from the middle" is not
+      if (Poly.contains(v, { x: mx + nx * 3, y: my + ny * 3 })) { nx = -nx; ny = -ny; }
+      var w = textW(texts[i], size), h = size + 1;
+      var off = 6 + Math.abs(nx) * w / 2 + Math.abs(ny) * h / 2;
+      out.push({ i: i, x: mx + nx * off, y: my + ny * off, w: w, h: h, mx: mx, my: my,
+                 tx: tx, ty: ty, nx: nx, ny: ny, len: len, off: off });
+    }
+    return out;
+  }
+  function boxOf(v, labels) {
+    var b = { l: Infinity, r: -Infinity, t: Infinity, b: -Infinity };
+    v.forEach(function (p) { b.l = Math.min(b.l, p.x); b.r = Math.max(b.r, p.x); b.t = Math.min(b.t, p.y); b.b = Math.max(b.b, p.y); });
+    (labels || []).forEach(function (q) {
+      b.l = Math.min(b.l, q.x - q.w / 2); b.r = Math.max(b.r, q.x + q.w / 2);
+      b.t = Math.min(b.t, q.y - q.h / 2); b.b = Math.max(b.b, q.y + q.h / 2);
+    });
+    return b;
+  }
+
+  /* THE FIGURE AS BIG AS ITS OWN LABELS LET IT BE. The largest radius at which the shape and
+     every side's length, each in its first-choice place, fit the glass under the name — found by
+     halving, because the labels do not grow with the shape — and the shape and its labels are
+     centred there together, so the figure the eye sees is the thing that is centred. */
+  function swipeFit(name, texts) {
+    var A = swipeArea(SWIPE_HALF);
+    var test = function (r) {
+      var v = shapeVerts(name, r, 0, 0), bb = boxOf(v, sideLabelBoxes(v, texts, SWF.side));
+      return { ok: bb.r - bb.l <= A.r - A.l && bb.b - bb.t <= A.b - A.t, bb: bb };
+    };
+    var lo = 20, hi = 170;
+    for (var it = 0; it < 16; it++) { var mid = (lo + hi) / 2; if (test(mid).ok) lo = mid; else hi = mid; }
+    var bb = test(lo).bb;
+    return { r: lo, cx: (A.l + A.r) / 2 - (bb.l + bb.r) / 2, cy: (A.t + A.b) / 2 - (bb.t + bb.b) / 2, area: A };
+  }
+
+  /** The side lengths a card prints: in proportion to its shortest side (SWIPE_CM). */
+  function swipeLengths(name) {
+    var L = Poly.sideLengths(shapeVerts(name, 100, 0, 0));
+    var unit = Math.min.apply(null, L) / (SWIPE_CM[name] || 3);
+    return L.map(function (l) { return cmText(l / unit); });
+  }
+
+  /**
+   * The card's face on a card of half-width `half`: the figure where swipeFit puts it, and —
+   * unless `bare`, the small copy kept on a zone's shelf — the name over it. Drawn at the size
+   * the card is drawn at (not scaled), so the copy's outline is as heavy as every other card's.
+   * Returns the vertices drawn and the layout.
+   */
+  function swipeFace(g, half, name, bare) {
+    var texts = swipeLengths(name), F = swipeFit(name, texts), k = half / SWIPE_HALF;
+    drawShape(name, F.r * k, F.cx * k, F.cy * k, g);
+    if (!bare) {
+      mk('text', { x: 0, y: F.area.titleY * k, 'text-anchor': 'middle', 'font-size': SWF.title * k,
+                   'font-weight': 800, fill: shade(COLORS[name] || '#5b95ee', -0.42), 'letter-spacing': 0.3,
+                   'class': 'swipe-name', 'pointer-events': 'none',
+                   text: POLY_NAME[shapeVerts(name, 1, 0, 0).length] || 'Polygon' }, g);
+    }
+    return { verts: shapeVerts(name, F.r * k, F.cx * k, F.cy * k), fit: F, texts: texts };
+  }
+
+  /* THE READINGS, drawn the way a geometry figure is. Each side's length just outside it. Each
+   * corner's angle as an arc from its vertex over exactly the inside of the corner — the reflex
+   * corner of a concave shape included — or, for a right angle, the small square a textbook
+   * marks one with; and its size in degrees on the shape's face beside it. Every figure is put
+   * where it is clear of the sides, of the corner marks and of every figure already down, inside
+   * the glass under the name (labelSpace); the arcs are all one radius and one weight. */
+  function swipeMarks(card, face, ink) {
+    var v = card._verts, n = v.length, A = Poly.interiorAngles(v), ar = face.fit.area;
+    var g = mk('g', { 'class': 'units', 'pointer-events': 'none' }, card);
+    var space = labelSpace(v, { cx: (ar.l + ar.r) / 2, cy: (ar.t + ar.b) / 2, w: ar.r - ar.l + 12, h: ar.b - ar.t + 12 }, SWF.arc);
+    var txt = function (x, y, s, size) {
+      mk('text', { x: x.toFixed(1), y: (y + size * 0.36).toFixed(1), 'text-anchor': 'middle', 'font-size': size,
+                   'font-weight': 800, fill: ink, stroke: '#ffffff', 'stroke-width': 3, 'paint-order': 'stroke',
+                   'stroke-linejoin': 'round', text: s }, g);
+    };
+    sideLabelBoxes(v, face.texts, SWF.side).forEach(function (q) {
+      var cands = [];
+      [0, 0.16, -0.16, 0.3, -0.3].forEach(function (along) {
+        [q.off, q.off + 5, q.off + 10].forEach(function (off) {
+          cands.push({ x: q.mx + q.tx * q.len * along + q.nx * off, y: q.my + q.ty * q.len * along + q.ny * off });
+        });
+      });
+      var at = space.fit(cands, q.w, q.h) || cands[0];
+      txt(at.x, at.y, face.texts[q.i], SWF.side);
+    });
+    for (var j = 0; j < n; j++) {
+      var p = v[j], q0 = v[(j + n - 1) % n], q1 = v[(j + 1) % n];
+      var l0 = Math.hypot(q0.x - p.x, q0.y - p.y) || 1, l1 = Math.hypot(q1.x - p.x, q1.y - p.y) || 1;
+      var u0 = { x: (q0.x - p.x) / l0, y: (q0.y - p.y) / l0 }, u1 = { x: (q1.x - p.x) / l1, y: (q1.y - p.y) / l1 };
+      // the inside of the corner, from the vertex: between the two sides, on the shape's side
+      var bx = u0.x + u1.x, by = u0.y + u1.y, bl = Math.hypot(bx, by);
+      if (bl < 1e-6) { bx = -u0.y; by = u0.x; bl = 1; }
+      bx /= bl; by /= bl;
+      if (!Poly.contains(v, { x: p.x + bx * 4, y: p.y + by * 4 })) { bx = -bx; by = -by; }
+      var deg = A[j], right = Math.abs(deg - 90) < 0.6, s = SWF.right, R = SWF.arc;
+      if (right) {
+        mk('path', { d: 'M' + p.x + ' ' + p.y + ' L' + (p.x + u0.x * s) + ' ' + (p.y + u0.y * s) +
+                        ' L' + (p.x + (u0.x + u1.x) * s) + ' ' + (p.y + (u0.y + u1.y) * s) +
+                        ' L' + (p.x + u1.x * s) + ' ' + (p.y + u1.y * s) + ' Z',
+                     fill: ink, 'fill-opacity': 0.16, stroke: 'none' }, g);
+        mk('path', { d: 'M' + (p.x + u0.x * s) + ' ' + (p.y + u0.y * s) +
+                        ' L' + (p.x + (u0.x + u1.x) * s) + ' ' + (p.y + (u0.y + u1.y) * s) +
+                        ' L' + (p.x + u1.x * s) + ' ' + (p.y + u1.y * s),
+                     fill: 'none', stroke: ink, 'stroke-opacity': 0.9, 'stroke-width': 2, 'stroke-linejoin': 'miter' }, g);
+      } else {
+        var a0 = Math.atan2(u0.y, u0.x), a1 = Math.atan2(u1.y, u1.x);
+        var sweep = ((a1 - a0) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);   // a0 to a1, clockwise on screen
+        var mid = a0 + sweep / 2;
+        var cw = Poly.contains(v, { x: p.x + Math.cos(mid) * 4, y: p.y + Math.sin(mid) * 4 });
+        var span = cw ? sweep : 2 * Math.PI - sweep;                            // the inside of the corner
+        var d = 'M' + p.x + ' ' + p.y + ' L' + (p.x + u0.x * R) + ' ' + (p.y + u0.y * R) +
+                ' A' + R + ' ' + R + ' 0 ' + (span > Math.PI ? 1 : 0) + ' ' + (cw ? 1 : 0) + ' ' +
+                (p.x + u1.x * R) + ' ' + (p.y + u1.y * R) + ' Z';
+        mk('path', { d: d, fill: ink, 'fill-opacity': 0.18, stroke: ink, 'stroke-opacity': 0.9,
+                     'stroke-width': 2, 'stroke-linejoin': 'round' }, g);
+      }
+      var dt = Math.round(deg) + '°', dw = textW(dt, SWF.angle), dh = SWF.angle + 1;
+      var base = (right ? s * 1.42 : R) + 4 + Math.max(dw, dh) / 2, dc = [];
+      [0, 5, 10, 16, 24, 34].forEach(function (e) { dc.push({ x: p.x + bx * (base + e), y: p.y + by * (base + e) }); });
+      var da = space.fit(dc, dw, dh) || dc[0];
+      txt(da.x, da.y, dt, SWF.angle);
+    }
+    if (g.animate && !reduced()) g.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, fill: 'backwards' });
+    return g;
+  }
+
+  /* WHAT WAS FOUND, hung off the card's bottom edge the moment it is judged: the two things
+     "regular" is made of, each ticked or crossed, so a right swipe says why it was right and a
+     wrong one says what to look at. It is not there before — it would be the answer. */
+  function swipeVerdict(card) {
+    if (!card || !card._verts) return null;
+    var old = card.querySelector('.swipe-verdict');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+    var verdict = verdictOf(card._verts);
+    var sidesOk = verdict === 'regular' || verdict === 'angles', anglesOk = verdict === 'regular' || verdict === 'sides';
+    var items = [[sidesOk, sidesOk ? 'Equal sides' : 'Unequal sides'], [anglesOk, anglesOk ? 'Equal angles' : 'Unequal angles']];
+    var size = SWF.tag, badge = 9, gapIn = 6, gapOut = 18, pad = 14, h = 32;
+    var widths = items.map(function (it) { return badge * 2 + gapIn + textW(it[1], size); });
+    var total = widths[0] + gapOut + widths[1] + pad * 2;
+    var y = swipeArea(SWIPE_HALF).halfH + 2;
+    var g = mk('g', { 'class': 'swipe-verdict', 'pointer-events': 'none' }, card);
+    mk('rect', { x: -total / 2, y: y - h / 2, width: total, height: h, rx: h / 2, fill: '#ffffff',
+                 stroke: '#9cc3e6', 'stroke-width': 2.5 }, g);
+    var x = -total / 2 + pad;
+    items.forEach(function (it, i) {
+      var ok = it[0], cx = x + badge, col = ok ? '#23a55a' : '#e0524a';
+      mk('circle', { cx: cx, cy: y, r: badge, fill: col }, g);
+      mk('path', { d: ok ? 'M' + (cx - 4.2) + ' ' + (y + 0.3) + ' l3 3 l5.6 -6.2'
+                         : 'M' + (cx - 3.6) + ' ' + (y - 3.6) + ' l7.2 7.2 M' + (cx + 3.6) + ' ' + (y - 3.6) + ' l-7.2 7.2',
+                   fill: 'none', stroke: '#ffffff', 'stroke-width': 2.4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g);
+      mk('text', { x: cx + badge + gapIn, y: y + size * 0.36, 'font-size': size, 'font-weight': 800,
+                   fill: ok ? '#17663a' : '#9c2a24', text: it[1] }, g);
+      x += widths[i] + gapOut;
+    });
+    if (!reduced() && g.animate) {
+      g.style.transformBox = 'fill-box'; g.style.transformOrigin = 'center';
+      g.animate([{ opacity: 0, scale: '.7' }, { opacity: 1, scale: '1.05', offset: 0.7 }, { opacity: 1, scale: '1' }],
+                { duration: 280, easing: 'cubic-bezier(.3,1.3,.5,1)' });
+    }
+    return verdict;
+  }
+  /** The card's words go as it flies: its name, its readings and its tag fade over `ms`. */
+  function fadeFace(card, ms) {
+    ['.swipe-name', '.units', '.swipe-verdict'].forEach(function (sel) {
+      var el = card && card.querySelector(sel);
+      if (!el) return;
+      if (reduced() || !el.animate) { el.setAttribute('opacity', 0); return; }
+      el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms, easing: 'ease-out', fill: 'forwards' });
+    });
+  }
 
   /**
    * Put a sorted shape on a zone's shelf.
@@ -3046,8 +3286,10 @@
       var seat = seats[i];
       var cell = mk('g', { 'class': 'kept' }, zone._keptG);
       var at = mk('g', { transform: 'translate(' + seat.x.toFixed(1) + ',' + seat.y.toFixed(1) + ')' }, cell);
-      // drawn exactly as the card that flew here was, so the swap is invisible
-      optionCard(at, seat.half, nm, { fill: reduced() ? 0.86 : 0.74 });
+      // drawn exactly as the card that flew here was — its figure where the card had it, at
+      // the seat's size — so the swap is invisible (the name and the readings have faded on
+      // the way: at a quarter of the size they are not something to read)
+      swipeFace(optionCard(at, seat.half, null), seat.half, nm, true);
       if (reduced() || !cell.animate) return;
       cell.style.transformBox = 'fill-box'; cell.style.transformOrigin = 'center';
       if (i === n - 1) {
@@ -3103,8 +3345,10 @@
       // pixels: at 96 they read as a pile, and at 152 the same numbers put a
       // second frame a few pixels off the first, which reads as a misprint
       // rather than as cards behind cards.
+      // (tighter since the card grew to 176: the corridor either side of it is 26 now, so the
+      // blanks lean less and step down more — still a pile, and never over a zone)
       var pileK = SWIPE_HALF / 96;
-      var dxk = (k === 1 ? -1 : 1) * (12 + k * 7) * pileK, scale = 1 - k * 0.075, rot = (k === 1 ? -1 : 1) * (3 + k * 2);
+      var dxk = (k === 1 ? -1 : 1) * (4 + k * 3) * pileK, scale = 1 - k * 0.06, rot = (k === 1 ? -1 : 1) * (1.5 + k);
       var c = mk('g', { opacity: String(0.92 - k * 0.16) }, g);
       optionCard(c, SWIPE_HALF, null);   // a blank card: the pile, not the answers
       c.setAttribute('transform', 'translate(' + (SWIPE_HOME.x + dxk) + ',' + (SWIPE_HOME.y + 10 * k * pileK) + ') rotate(' + rot + ') scale(' + scale.toFixed(3) + ')');
@@ -3120,15 +3364,17 @@
     Object.keys(sw.zones).forEach(function (k) { if (sw.zones[k].classList) sw.zones[k].classList.add('hint'); });
     var name = sw.items[sw.i];
     var g = mk('g', { 'class': 'swipe-card', 'data-shape': name }, layers.ui);
-    var card = optionCard(g, SWIPE_HALF, name, { fill: reduced() ? 0.86 : 0.74 });
+    // the card blank, then its face: the name, the figure as big as it fits, its readings
+    var card = optionCard(g, SWIPE_HALF, null);
+    var face = swipeFace(card, SWIPE_HALF, name);
     g.setAttribute('transform', 'translate(' + SWIPE_HOME.x + ',' + SWIPE_HOME.y + ')');
-    g._name = name;
-    // The radius the card actually drew at, not a number typed beside it:
-    // these vertices are what Poly.isRegular judges the swipe against.
-    g._verts = shapeVerts(name, card._pane.r, card._pane.cx, card._pane.cy);
-    // the ticks and arcs the answer is read off, on the card from the start
-    if (!reduced()) shapeMarks(g, { numbers: true, cls: 'units', pane: card._pane,
-                                    ink: shade(COLORS[name] || '#5b95ee', -0.42) });
+    g._name = name; g._cardEl = card;
+    // The vertices the card actually drew, not a number typed beside it:
+    // these are what Poly.isRegular judges the swipe against.
+    g._verts = face.verts;
+    // the lengths and angles the answer is read off, on the card from the start (with reduced
+    // motion too: they are the evidence, not a flourish)
+    swipeMarks(g, face, shade(COLORS[name] || '#5b95ee', -0.42));
     g.style.cursor = 'grab';
     g.style.touchAction = 'pan-y';
     sw.card = g;
@@ -3708,6 +3954,11 @@
     regular:   { face: '#19b5a2', deep: '#0a6c60', wash: '#e3f8f4', ink: '#07564c' },
     irregular: { face: '#9270e6', deep: '#54399e', wash: '#f1ebfe', ink: '#3d2775' }
   };
+  /* THE SWIPE ZONES' OWN LETTERING. The Regular zone is the supplied orange card
+     (assets/source/reg.png), so its word is set in the card's colours — a band of its orange
+     and a deep burnt-orange ink — rather than in the teal "regular" wears elsewhere, which on
+     orange reads as a label from another set. */
+  var ZONE_TONE = { regular: { face: '#f08a2c', ink: '#7a3300' } };
 
   /** The four words this lesson sorts shapes by. Anything else is not a
       category and must not borrow a category's colour. */
@@ -5287,21 +5538,40 @@
    * the SVG so they keep firing wherever the pointer goes.
    */
   function dragVertices(idxs, moveFn, upFn, ctx) {
-    var active = -1;
+    var active = -1, pid = null, last = null;
     idxs.forEach(function (i) {
       var h = st.vertEls[i]; if (h) { h.style.cursor = 'grab'; h.style.pointerEvents = 'all'; }
       var k = knobOf(i); if (k) k.setAttribute('opacity', 1);
     });
+    /* ONE FINGER HOLDS ONE CORNER. The drag is the pointer that took the corner, and only it:
+       a second finger on the glass moved the corner too, and a release the stage never heard
+       (the capture lost, a mouse let go over something else) left the corner following the
+       pointer with no button down. The move is also heard from the window, so a corner held
+       past the stage's edge still follows (clampToCard keeps it on the card). */
+    var win = svg.ownerDocument.defaultView || global;
     function down(e) {
       var t = e.target; if (!t || !t.classList || !t.classList.contains('vertex')) return;
       var i = +t.getAttribute('data-i'); if (idxs.indexOf(i) < 0) return;
       if (global.Input && Input.guarded) return;
-      active = i; try { svg.setPointerCapture && svg.setPointerCapture(e.pointerId); } catch (x) {}
+      if (active >= 0 || (e.button != null && e.button > 0)) return;
+      active = i; pid = e.pointerId; last = pt(e);
+      try { svg.setPointerCapture && svg.setPointerCapture(e.pointerId); } catch (x) {}
       e.preventDefault();
     }
-    function move(e) { if (active < 0) return; moveFn(pt(e), active); }
-    function up(e) { if (active < 0) return; var i = active; active = -1; upFn(pt(e), i); }
-    on(st.polyG, 'pointerdown', down); on(svg, 'pointermove', move); on(svg, 'pointerup', up); on(svg, 'pointercancel', up);
+    function mine(e) { return active >= 0 && (pid == null || e.pointerId === pid); }
+    function move(e) {
+      if (!mine(e)) return;
+      if (e.pointerType === 'mouse' && e.buttons === 0) { up(e); return; }     // its release was missed
+      last = pt(e); moveFn(last, active);
+    }
+    function up(e) {
+      if (!mine(e)) return;
+      var i = active; active = -1; pid = null;
+      // (a cancelled touch has no real point: the corner's last one is where it was let go)
+      upFn(e && e.type === 'pointerup' ? pt(e) : last, i);
+    }
+    on(st.polyG, 'pointerdown', down); on(win, 'pointermove', move); on(win, 'pointerup', up); on(win, 'pointercancel', up);
+    on(svg, 'lostpointercapture', function (e) { if (mine(e)) later(0, function () { if (mine(e)) up(e); }); });
     if (ctx && ctx.onCancel) ctx.onCancel(endInteraction);
   }
 
@@ -5644,18 +5914,25 @@
             var zone = sw.zones[answer];
             sfx('correct');
             Object.keys(sw.zones).forEach(function (k) { if (sw.zones[k].classList) sw.zones[k].classList.remove('hint'); });
-            if (zone && zone.classList) {
-              // the zone that caught it lights up for a moment
-              zone.classList.remove('landed'); void zone.getBBox && zone.getBBox();
-              zone.classList.add('landed');
-              later(700, function () { zone.classList.remove('landed'); });
-            }
             juice('pop', card);
-            if (zone && !reduced() && zone.animate) {
-              zone.animate([{ scale: '1' }, { scale: '1.07' }, { scale: '1' }],
-                           { duration: 320, easing: 'cubic-bezier(.3,1.3,.5,1)' });
-            }
             leanZone(null, false);
+            /* RIGHT, AND WHY — THEN AWAY. The card glows green where the child let go of it and
+               says what makes it what it is (swipeVerdict: equal sides, equal angles), and is
+               held there long enough to read that; only then does it fly, its words fading on
+               the way, and the zone lights up as it LANDS rather than before it has left. */
+            if (card._cardEl && card._cardEl._mark) card._cardEl._mark('correct');
+            swipeVerdict(card);
+            var landIn = function () {
+              if (zone && zone.classList) {
+                zone.classList.remove('landed'); void zone.getBBox && zone.getBBox();
+                zone.classList.add('landed');
+                later(700, function () { zone.classList.remove('landed'); });
+              }
+              if (zone && !reduced() && zone.animate) {
+                zone.animate([{ scale: '1' }, { scale: '1.07' }, { scale: '1' }],
+                             { duration: 320, easing: 'cubic-bezier(.3,1.3,.5,1)' });
+              }
+            };
             // THE SHAPE IS COLLECTED, NOT DISCARDED.
             //
             // It used to shrink and fade out, which is tidy and tells the
@@ -5692,6 +5969,7 @@
               card.style.pointerEvents = 'none';
               if (card.parentNode) card.parentNode.removeChild(card);
               keepInZone(zone, card._name);
+              landIn();
               sw.card = null;
               sw.i++;
               if (sw.i >= sw.items.length) { hold(260).then(function () { done(); }); return; }
@@ -5706,10 +5984,20 @@
                 later(420, function () { if (st.swipe && sw.card && !dragging) evt('swipe:home', { i: sw.i, dealt: true }); });
               });
             };
-            flyCard(card, { x: SWIPE_HOME.x + pulled, y: SWIPE_HOME.y, rot: tilt, s: 1 }, { x: tx, y: ty, rot: 0, s: k }, 560, 46, after);
+            later(reduced() ? 0 : 1100, function () {
+              fadeFace(card, 380);
+              flyCard(card, { x: SWIPE_HOME.x + pulled, y: SWIPE_HOME.y, rot: tilt, s: 1 }, { x: tx, y: ty, rot: 0, s: k }, 560, 46, after);
+            });
           } else {
             sfx('wrong');
             juice('refuse', card);
+            // WRONG, AND WHAT TO LOOK AT: a red glow for as long as it can be seen, and the tag
+            // under the card saying which of the two does not hold
+            if (card._cardEl && card._cardEl._mark) {
+              card._cardEl._mark('wrong');
+              later(1100, function () { if (card._cardEl) card._cardEl._mark(null); });
+            }
+            swipeVerdict(card);
             // the marks go on the card and he names what they show
             var why = whyShape(card);
             onTap('wrong',
@@ -6033,13 +6321,64 @@
       return new Promise(function (resolve) {
         if (global.Input) Input.mode('polygon');
         var S = st.sort;
+        /* A CARD IS HELD BY ONE FINGER, AND LET GO WHEREVER THAT FINGER LIFTS.
+         *
+         * The drag used to listen on the stage alone, and it took its pointer capture before
+         * lifting the card above the others — and moving an element in the document drops the
+         * capture it holds. So a card let go over the speech bubble, the buttons, or past the
+         * edge of the window never heard the release: it stayed where it was, still "held",
+         * and followed the pointer about with no button down. Now the card is raised first and
+         * captured after; the move, the release and a cancelled touch are heard from the whole
+         * window; a mouse that moves with no button pressed means a release was missed and ends
+         * the drag; one card is held at a time; and while held it cannot leave the stage. Let
+         * go anywhere but a bin, it glides home. */
+        var win = svg.ownerDocument.defaultView || global;
+        var ITEM_HALF = 46;
         function armItem(item) {
-          var active = false, off = { x: 0, y: 0 };
+          var active = false, off = { x: 0, y: 0 }, pid = null;
           item.style.cursor = 'grab';
-          on(item, 'pointerdown', function (e) { if (item._placed) return; active = true; S.dragging = item; var p = pt(e); var m = item._pos || item._home; off = { x: m.x - p.x, y: m.y - p.y }; item.setPointerCapture && item.setPointerCapture(e.pointerId); layers.ui.appendChild(item); e.preventDefault(); });
-          on(svg, 'pointermove', function (e) { if (!active) return; var p = pt(e); item._pos = { x: p.x + off.x, y: p.y + off.y }; item.setAttribute('transform', 'translate(' + item._pos.x + ',' + item._pos.y + ')'); });
-          on(svg, 'pointerup', function (e) {
-            if (!active) return; active = false; var p = item._pos || item._home;
+          item.style.touchAction = 'none';
+          var stop = function () {
+            active = false;
+            if (S.dragging === item) S.dragging = null;
+            try { if (pid != null && item.releasePointerCapture) item.releasePointerCapture(pid); } catch (x) {}
+            pid = null;
+            item.style.cursor = item._placed ? '' : 'grab';
+          };
+          on(item, 'pointerdown', function (e) {
+            if (item._placed || active || S.dragging || S.done) return;
+            if (e.button != null && e.button > 0) return;              // a left press, a touch or a pen
+            e.preventDefault();
+            var p = pt(e), m = item._pos || item._home;
+            off = { x: m.x - p.x, y: m.y - p.y };
+            if (item._glide) { item._glide(); item._glide = null; }       // taken back while gliding home
+            layers.ui.appendChild(item);                                   // on top of the others — FIRST
+            pid = e.pointerId; active = true; S.dragging = item;
+            try { if (item.setPointerCapture) item.setPointerCapture(pid); } catch (x) {}
+            item.style.cursor = 'grabbing';
+          });
+          var move = function (e) {
+            if (!active || (pid != null && e.pointerId !== pid)) return;
+            if (e.pointerType === 'mouse' && e.buttons === 0) { stop(); returnItem(item); return; }
+            var p = pt(e);
+            item._pos = { x: Math.max(ITEM_HALF, Math.min(W - ITEM_HALF, p.x + off.x)),
+                          y: Math.max(ITEM_HALF, Math.min(H - ITEM_HALF - seatY, p.y + off.y)) };
+            item.setAttribute('transform', 'translate(' + item._pos.x + ',' + item._pos.y + ')');
+          };
+          on(win, 'pointermove', move);
+          on(win, 'pointercancel', function (e) {
+            if (!active || (pid != null && e.pointerId !== pid)) return;
+            stop(); returnItem(item);
+          });
+          on(item, 'lostpointercapture', function (e) {
+            // (the release itself also loses the capture — that one is handled below, first)
+            if (!active || (pid != null && e.pointerId !== pid)) return;
+            later(0, function () { if (active) { stop(); returnItem(item); } });
+          });
+          on(win, 'pointerup', function (e) {
+            if (!active || (pid != null && e.pointerId !== pid)) return;
+            stop();
+            var p = item._pos || item._home;
             var bin = S.bins.filter(function (b) { var r = b._rect; return p.x > r.x && p.x < r.x + r.w && p.y > r.y && p.y < r.y + r.h; })[0];
             st.lastEl = item;
             if (bin) evt('answer:selected', { item: item._name, bin: bin._bin.id });
@@ -6052,7 +6391,7 @@
               bin._items.push(item);
               packBin(bin);
               onTap('correct');
-              if (S.placed >= S.total) { endInteraction(); resolve({ result: 'correct' }); }
+              if (S.placed >= S.total) { S.done = true; endInteraction(); resolve({ result: 'correct' }); }
             } else {
               // WRONG 1 is a word; WRONG 2 is the shape taught up close
               // (spec.teach: every that-many misses; game.js lifts the card
@@ -6060,7 +6399,7 @@
               S.misses = (S.misses || 0) + 1;
               var teachIt = spec.teach && S.misses % spec.teach === 0;
               onTap('wrong', null, teachIt ? { teach: { el: item, concave: !!c.concave } } : null);
-              returnItem(item);
+              returnItem(item, true);
             }
           });
         }
@@ -6540,10 +6879,28 @@
     return api;
   }
 
-  function returnItem(item) {
+  /* A CARD NOT KEPT GOES HOME — it glides back to its place in the tray from wherever it was
+     let go, rather than vanishing there and reappearing here; one dropped on the wrong bin
+     (`refused`) gives its small shake once it has arrived. Taking it up again mid-glide stops
+     the glide where the card is (item._glide). */
+  function returnItem(item, refused) {
     if (!item || item._placed) return;
-    item._pos = null; juice('refuse', item);
-    item.setAttribute('transform', 'translate(' + item._home.x + ',' + item._home.y + ')');
+    var from = item._pos, to = item._home;
+    item._pos = null;
+    var put = function (x, y) { item.setAttribute('transform', 'translate(' + x + ',' + y + ')'); };
+    var land = function () { item._glide = null; put(to.x, to.y); if (refused) juice('refuse', item); };
+    if (!from || reduced() || !global.requestAnimationFrame || Math.hypot(from.x - to.x, from.y - to.y) < 2) { land(); return; }
+    var g0 = sceneGen, t0 = null, live = true;
+    item._glide = function () { live = false; };
+    var step = function (now) {
+      if (!live || g0 !== sceneGen || item._placed) return;
+      if (t0 == null) t0 = now;
+      var k = Math.min(1, (now - t0) / 260), e = 1 - Math.pow(1 - k, 3);
+      item._pos = null;
+      put(from.x + (to.x - from.x) * e, from.y + (to.y - from.y) * e);
+      if (k < 1) requestAnimationFrame(step); else land();
+    };
+    requestAnimationFrame(step);
   }
 
   /* ------------------------------------------------------------------ *
