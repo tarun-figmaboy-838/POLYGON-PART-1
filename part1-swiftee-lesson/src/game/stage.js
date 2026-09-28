@@ -1130,6 +1130,7 @@
     var list = (Array.isArray(words) ? words : [words]).map(wordKey).filter(Boolean);
     if (!list.length) return false;
     el.style.opacity = '0';
+    el._held = true;                       // (dimTag leaves it hidden, and remembers — see there)
     el._heldEvents = el.style.pointerEvents || '';
     el.style.pointerEvents = 'none';
     heldForWord.push({ words: list, el: el, onShow: onShow || null });
@@ -1154,8 +1155,11 @@
     if (!el || !el.parentNode) return;
     var go = function () {
       if (!el.parentNode) return;
+      el._held = false;
       el.style.opacity = '';
       el.style.pointerEvents = el._heldEvents || '';
+      // arriving under a card that has stepped back, it arrives stepped back with it
+      if (el._dimLater) { var d = el._dimLater; el._dimLater = null; dimTag(el, d.dim, d.soft); }
       enter(el, 'ui');
       if (h.onShow) { try { h.onShow(el); } catch (e) {} }
     };
@@ -2373,7 +2377,18 @@
         // the ice under it, arriving on its word (holdForWord)
         var tagEl = cfg.caption ? nameTag(layers.ui, pnl.x + pnl.w / 2, pnl.y + pnl.h + 38, cfg.caption, cfg.tone) : null;
         if (tagEl && cfg.captionCue) holdForWord(tagEl, cfg.captionCue);
-        st.compare[s[0]] = { panel: pnl, g: g, pg: pg, dg: dg, diags: diags, verts: P.verts, tone: cfg.tone, tag: tagEl };
+        /* WHICH ONE HE MEANS. "This one" and "this one" over two pentagons that look alike from a
+           distance: each card wears its name on a tab hung on its top edge (cfg.name — "Pentagon
+           A", "Pentagon B"), clear of the marks and badges that arrive under it, and the card he
+           is talking about wears a gold ring just outside its rim (focus()). The ring is its own
+           stroke rather than a glow on the card: the card's face is glass, and a shadow on it
+           showed through as a pale line inside the rim. */
+        var tab = cfg.name ? nameTag(layers.ui, pnl.x + pnl.w / 2, pnl.y + 1, cfg.name, null, { h: 32, size: 17, pad: 30, rim: 2.5 }) : null;
+        if (tab) tab.setAttribute('class', 'badge name-tab');
+        var ring = mk('rect', { x: pnl.x - 7, y: pnl.y - 7, width: pnl.w + 14, height: pnl.h + 14, rx: 38, fill: 'none',
+                                stroke: '#ffc23c', 'stroke-width': 5, 'class': 'focus-ring', opacity: 0, 'pointer-events': 'none' }, layers.ui);
+        if (tab) layers.ui.appendChild(tab);                       // over the ring, where the two meet
+        st.compare[s[0]] = { panel: pnl, g: g, pg: pg, dg: dg, diags: diags, verts: P.verts, tone: cfg.tone, tag: tagEl, nameTab: tab, ring: ring };
       });
     },
 
@@ -4858,6 +4873,8 @@
         if (!w || !w.word) return;
         onWord(w.word, function () {
           if (w.sfx) sfx(w.sfx, { gain: w.gain || 0.5 });
+          // the focus moves on its word too: the line turns from one card to the other
+          if (w.focus && st.compare) focus(w.focus === 'even' ? 'compare' : 'compare.' + w.focus, w.focus === 'even' ? 'even' : (w.style || 'lean'));
           if (reduced() || !st.compare) return;
           if (w.pulse) {
             var ks = w.pulse === 'both' ? ['left', 'right'] : [w.pulse];
@@ -5141,6 +5158,10 @@
   // `soft`: the lighter step back of the compare sequence ('lean')
   function dimTag(el, dim, soft) {
     if (!el || !el.style) return;
+    // A TAG STILL WAITING FOR ITS WORD STAYS HIDDEN. Stepping its card back set its opacity to
+    // 0.6, which was the tag appearing, faded, before it was said ("Irregular pentagon" up while
+    // he was still on "regular"); it takes the card's state when its word comes (showHeld).
+    if (el._held) { el._dimLater = { dim: dim, soft: soft }; return; }
     el.style.transition = 'opacity 320ms ease, filter 320ms ease';
     el.style.opacity = dim ? (soft ? .6 : .42) : '';
     el.style.filter = dim ? (soft ? 'saturate(.55) brightness(1.03)' : 'saturate(.25) brightness(1.04)') : '';
@@ -5154,7 +5175,8 @@
       Object.keys(st.compare).forEach(function (k) {
         var c = st.compare[k];
         [c.g, c.pg].forEach(function (el) { el.style.transition = 'opacity 320ms ease, filter 320ms ease'; el.style.opacity = 1; el.style.filter = ''; });
-        [(st.badges || {})['compare.' + k], c.tag, (st.compareMarks || {})[k]].forEach(function (el) { dimTag(el, false); });
+        [(st.badges || {})['compare.' + k], c.tag, (st.compareMarks || {})[k], c.nameTab].forEach(function (el) { dimTag(el, false); });
+        if (c.ring) c.ring.style.opacity = '0';
       });
       return;
     }
@@ -5183,6 +5205,9 @@
         dimTag((st.badges || {})['compare.' + k], dim, soft);
         dimTag(c.tag, dim, soft);
         dimTag((st.compareMarks || {})[k], dim, soft);
+        dimTag(c.nameTab, dim, soft);
+        // and the one in focus wears the ring (the other card's comes off)
+        if (c.ring) c.ring.style.opacity = dim ? '0' : '1';
       });
       return;
     }
@@ -6393,9 +6418,10 @@
               onTap('correct');
               if (S.placed >= S.total) { S.done = true; endInteraction(); resolve({ result: 'correct' }); }
             } else {
-              // WRONG 1 is a word; WRONG 2 is the shape taught up close
-              // (spec.teach: every that-many misses; game.js lifts the card
-              // with Stage.teach and explains it). The card goes home first.
+              // A MISS IS THE SHAPE TAUGHT UP CLOSE (spec.teach: every that-many
+              // misses — 1 on the convex/concave sort; game.js lifts the card
+              // with Stage.teach and explains it, and with spec.autoPlace the
+              // lesson then puts it in its bin). The card goes home first.
               S.misses = (S.misses || 0) + 1;
               var teachIt = spec.teach && S.misses % spec.teach === 0;
               onTap('wrong', null, teachIt ? { teach: { el: item, concave: !!c.concave } } : null);
@@ -6404,6 +6430,32 @@
           });
         }
         S.items.forEach(armItem);
+        /* TAUGHT, THEN ANSWERED FOR THEM (spec.autoPlace). A card that was dropped in the wrong
+           bin is taught up close at once (teachShape) and, as the lesson puts it down, it goes
+           into the bin it belongs in and is locked there — not back into the tray to be failed
+           again. It is not scored as an answer: nobody chose it. */
+        S.autoTeach = !!spec.autoPlace;
+        S.autoPlace = function (item) {
+          if (!item || item._placed || S.done) return null;
+          var c = Poly.classify(item._verts);
+          var bin = S.bins.filter(function (b) {
+            var id = b._bin.id;
+            return id === 'convex' ? c.convex : id === 'concave' ? c.concave : id === 'regular' ? c.regular : c.irregular;
+          })[0];
+          if (!bin) return null;
+          if (item._glide) { item._glide(); item._glide = null; }
+          item._placed = true; item._auto = true; S.placed++; bin._count++; item.style.cursor = '';
+          bin._items = bin._items || [];
+          bin._items.push(item);
+          packBin(bin);
+          evt('sort:auto', { item: item._name, bin: bin._bin.id });
+          return bin;
+        };
+        S.finishIfDone = function () {
+          if (S.done || S.placed < S.total) return false;
+          S.done = true; endInteraction(); resolve({ result: 'correct', auto: true });
+          return true;
+        };
         // the gesture: a ghost of the first card slides down toward the bins
         // and fades — the move, not the answer — until the child takes one
         var firstLeft = function () { return S.items.filter(function (it) { return !it._placed; })[0]; };
@@ -6863,14 +6915,25 @@
         }
       },
       close: function () {
+        // on a sort that answers a taught card (autoPlace), the card is put in its bin FIRST, so
+        // the copy flies to the seat it now has there rather than back to the tray
+        var S2 = st.sort, bin = (S2 && S2.autoTeach && S2.autoPlace) ? S2.autoPlace(item) : null;
         var home = toStage(item) || from;
         fx.style.transition = 'opacity .25s ease'; fx.style.opacity = '0';
         sheet.classList.remove('on');
-        return fly(now, home, TEACH.backMs, false).then(function () {
+        return fly(now, home, bin ? TEACH.backMs + 180 : TEACH.backMs, false).then(function () {
           if (st.teachCopy === copy) st.teachCopy = null;
           item.style.visibility = '';
           if (sheet.parentNode) sheet.parentNode.removeChild(sheet);
           juice('pop', item);
+          if (bin) {
+            sfx('pop', { gain: 0.6 });
+            if (!reduced() && bin.animate) {
+              bin.style.transformBox = 'fill-box'; bin.style.transformOrigin = 'center';
+              try { bin.animate([{ scale: '1' }, { scale: '1.04' }, { scale: '1' }], { duration: 300, easing: 'cubic-bezier(.3,1.3,.5,1)' }); } catch (e) {}
+            }
+            if (S2 && S2.finishIfDone) S2.finishIfDone();
+          }
         });
       }
     };

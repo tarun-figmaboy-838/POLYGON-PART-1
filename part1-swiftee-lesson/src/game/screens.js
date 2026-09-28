@@ -618,7 +618,8 @@
       // the concave one is the pentagon the child dented (made: stage.js
       // keeps it); the stock dent stands in when the screen is reached without it.
       // NO DIAGONALS YET: they are drawn as each card is talked about.
-      stage: { kind: 'compare', left: { sides: 5 }, right: { sides: 5, dent: 0, made: 'concave' } },
+      // each card named on a tab (stage.js compare), so "this one" is always one of two names
+      stage: { kind: 'compare', left: { sides: 5, name: 'Pentagon A' }, right: { sides: 5, dent: 0, made: 'concave', name: 'Pentagon B' } },
       beats: [
         { instruction: null },
         // THE PAIR ARRIVES, THEN HE SPEAKS OF IT
@@ -784,13 +785,15 @@
       // shadow while he is up (swiftee.js), so nothing says he is standing.
       swiftee: { pos: 'top-left', size: 'small' },
       say: 'Can you sort these polygons as convex or concave?',
-      // TWO MISSES AND THE SHAPE IS TAUGHT (the user's spec). The first wrong
-      // drop is answered in a word; the second lifts that card out of the
-      // tray under a dim sheet, large, and he says what it shows while each
-      // part lights on it on its word (`show`, on word `on`): stage.js
-      // teachShape, game.js teachHooks. Then it goes back to the tray and the
-      // same question goes on. The rule is the lesson's own two lines, in
-      // their own voices; the "Look!" line points at the shape.
+      // THE FIRST MISS IS TAUGHT, AND THEN ANSWERED (the Part 1 review, section
+      // 5). A wrong drop lifts that card out of the tray under a dim sheet,
+      // large, and he says what it shows while each part lights on it on its
+      // word (`show`, on word `on`): stage.js teachShape, game.js teachHooks.
+      // Then the card goes into the bin it belongs in and is locked there
+      // (autoPlace) — a child is not made to fail the same shape twice before
+      // it is explained — and the sort goes on with the rest. The rule is the
+      // lesson's own two lines, in their own voices; the "Look!" line points
+      // at the shape.
       teach: {
         concave: [{ say: 'Look! This corner goes inward.', vo: 'p27c', show: 'notch' },
                   { say: 'Atleast one diagonal outside means concave polygon.', vo: 'p25', show: 'outside', on: 2 }],
@@ -817,7 +820,7 @@
         { wait: 300 },
         { say: 'Can you sort these polygons as convex or concave?', vo: 'p27' },
         { swiftee: 'observe', at: 'sort.tray' },
-        { input: { type: 'sort', until: 'all-placed-correctly', teach: 2 } },
+        { input: { type: 'sort', until: 'all-placed-correctly', teach: 1, autoPlace: true } },
         // a finished sort is a milestone
         { feedback: milestone([{ sfx: 'levelUp' }, { juice: 'confetti', target: 'stage' }]) }
       ],
@@ -1012,7 +1015,12 @@
         { wait: 300 },
         // a rule goes in the book
         { swiftee: 'note' },
+        // ONE CARD AT A TIME: the regular one while he says what makes it regular, the irregular
+        // one from "Otherwise", and the pair side by side again once the line is said
+        { focus: 'compare.left', style: 'lean' },
+        { stage: { onWord: [{ word: 'otherwise', focus: 'right' }] } },
         { say: 'All sides AND all angles same: regular. Otherwise, it\u2019s irregular.', parts: ['All sides AND all angles same:', 'regular.', 'Otherwise, it\u2019s irregular.'], vo: 'p32c' },
+        { focus: 'compare', style: 'even' },
         { input: { type: 'tap-anywhere' } }
       ]
     },

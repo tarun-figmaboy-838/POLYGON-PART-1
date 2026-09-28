@@ -697,21 +697,31 @@
      presents the shape, he does not say "oops" at it. */
   function teachHooks(t) {
     var T = null, wasAt = null;
+    // he goes to the card he is about to explain: a walk to its side while it
+    // flies up, and the presenting flourish once both arrive
+    function lift() {
+      var walked = null;
+      if (buddyOn && present && global.Swiftee && Swiftee.play) {
+        wasAt = { pos: Swiftee.pos, size: Swiftee.size };
+        try { walked = Swiftee.play('move', { to: 'teach', size: 'medium' }); } catch (e) {}
+      }
+      return Promise.all([T.open(), Promise.resolve(walked)]).then(function () {
+        placeBubble();
+        if (buddyOn && present && global.Swiftee && Swiftee.play) { try { Swiftee.play('present', direction()); } catch (e) {} }
+      });
+    }
     return {
       open: function () {
         say(null);
-        T = Stage.teach(t.el);
-        if (!T) return Promise.resolve();
-        // he goes to the card he is about to explain: a walk to its side
-        // while it flies up, and the presenting flourish once both arrive
-        var walked = null;
-        if (buddyOn && present && global.Swiftee && Swiftee.play) {
-          wasAt = { pos: Swiftee.pos, size: Swiftee.size };
-          try { walked = Swiftee.play('move', { to: 'teach', size: 'medium' }); } catch (e) {}
-        }
-        return Promise.all([T.open(), Promise.resolve(walked)]).then(function () {
-          placeBubble();
-          if (buddyOn && present && global.Swiftee && Swiftee.play) { try { Swiftee.play('present', direction()); } catch (e) {} }
+        /* THE MISS IS SEEN FIRST: the card glides home with its shake, and a breath later it
+           is lifted up to be explained — "incorrect feedback, pause, bring the card forward",
+           not the lift arriving on top of the miss. (A screen left in that breath is left
+           alone.) */
+        var screenAt = current;
+        return pause(Math.round(450 * paceScale())).then(function () {
+          if (current !== screenAt) return null;
+          T = Stage.teach(t.el);
+          return T ? lift() : null;
         });
       },
       cue: function (what) { if (T) T.show(what); },
