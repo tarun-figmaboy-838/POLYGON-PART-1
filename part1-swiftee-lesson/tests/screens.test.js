@@ -527,15 +527,17 @@ const levelOf = (st) => { const d = RIG[st]; return d ? (d.level || 1) : 0; };
 
 /* THE SIDE-MEASURING SCREEN IS PROTECTED. Its choreography is the dedicated
    measuring walk (stage.js measureSide, its own sheet); nothing generic was
-   given to it. Beat for beat as it was, and no per-tap face. */
+   given to it. Beat for beat as it is — since the Part 1 review he measures
+   the sides himself ("Let's measure.", then the walk round all five, no taps
+   taken: auto) — and no per-tap face. */
 {
   const m = Screens.byId['measure-sides'];
   t('the side-measuring screen is unchanged', !!m && JSON.stringify(m.beats) === JSON.stringify([
     { stage: { kind: 'polygon' } },
-    { instruction: 'Tap the sides to measure them.', vo: 'p29i' },
+    { instruction: null },
     { swiftee: 'inspect' },
-    { focus: 'polygon.sides', style: 'pulse' },
-    { input: { type: 'tap-each', targets: 'sides', reveal: 'length', count: 5 } },
+    { say: 'Let\u2019s measure.', vo: 'p29m' },
+    { input: { type: 'tap-each', targets: 'sides', reveal: 'length', count: 5, auto: true, praise: false } },
     { feedback: [{ sfx: 'correct' }, { swiftee: 'proud' }] }
   ]), m && m.beats);
   t('no generic face is asked for per measured side',

@@ -287,8 +287,8 @@ window.PreloadList = {
   "assets/vo/fb31.ogg": 8797,
   "assets/vo/fb32.mp3": 15788,
   "assets/vo/fb32.ogg": 7381,
-  "assets/vo/index.js": 7504,
-  "assets/vo/index.json": 13928,
+  "assets/vo/index.js": 7475,
+  "assets/vo/index.json": 13857,
   "assets/vo/p01.mp3": 20106,
   "assets/vo/p01.ogg": 10846,
   "assets/vo/p02.mp3": 24285,
@@ -349,10 +349,10 @@ window.PreloadList = {
   "assets/vo/p27c.ogg": 15659,
   "assets/vo/p27v.mp3": 25330,
   "assets/vo/p27v.ogg": 14504,
-  "assets/vo/p28.mp3": 44765,
-  "assets/vo/p28.ogg": 26125,
-  "assets/vo/p29i.mp3": 19479,
-  "assets/vo/p29i.ogg": 11390,
+  "assets/vo/p28.mp3": 32434,
+  "assets/vo/p28.ogg": 19938,
+  "assets/vo/p29m.mp3": 16556,
+  "assets/vo/p29m.ogg": 8007,
   "assets/vo/p30.mp3": 36824,
   "assets/vo/p30.ogg": 22026,
   "assets/vo/p31.mp3": 17598,
@@ -411,6 +411,6 @@ window.PreloadList = {
   "assets/vo/st4-momo.ogg": 18879,
   "assets/vo/st5-narrator.mp3": 66860,
   "assets/vo/st5-narrator.ogg": 32042,
-  "assets/vo/word-timings.json": 5211
+  "assets/vo/word-timings.json": 5164
  }
 };

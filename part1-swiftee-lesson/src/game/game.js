@@ -226,12 +226,12 @@
     // whole, however long, and the bubble grows or steps its type down.
     //
     // AND AS MANY BUBBLES AS IT TAKES. This used to cut once and leave the
-    // rest together, so "Hmm… The sides look suspiciously alike. Let's
-    // check!" came out as "Hmm…" and then a bubble with two sentences in it
-    // — and the second of them, the one that says what happens next, went
-    // past in the same breath as the observation. Sentences are packed into
-    // bubbles up to about a line's worth of words, so a short opener rides
-    // with the sentence after it and a closing "Let's check!" gets its own.
+    // rest together, so a line of three sentences came out as its opener and
+    // then a bubble with two sentences in it — and the second of them, the
+    // one that says what happens next, went past in the same breath as the
+    // observation. Sentences are packed into bubbles up to about a line's
+    // worth of words, so a short opener rides with the sentence after it and
+    // a closing call to action ("Let's find out!") gets its own.
     if (!text || text.length <= 32) return [text];
     var sentences = [], rest = text, m;
     while ((m = /^(.{3,}?[.!?\u2026])\s+(\S.*)$/.exec(rest))) { sentences.push(m[1]); rest = m[2]; }
@@ -2823,8 +2823,8 @@
         parts = sentences.map(function (x) { return x.text; });
         /* HIS FACE ON ITS BUBBLE. A line can say which face goes with which
            of its bubbles (`faces`, one per script fragment): "Hmm…" squinting,
-           "Let's check!" with the magnifying glass coming out on the word —
-           not a beat after the whole line has been read. */
+           then the question on his face as "The sides look suspiciously alike."
+           arrives — not a beat after the whole line has been read. */
         var faceAt = function (i) {
           var fc = sentences[i] && sentences[i].face;
           if (fc && buddyOn && present && global.Swiftee && Swiftee.play) { try { Swiftee.play(fc, direction()); } catch (e) {} }

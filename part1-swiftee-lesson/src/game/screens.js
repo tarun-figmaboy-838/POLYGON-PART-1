@@ -841,7 +841,9 @@
       swiftee: { pos: 'corner', size: 'small', purpose: 'hint', arrive: 'fly' },
       // This wording follows the recorded master exactly. Extra copy here
       // makes the bubble reveal words that Swiftee never says.
-      say: 'Hmm\u2026 The sides look suspiciously alike. Let\u2019s check!',
+      // ("Let's check!" came off the end of the take: the next screen says what happens next,
+      // "Let's measure.", and measures — the review's section 3)
+      say: 'Hmm\u2026 The sides look suspiciously alike.',
       stage: { kind: 'polygon', sides: 5, room: 'measure' },
       beats: [
         /* THE THINKING COMES FROM WHAT HE DOES, THEN THE WORDS.
@@ -859,13 +861,12 @@
         { wait: 200 },
         { swiftee: 'enter', from: 'air' },
         { swiftee: 'curious', at: 'polygon' },
-        // THREE BEATS, THE WAY A COMEDIAN WOULD SAY IT: "Hmm…" on its own,
+        // TWO BEATS, THE WAY A COMEDIAN WOULD SAY IT: "Hmm…" on its own,
         // squinting at the shape; then the suspicion, whole ("The sides look
-        // suspiciously alike."); then "Let's check!" — and the magnifying
-        // glass comes out ON those words (faces), not after the line.
+        // suspiciously alike."), with the question on his face.
         { swiftee: 'inspect' },
         { wait: 400 },
-        { say: 'Hmm\u2026 The sides look suspiciously alike. Let\u2019s check!', parts: ['Hmm\u2026', 'The sides look suspiciously alike.', 'Let\u2019s check!'], faces: [null, 'question', 'investigate'], vo: 'p28' },
+        { say: 'Hmm\u2026 The sides look suspiciously alike.', parts: ['Hmm\u2026', 'The sides look suspiciously alike.'], faces: [null, 'question'], vo: 'p28' },
         { input: { type: 'tap-anywhere' } }
       ]
     },
@@ -873,23 +874,25 @@
     {
       id: 'measure-sides', page: 29,
       swiftee: { pos: 'corner', size: 'tiny', purpose: 'demo' },
-      // THE DECK'S INSTRUCTION, WORD FOR WORD. This screen said "Tap a side.
-      // I'll measure it!", which is in neither the script nor the list of
-      // instructions — a line the build wrote for itself.
-      instruction: 'Tap the sides to measure them.',
+      // HE MEASURES, THE CHILD WATCHES (the Part 1 review, section 3). This was a tap on each
+      // side — "Tap the sides to measure them." — five taps that taught nothing the walk did
+      // not. Now he says "Let's measure.", a breath, and walks each side in turn with the tape,
+      // its length arriving as he reaches its end; the equal-side ticks are dealt once all
+      // five are in, and the screen after says what they show.
+      instruction: null,
+      say: 'Let\u2019s measure.',
       // The same pentagon as the screen before, built again under the
       // wipe: he waits inside this card, so it sits in the middle, where
       // the one he stood beside sat to the right.
       stage: { kind: 'polygon', sides: 5, room: 'measure' },
       beats: [
         { stage: { kind: 'polygon' } },
-        { instruction: 'Tap the sides to measure them.', vo: 'p29i' },
+        { instruction: null },
         { swiftee: 'inspect' },
-        { focus: 'polygon.sides', style: 'pulse' },
-        // Each tap reveals that side's length. Lengths come from
-        // Poly.sideLengths on the live geometry. Completes when all five
-        // have been tapped; there is no wrong tap on this screen.
-        { input: { type: 'tap-each', targets: 'sides', reveal: 'length', count: 5 } },
+        { say: 'Let\u2019s measure.', vo: 'p29m' },
+        // Each side in turn, lengths from Poly.sideLengths on the live geometry; no taps are
+        // taken (auto), and the measuring is his, so there is no cheer at the end (praise).
+        { input: { type: 'tap-each', targets: 'sides', reveal: 'length', count: 5, auto: true, praise: false } },
         { feedback: [{ sfx: 'correct' }, { swiftee: 'proud' }] }
       ],
       perTap: { correct: [{ sfx: 'tick' }, { juice: 'pop', target: 'side' }] }

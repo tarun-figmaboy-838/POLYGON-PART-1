@@ -63,8 +63,8 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 | 28 | 22 | sort-convex-concave | `assets/vo/p27.mp3` | say | Can you sort these polygons as convex or concave? |  | screen 22 | playful, inviting | yes |
 | 29 |  |  | `assets/vo/p27c.mp3` | say | Look! This corner goes inward. |  | screen undefined | explaining, warm and clear | yes |
 | 30 |  |  | `assets/vo/p27v.mp3` | say | Look! No corner goes inward. |  | screen undefined | explaining, warm and clear | yes |
-| 31 | 23 | suspicious | `assets/vo/p28.mp3` | say | Hmm… The sides look suspiciously alike. Let’s check! | Hmm… / The sides look suspiciously alike. / Let’s check! | screen 23 | wondering aloud, a little slower | yes |
-| 32 | 24 | measure-sides | `assets/vo/p29i.mp3` | instruction | Tap the sides to measure them. |  | screen 24, the instruction | an instruction: plain, steady, every word clear | yes |
+| 31 | 23 | suspicious | `assets/vo/p28.mp3` | say | Hmm… The sides look suspiciously alike. | Hmm… / The sides look suspiciously alike. | screen 23 | wondering aloud, a little slower | yes |
+| 32 | 24 | measure-sides | `assets/vo/p29m.mp3` | say | Let’s measure. |  | screen 24 | playful, inviting | yes |
 | 33 | 25 | sides-equal | `assets/vo/p30.mp3` | say | Every side is equal. But what about the angles? | Every side is equal. / But what about the angles? | screen 25 | asking: curious, open | yes |
 | 34 | 26 | measure-angles | `assets/vo/p31i.mp3` | instruction | Tap the angles to measure them. |  | screen 26, the instruction | an instruction: plain, steady, every word clear | yes |
 | 35 | 26 | measure-angles | `assets/vo/p31.mp3` | say | The angles match too! |  | screen 26 | explaining, warm and clear | yes |

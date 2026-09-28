@@ -6267,7 +6267,13 @@
         // WHERE TO TAP. Every target still waiting carries a soft pulse — a
         // glow along the side, a breath on the corner — and loses it the
         // moment it has been measured, so the pulse is always the to-do list.
+        /* HE MEASURES THEM HIMSELF (spec.auto — the side-measuring screen since the Part 1
+           review). Nothing is offered to tap: no pulse, no hand, no pointer; after a breath every
+           side goes on the queue and the walk takes them one at a time, each dot going as its
+           side is begun, at the pace the walk has always had. */
+        var auto = !!spec.auto;
         var hint = function () {
+          if (auto) return;
           (isSides ? st.edgeEls : st.vertEls).forEach(function (el, i) {
             el.style.cursor = seen[i] ? '' : 'pointer';   // a measured side is done with
             if (el.classList) el.classList.toggle('hint', !seen[i]);
@@ -6284,12 +6290,19 @@
         // every one of them is to be measured: the hand taps the next — from
         // the first idle hint, because "tap the sides" is a move no screen
         // before has asked for
-        hintLadder({
+        if (!auto) hintLadder({
           pulse: function () { var t = todo(); return both(pulseHint(t), tapHand(centreOf(t[0]))); },
           demo: function () { var t = todo(); return both(pulseHint(t, { strong: true }), tapHand(centreOf(t[0]))); }
         });
+        if (auto) {
+          if (global.Input) Input.mode('locked');
+          later(Math.round((spec.lead == null ? 650 : spec.lead)), function () {
+            for (var k = 0; k < need && k < st.n; k++) { if (!seen[k]) { seen[k] = true; queue.push(k); } }
+            next();
+          });
+        }
         // Delegated: renderPoly() runs after every reveal.
-        on(st.polyG, 'pointerdown', function (e) {
+        if (!auto) on(st.polyG, 'pointerdown', function (e) {
           var t = e.target; if (!t || !t.classList || !t.classList.contains(cls)) return;
           var i = +t.getAttribute('data-i'); if (seen[i]) return;
           e.preventDefault(); seen[i] = true;
@@ -6304,6 +6317,11 @@
         function next() {
           if (cancelled || measuring || !queue.length) return;
           var i = queue.shift(); measuring = true;
+          if (auto) {
+            // what a tap did, done as each side is begun
+            evt('measurement:start', { what: isSides ? 'side' : 'angle', index: i });
+            if (isSides && st.sideTodo) { st.sideTodo = st.sideTodo.filter(function (k) { return k !== i; }); renderPoly(); }
+          }
           function reveal() {
             if (cancelled) return;
             count++;
@@ -6331,7 +6349,9 @@
                 }
                 if (ticks.length) sfx('sparkle', { gain: 0.5 });
               }
-              endInteraction(); resolve({ result: 'correct' });
+              // (measured by him, the ticks are given the time to be seen before the lesson goes on)
+              if (auto) later(1400, function () { if (!cancelled) { endInteraction(); resolve({ result: 'correct' }); } });
+              else { endInteraction(); resolve({ result: 'correct' }); }
             }
             else next();
           }
