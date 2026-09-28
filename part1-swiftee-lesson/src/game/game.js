@@ -521,10 +521,10 @@
   var EMOTE = { fb03: 'nice', fb01: 'happy', fb06: 'chuffed', fb04: 'point', fb17: 'celebrate', fb18: 'celebrate',
                 fb19: 'nod', fb20: 'wink', fb21: 'chuffed', fb22: 'nod', fb23: 'nice', fb24: 'happy', fb25: 'celebrate',
                 fb26: 'phew' };
-  // A MISS IS MET GENTLY, and says to look again rather than only "no"
+  // A MISS IS MET GENTLY, and says to try again rather than only "no". "Try again!" in
+  // place of "Hmm, look again.", "Almost!" and "Try once more." (asked for).
   var NUDGE = [
-    { t: 'Hmm, look again.', vo: 'fb27' }, { t: 'Almost!', vo: 'fb28' }, { t: 'Try once more.', vo: 'fb29' },
-    { t: 'Take another look.', vo: 'fb30' }, { t: 'Not quite.', vo: 'fb31' }
+    { t: 'Try again!', vo: 'fb32' }, { t: 'Take another look.', vo: 'fb30' }, { t: 'Not quite.', vo: 'fb31' }
   ];
   var praiseN = 0, nudgeN = 0, feedbackScreen = -1;
   /* NOW A FEELING, NOT A LIST OF FACES. The faces rotated by a counter, so
@@ -3079,7 +3079,7 @@
         // A RETRY THAT ARMS WHILE HE IS STILL ANSWERING THE LAST TRY waits for
         // him: held, and handed back as his reply ends (pop). A wrong answer
         // that ends its input re-arms the question at once, and the child
-        // could answer again over "Hmm, look again." and cut it off. (After
+        // could answer again over "Try again!" and cut it off. (After
         // the interaction has started: it sets the pointer mode itself, and
         // the mode and the stage's hold must say the same thing.)
         if (inputLive && replying()) { holdInput(true); holdForReply = true; }

@@ -84,7 +84,7 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 | 49 | 31 | summary | `assets/vo/p37h.mp3` | say | If the sides or angles are not all equal, the polygon is irregular. |  | screen 31 | explaining, warm and clear | yes |
 | 50 | 31 | summary | `assets/vo/p37i.mp3` | say | Amazing! You explored all these polygon ideas! |  | screen 31 | explaining, warm and clear | yes |
 
-## Answers (29), said when the child answers
+## Answers (27), said when the child answers
 
 | File | Line | When | Delivery | Recorded |
 |------|------|------|----------|----------|
@@ -102,9 +102,7 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 | `assets/vo/fb24.mp3` | Nice! That’s a diagonal. | a try that falls short, with the reason | a cheer, delighted | yes |
 | `assets/vo/fb25.mp3` | Great job! You found them all. | a try that falls short, with the reason | a cheer, delighted | yes |
 | `assets/vo/fb26.mp3` | Yes! You got it! | a try that falls short, with the reason | a cheer, delighted | yes |
-| `assets/vo/fb27.mp3` | Hmm, look again. | a try that falls short, with the reason | wondering aloud, a little slower | yes |
-| `assets/vo/fb28.mp3` | Almost! | a try that falls short, with the reason | explaining, warm and clear | yes |
-| `assets/vo/fb29.mp3` | Try once more. | a try that falls short, with the reason | explaining, warm and clear | yes |
+| `assets/vo/fb32.mp3` | Try again! | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/fb30.mp3` | Take another look. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/fb31.mp3` | Not quite. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/p38a.mp3` | Honk-tastic! | a try that falls short, with the reason | explaining, warm and clear | yes |

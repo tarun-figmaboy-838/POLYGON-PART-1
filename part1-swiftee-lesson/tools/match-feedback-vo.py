@@ -73,8 +73,10 @@ def main():
 
     args.out.mkdir(parents=True, exist_ok=True)
     clips = sorted(p for p in SOURCE.glob("fb*.mp3") if p.stem not in SKIP)
-    if len(clips) != 25:
-        raise RuntimeError(f"Expected 25 original feedback clips in {SOURCE}; found {len(clips)}")
+    # 23: "Hmm, look again.", "Almost!" and "Try once more." (fb27-fb29) gave way to
+    # "Try again!" (fb32), whose original is the one tools/make-vo.js generated
+    if len(clips) != 23:
+        raise RuntimeError(f"Expected 23 original feedback clips in {SOURCE}; found {len(clips)}")
     for src in clips:
         source = converter.extract_se(str(src))
         wav = args.out / f"{src.stem}.wav"
