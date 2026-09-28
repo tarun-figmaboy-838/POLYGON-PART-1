@@ -741,6 +741,8 @@
      child's own score is shown, not said — the take has no numbers in it,
      and a score is whatever this run earned. */
   var FINALE = [{ t: 'Honk-tastic!', vo: 'p38a' }, { t: 'You are a polygon adventurer!', vo: 'p38b' }];
+  // the hand-over screen's one line (readyScene). Not in the voice take yet, so it is read, not heard.
+  var READY = { t: 'You’re ready! Now let’s help Momo.' };
   var NUDGE_STRONG = { t: 'Not that one.', vo: 'fb10' };
   var wrongSinceRight = false;        // a miss on this screen since the last right answer
   /* the next cheer in the round, never the one just said */
@@ -942,6 +944,9 @@
       // the far corner talking across the screen (teachHooks).
       'teach':              { x: 0.17, y: 0.82 },
       'centre':             { x: 0.50, y: 0.93 },
+      // ON MOMO'S GROUND, the hand-over screen (readyScene): on the left ledge, feet on
+      // its snow line — y is Stage's LEDGE_WALK (455 of 562), so the two must move together
+      'ledge':              { x: 0.17, y: 0.81 },
       'off':                { x: -0.3, y: 0.9 }
     };
 
@@ -1032,7 +1037,9 @@
     // do not need to know this — they still say "left"; the layout decides
     // that "left of nothing" means the middle, with a little more presence.
     var m = map[pos] || map['left-low'];
-    if (pos !== 'off' && soloed()) { m = map['centre']; }
+    // ...except the ledge: that scene is scenery too, but the ledge IS where he stands —
+    // moved to the middle he was over the gap, feet in the rock (readyScene)
+    if (pos !== 'off' && pos !== 'ledge' && soloed()) { m = map['centre']; }
 
     var x = f.x + m.x * f.w;
 
@@ -1577,6 +1584,26 @@
     // the finale's Part 2 button stands in the same corner, so it is kept clear the same way
     var nextBox = nextBtn && nextBtn.classList.contains('show') ? nextBtn.getBoundingClientRect()
       : continueBtn && continueBtn.classList.contains('show') ? continueBtn.getBoundingClientRect() : null;
+
+    /* ON THE LEDGE (readyScene): UP AND TO HIS RIGHT, over the gap, as the reference has
+       it. The stage holds only scenery there, so the solo rule below would centre the
+       line over the middle of the screen, away from him. Its foot sits a little over the
+       top of his head and its left end just past his shoulder, so the tail comes off the
+       bottom-left corner and drops onto him (paintSkin aims it). */
+    if (readyOn && Swiftee.pos === 'ledge') {
+      var bird = birdRect();
+      if (bird && bird.width) {
+        bubble.style.maxWidth = Math.min(f.w * 0.46, 600 * K) + 'px';
+        snugWidth();
+        var rw = bubble.offsetWidth, rh = bubble.offsetHeight;
+        var rl = Math.max(X0 + GAP, Math.min(vw - rw - GAP, bird.right - bird.width * 0.12));
+        var rt = Math.max(hudBox.bottom + GAP, bird.top + bird.height * 0.08 - rh);
+        bubble.style.left = rl + 'px';
+        bubble.style.top = rt + 'px';
+        paintSkin();
+        return;
+      }
+    }
 
     // With nothing on stage he simply speaks over the middle of the screen.
     if (solo || !content) {
@@ -3765,16 +3792,17 @@
     var won = quest.snapshot();
     var score = won.xp + ' XP and ' + won.badges.length + (won.badges.length === 1 ? ' badge' : ' badges') + '.';
     // spoken and word by word, one voice at a time, his last words kept up —
-    // and once they are said, a moment to enjoy it, then on to Part 2. A
-    // replay, a restart or a screen picked in the review tool bumps playGen
-    // and so calls the move off.
+    // and once they are said, a moment to enjoy it, then the hand-over screen
+    // (readyScene), where the child presses on into Part 2. A replay, a
+    // restart or a screen picked in the review tool bumps playGen and so
+    // calls the move off.
     var gen = playGen;
     pop([{ t: FINALE[0].t, vo: FINALE[0].vo, mood: 'win' },
          { t: score, mood: 'win' },
          { t: FINALE[1].t, vo: FINALE[1].vo, mood: 'win' }], { keep: true }).then(function () {
       if (gen !== playGen) return;
       clearTimeout(onwardTimer);
-      onwardTimer = setTimeout(function () { if (gen === playGen) goOn(); }, ONWARD_MS);
+      onwardTimer = setTimeout(function () { if (gen === playGen) readyScene(); }, ONWARD_MS);
     });
     // one burst, wide, for the finale — two from different points read as a stutter
     if (global.Juice) Juice.confetti(Stage.svg, { count: 72, spread: 2.6 });
@@ -3786,6 +3814,52 @@
     // and on to Part 2, from the corner Next has held all lesson — for a child
     // who does not want to wait for it
     if (continueBtn) continueBtn.classList.add('show');
+  }
+
+  /* THE HAND-OVER SCREEN: SWIFTEE ON MOMO'S GROUND (asked for, from a reference).
+   *
+   * The lesson used to leave for Part 2 by itself four seconds after the finale, so
+   * the first thing Part 2 showed was a stranger (Momo) in a place the child had never
+   * seen. Now the finale is followed by one quiet screen that joins them: Swiftee
+   * standing on a ledge of Frozen Rush's own ice path (Stage 'ready'), waving, with
+   * one line — "You're ready! Now let's help Momo." — and the way on, Part 2's
+   * button, bigger and in the corner where moving on has lived all lesson.
+   *
+   * It does NOT go on by itself. It is a doorway, and the child walks through it:
+   * the button breathes after a moment (index.html, .ready-scene) so nobody is left
+   * wondering what to press. It comes in under the lesson's own snow, like a new level.
+   */
+  var readyOn = false, continueLabel = null;
+  function readyScene() {
+    if (leaving || readyOn || !continueBtn) return;
+    readyOn = true;
+    clearTimeout(onwardTimer);
+    var gen = playGen;
+    var snow = global.Transition && Transition.cover ? Transition.cover() : Promise.resolve();
+    snow.then(function () {
+      if (gen !== playGen) return;
+      say(null);
+      if (global.Swiftee && Swiftee.settle) Swiftee.settle({ now: true });
+      Stage.apply({ kind: 'ready' });
+      root.classList.add('ready-scene');
+      var label = continueBtn.querySelector('span');
+      if (label) { if (continueLabel == null) continueLabel = label.textContent; label.textContent = 'Play Part 2'; }
+      continueBtn.classList.add('show');
+      Swiftee.place('ledge', 'large');
+      if (Swiftee.visible) Swiftee.visible(true);
+      return global.Transition && Transition.reveal ? Transition.reveal() : null;
+    }).then(function () {
+      if (gen !== playGen) return;
+      return pop([{ t: READY.t, mood: 'win', face: 'wave' }], { keep: true });
+    });
+  }
+  /** Back out of it: a replay, a restart or a jump in the review tool. */
+  function leaveReady() {
+    if (!readyOn) return;
+    readyOn = false;
+    if (root) root.classList.remove('ready-scene');
+    var label = continueBtn && continueBtn.querySelector('span');
+    if (label && continueLabel != null) label.textContent = continueLabel;
   }
 
   /* ON TO PART 2: the lesson's own snowfall closes over the finale, and Frozen
@@ -3882,6 +3956,7 @@
     hud.querySelector('.replay').classList.remove('show');
     if (continueBtn) continueBtn.classList.remove('show');
     clearTimeout(onwardTimer);   // (playGen has moved on, so a snow already falling stays here too)
+    leaveReady();
     Stage.apply({ kind: 'vista' });
     Swiftee.place('left', 'large');
     setTimeout(function () { play(0); }, 200);
@@ -4169,6 +4244,7 @@
     clearTimeout(onwardTimer);
     hud.querySelector('.replay').classList.remove('show');
     if (continueBtn) continueBtn.classList.remove('show');
+    leaveReady();
 
     // THE SCREEN AS IT WAS, if the child has been there: put back exactly,
     // with him on this screen's own mark.

@@ -2220,8 +2220,45 @@
     applySeat(false);
   }
 
+  /* THE HAND-OVER SCREEN'S GROUND (game.js readyScene): two ledges of Frozen Rush's own
+   * path, broken by a gap — the ground Momo runs on, so the screen that says "Now let's
+   * help Momo" already looks like his game. Baked by part2-frozen-rush/tools/make-ledges.mjs.
+   *
+   * Placed by the WALKING LINE, not by the pictures' corners: row 232 of both images is the
+   * top of the snow, and it lands on WALK, which is where game.js stands Swiftee's feet
+   * ('ledge', y 0.81). The scale puts the painted rock's foot (row 388) on the board's
+   * bottom edge, so on a 16:9 screen the ledge runs off the bottom like a cliff top; the
+   * shadowed stone the tool adds below it is only seen in the band under the board on a
+   * taller screen. Each lip's carved face is at a measured column (FACE), which is what
+   * sets the gap: 575..825, a quarter of the board, as in the reference.
+   *
+   * Both run well past the board's sides (-387 and 1392), because the stage paints past
+   * its viewBox on a wide window and a ledge that stopped at the board edge would end in
+   * mid-air there. */
+  var LEDGE_WALK = 455, LEDGE_K = (562 - LEDGE_WALK) / (388 - 232);
+  var LEDGES = [
+    { src: 'assets/bg/ledge-l.webp?v=acd909af', w: 1430, h: 538, face: 1403, at: 575 },
+    { src: 'assets/bg/ledge-r.webp?v=5ceca85d', w: 850, h: 538, face: 24, at: 825 }
+  ];
+
   var BUILD = {
     vista: function () { reset(); },
+
+    ready: function () {
+      reset();
+      var g = mk('g', { 'class': 'ready-ground', 'pointer-events': 'none' }, layers.panel);
+      // a light wash over the painting, so he and his words stand forward of it
+      mk('rect', { x: -2000, y: -1200, width: 5000, height: 3000, fill: '#f4fbff', opacity: 0.24 }, g);
+      LEDGES.forEach(function (L) {
+        var im = mk('image', {
+          x: (L.at - L.face * LEDGE_K).toFixed(1), y: (LEDGE_WALK - 232 * LEDGE_K).toFixed(1),
+          width: (L.w * LEDGE_K).toFixed(1), height: (L.h * LEDGE_K).toFixed(1),
+          preserveAspectRatio: 'none'
+        }, g);
+        im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', L.src);
+        im.setAttribute('href', L.src);
+      });
+    },
 
     polygon: function (spec) {
       var morph = spec.enter === 'morph' && st.verts;

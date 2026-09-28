@@ -719,6 +719,24 @@
     8% { transform: translateX(1px); }
   }
   @media (max-width: 760px) { #next, #continue { right: calc(14px + var(--band-x, 0px)); bottom: calc(18px + var(--band-y, 0px)); height: 50px; line-height: 50px; border-width: 0 28px; } }
+  /* THE HAND-OVER SCREEN (game.js readyScene). Part 2's button is the only thing to press
+     there, so it is bigger — the same blue pill, a quarter taller, its caps grown in step
+     so the ends stay round — and it breathes after a moment instead of waiting eight
+     seconds to nudge, because nothing will move on without it. */
+  #game.ready-scene #continue.show {
+    height: 76px; line-height: 76px; border-width: 0 43px; font-size: clamp(21px, 2.5vw, 30px);
+    animation: readyBreathe 2.4s ease-in-out 2.2s infinite;
+  }
+  #game.ready-scene #continue::before { left: -44px; right: -44px; border-width: 0 43px; }
+  #game.ready-scene #continue:active { animation: none; }   /* pressed is a light state, as everywhere */
+  @media (max-width: 760px) {
+    #game.ready-scene #continue.show { height: 60px; line-height: 60px; border-width: 0 34px; }
+    #game.ready-scene #continue::before { left: -35px; right: -35px; border-width: 0 34px; }
+  }
+  @keyframes readyBreathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+  }
   #progress-track { position: absolute; z-index: 5; left: var(--band-x, 0px); right: var(--band-x, 0px); bottom: var(--band-y, 0px); height: max(4px, calc(6px * var(--u, 1))); background: rgba(255,255,255,.35); }
   #progress { height: 100%; width: 0; background: #f2b544;   /* the plank's warmth, not another blue */ transition: width 400ms ease; }
 
@@ -822,7 +840,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     #bubble, #progress, #next, #continue, #hud button { transition: none; }
-    #next.show, #continue.show { animation: none; }
+    #next.show, #continue.show, #game.ready-scene #continue.show { animation: none; }
   }
 
   .bubble-line { display: block; }
