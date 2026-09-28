@@ -1431,7 +1431,11 @@ a:hover { color: var(--ice-pale); }
      which starts at x 1360 — and 40u runs x 576..1344, still clear of it. Part 2's three
      sentences are the longest in the game; this is the width that lets them set at the
      same type size as the six rope crossings instead of being shrunk below them. */
-  --pill-w: calc(40 * var(--u));
+  /* 47u, up from 40, for "Draw 2 diagonals from the same corner." — the longest line in
+     the game. At 40u it set every Part 2 question at 0.86 of the rope crossings' size.
+     The board hugs its words, so this only lengthens that one sign (509..1411), and the
+     progress trail is hidden whenever a question board is up. */
+  --pill-w: calc(47 * var(--u));
   /* HIGHER THAN PART 1's BOARD, and it has to be. The slab is enlarged to 1.66 in the
      middle of the stage and its top edge reaches y 170; the board's own top is pinned
      4.3 stage units down, which put the two within a few pixels of each other and read

@@ -248,7 +248,7 @@ test.describe('curriculum data', () => {
         distractors: ['regularPentagon', 'concaveHexagon'] },
       { targets: ['concavePentagon', 'concaveHexagon', 'concaveHeptagon'],
         distractors: ['regularPentagon', 'irregularConvexHexagon', 'regularOctagon'] },
-      { targets: ['regularTriangle', 'regularQuadrilateral', 'regularOctagon'],
+      { targets: ['regularPentagon', 'regularQuadrilateral', 'regularOctagon'],
         distractors: ['concavePentagon', 'concaveHexagon', 'concaveHeptagon'] }
     ];
     phases.forEach((p, i) => {
@@ -403,7 +403,7 @@ test.describe('multi-answer phases', () => {
       wrong: ['regularPentagon', 'concaveHexagon'] },
     { i: 4, name: 'level 8', targets: ['concavePentagon', 'concaveHexagon', 'concaveHeptagon'],
       wrong: ['regularPentagon', 'irregularConvexHexagon', 'regularOctagon'] },
-    { i: 5, name: 'level 9', targets: ['regularTriangle', 'regularQuadrilateral', 'regularOctagon'],
+    { i: 5, name: 'level 9', targets: ['regularPentagon', 'regularQuadrilateral', 'regularOctagon'],
       wrong: ['concavePentagon', 'concaveHexagon', 'concaveHeptagon'] }
   ];
 

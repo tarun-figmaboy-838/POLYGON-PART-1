@@ -12,7 +12,7 @@ from the synthesizer's SpeakProgress events and are stored in `CFG.vo.lines`.
 |---|----|----------|
 | 1 | `p2-1-diagonal` | Cut along a diagonal. |
 | 2 | `p2-2-diagonals` | Draw all the diagonals. |
-| 3 | `p2-3-samevertex` | Draw 2 diagonals from one corner. |
+| 3 | `p2-3-samevertex` | Draw 2 diagonals from the same corner. |
 | 4 | `p2-4-concave` | Cut the concave polygon. |
 | 5 | `p2-5-convex` | Cut the convex polygon. |
 | 6 | `p2-6-concave-pentagon` | Cut the concave pentagon. |
@@ -31,6 +31,14 @@ until line 10 is recorded the step is silent. Do not re-record `tut-1` … `tut-
 
 Read line 3 as **"draw two diagonals"** — the numeral is how it is written on the
 board, not how it is spoken.
+
+**Line 3 is a stopgap in a different voice.** It was reworded from "one corner" to "the
+same corner" on a Mac, where the SAPI voice the other lines use does not exist, so it
+was spoken by the macOS voice **Reed (English, US)** at pitch 0.85 (median 98 Hz,
+against 93–102 Hz for the other lines), padded to the same 0.137s lead. Its word onsets
+were measured by synthesising each prefix and suffix of the sentence and averaging where
+each word must start. Running `tools/generate-part2-vo.ps1` on Windows regenerates it in
+the same voice as the rest, and the steps below then replace it.
 
 ## How to say them
 

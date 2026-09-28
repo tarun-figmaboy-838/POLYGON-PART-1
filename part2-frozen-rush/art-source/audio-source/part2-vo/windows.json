@@ -25,22 +25,23 @@
   },
   {
     "id": "p2-3-samevertex",
-    "text": "Draw two diagonals from one corner.",
+    "text": "Draw two diagonals from the same corner.",
     "at": 42.456,
-    "dur": 2.864,
+    "dur": 3.228,
     "words": [
-      0.137,
-      0.454,
-      0.792,
-      1.701,
-      2.018,
-      2.328
+      0.21,
+      0.525,
+      0.755,
+      1.46,
+      1.72,
+      1.83,
+      2.225
     ]
   },
   {
     "id": "p2-4-concave",
     "text": "Cut the concave polygon.",
-    "at": 45.97,
+    "at": 46.334,
     "dur": 2.364,
     "words": [
       0.137,
@@ -52,7 +53,7 @@
   {
     "id": "p2-5-convex",
     "text": "Cut the convex polygon.",
-    "at": 48.984,
+    "at": 49.348,
     "dur": 2.334,
     "words": [
       0.137,
@@ -64,7 +65,7 @@
   {
     "id": "p2-6-concave-pentagon",
     "text": "Cut the concave pentagon.",
-    "at": 51.968,
+    "at": 52.332,
     "dur": 2.384,
     "words": [
       0.137,
@@ -76,7 +77,7 @@
   {
     "id": "p2-7-convex-hexagon",
     "text": "Cut the convex hexagon.",
-    "at": 55.002,
+    "at": 55.366,
     "dur": 2.369,
     "words": [
       0.137,
@@ -88,7 +89,7 @@
   {
     "id": "p2-8-all-concave",
     "text": "Cut all the concave ones.",
-    "at": 58.021,
+    "at": 58.385,
     "dur": 2.444,
     "words": [
       0.137,
@@ -101,7 +102,7 @@
   {
     "id": "p2-9-all-convex",
     "text": "Cut all the convex ones.",
-    "at": 61.115,
+    "at": 61.479,
     "dur": 2.404,
     "words": [
       0.137,
@@ -114,7 +115,7 @@
   {
     "id": "p2-tut-6-cut",
     "text": "Cut this ice block to fix the path.",
-    "at": 64.169,
+    "at": 64.533,
     "dur": 2.844,
     "words": [
       0.137,

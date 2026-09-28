@@ -156,9 +156,10 @@ test.describe('the pointer, the buffers and the voice', () => {
     expect(r.unnamed, 'every crossing names the line that will speak it').toEqual([]);
     expect(r.status, 'the recording ships').toBe(200);
     expect(r.oggStatus, 'and so does the ogg the browser prefers').toBe(200);
-    /* 67.1, the length of the take that ships: the original 36.13s with Part 2's ten lines
-       appended (tools/assemble-part2-vo.mjs). It was 36.2 before they were added, and 39.1
-       before that — a bound left at an old take stops checking anything. */
-    expect(r.last, 'the last window is inside the take').toBeLessThan(67.1);
+    /* 67.4, the length of the take that ships (67.38s): the original 36.13s with Part 2's
+       ten lines appended (tools/assemble-part2-vo.mjs). It was 67.1 until line 3 became
+       "…from the same corner." and its take grew 0.36s, 36.2 before Part 2's lines were
+       added, and 39.1 before that — a bound left at an old take stops checking anything. */
+    expect(r.last, 'the last window is inside the take').toBeLessThan(67.4);
   });
 });

@@ -99,7 +99,7 @@ These ten lines follow the original take. See [VO-PART2.md](VO-PART2.md) for del
 |---|----|----------|
 | 1 | `p2-1-diagonal` | Cut along a diagonal. |
 | 2 | `p2-2-diagonals` | Draw all the diagonals. |
-| 3 | `p2-3-samevertex` | Draw 2 diagonals from one corner. |
+| 3 | `p2-3-samevertex` | Draw 2 diagonals from the same corner. |
 | 4 | `p2-4-concave` | Cut the concave polygon. |
 | 5 | `p2-5-convex` | Cut the convex polygon. |
 | 6 | `p2-6-concave-pentagon` | Cut the concave pentagon. |

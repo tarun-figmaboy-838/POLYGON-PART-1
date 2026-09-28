@@ -44,8 +44,8 @@ const ASSET_V = {
   "assets/audio/universfield-ground-impact-352053.ogg": "f6742c2a",
   "assets/audio/universfield-sad-trumpet-278822.mp3": "318bbc84",
   "assets/audio/universfield-sad-trumpet-278822.ogg": "202ea116",
-  "assets/audio/vo-lines.mp3": "e54d4a9c",
-  "assets/audio/vo-lines.ogg": "8778facf",
+  "assets/audio/vo-lines.mp3": "d6c85e17",
+  "assets/audio/vo-lines.ogg": "3508e43a",
   "assets/char/bear.webp": "ac7771ee",
   "assets/char/duo-celebrate.webp": "7845cb0a",
   "assets/char/hd/bear.webp": "d257b5b8",
@@ -1801,11 +1801,15 @@ const CFG = {
         voId: 'p2-8-all-concave',
         sub: 'Choose all the polygons that are concave.' },
 
-      /* The last, and the widest: three convex answers spread across a triangle, a
-         quadrilateral and an octagon, so the property is plainly not about size or side
-         count, against all three concave shapes. */
+      /* The last, and the widest: three convex answers spread across a quadrilateral, a
+         pentagon and an octagon, so the property is plainly not about size or side
+         count, against all three concave shapes.
+
+         NO TRIANGLE (asked for: "do not use triangle in this level"). The pentagon took
+         its place, and it is the sharper choice: it hangs beside the concave pentagon,
+         so two five-sided shapes differ only by the dent — side count cannot answer it. */
       { id: 9, ditches: 2, options: 6,
-        targets: ['regularTriangle', 'regularQuadrilateral', 'regularOctagon'],
+        targets: ['regularPentagon', 'regularQuadrilateral', 'regularOctagon'],
         distractors: ['concavePentagon', 'concaveHexagon', 'concaveHeptagon'],
         rotate: 0, swing: 0,
         instruction: 'Cut all the convex ones.',
@@ -1986,6 +1990,13 @@ const CFG = {
            105 takes it to about 1150, which is the most that still fits. focusK comes
            down by the same factor so the popped size does not move. */
         hexR: 105,
+        /* DRAWN BIGGER WHILE IT STANDS ON THE PATH (asked for: "level 2, 3 path shape is not
+           big"). hexR can't grow — it sizes the four pieces and the holes cut for them, and
+           those are at the edge of the row — so the slab is drawn larger at rest instead:
+           209 x 190 becomes 303 x 276, next to the hexagon's 334 x 289. The pieces still
+           land at their true size; the success beat shrinks them back to it on the way
+           home from the middle, where the size is already changing. */
+        restK: 1.45,
         /* TWO CREVASSES, and the slab stands on the pillar between them exactly as it
            does on crossing 1 — the owner's ask, and the better picture: a block plainly
            too big for what it is balanced on, with the holes it is about to fill either
@@ -2021,6 +2032,8 @@ const CFG = {
         /* Same ceiling as crossing 2, for the same reason: three fan pieces, three
            slots, groupW 1097 of 1195 at hexR 108. 114 is the most the row takes. */
         hexR: 114,
+        // Bigger on the path, same reason as crossing 2: 228 x 218 becomes 296 x 283.
+        restK: 1.3,
         ditches: 2,
         /* SMALLER THAN THE OTHER TWO. A pentagon is the tallest of the three for its
            width, and at the multiplier the hexagon uses its crown reaches y 156 and runs
@@ -2028,7 +2041,10 @@ const CFG = {
            touching the board's underside. 0.7 of that, the same cut as the other two,
            is 3.61 and leaves real air above the apex. */
         focusK: 2.85,
-        instruction: 'Draw 2 diagonals from one corner.',
+        /* "the same corner", not "one corner" (asked for): SAME is the whole constraint of
+           this crossing, so the sentence says it. Voiced for now by a Mac voice (Reed), since
+           the SAPI voice the other lines use only exists on Windows; see docs/VO-PART2.md. */
+        instruction: 'Draw 2 diagonals from the same corner.',
         voId: 'p2-3-samevertex'
       }
     ],
@@ -2262,14 +2278,14 @@ const CFG = {
          synthesizer's SpeakProgress events during generation. */
       'p2-1-diagonal': [36.777, 2.144, [0.137, 0.433, 0.888, 0.991]], // Cut along a diagonal.
       'p2-2-diagonals': [39.572, 2.234, [0.137, 0.454, 0.798, 0.943]], // Draw all the diagonals.
-      'p2-3-samevertex': [42.456, 2.864, [0.137, 0.454, 0.792, 1.701, 2.018, 2.328]], // Draw two diagonals from one corner.
-      'p2-4-concave': [45.970, 2.364, [0.137, 0.454, 0.571, 1.301]], // Cut the concave polygon.
-      'p2-5-convex': [48.984, 2.334, [0.137, 0.454, 0.571, 1.260]], // Cut the convex polygon.
-      'p2-6-concave-pentagon': [51.968, 2.384, [0.137, 0.454, 0.571, 1.301]], // Cut the concave pentagon.
-      'p2-7-convex-hexagon': [55.002, 2.369, [0.137, 0.454, 0.571, 1.260]], // Cut the convex hexagon.
-      'p2-8-all-concave': [58.021, 2.444, [0.137, 0.461, 0.812, 0.950, 1.694]], // Cut all the concave ones.
-      'p2-9-all-convex': [61.115, 2.404, [0.137, 0.461, 0.812, 0.950, 1.632]], // Cut all the convex ones.
-      'p2-tut-6-cut': [64.169, 2.844, [0.137, 0.454, 0.716, 1.046, 1.508, 1.666, 2.087, 2.211]], // Cut this ice block to fix the path.
+      'p2-3-samevertex': [42.456, 3.228, [0.210, 0.525, 0.755, 1.460, 1.720, 1.830, 2.225]], // Draw two diagonals from the same corner. (a Mac voice, Reed: see docs/VO-PART2.md)
+      'p2-4-concave': [46.334, 2.364, [0.137, 0.454, 0.571, 1.301]], // Cut the concave polygon.
+      'p2-5-convex': [49.348, 2.334, [0.137, 0.454, 0.571, 1.260]], // Cut the convex polygon.
+      'p2-6-concave-pentagon': [52.332, 2.384, [0.137, 0.454, 0.571, 1.301]], // Cut the concave pentagon.
+      'p2-7-convex-hexagon': [55.366, 2.369, [0.137, 0.454, 0.571, 1.260]], // Cut the convex hexagon.
+      'p2-8-all-concave': [58.385, 2.444, [0.137, 0.461, 0.812, 0.950, 1.694]], // Cut all the concave ones.
+      'p2-9-all-convex': [61.479, 2.404, [0.137, 0.461, 0.812, 0.950, 1.632]], // Cut all the convex ones.
+      'p2-tut-6-cut': [64.533, 2.844, [0.137, 0.454, 0.716, 1.046, 1.508, 1.666, 2.087, 2.211]], // Cut this ice block to fix the path.
       /* THE ENDING SPEAKS NO MORE. 'win-title' ("You did it!") and 'win-sub' ("Momo crossed
          the Frozen Pass!") lived here and were cut with the banner that showed them: the
          ending is the dance now, the camera pushes in on it, and a voice over the top was
@@ -11514,6 +11530,8 @@ function createGame(canvas, hooks = {}) {
     const cur = list[clamp(G.p2i || 0, 0, Math.max(0, list.length - 1))] || {};
     return Object.assign({}, L2, cur);
   }
+  /** How big the slab is drawn while it stands on the path, against its true size. */
+  function restK() { return p2Cfg().restK || 1; }
   /** How many crossings Part 2 has replaced so far. */
   function p2Count() { return (L2.levels || []).length; }
 
@@ -11802,15 +11820,20 @@ function createGame(canvas, hooks = {}) {
      * solid path just past the crevasse — the ice Momo is trying to reach, with the
      * hole between him and it. Half its own width clear of the edge, so it is plainly
      * ON the ground rather than teetering off it. */
-    const halfW = polyBounds(pts).w / 2;
+    /* AT ITS RESTING SIZE (restK, see the crossing), so it stands on its own feet at
+       whatever size it is drawn on the path. `seat` is the same spot at true size, which
+       is where the answer comes back to before its pieces fly to their slots. */
+    const rk = restK();
+    const halfW = polyBounds(pts).w / 2 * rk;
     const cx = G.gapB
       ? (G.gapA.x1 + G.gapB.x0) / 2 - G.worldX
       : G.gapA.x1 + halfW + 26 - G.worldX;
-    const cy = CFG.surfaceY - b.y1 - L2.homeLift;
+    const cy = CFG.surfaceY - b.y1 * rk - L2.homeLift;
     G.l2 = {
       R, pts, art,
       home: { x: cx, y: cy }, pos: { x: cx, y: cy },
-      scale: 1, focusT: 0,
+      seat: { x: cx, y: CFG.surfaceY - b.y1 - L2.homeLift },
+      scale: rk, focusT: 0,
       dragFrom: -1, dragStart: null, dragPt: null, dragId: undefined,
       pieces: null, split: 0, planned: false, locked: false, chipped: false,
       badLine: null, cornerPulse: 0, wrong: G.l2 ? G.l2.wrong : 0, cut: null,
@@ -12021,7 +12044,7 @@ function createGame(canvas, hooks = {}) {
         order.forEach((pc, k) => {
           const hole = holes[Math.min(holes.length - 1,
             Math.floor(k * holes.length / order.length))];
-          const startX = L.home.x + pc.cx;
+          const startX = L.home.x + pc.cx * restK();   // they drop from the resting size
           pc.vx = clamp((hole - startX) / Math.max(0.08, tFall), -1200, 1200);
         });
       }
@@ -12358,7 +12381,7 @@ function createGame(canvas, hooks = {}) {
       const p = clamp((G.st - (L2.overviewMs - (L2.glowMs || 620))) / (L2.glowMs || 620), 0, 1);
       L.glow = easeOut(p);
       L.pop = easeBackOut(clamp((G.st - (L2.overviewMs - (L2.popMs || 420))) / (L2.popMs || 420), 0, 1));
-      L.scale = 1 + ((p2Cfg().popK || L2.popK) - 1) * L.pop;
+      L.scale = restK() * (1 + ((p2Cfg().popK || L2.popK) - 1) * L.pop);
       return;
     }
 
@@ -12379,7 +12402,7 @@ function createGame(canvas, hooks = {}) {
         const e = easeInOut(clamp(f.t / 0.26, 0, 1));
         L.pos.x = lerp(f.from.x, L.home.x, e);
         L.pos.y = lerp(f.from.y, L.home.y, e);
-        L.scale = lerp(f.from.scale, 1, e);
+        L.scale = lerp(f.from.scale, restK(), e);
         L.spin = 0;
         /* The pieces ride the slab back, already apart. They are what is drawn from the
            first frame of the fall, so they have to be placed from the first frame too. */
@@ -12394,7 +12417,7 @@ function createGame(canvas, hooks = {}) {
         L.shake = Math.max(L.shake || 0, 0.7);
         if (f.t >= 0.26) {
           f.phase = 'drop'; f.t = 0;
-          f.from = { x: L.home.x, y: L.home.y, scale: 1 };
+          f.from = { x: L.home.x, y: L.home.y, scale: restK() };
           audio.crack();
           particles.chips(L.home.x, L.home.y + 40, 8, -120);
         }
@@ -12495,7 +12518,7 @@ function createGame(canvas, hooks = {}) {
       const e = easeOut(1 - L.respawn);
       L.pos.x = L.home.x;
       L.pos.y = lerp(-260, L.home.y, e);
-      L.scale = 1;
+      L.scale = restK();
       if (L.respawn <= 0) {
         L.pos.y = L.home.y;
         audio.clunk();
@@ -12518,7 +12541,7 @@ function createGame(canvas, hooks = {}) {
       L.glow = Math.max(0, (L.glow || 0) - dt * 1.6);
       L.pos.x = lerp(L.home.x, CFG.W * C.focusX, e);
       L.pos.y = lerp(L.home.y, CFG.H * C.focusY, e);
-      L.scale = lerp(C.popK, C.focusK, e);
+      L.scale = lerp(C.popK * restK(), C.focusK, e);
     }
   }
 
@@ -12578,16 +12601,21 @@ function createGame(canvas, hooks = {}) {
     if (G.st <= unfocusEnd) {
       const q = clamp((G.st - holdEnd) / (unfocusEnd - holdEnd), 0, 1), e = easeInOut(q);
       const C = p2Cfg();
+      /* TO THE SEAT, AT TRUE SIZE — not to the bigger resting size. The pieces fly from
+         here to slots cut for their true size, so arriving any larger would leave them
+         shrinking in flight; the shrink belongs here, where it is already happening. */
+      const home = L.seat || L.home;
       L.scale = lerp(C.focusK, 1, e);
-      L.pos.x = lerp(CFG.W * C.focusX, L.home.x, e);
-      L.pos.y = lerp(CFG.H * C.focusY, L.home.y, e);
+      L.pos.x = lerp(CFG.W * C.focusX, home.x, e);
+      L.pos.y = lerp(CFG.H * C.focusY, home.y, e);
       L.focusT = 1 - e;
       place();
       return;
     }
     if (!L.planned) {
       L.planned = true; L.focusT = 0;
-      L.scale = 1; L.pos.x = L.home.x; L.pos.y = L.home.y;
+      const home = L.seat || L.home;
+      L.scale = 1; L.pos.x = home.x; L.pos.y = home.y;
       place(); planFlight();
     }
     if (G.st <= flyEnd) {

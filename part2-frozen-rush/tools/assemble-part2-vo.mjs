@@ -42,7 +42,10 @@ function gain(buffer, factor) {
 }
 
 const original = pcm(src);
-const takes = rows.map(row => pcm(path.join(root, row.file)));
+/* BY FILE NAME, in this folder. timings.json records the absolute path of whichever machine
+   generated each take (a Windows one, for the SAPI lines), which path.join cannot resolve
+   anywhere else; the takes always live beside it. */
+const takes = rows.map(row => pcm(path.join(dir, path.win32.basename(row.file))));
 const originalLevel = voicedLevel(original);
 const generatedLevel = voicedLevel(Buffer.concat(takes));
 const factor = Math.max(0.5, Math.min(1.8, originalLevel / generatedLevel));
