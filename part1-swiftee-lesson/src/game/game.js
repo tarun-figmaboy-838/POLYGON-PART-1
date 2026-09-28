@@ -35,11 +35,10 @@
   var playGen = 0;
   var refitTimer = null, refitRaf = 0;
   var SAVE_KEY = 'swiftee.audio';
-  /* THE LESSON IS PART 1 OF ONE GAME. When the finale has had its moment, the
-     snow closes in and Part 2 (Frozen Rush, beside this folder) opens behind it.
-     The wait is counted from his last word, so it never cuts the finale off. */
-  var ONWARD_MS = 4000;
-  var onwardTimer = null, leaving = false;
+  /* THE LESSON IS PART 1 OF ONE GAME. After the finale, Next opens the hand-over
+     screen (readyScene), and its button lets the snow close in while Part 2
+     (Frozen Rush, beside this folder) opens behind it. */
+  var leaving = false;
   var quest = Quest.create(), rewardTimer;
 
   /**
@@ -741,8 +740,9 @@
      child's own score is shown, not said — the take has no numbers in it,
      and a score is whatever this run earned. */
   var FINALE = [{ t: 'Honk-tastic!', vo: 'p38a' }, { t: 'You are a polygon adventurer!', vo: 'p38b' }];
-  // the hand-over screen's one line (readyScene). Not in the voice take yet, so it is read, not heard.
-  var READY = { t: 'You’re ready! Now let’s help Momo.' };
+  // the hand-over screen's one line (readyScene). Not in the recorded take, so it is
+  // voiced by tools/make-vo.js in the voice matched to it, as the cheers are.
+  var READY = { t: 'You’re ready! Now let’s help Momo.', vo: 'p39' };
   var NUDGE_STRONG = { t: 'Not that one.', vo: 'fb10' };
   var wrongSinceRight = false;        // a miss on this screen since the last right answer
   /* the next cheer in the round, never the one just said */
@@ -3792,17 +3792,17 @@
     var won = quest.snapshot();
     var score = won.xp + ' XP and ' + won.badges.length + (won.badges.length === 1 ? ' badge' : ' badges') + '.';
     // spoken and word by word, one voice at a time, his last words kept up —
-    // and once they are said, a moment to enjoy it, then the hand-over screen
-    // (readyScene), where the child presses on into Part 2. A replay, a
-    // restart or a screen picked in the review tool bumps playGen and so
-    // calls the move off.
+    // and once they are said, Next, the button that has moved the lesson on
+    // all along, opens the hand-over screen (readyScene). A replay, a restart
+    // or a screen picked in the review tool bumps playGen and so calls it off.
     var gen = playGen;
+    finaleOn = true;
     pop([{ t: FINALE[0].t, vo: FINALE[0].vo, mood: 'win' },
          { t: score, mood: 'win' },
          { t: FINALE[1].t, vo: FINALE[1].vo, mood: 'win' }], { keep: true }).then(function () {
       if (gen !== playGen) return;
-      clearTimeout(onwardTimer);
-      onwardTimer = setTimeout(function () { if (gen === playGen) readyScene(); }, ONWARD_MS);
+      if (!finaleOn || readyOn) return;
+      showNext(true);
     });
     // one burst, wide, for the finale — two from different points read as a stutter
     if (global.Juice) Juice.confetti(Stage.svg, { count: 72, spread: 2.6 });
@@ -3811,9 +3811,10 @@
     // settles into `proud`. Everywhere else `celebrate` is the ceiling.
     Swiftee.play('excited').then(function () { return Swiftee.play('proud'); });
     hud.querySelector('.replay').classList.add('show');
-    // and on to Part 2, from the corner Next has held all lesson — for a child
-    // who does not want to wait for it
-    if (continueBtn) continueBtn.classList.add('show');
+    // PART 2's BUTTON WAITS FOR THE HAND-OVER SCREEN. It used to come up here,
+    // with the finale, and it went straight to Frozen Rush: a child pressed it
+    // before the finale was over, and the screen that hands them over to Momo
+    // was never seen.
   }
 
   /* THE HAND-OVER SCREEN: SWIFTEE ON MOMO'S GROUND (asked for, from a reference).
@@ -3827,13 +3828,15 @@
    *
    * It does NOT go on by itself. It is a doorway, and the child walks through it:
    * the button breathes after a moment (index.html, .ready-scene) so nobody is left
-   * wondering what to press. It comes in under the lesson's own snow, like a new level.
+   * wondering what to press. It comes in under the lesson's own snow, like a new level,
+   * when Next is pressed on the finale — and the button answers only once it is in
+   * (readyUp), so a double tap on Next cannot carry on through it unseen.
    */
-  var readyOn = false, continueLabel = null;
+  var finaleOn = false, readyOn = false, readyUp = false, continueLabel = null;
   function readyScene() {
     if (leaving || readyOn || !continueBtn) return;
-    readyOn = true;
-    clearTimeout(onwardTimer);
+    readyOn = true; readyUp = false; finaleOn = false;
+    showNext(false);
     var gen = playGen;
     var snow = global.Transition && Transition.cover ? Transition.cover() : Promise.resolve();
     snow.then(function () {
@@ -3850,13 +3853,15 @@
       return global.Transition && Transition.reveal ? Transition.reveal() : null;
     }).then(function () {
       if (gen !== playGen) return;
-      return pop([{ t: READY.t, mood: 'win', face: 'wave' }], { keep: true });
+      readyUp = true;
+      return pop([{ t: READY.t, vo: READY.vo, mood: 'win', face: 'wave' }], { keep: true });
     });
   }
-  /** Back out of it: a replay, a restart or a jump in the review tool. */
+  /** Back out of it (or of the finale): a replay, a restart or a jump in the review tool. */
   function leaveReady() {
+    finaleOn = false;
     if (!readyOn) return;
-    readyOn = false;
+    readyOn = false; readyUp = false;
     if (root) root.classList.remove('ready-scene');
     var label = continueBtn && continueBtn.querySelector('span');
     if (label && continueLabel != null) label.textContent = continueLabel;
@@ -3868,7 +3873,6 @@
   function goOn() {
     if (leaving || !continueBtn) return;
     leaving = true;
-    clearTimeout(onwardTimer);
     var gen = playGen, href = continueBtn.href;
     var snow = global.Transition && Transition.cover ? Transition.cover() : Promise.resolve();
     snow.then(function () {
@@ -3955,8 +3959,7 @@
     if (global.SFX && SFX.cancelSequences) SFX.cancelSequences();
     hud.querySelector('.replay').classList.remove('show');
     if (continueBtn) continueBtn.classList.remove('show');
-    clearTimeout(onwardTimer);   // (playGen has moved on, so a snow already falling stays here too)
-    leaveReady();
+    leaveReady();   // (playGen has moved on, so a snow already falling stays here too)
     Stage.apply({ kind: 'vista' });
     Swiftee.place('left', 'large');
     setTimeout(function () { play(0); }, 200);
@@ -3970,9 +3973,10 @@
     root = $('#game'); stageEl = $('#stage'); hud = $('#hud'); bubble = $('#bubble');
     instruction = $('#instruction'); progress = $('#progress'); loadEl = $('#loading'); nextBtn = $('#next');
     continueBtn = $('#continue');
-    // pressed, it goes the same way as waiting does: through the snow
+    // pressed on the hand-over screen, and only there (readyScene), through the snow
     if (continueBtn) continueBtn.addEventListener('click', function (e) {
       e.preventDefault();
+      if (!readyUp) return;
       if (global.SFX) SFX.play('select');
       goOn();
     });
@@ -4107,17 +4111,19 @@
       if (global.VO && VO.playing) { try { VO.playing.muted = m; } catch (e) {} }
       this.classList.toggle('on', m); this.setAttribute('aria-pressed', String(m)); saveAudio();
     });
-    nextBtn.addEventListener('click', function () {
+    // on the finale, Next opens the hand-over screen; everywhere else it reads on
+    var onNext = function () {
       if (global.SFX) SFX.play('select');
+      if (finaleOn) { readyScene(); return; }
       if (global.Input) Input.advance();
-    });
+    };
+    nextBtn.addEventListener('click', onNext);
     // Keyboard parity: a child on a laptop should not have to find the mouse.
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'ArrowRight') return;
       if (!nextBtn.classList.contains('show')) return;
       e.preventDefault();
-      if (global.SFX) SFX.play('select');
-      if (global.Input) Input.advance();
+      onNext();
     });
 
     hud.querySelector('.restart').addEventListener('click', restart);
@@ -4241,7 +4247,6 @@
     if (global.Swiftee && Swiftee.settle) Swiftee.settle({ now: true });
     // and a jump back from the finale takes its buttons down; playGen has
     // already called off the move to Part 2
-    clearTimeout(onwardTimer);
     hud.querySelector('.replay').classList.remove('show');
     if (continueBtn) continueBtn.classList.remove('show');
     leaveReady();

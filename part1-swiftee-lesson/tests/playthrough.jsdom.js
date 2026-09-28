@@ -155,8 +155,26 @@ async function act(spec){
   }
   const done=!!d.querySelector('#hud .replay.show');
   t('played to the end and the replay button appeared', done, 'stopped at screen '+w.Game.screen+' ('+(w.Screens.list[w.Game.screen]||{}).id+')');
-  // the way on to Part 2 opens with the finale, in the corner Next has left
-  t('the finale offers Part 2, and Next is gone', !!d.querySelector('#continue.show') && !d.querySelector('#next.show'));
+  // the finale moves on with Next, like every screen before it, and Part 2's
+  // button waits for the hand-over screen: shown with the finale, it was
+  // pressed before that screen was ever seen
+  await until(()=>d.querySelector('#next.show'), 30000);
+  // (the summary's own state, read before Next builds the hand-over screen over it)
+  const SM=w.Stage.summaryState&&w.Stage.summaryState();
+  t('the finale offers Next, and not Part 2 yet', !!d.querySelector('#next.show') && !d.querySelector('#continue.show'));
+  // leaving starts the snow at once (game.js goOn), so a press that left would show here
+  const cont=d.getElementById('continue'), cover=w.Transition&&w.Transition.cover; let covers=0;
+  if(cover) w.Transition.cover=function(){ covers++; return cover.apply(this,arguments); };
+  cont.click();   // a press while the finale is up goes nowhere
+  const leftEarly=covers>0;
+  d.getElementById('next').click();
+  await until(()=>d.getElementById('game').classList.contains('ready-scene') && d.querySelector('#continue.show') &&
+    /help Momo/.test(d.getElementById('bubble').textContent), 30000);
+  t('Next opens the hand-over screen: his line, and the button on to Part 2',
+    d.getElementById('game').classList.contains('ready-scene') && !!d.querySelector('#continue.show') && !d.querySelector('#next.show') &&
+    /Play Part 2/.test(cont.textContent) && /help Momo/.test(d.getElementById('bubble').textContent),
+    JSON.stringify({ ready: d.getElementById('game').classList.contains('ready-scene'), cont: cont.className, next: d.getElementById('next').className, line: d.getElementById('bubble').textContent }));
+  t('nothing left for Part 2 before the hand-over screen', !!cover && !leftEarly && covers===1, 'covers '+covers);
   t('no runtime errors across the whole game', errors.length===0, errors.slice(0,3).join(' | '));
   t('all '+N+' screens were visited', screensSeen.size===N, screensSeen.size+'/'+N);
   const types=new Set(asked.map(a=>a.type));
@@ -164,7 +182,6 @@ async function act(spec){
   // and the builder's stepper went with the builder
   t('all 10 interaction types were exercised', types.size===10, [...types].join(','));
   t('the connect step went side, side, diagonal', Object.values(sideTries).some(k=>k===3), JSON.stringify(sideTries));
-  const SM=w.Stage.summaryState&&w.Stage.summaryState();
   t('the summary collected all eight ideas, in order, and reached its finale', !!SM && SM.state==='FINAL_SUMMARY' && SM.collected.join(',')==='vertex,side,angle,diagonal,convex,concave,regular,irregular',
     JSON.stringify(SM));
   // 7: the connect step judges nothing wrong (a neighbour is a side, not a
