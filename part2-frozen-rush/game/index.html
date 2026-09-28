@@ -22,6 +22,18 @@
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png" />
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
 <meta name="theme-color" content="#0a2450" />
+<!-- THE COVER'S OWN TWO PICTURES, ASKED FOR NOW. The cover only appears once the scripts have
+     run, and its art was then requested behind them (at 2.1 s on a 6 Mbps line, in by 3.3 s)
+     while the loading bar was already up over a blank screen. Asked for here they arrive with
+     the scripts, so the bar appears over the painting. An Image() warm-up, not
+     <link rel=preload>, which Chrome warns about on a run that never shows the cover (?skip=1,
+     ?p2=1, ?at=). tools/build-bundle.mjs keeps the ?v= hashes current. -->
+<script>
+  (function () {
+    if (/[?&](skip|p2)=1\b|[?&]at=/.test(location.search)) return;
+    ['assets/art/cover.webp?v=e0c7a5db', 'assets/ui/btn-play.webp?v=e75de185'].forEach(function (u) { var i = new Image(); i.src = u; });
+  })();
+</script>
 <!-- No Try Again preload. That card is gone: a crash now plays its animation out and
      the run resumes at the nearest checkpoint, so the button can never appear and this
      was 1.1MB fetched on every load for nothing. -->
@@ -294,8 +306,13 @@
                button. Overriding state by state is whack-a-mole; the fix is that the
                picture buttons are their own family. -->
           <button class="btn-art btn-play" id="btn-play" type="button" aria-label="Play"><span class="btn-play-face" aria-hidden="true"></span></button>
-          <!-- shown while the art loads behind the cover; PLAY is held until it is in -->
-          <p class="cover-loading" id="cover-loading" hidden>Loading…</p>
+          <!-- THE LOADING BAR, in PLAY's place until every file the game needs is in (engine.js NET:
+               real bytes, forward only); then it goes and PLAY pops in where it stood -->
+          <div class="cover-loading" id="cover-loading" role="progressbar" aria-label="Loading"
+               aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden>
+            <div class="cover-loading-track"><div class="cover-loading-fill" id="cover-loading-fill"></div></div>
+            <p class="cover-loading-label" id="cover-loading-label">Loading…</p>
+          </div>
         </div>
 
       </div>

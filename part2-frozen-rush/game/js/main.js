@@ -179,6 +179,7 @@ const wantHd = () => {
 
 const game = createGame(canvas, {
   renderScale: wantScale(),
+  sound: options.sound,                  // known before the loading bar plans its list: a muted run fetches no soundtrack
   /* True while the stage cannot be seen: the rotate prompt covers it in portrait. The engine
      skips PAINTING while this holds; the simulation keeps running (see the frame loop). */
   hidden: () => { const el = document.getElementById('rotate'); return !!(el && !el.hidden); },
@@ -202,7 +203,7 @@ const game = createGame(canvas, {
     /* THE COVER IS ALREADY UP (see below); the art has finished loading, so PLAY goes live.
        Before this the cover itself waited for the whole art set — five to six seconds of
        blank page on the deployment before anything appeared at all. */
-    if (front) front.setLoading(false);
+    if (front) game.loaded.then(() => front.setLoading(false));   // and every file is in: the bar's last step
   },
   onHud: state => {
     hud.update(state);
@@ -361,6 +362,7 @@ if (!flag('skip', false) && jumpAt === null) {
   front = new Frontend(document, game);
   front.init({ onStart: () => { game.begin(); startTutorial(); } });
   front.setLoading(true);
+  game.loadProgress(f => front.setProgress(f));
 }
 
 /* THE REVIEW BAR (?dev=1) — the same bar the Swiftee lesson has, so the two parts are

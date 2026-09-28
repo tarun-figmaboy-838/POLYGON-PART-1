@@ -4171,7 +4171,8 @@
        It moves on with this game's own Next, at this game's own pace. */
     if (global.Story && Story.mount) Story.mount({ root: root, next: showNext, pace: paceScale });
 
-    loadEl.classList.add('ready');
+    // the loading bar, in Play's place until everything is in (startLoading; Play pops in after)
+    startLoading();
     if (global.TitleFx) TitleFx.mount(loadEl);
 
     // Audio needs a real gesture. The start button is that gesture, so
@@ -4201,6 +4202,10 @@
     });
 
     startEl.addEventListener('click', function () {
+      /* NOT BEFORE EVERYTHING IS IN. Play is hidden until then, so a child cannot press it;
+         a start asked for some other way (a key, a script, the review bar) waits for the
+         last file and then goes. */
+      if (!preloaded) { pendingStart = function () { startEl.click(); }; return; }
       // once the story is under way, a second tap on Play (the title is still lifting) is nothing
       if (global.Story && Story.active) return;
       // The gesture that unlocks audio is also the first thing that should
@@ -4246,6 +4251,47 @@
   /* A jump from the title in the review tool goes straight to its screen, not through the
      story first (wireJump). */
   var storySkip = false;
+
+  /* ------------------------------------------------------------------ *
+   * THE LOADING BAR — everything before Play (src/core/preload.js)
+   *
+   * The list: every asset the code names as a literal (src/core/preload-list.js, written by
+   * tools/build-preload.js, ?v= and all, so the very URLs the game will ask for), Swiftee's
+   * sheets at the resolution this screen draws him, the voice clips in the format this
+   * browser plays, and the lesson's two type faces. The voice and the story's paintings are
+   * held in memory and played or drawn from there; the rest is left in the browser's cache.
+   * A file that will not come counts as in — the bar never becomes a wall — and Play appears,
+   * with a pop, when the last one has.
+   * ------------------------------------------------------------------ */
+  var preloaded = false, pendingStart = null;
+  function startLoading() {
+    var P = global.Preload;
+    var ready = function () {
+      preloaded = true;
+      loadEl.classList.remove('loading');
+      loadEl.classList.add('ready');
+      if (pendingStart) { var go = pendingStart; pendingStart = null; setTimeout(go, 0); }
+    };
+    if (!P) { ready(); return; }
+    loadEl.classList.add('loading');
+    var fill = $('#title-loading-fill'), label = $('#title-loading-label'), bar = $('#title-loading');
+    P.onProgress(function (f) {
+      var pct = Math.floor(f * 100);
+      if (fill) fill.style.width = pct + '%';
+      if (label) label.textContent = 'Loading\u2026 ' + pct + '%';
+      if (bar) bar.setAttribute('aria-valuenow', String(pct));
+    });
+    var keep = /^assets\/(vo|story)\//;
+    P.want((global.PreloadList && PreloadList.urls) || [], { keep: keep });
+    if (global.Swiftee && Swiftee.sheetUrls) P.want(Swiftee.sheetUrls());
+    FACES.forEach(function (f) { P.font(f); });
+    var voice = (global.VO && VO.ready) ? VO.ready() : Promise.resolve();
+    voice.then(function () { if (global.VO && VO.urls) P.want(VO.urls(), { keep: keep }); }, function () {})
+      .then(function () { P.seal(); });
+    P.done.then(ready);
+  }
+  // the faces the lesson's words are set in (index.html's Google Fonts request)
+  var FACES = ['600 1em Nunito', '700 1em Nunito', '800 1em Nunito', '500 1em Fredoka', '600 1em Fredoka', '700 1em Fredoka'];
 
   /**
    * THE SCREEN PICKER — a review tool, off unless the address asks for it.
@@ -4375,6 +4421,8 @@
     // first (inside this click, so the sound unlocks too), then jumps.
     function jump(n) {
       n = Math.max(0, Math.min(Screens.list.length - 1, n));
+      // from the title, not before the loading bar is done (Play would only wait for it anyway)
+      if (!preloaded && global.Preload) { Preload.done.then(function () { jump(n); }); return; }
       if (loadEl && !loadEl.classList.contains('gone')) {
         // straight to the screen asked for, not through the story first
         storySkip = true;

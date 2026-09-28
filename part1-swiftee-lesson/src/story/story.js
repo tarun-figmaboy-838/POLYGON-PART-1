@@ -161,6 +161,9 @@
    * Building a scene
    * ------------------------------------------------------------------ */
 
+  /** A painting from the loading bar's copy in memory (src/core/preload.js), else the file. */
+  function mem(u) { return (global.Preload && Preload.url) ? Preload.url(u) : u; }
+
   function el(tag, cls, parent) {
     var e = doc.createElement(tag);
     if (cls) e.className = cls;
@@ -201,14 +204,16 @@
     var around = el('div', 'story-around', el('div', 'story-under', s.el));
     around.style.left = px(-ar.x); around.style.top = px(-ar.y);
     around.style.width = px(W + 2 * ar.x); around.style.height = px(H + 2 * ar.y);
-    around.style.backgroundImage = 'url("' + a.around + '")';
+    around.style.backgroundImage = 'url("' + mem(a.around) + '")';
     var frame = el('div', 'story-frame', s.el);
     s.zoom = el('div', 'story-zoom', frame);
     s.cam = el('div', 'story-cam', s.zoom);
     var cam = sc.camera;
     if (cam && cam.origin) s.cam.style.transformOrigin = px(cam.origin[0]) + ' ' + px(cam.origin[1]);
     var img = el('img', 'story-art', s.cam);
-    img.src = a.src; img.alt = ''; img.draggable = false;
+    // the loading bar's copy in memory (mem), and the file itself if that will not load
+    img.onerror = function () { img.onerror = null; if (img.src !== a.src) img.src = a.src; };
+    img.src = mem(a.src); img.alt = ''; img.draggable = false;
 
     /* the moving parts: a parent before its children, each child inside its parent so it
        carries the parent's motion and adds its own */
@@ -224,7 +229,7 @@
       var e = el('div', 'story-rg', parent ? parent.el : s.cam);
       var ox = parent ? box[0] - parent.box[0] : box[0], oy = parent ? box[1] - parent.box[1] : box[1];
       e.style.left = px(ox); e.style.top = px(oy); e.style.width = px(box[2]); e.style.height = px(box[3]);
-      e.style.backgroundImage = 'url("' + a.src + '")';
+      e.style.backgroundImage = 'url("' + mem(a.src) + '")';
       e.style.backgroundSize = W + 'px ' + H + 'px';
       e.style.backgroundPosition = px(-box[0]) + ' ' + px(-box[1]);
       var m = maskFor(r.poly, box, f);

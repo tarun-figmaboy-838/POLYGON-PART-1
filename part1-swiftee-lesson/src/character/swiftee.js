@@ -1797,6 +1797,15 @@
         warms the reaction set — what a tap can reach. */
     warm: function (names) { preload(names || REACTIONS); },
 
+    /** Every sheet page at the resolution chosen for this screen, and the inspection flight:
+        what the loading bar fetches before Start (src/core/preload.js). */
+    sheetUrls: function () {
+      var out = {};
+      Object.keys(F.clips).forEach(function (n) { (pagesOf(n) || []).forEach(function (p) { out[url(p.image)] = 1; }); });
+      out[url('swiftee-inspect-flight.webp')] = 1;
+      return Object.keys(out);
+    },
+
     get el() { return el; },
     get pos() { return pos; },
     /** Has the sleigh been? Read by the suites and probes. */

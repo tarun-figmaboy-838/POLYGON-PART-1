@@ -18,7 +18,9 @@ export class Frontend {
     this.el = {
       cover: root.getElementById('cover'),
       play: root.getElementById('btn-play'),
-      loadingNote: root.getElementById('cover-loading')
+      loadingNote: root.getElementById('cover-loading'),
+      loadingFill: root.getElementById('cover-loading-fill'),
+      loadingLabel: root.getElementById('cover-loading-label')
     };
     this.state = 'ENTERING';
     this._timers = [];
@@ -38,6 +40,18 @@ export class Frontend {
     this.el.cover.classList.toggle('loading', this.loading);
     if (this.el.play) this.el.play.setAttribute('aria-disabled', this.loading ? 'true' : 'false');
     if (this.el.loadingNote) this.el.loadingNote.hidden = !this.loading;
+    if (this.loading) this.setProgress(this._progress || 0);
+    // a start asked for while the files were still coming (a key, a script) goes now, once PLAY has popped in
+    if (!this.loading && this.pendingStart) { this.pendingStart = false; this.wait(560, () => this.start()); }
+  }
+
+  /** The loading bar, 0..1 — forward only (engine.js NET already never goes back). */
+  setProgress(f) {
+    this._progress = Math.max(this._progress || 0, Math.min(1, f || 0));
+    const pct = Math.floor(this._progress * 100);
+    if (this.el.loadingFill) this.el.loadingFill.style.width = pct + '%';
+    if (this.el.loadingLabel) this.el.loadingLabel.textContent = 'Loading… ' + pct + '%';
+    if (this.el.loadingNote) this.el.loadingNote.setAttribute('aria-valuenow', String(pct));
   }
 
   bind() {
@@ -70,7 +84,7 @@ export class Frontend {
 
   /** The cover slides away and the run begins. */
   start() {
-    if (this.loading) return;                 // the art is not in yet; the note says so
+    if (this.loading) { this.pendingStart = true; return; }   // it waits for the last file, then goes
     if (this.state === 'READY') return;
     this.state = 'READY';
     this.sfx('ui');

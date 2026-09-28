@@ -121,6 +121,105 @@ const ASSET_V = {
   "assets/ui/plank-r.webp": "553400cc"
 };
 
+/* And each file's size in bytes, which the loading bar weighs its transfers by. */
+const ASSET_SIZE = {
+  "assets/art/Bubble.svg": 719,
+  "assets/art/cover.webp": 175258,
+  "assets/audio/bgm-ice-hunt.mp3": 2772054,
+  "assets/audio/bgm-ice-hunt.ogg": 1461742,
+  "assets/audio/dragon-studio-cartoon-blinking-372481.mp3": 35108,
+  "assets/audio/dragon-studio-cartoon-blinking-372481.ogg": 10542,
+  "assets/audio/dragon-studio-heavy-boulder-thud-515257.mp3": 67584,
+  "assets/audio/dragon-studio-heavy-boulder-thud-515257.ogg": 14360,
+  "assets/audio/dragon-studio-heavy-whoosh-06-414584.mp3": 96768,
+  "assets/audio/dragon-studio-heavy-whoosh-06-414584.ogg": 23504,
+  "assets/audio/floraphonic-punchy-taps-ui-5-183901.mp3": 65280,
+  "assets/audio/floraphonic-punchy-taps-ui-5-183901.ogg": 6708,
+  "assets/audio/freesound_community-foot_steps_snow_heavy-38297.mp3": 103200,
+  "assets/audio/freesound_community-foot_steps_snow_heavy-38297.ogg": 41552,
+  "assets/audio/themediaguy-earthquake-rumble-amp-cracking-379298.mp3": 227369,
+  "assets/audio/themediaguy-earthquake-rumble-amp-cracking-379298.ogg": 49730,
+  "assets/audio/universfield-ground-impact-352053.mp3": 46080,
+  "assets/audio/universfield-ground-impact-352053.ogg": 10775,
+  "assets/audio/universfield-sad-trumpet-278822.mp3": 92928,
+  "assets/audio/universfield-sad-trumpet-278822.ogg": 25266,
+  "assets/audio/vo-lines.mp3": 1079213,
+  "assets/audio/vo-lines.ogg": 303609,
+  "assets/char/bear.webp": 41536,
+  "assets/char/duo-celebrate.webp": 602602,
+  "assets/char/hd/bear.webp": 68754,
+  "assets/char/hd/mammoth-hurt.webp": 718394,
+  "assets/char/hd/mammoth-idle.webp": 298662,
+  "assets/char/hd/mammoth-jump-v2.webp": 465586,
+  "assets/char/hd/mammoth-jump.webp": 204976,
+  "assets/char/hd/mammoth-run.webp": 741534,
+  "assets/char/hd/mammoth-skid.webp": 678824,
+  "assets/char/hd/mammoth-tremble.webp": 316400,
+  "assets/char/mammoth-hurt.webp": 465002,
+  "assets/char/mammoth-idle.webp": 169790,
+  "assets/char/mammoth-jump-v2.webp": 302054,
+  "assets/char/mammoth-jump.webp": 131238,
+  "assets/char/mammoth-run.webp": 478982,
+  "assets/char/mammoth-skid.webp": 438268,
+  "assets/char/mammoth-tremble.webp": 179364,
+  "assets/env/cap-l.webp": 13910,
+  "assets/env/cap-r.webp": 12948,
+  "assets/env/obs-bone-arch.webp": 54666,
+  "assets/env/obs-bone-cage.webp": 69264,
+  "assets/env/obs-bone-ribs.webp": 66902,
+  "assets/env/obs-bone-tusk.webp": 43452,
+  "assets/env/obs-log-arch.webp": 68094,
+  "assets/env/obs-log-crossed.webp": 67684,
+  "assets/env/obs-log-fallen.webp": 56266,
+  "assets/env/obs-log-stump.webp": 57454,
+  "assets/env/path.webp": 254148,
+  "assets/env/rock-band.webp": 10056,
+  "assets/env/rock-tall.webp": 51534,
+  "assets/env/rock-wide.webp": 37340,
+  "assets/env/rope-tied.webp": 40926,
+  "assets/option-shape/concaveHeptagon.webp": 68076,
+  "assets/option-shape/concaveHexagon.webp": 44458,
+  "assets/option-shape/concavePentagon.webp": 39554,
+  "assets/option-shape/concavePentagon2.webp": 40840,
+  "assets/option-shape/iceQuadrilateral.webp": 84154,
+  "assets/option-shape/irregularConvexHexagon.webp": 81440,
+  "assets/option-shape/irregularConvexOctagon.webp": 102498,
+  "assets/option-shape/irregularConvexPentagon.webp": 78342,
+  "assets/option-shape/irregularHexagon.webp": 69880,
+  "assets/option-shape/irregularPentagon.webp": 83428,
+  "assets/option-shape/regularHeptagon.webp": 92012,
+  "assets/option-shape/regularHexagon.webp": 41818,
+  "assets/option-shape/regularOctagon.webp": 101462,
+  "assets/option-shape/regularPentagon.webp": 91072,
+  "assets/option-shape/regularQuadrilateral.webp": 97964,
+  "assets/option-shape/regularTriangle.webp": 60244,
+  "assets/progress/panel.webp": 62144,
+  "assets/progress/step-done.webp": 8542,
+  "assets/progress/step-goal.webp": 16006,
+  "assets/progress/step-locked.webp": 6380,
+  "assets/progress/step-momo.webp": 9592,
+  "assets/progress/step-now.webp": 11036,
+  "assets/sky/01-dawn.webp": 40764,
+  "assets/sky/02-early-morning.webp": 49628,
+  "assets/sky/03-morning.webp": 42062,
+  "assets/sky/04-midday.webp": 49582,
+  "assets/sky/05-afternoon.webp": 50484,
+  "assets/sky/06-sunset.webp": 49262,
+  "assets/sky/07-dusk.webp": 34740,
+  "assets/sky/08-night.webp": 35782,
+  "assets/ui/btn-play.webp": 121778,
+  "assets/ui/icons/hint.svg": 434,
+  "assets/ui/icons/pause.svg": 279,
+  "assets/ui/icons/play.svg": 264,
+  "assets/ui/icons/restart.svg": 365,
+  "assets/ui/icons/sound-off.svg": 487,
+  "assets/ui/icons/sound-on.svg": 557,
+  "assets/ui/icons/touch.webp": 47284,
+  "assets/ui/plank-l.webp": 30482,
+  "assets/ui/plank-m.webp": 69808,
+  "assets/ui/plank-r.webp": 29374
+};
+
 
 /* ==================== polygons.js ==================== */
 /* POLYGON GEOMETRY — one geometry, one definition.
@@ -1009,6 +1108,118 @@ function assetUrl(src) {
   const v = ASSET_V[src];
   return v ? src + '?v=' + v : src;
 }
+
+/* THE LOADING BAR'S NETWORK. Every file the game needs before PLAY — the art, the effects,
+   the voice take, the music bed — is fetched through here, so the bar on the cover shows
+   real bytes rather than a count of files:
+
+   - STREAMED. Each response is read chunk by chunk, so a 1.4 MB file moves the bar as it
+     arrives. Transfers are weighed by their size on disk (ASSET_SIZE, written by
+     tools/build-bundle.mjs), corrected by Content-Length when the headers say otherwise,
+     and the bar only ever moves forward.
+   - SMALLEST FIRST, FIVE AT A TIME, so the cover's own pictures and the small sheets are in
+     within the first seconds instead of queued behind the music.
+   - LOCAL ONCE LOADED. What arrives is handed to its element as a blob: URL (loadImg, the
+     music) or decoded from its bytes (the effects, the voice), so nothing is downloaded
+     twice; an element whose blob fails goes back to the file's own URL, once.
+   - NEVER A WALL. A transfer that fails, stalls for 15 s or runs past 2 minutes counts as
+     done and its element keeps the file's own URL. Off the disk (file://), where fetch is
+     refused, everything counts as done at once and the files load the way they always did.
+
+   Memoised by URL: whoever asks for a file first starts it, and everyone after gets the same
+   transfer. `seal()` says the list is complete; `done` settles once it is and all are in. */
+const NET = (() => {
+  const LIMIT = 5, STALL_MS = 15000, CAP_MS = 120000;
+  const jobs = new Map(), queue = [], listeners = [];
+  let active = 0, total = 0, loaded = 0, shown = 0, planned = 0, settledN = 0, sealed = false, finish;
+  const done = new Promise(r => { finish = r; });
+  const usable = typeof fetch === 'function' && typeof location !== 'undefined' && location.protocol !== 'file:';
+  const sizeOf = url => ASSET_SIZE[url.split('?')[0]] || 40000;
+  const emit = () => {
+    const f = total > 0 ? Math.min(1, loaded / total) : 1;
+    if (f > shown) shown = f;                                  // forward only
+    for (const fn of listeners) { try { fn(shown, settledN, planned); } catch (e) { /* a listener is not the loader's problem */ } }
+  };
+  const check = () => { if (sealed && settledN >= planned) { shown = 1; emit(); finish(); } };
+  const settle = (job, blob) => {
+    if (job.settled) return;
+    job.settled = true; job.blob = blob;
+    loaded += Math.max(0, job.expect - job.got); job.got = job.expect;
+    settledN++; active = Math.max(0, active - (job.started ? 1 : 0));
+    job.resolve(blob);
+    emit(); check(); pump();
+  };
+  const run = async job => {
+    job.started = true;
+    const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+    let stall = 0;
+    const cap = setTimeout(() => ctl && ctl.abort(), CAP_MS);
+    const arm = () => { clearTimeout(stall); stall = setTimeout(() => ctl && ctl.abort(), STALL_MS); };
+    try {
+      arm();
+      const res = await fetch(job.url, ctl ? { signal: ctl.signal } : undefined);
+      if (!res.ok) throw new Error(res.status);
+      const cl = Number(res.headers.get('content-length')) || 0;
+      if (cl && cl !== job.expect) { total += cl - job.expect; job.expect = cl; }
+      const type = res.headers.get('content-type') || '';
+      let blob;
+      if (res.body && res.body.getReader) {
+        const reader = res.body.getReader(), parts = [];
+        for (;;) {
+          const { done: end, value } = await reader.read();
+          if (end) break;
+          parts.push(value); arm();
+          const add = Math.min(value.byteLength, Math.max(0, job.expect - job.got));
+          job.got += add; loaded += add; emit();
+        }
+        blob = new Blob(parts, type ? { type } : undefined);
+      } else blob = await res.blob();
+      clearTimeout(stall); clearTimeout(cap);
+      settle(job, blob);
+    } catch (e) {
+      clearTimeout(stall); clearTimeout(cap);
+      settle(job, null);                                       // failed, stalled or aborted: done, and the file's own URL is used
+    }
+  };
+  /* THE QUEUE IS SORTED ONCE THE LIST IS IN: preload() asks for everything in one go, and
+     starting each file the moment it was asked for sent the first five asked (the sounds)
+     ahead of smaller pictures. So the first pump waits for the end of the current task. */
+  let pumpQueued = false;
+  const later = () => { if (pumpQueued) return; pumpQueued = true; Promise.resolve().then(() => { pumpQueued = false; pump(); }); };
+  const pump = () => {
+    while (active < LIMIT && queue.length) {
+      queue.sort((a, b) => a.expect - b.expect);
+      const job = queue.shift();
+      if (job.settled) continue;
+      active++; run(job);
+    }
+  };
+  const want = (url, bytes) => {
+    let job = jobs.get(url);
+    if (!job) {
+      job = { url, expect: bytes || sizeOf(url), got: 0, settled: false, started: false, blob: null };
+      job.promise = new Promise(r => { job.resolve = r; });
+      jobs.set(url, job);
+      total += job.expect; planned++;
+      if (!usable) settle(job, null);
+      else { queue.push(job); later(); }
+      emit();
+    }
+    return job;
+  };
+  return {
+    /** The file's bytes as a Blob, or null if it could not be had (then use its own URL). */
+    get: (url, bytes) => want(url, bytes).promise,
+    /** Put a file on the list without waiting for it. */
+    plan: (url, bytes) => { want(url, bytes); },
+    /** The list is complete: the bar can finish once everything on it is in. */
+    seal: () => { sealed = true; check(); },
+    onProgress: fn => { listeners.push(fn); fn(shown, settledN, planned); },
+    get progress() { return { fraction: shown, loaded, total, settled: settledN, planned }; },
+    done
+  };
+})();
+
 
 const CFG = {
   W: 1920, H: 1080,
@@ -3041,17 +3252,26 @@ class AudioManager {
      * driven by element volume", so ducking and fading work either way. */
     const direct = typeof location !== 'undefined' && location.protocol === 'file:';
     try {
-      const el = new Audio(assetUrl(M.src));
+      /* NO SOURCE OF ITS OWN UNTIL THE LOADING BAR HAS ITS BYTES (NET), so the bed is fetched
+         once, not by the bar and again by the element: preload 'none', then a blob URL. If
+         the blob will not play, the file's own URL; if that is an ogg that will not, its mp3. */
+      const url = assetUrl(M.src);
+      const el = new Audio();
       el.loop = true;
-      el.preload = 'auto';
-      // an ogg this browser said it would play, and will not: its mp3, once
-      if (el.src && !/\.mp3(\?|$)/.test(el.src)) {
-        el.addEventListener('error', () => {
-          el.src = mp3Url(M.src);
-          const q = el.play();
-          if (q && q.catch) q.catch(() => {});
-        }, { once: true });
-      }
+      el.preload = 'none';
+      const play = () => { const q = el.play(); if (q && q.catch) q.catch(() => {}); };
+      NET.get(url).then(blob => {
+        const chain = (blob ? [URL.createObjectURL(blob)] : []).concat([url], url === mp3Url(M.src) ? [] : [mp3Url(M.src)]);
+        let k = 0;
+        const next = () => {
+          if (k > 0 && chain[k - 1].startsWith('blob:')) { try { URL.revokeObjectURL(chain[k - 1]); } catch (e) { /* gone */ } }
+          if (k >= chain.length) { el.removeEventListener('error', next); return; }
+          el.src = chain[k++]; el.preload = 'auto';
+          if (this.enabled) play();             // refused until a gesture, as before; resume() retries
+        };
+        el.addEventListener('error', next);
+        next();
+      });
       if (direct) {
         el.volume = 0;                        // faded in below
         this.music = { el, gain: null };
@@ -3063,9 +3283,7 @@ class AudioManager {
         src.connect(g); g.connect(this.master);
         this.music = { el, gain: g };
       }
-      // a browser will refuse this until a gesture; start() is called from the first tap
-      const p = el.play();
-      if (p && p.catch) p.catch(() => {});
+      // (its first play() is tried when its source is set, above; a browser refuses it until a gesture)
       this._musicTo(M.gain, M.fadeMs);
     } catch (e) {
       this.music = null;                      // never let the bed break the game
@@ -3138,7 +3356,12 @@ class AudioManager {
               if (!res.ok) throw new Error(res.status + ' ' + cue.src);
               return this.ctx.decodeAudioData(await res.arrayBuffer());
             };
-            try { return await get(assetUrl(cue.src)); }
+            // the bytes the loading bar already fetched (NET), else the file itself
+            const fromNet = async () => {
+              const blob = await NET.get(assetUrl(cue.src));
+              return blob ? this.ctx.decodeAudioData(await blob.arrayBuffer()) : get(assetUrl(cue.src));
+            };
+            try { return await fromNet(); }
             catch (e) {
               // the ogg would not decode here (or was not there): the mp3 twin, once
               if (assetUrl(cue.src) === mp3Url(cue.src)) throw e;
@@ -3294,9 +3517,14 @@ class AudioManager {
     if (this._voFetch) return this._voFetch;
     this._voFetch = (async () => {
       try {
-        const res = await fetch(assetUrl(V.src));
-        if (!res.ok) throw new Error(res.status + ' ' + V.src);
-        this.voBytes = await res.arrayBuffer();
+        // the loading bar's transfer (NET); the file itself if that could not be had
+        const blob = await NET.get(assetUrl(V.src));
+        if (blob) this.voBytes = await blob.arrayBuffer();
+        else {
+          const res = await fetch(assetUrl(V.src));
+          if (!res.ok) throw new Error(res.status + ' ' + V.src);
+          this.voBytes = await res.arrayBuffer();
+        }
       } catch (e) { this.voErr = 'fetch: ' + String((e && e.message) || e); }
     })();
     return this._voFetch;
@@ -7022,12 +7250,34 @@ function createGame(canvas, hooks = {}) {
          the first crash and the first stomp (a 2520x1920 sheet is tens of milliseconds on a
          phone). decode() does it here, off the main thread where the browser can. A browser
          that refuses still gets the image. */
+      /* FROM THE LOADING BAR'S BYTES (NET): a blob URL, so loaded means local — and if the blob
+         will not load, the file's own URL, once, before giving up. The blob URL is KEPT for the
+         life of the page: the game reuses a sheet's src (the cover's DOM panels draw the
+         character from it, sheetFor hands it on), and a revoked one decodes to nothing. Only a
+         blob that failed is let go, and the hd set's when it is dropped (below). */
+      const url = assetUrl(src);
+      // which file this is, whatever its src — absolute, as img.src always read (sheetFor)
+      try { i.dataset.asset = new URL(url, document.baseURI).href; } catch (e) { i.dataset.asset = url; }
+      const free = () => { if (i.src.startsWith('blob:')) { try { URL.revokeObjectURL(i.src); } catch (e) { /* gone */ } } };
       i.onload = () => { if (i.decode) i.decode().then(() => res(i), () => res(i)); else res(i); };
-      i.onerror = () => res(null);
-      i.src = assetUrl(src);
+      NET.get(url).then(blob => {
+        const chain = (blob ? [URL.createObjectURL(blob)] : []).concat([url]);
+        let k = 0;
+        i.onerror = () => { free(); if (k < chain.length) i.src = chain[k++]; else res(null); };
+        i.onerror();
+      });
     });
   }
   async function preload() {
+    /* THE SOUND GOES ON THE LOADING BAR'S LIST NOW (NET), before the art, so the bar's total
+       is right from its first frame. The effects, the voice take and the music bed are fetched
+       here once; the audio manager decodes or plays those same bytes when it gets to them. Only
+       when sound is on — a muted run (?sound=0, hooks.sound false) does not download the soundtrack. */
+    if (audio.enabled && hooks.sound !== false) {
+      for (const cue of Object.values(CFG.sfx || {})) if (cue && cue.src) NET.plan(assetUrl(cue.src));
+      if (CFG.vo && CFG.vo.src) NET.plan(assetUrl(CFG.vo.src));
+      if (CFG.music && CFG.music.src) NET.plan(assetUrl(CFG.music.src));
+    }
     const jobs = CFG.phases.map(p => loadImg(p.src).then(i => { images[p.key] = i; }));
     jobs.push(loadImg('assets/env/path.webp').then(i => { images.path = i; }));
     jobs.push(loadImg('assets/env/rock-wide.webp').then(i => { images.rockWide = i; }));
@@ -7090,15 +7340,16 @@ function createGame(canvas, hooks = {}) {
            ~226MB and ~74MB of character art on that device. */
         for (const ch of CFG.characters) for (const slot of Object.keys(ch.sheets)) {
           const img = images[ch.id + ':' + slot];
-          if (img) { try { img.src = ''; } catch (e) { /* detached already */ } }
+          if (img) { try { if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src); img.src = ''; } catch (e) { /* detached already */ } }
           images[ch.id + ':' + slot] = null;
         }
-        if (images.bear) { try { images.bear.src = ''; } catch (e) { /* detached */ } images.bear = null; }
+        if (images.bear) { try { if (images.bear.src.startsWith('blob:')) URL.revokeObjectURL(images.bear.src); images.bear.src = ''; } catch (e) { /* detached */ } images.bear = null; }
         hdArt = false; CFG.sprite.cellK = 1;
         await loadCharacterArt(false);
       } else if (!hdArt) await loadCharacterArt(false);
     })());
     await Promise.all(jobs);
+    NET.seal();                                // nothing more will be asked for: the bar can finish
   }
 
   /* ---- state machine ---- */
@@ -13472,7 +13723,8 @@ function createGame(canvas, hooks = {}) {
       if (!img) return null;
       const ch = CFG.characters.find(c => c.id === cid);
       const kc = CFG.sprite.cellK || 1;
-      return { src: img.src, frames: ch ? (ch.frames[slot] || 1) : 1,
+      // the FILE's URL, not the blob it was drawn from (the loading bar has it in the cache already)
+      return { src: (img.dataset && img.dataset.asset) || img.src, frames: ch ? (ch.frames[slot] || 1) : 1,
                cw: CFG.sprite.cw * kc, ch: CFG.sprite.ch * kc, cols: CFG.sprite.cols || 6 };
     },
     /** The backbuffer's pixel scale (1..2); see setRenderScale in createGame. */
@@ -13593,6 +13845,10 @@ function createGame(canvas, hooks = {}) {
     /** Create the audio graph and start decoding the recordings BEFORE the first gesture,
         so no cue is ever caught half-loaded. Nothing plays until a real tap resumes it. */
     warmAudio() { try { audio.start(); } catch (e) { /* no audio here */ } },
+    /** The loading bar: fn(fraction 0..1, filesDone, filesPlanned) on every step, forward only. */
+    loadProgress: fn => NET.onProgress(fn),
+    /** Settles once every file on the list is in (or has failed, which counts as in). */
+    loaded: NET.done,
     /** Draw one tutorial subject alone onto `target` (a 1920x1080 canvas): 'mammoth',
         'rock', 'gap', 'blocks', or null to clear. See renderFocus. */
     renderFocus(target, kind) { renderFocus(target, kind); },
@@ -14802,7 +15058,9 @@ class Frontend {
     this.el = {
       cover: root.getElementById('cover'),
       play: root.getElementById('btn-play'),
-      loadingNote: root.getElementById('cover-loading')
+      loadingNote: root.getElementById('cover-loading'),
+      loadingFill: root.getElementById('cover-loading-fill'),
+      loadingLabel: root.getElementById('cover-loading-label')
     };
     this.state = 'ENTERING';
     this._timers = [];
@@ -14822,6 +15080,18 @@ class Frontend {
     this.el.cover.classList.toggle('loading', this.loading);
     if (this.el.play) this.el.play.setAttribute('aria-disabled', this.loading ? 'true' : 'false');
     if (this.el.loadingNote) this.el.loadingNote.hidden = !this.loading;
+    if (this.loading) this.setProgress(this._progress || 0);
+    // a start asked for while the files were still coming (a key, a script) goes now, once PLAY has popped in
+    if (!this.loading && this.pendingStart) { this.pendingStart = false; this.wait(560, () => this.start()); }
+  }
+
+  /** The loading bar, 0..1 — forward only (engine.js NET already never goes back). */
+  setProgress(f) {
+    this._progress = Math.max(this._progress || 0, Math.min(1, f || 0));
+    const pct = Math.floor(this._progress * 100);
+    if (this.el.loadingFill) this.el.loadingFill.style.width = pct + '%';
+    if (this.el.loadingLabel) this.el.loadingLabel.textContent = 'Loading… ' + pct + '%';
+    if (this.el.loadingNote) this.el.loadingNote.setAttribute('aria-valuenow', String(pct));
   }
 
   bind() {
@@ -14854,7 +15124,7 @@ class Frontend {
 
   /** The cover slides away and the run begins. */
   start() {
-    if (this.loading) return;                 // the art is not in yet; the note says so
+    if (this.loading) { this.pendingStart = true; return; }   // it waits for the last file, then goes
     if (this.state === 'READY') return;
     this.state = 'READY';
     this.sfx('ui');
@@ -16480,6 +16750,7 @@ const wantHd = () => {
 
 const game = createGame(canvas, {
   renderScale: wantScale(),
+  sound: options.sound,                  // known before the loading bar plans its list: a muted run fetches no soundtrack
   /* True while the stage cannot be seen: the rotate prompt covers it in portrait. The engine
      skips PAINTING while this holds; the simulation keeps running (see the frame loop). */
   hidden: () => { const el = document.getElementById('rotate'); return !!(el && !el.hidden); },
@@ -16503,7 +16774,7 @@ const game = createGame(canvas, {
     /* THE COVER IS ALREADY UP (see below); the art has finished loading, so PLAY goes live.
        Before this the cover itself waited for the whole art set — five to six seconds of
        blank page on the deployment before anything appeared at all. */
-    if (front) front.setLoading(false);
+    if (front) game.loaded.then(() => front.setLoading(false));   // and every file is in: the bar's last step
   },
   onHud: state => {
     hud.update(state);
@@ -16662,6 +16933,7 @@ if (!flag('skip', false) && jumpAt === null) {
   front = new Frontend(document, game);
   front.init({ onStart: () => { game.begin(); startTutorial(); } });
   front.setLoading(true);
+  game.loadProgress(f => front.setProgress(f));
 }
 
 /* THE REVIEW BAR (?dev=1) — the same bar the Swiftee lesson has, so the two parts are

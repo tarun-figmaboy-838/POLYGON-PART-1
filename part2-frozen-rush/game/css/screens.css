@@ -36,23 +36,63 @@
    are both 16:9, so in practice it fills the frame edge to edge anyway; the flat
    background behind it is only there for a viewport that is not. */
 .cover { background: #0a2450; }
-/* WHILE THE ART LOADS: PLAY is visible but held, dimmed a touch, with a quiet note under it. */
-.cover.loading .btn-play { filter: saturate(0.7) brightness(0.82); cursor: progress; }
+/* WHILE EVERYTHING LOADS: THE BAR STANDS WHERE PLAY WILL (engine.js NET, frontend.js).
+   PLAY is hidden — not dimmed and held — so there is nothing to press until there is something
+   to play, and it has `animation: none` while hidden so its pop plays when it is revealed, not
+   unseen at page load. The bar is centred on PLAY's own box (bottom 7%, its height from its
+   width and the art's aspect), an ice-bright fill in a dark rimmed track, like the cover's snow. */
+.cover.loading .btn-play { visibility: hidden; pointer-events: none; animation: none; }
 .cover-loading {
   position: absolute;
   left: 50%;
-  bottom: 2.2%;
-  transform: translateX(-50%);
+  bottom: calc(7% + clamp(94px, calc(13.5 * var(--u)), 520px) * 1162 / 1121 / 2);
+  transform: translate(-50%, 50%);
+  width: clamp(200px, calc(30 * var(--u)), 1100px);
   margin: 0;
-  font: 700 clamp(12px, calc(1.3 * var(--u)), 44px)/1 "Baloo 2", system-ui, sans-serif;
-  color: rgba(234, 249, 255, 0.92);
-  letter-spacing: 0.04em;
-  text-shadow: 0 2px 6px rgba(6, 32, 60, 0.6);
+  display: grid; justify-items: center; gap: clamp(6px, calc(0.7 * var(--u)), 26px);
   pointer-events: none;
-  animation: coverLoadingPulse 1.2s ease-in-out infinite;
+  z-index: 3;
 }
-@keyframes coverLoadingPulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .cover-loading { animation: none; } }
+.cover-loading[hidden] { display: none; }
+.cover-loading-track {
+  box-sizing: border-box;
+  width: 100%;
+  height: clamp(16px, calc(2 * var(--u)), 74px);
+  padding: clamp(3px, calc(0.34 * var(--u)), 12px);
+  border-radius: 999px;
+  background: rgba(6, 30, 66, 0.62);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35),
+              0 0 0 clamp(2px, calc(0.26 * var(--u)), 9px) rgba(234, 249, 255, 0.9),
+              0 clamp(4px, calc(0.5 * var(--u)), 18px) clamp(10px, calc(1.2 * var(--u)), 40px) rgba(6, 32, 60, 0.45);
+}
+.cover-loading-fill {
+  position: relative;
+  height: 100%;
+  width: 0;
+  min-width: calc(clamp(16px, calc(2 * var(--u)), 74px) - 2 * clamp(3px, calc(0.34 * var(--u)), 12px));
+  border-radius: 999px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #ffffff 0%, #c8f3ff 42%, #62c9f2 100%);
+  transition: width 220ms ease-out;
+}
+/* a slow light across the ice while it fills */
+.cover-loading-fill::after {
+  content: ''; position: absolute; inset: 0 auto 0 0; width: 40%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0));
+  animation: coverLoadSheen 1.6s ease-in-out infinite;
+}
+@keyframes coverLoadSheen { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+.cover-loading-label {
+  margin: 0;
+  font: 800 clamp(13px, calc(1.45 * var(--u)), 50px)/1 "Baloo 2", system-ui, sans-serif;
+  color: #eaf9ff;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 0 rgba(6, 32, 60, 0.55), 0 3px 10px rgba(6, 32, 60, 0.6);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cover-loading-fill { transition: none; }
+  .cover-loading-fill::after { animation: none; opacity: 0; }
+}
 .cover-art {
   position: absolute;
   inset: 0;

@@ -9,17 +9,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
-<!-- the backdrop is the first thing on screen; fetch it alongside the scripts.
-     The sleigh's three sheets too: the intro draws nothing until all three are
-     in, and asked for only once the scripts had run they left a child who
-     tapped Start straight away looking at the title for seven seconds on a
-     4 Mbps line. What is not needed yet (the measuring walk, the replies) is
-     warmed after the intro instead, so it does not share the line with it. -->
+<!-- the title and the backdrop are the first things on screen; fetch them alongside
+     the scripts. Everything else — the sleigh's sheets, Swiftee, the story, the voice —
+     is fetched by the loading bar (src/core/preload.js) before Play appears. -->
 <link rel="preload" as="image" href="assets/ui/banner.webp?v=0f187566">
 <link rel="preload" as="image" href="assets/bg/ice-vista.webp" fetchpriority="high">
-<link rel="preload" as="image" href="assets/swiftee/intro/sheet1.webp" fetchpriority="low">
-<link rel="preload" as="image" href="assets/swiftee/intro/sheet2.webp" fetchpriority="low">
-<link rel="preload" as="image" href="assets/swiftee/intro/sheet3.webp" fetchpriority="low">
 <style>
   :root {
     --ink: #1c2a4a;
@@ -800,6 +794,52 @@
   }
   #start img { display: block; width: 100%; height: 100%; }
   #loading.ready #start { opacity: 1; pointer-events: auto; }
+  /* WHILE EVERYTHING LOADS (src/core/preload.js; game.js startLoading) the bar stands where
+     Play will, and Play is hidden — there is nothing to press until there is something to
+     play. It pops in when the last file is in (backwards fill only, so its press still works
+     the moment the pop has played). The bar is the same family as Part 2's: an ice-bright
+     fill in a dark rimmed track, over the painted title. */
+  #loading:not(.ready) #start { visibility: hidden; }
+  #loading.ready #start { animation: startPop 520ms cubic-bezier(.2, 1.6, .35, 1) backwards; }
+  @keyframes startPop {
+    0%   { opacity: 0; transform: scale(.45); }
+    60%  { opacity: 1; transform: scale(1.08); }
+    100% { opacity: 1; transform: none; }
+  }
+  .title-loading {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: clamp(220px, 44vh, 480px);
+    display: grid; justify-items: center; gap: clamp(6px, 1.2vh, 12px);
+    pointer-events: none; z-index: 4;
+  }
+  #loading.ready .title-loading { display: none; }
+  .title-loading-track {
+    width: 100%; height: clamp(16px, 3.2vh, 28px); padding: clamp(3px, .55vh, 5px);
+    border-radius: 999px; background: rgba(6, 30, 66, .62);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, .35), 0 0 0 3px rgba(234, 249, 255, .9), 0 6px 18px rgba(6, 32, 60, .45);
+  }
+  .title-loading-fill {
+    position: relative; height: 100%; width: 0; min-width: clamp(10px, 2.1vh, 18px);
+    border-radius: 999px; overflow: hidden;
+    background: linear-gradient(180deg, #ffffff 0%, #c8f3ff 42%, #62c9f2 100%);
+    transition: width 220ms ease-out;
+  }
+  .title-loading-fill::after {
+    content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 40%;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .75), rgba(255, 255, 255, 0));
+    animation: titleLoadSheen 1.6s ease-in-out infinite;
+  }
+  @keyframes titleLoadSheen { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+  .title-loading-label {
+    margin: 0; font: 800 clamp(14px, 2.6vh, 22px)/1 "Fredoka", "Baloo 2", var(--sans);
+    color: #eaf9ff; letter-spacing: .04em;
+    text-shadow: 0 2px 0 rgba(6, 32, 60, .55), 0 3px 10px rgba(6, 32, 60, .6);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #loading.ready #start { animation: none; }
+    .title-loading-fill { transition: none; }
+    .title-loading-fill::after { animation: none; opacity: 0; }
+  }
   #start:active { transform: translateY(4px) scale(.965); filter: drop-shadow(0 4px 8px rgba(12, 64, 102, .5)) brightness(.97); }
   #start:focus-visible { outline: 4px solid #fff; outline-offset: 7px; border-radius: 50%; }
 
@@ -1046,12 +1086,22 @@
         <span class="start-halo" aria-hidden="true"></span>
         <img src="assets/ui/play.webp" alt="" draggable="false">
       </button>
+      <!-- THE LOADING BAR (src/core/preload.js), in Play's place until every file the story and
+           the lesson need is in — real bytes, forward only; then it goes and Play pops in -->
+      <div class="title-loading" id="title-loading" role="progressbar" aria-label="Loading"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="title-loading-track"><div class="title-loading-fill" id="title-loading-fill"></div></div>
+        <p class="title-loading-label" id="title-loading-label">Loading…</p>
+      </div>
       <span class="start-sparks" aria-hidden="true"></span>
     </div>
   </div>
 </div>
 
 <!-- Load order is the dependency order: each module reads the ones above it. -->
+<!-- the loading bar first: its list (generated by tools/build-preload.js) and its loader -->
+<script src="src/core/preload-list.js"></script>
+<script src="src/core/preload.js"></script>
 <script src="src/audio/sfx.js"></script>
 <script src="src/audio/vo.js"></script>
 <!-- the tune under the lesson: synthesised on the music bus, no files -->

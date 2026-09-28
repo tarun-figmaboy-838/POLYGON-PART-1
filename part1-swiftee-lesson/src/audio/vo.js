@@ -102,10 +102,17 @@
    * the cache aged out. The index carries a hash of each clip's bytes and is
    * itself revalidated, so asking for it by revision makes a corrected clip
    * arrive on the next load and leaves every unchanged clip in the cache. */
-  function url(id) {
+  /** The clip's own file, as the server has it. */
+  function rawUrl(id) {
     var v = revs[id];
     // (off the disk there is no cache to outwit, and no query on a file path)
     return BASE + id + ext() + (v && !offDisk ? '?v=' + v : '');
+  }
+  /** What an element plays: the loading bar's copy in memory (src/core/preload.js) when it
+      has one — so a line starts at once, with nothing left to fetch — else the file. */
+  function url(id) {
+    var u = rawUrl(id);
+    return (global.Preload && Preload.url) ? Preload.url(u) : u;
   }
 
   function muted() { return !!(global.SFX && SFX.isMuted && SFX.isMuted()); }
@@ -225,6 +232,9 @@
     // network round trip later. Taken out of `warm` because it is no longer
     // waiting to be used — and if it is asked for again the browser's cache
     // answers, which is the whole point of giving the file a revision.
+    // (only if it is the same copy: one warmed before the loading bar had the clip in memory
+    // points at the file, and the copy in memory is the one to play now)
+    if (warm[id] && warm[id].src !== url(id)) { delete warm[id]; var wo = warmOrder.indexOf(id); if (wo >= 0) warmOrder.splice(wo, 1); }
     if (warm[id]) {
       a = warm[id];
       delete warm[id];
@@ -236,19 +246,25 @@
     return start(a, id);
   }
 
-  /** Put one element on air for a line: its end, its failure, and the play itself. */
+  /** Put one element on air for a line: its end, its failure, and the play itself.
+      A copy in memory that will not play is retried as the file itself; an Opus file this
+      browser cannot play, as its mp3 (and every clip after it too). */
   function start(a, id) {
     a.preload = 'auto';
     a.volume = 0.95;
     if (hiddenNow()) a.muted = true;
     a.addEventListener('error', function () {
       if (current !== a) return;              // an element already replaced is nothing to us
-      // the Opus file would not play here: once, the mp3 of the same line (and mp3 from now on)
-      if (!oggFailed && EXT === '.ogg' && /\.ogg(\?|$)/.test(a.src || '')) {
+      var next = null, src = a.src || '';
+      if (/^blob:/.test(src)) next = rawUrl(id);
+      else if (!oggFailed && EXT === '.ogg' && /\.ogg(\?|$)/.test(src)) {
         oggFailed = true;
         if (global.console) console.warn('[VO] ogg will not play here, using mp3: ' + id);
+        next = rawUrl(id);
+      }
+      if (next && next !== src) {
         var b = null;
-        try { b = new Audio(url(id)); } catch (e) { b = null; }
+        try { b = new Audio(next); } catch (e) { b = null; }
         if (b) { start(b, id); return; }
       }
       known[id] = false;
@@ -297,6 +313,7 @@
         a.preload = 'auto';
         a.addEventListener('error', function () {
           delete warm[id];
+          if (/^blob:/.test(a.src || '')) return;                          // play() will try the file itself
           if (!oggFailed && EXT === '.ogg') { oggFailed = true; return; }   // play() asks for the mp3 now
           known[id] = false;
         });
@@ -334,7 +351,11 @@
       before the silence every recording runs on with — or 0 if not known. */
   function spoken(id) { return (id && spokenMs[id]) || 0; }
 
+  /** Every clip's file, in the format this browser plays — the loading bar's list. */
+  function urls() { return Object.keys(index || {}).map(rawUrl); }
+
   global.VO = { play: play, stop: stop, finished: finished, preload: preload, seconds: seconds, words: words, spoken: spoken, at: at,
+                urls: urls,
                 ready: ready,
                 get isReady() { return indexSettled; },
                 get playing() { return current; },
