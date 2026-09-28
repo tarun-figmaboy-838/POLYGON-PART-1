@@ -2032,8 +2032,15 @@ const CFG = {
         /* Same ceiling as crossing 2, for the same reason: three fan pieces, three
            slots, groupW 1097 of 1195 at hexR 108. 114 is the most the row takes. */
         hexR: 114,
-        // Bigger on the path, same reason as crossing 2: 228 x 218 becomes 296 x 283.
-        restK: 1.3,
+        /* Bigger on the path, same reason as crossing 2, and bigger again when asked
+           ("level 3 make path shape big"): 228 x 218 becomes 342 x 327, a little over
+           the hexagon's 334 x 289 on crossing 1. */
+        restK: 1.5,
+        /* AND A LITTLE TO THE RIGHT (asked for, with the size): centred on the pillar it
+           stood almost under Momo's trunk. 45 puts its left corner at the pillar's near
+           edge, and its middle still well over the pillar (20 short of the far edge), so it
+           reads as balanced on it rather than hanging over the second crevasse. */
+        restDX: 45,
         ditches: 2,
         /* SMALLER THAN THE OTHER TWO. A pentagon is the tallest of the three for its
            width, and at the multiplier the hexagon uses its crown reaches y 156 and runs
@@ -11825,9 +11832,9 @@ function createGame(canvas, hooks = {}) {
        is where the answer comes back to before its pieces fly to their slots. */
     const rk = restK();
     const halfW = polyBounds(pts).w / 2 * rk;
-    const cx = G.gapB
+    const cx = (G.gapB
       ? (G.gapA.x1 + G.gapB.x0) / 2 - G.worldX
-      : G.gapA.x1 + halfW + 26 - G.worldX;
+      : G.gapA.x1 + halfW + 26 - G.worldX) + (C.restDX || 0);   // restDX: see crossing 3
     const cy = CFG.surfaceY - b.y1 * rk - L2.homeLift;
     G.l2 = {
       R, pts, art,
