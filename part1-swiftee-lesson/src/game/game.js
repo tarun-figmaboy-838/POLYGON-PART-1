@@ -521,11 +521,23 @@
   var EMOTE = { fb03: 'nice', fb01: 'happy', fb06: 'chuffed', fb04: 'point', fb17: 'celebrate', fb18: 'celebrate',
                 fb19: 'nod', fb20: 'wink', fb21: 'chuffed', fb22: 'nod', fb23: 'nice', fb24: 'happy', fb25: 'celebrate',
                 fb26: 'phew' };
-  // A MISS IS MET GENTLY, and says to try again rather than only "no". "Try again!" in
-  // place of "Hmm, look again.", "Almost!" and "Try once more." (asked for).
+  // A MISS IS MET GENTLY, and says to try again rather than only "no" — and ONLY "Try
+  // again!" (asked for, twice): not "Almost!", "Hmm, look again.", "Try once more.", "Take
+  // another look." or "Not quite.". Where the miss has a reason, the reason follows it in the
+  // same breath (CLUES, the stage's reasons, the screen's reminder).
   var NUDGE = [
-    { t: 'Try again!', vo: 'fb32' }, { t: 'Take another look.', vo: 'fb30' }, { t: 'Not quite.', vo: 'fb31' }
+    { t: 'Try again!', vo: 'fb32' }
   ];
+  /* WHY THAT WAS NOT IT, FOR EACH IDEA (the Part 1 review, section 14). A miss is answered
+     with what the question is about — the smallest thing that helps — opened by "Try again!",
+     never by a bare "no". Keyed by name: a card or a question in screens.js says which clue is
+     its own (`reason`), and the stage passes it on with the miss. */
+  var CLUES = {
+    curved:   { t: 'Try again! A polygon has only straight sides.', vo: 'fb33' },
+    open:     { t: 'Try again! A polygon must be closed.', vo: 'fb34' },
+    inside:   { t: 'Try again! Follow each diagonal from corner to corner.', vo: 'fb39' },
+    compare:  { t: 'Try again! Compare the sides and angles now.', vo: 'fb41' }
+  };
   var praiseN = 0, nudgeN = 0, feedbackScreen = -1;
   /* NOW A FEELING, NOT A LIST OF FACES. The faces rotated by a counter, so
      the same screen got a different one on a replay, and 'puzzled' was a HELD
@@ -760,7 +772,9 @@
   // the hand-over screen's one line (readyScene). Not in the recorded take, so it is
   // voiced by tools/make-vo.js in the voice matched to it, as the cheers are.
   var READY = { t: 'You’re ready! Now let’s help Momo.', vo: 'p39' };
-  var NUDGE_STRONG = { t: 'Not that one.', vo: 'fb10' };
+  // the second miss on the same card: "Try again!" too (the card is put out, and the screen's
+  // reminder — what a polygon is — follows it)
+  var NUDGE_STRONG = { t: 'Try again!', vo: 'fb32' };
   var wrongSinceRight = false;        // a miss on this screen since the last right answer
   /* the next cheer in the round, never the one just said */
   var lastPraise = null;
@@ -796,7 +810,10 @@
       var due = o.final ? now - lastPraiseAt > 1500 : praisedInput !== inputSeq;
       if (!due) return null;
       praisedInput = inputSeq; lastPraiseAt = now;
-      pick = praiseFor(o);
+      // a right answer that has words of its own says them (the sort's "Yes! It's convex: no
+      // corner goes inward." — the short learning confirmation); anything else is cheered
+      if (said && said.t) { pick = said; lastPraise = said.vo; }
+      else pick = praiseFor(o);
       wrongSinceRight = false;
       lines.push({ t: pick.t, vo: pick.vo, mood: 'win', emote: EMOTE[pick.vo] });
     } else if (kind === 'wrong') {
@@ -814,8 +831,12 @@
         return { lines: set.map(function (b) { return { t: b.say, vo: b.vo, mood: 'hint', show: b.show, on: b.on || 0 }; }),
                  teach: o.teach };
       }
+      // the stage's own reason first; then, on a card's second miss, "Try again!" and the
+      // screen's reminder; then the clue the card or the question names (CLUES); else the nudge
+      var clue = o.reason && CLUES[o.reason];
       if (said && said.t) pick = said;
       else if (o.tries >= 2) pick = NUDGE_STRONG;
+      else if (clue) pick = clue;
       else pick = NUDGE[nudgeN++ % NUDGE.length];
       wrongSinceRight = true; wrongRepliedSeq = inputSeq;
       lines.push({ t: pick.t, vo: pick.vo, mood: 'hint', miss: true });
@@ -3168,7 +3189,7 @@
             // the one place his word on an answer comes from. His FACE is the
             // screen's own feedback beat, a moment later — one reaction, not two.
             react('correct', null, { face: false, quiet: spec.praise === false, final: true, type: spec.type });
-          } else if (r && r.result === 'wrong') react('wrong', null, { face: false, final: true });
+          } else if (r && r.result === 'wrong') react('wrong', null, { face: false, final: true, reason: spec.reason });
           return r;
         }, function (e) { showNext(false); throw e; });
       },
@@ -3235,9 +3256,12 @@
     return out;
   }
   /* every reply clip: the cheers, the nudges, and the stage's reasons */
-  var REASONS = ['fb11', 'fb12', 'fb13', 'fb14', 'fb15', 'fb16'];
+  // (the stage's own: "Pull it in more!", "Drop it on a corner!", the swipe's four reasons, the
+  // stretch, and the sort's two confirmations — stage.js)
+  var REASONS = ['fb11', 'fb15', 'fb35', 'fb36', 'fb37', 'fb38', 'fb40', 'fb42', 'fb43'];
   function replyClips() {
     var out = PRAISE.concat(NUDGE, [NUDGE_STRONG]).map(function (p) { return p.vo; });
+    Object.keys(CLUES).forEach(function (k) { out.push(CLUES[k].vo); });
     Object.keys(PRAISE_FOR).forEach(function (k) { out.push(PRAISE_FOR[k].vo); });
     return out.concat(REASONS).filter(function (id, n, all) { return id && all.indexOf(id) === n; });
   }
@@ -3440,7 +3464,7 @@
       var walked = !!(inputSpec && inputSpec.type === 'tap-each' && inputSpec.targets === 'sides');
       var dip = !!(inputSpec && inputSpec.type === 'tap-each');
       react(kind, said, { face: dip ? 'dip' : !(list && list.some(function (b) { return b && b.swiftee; })), walked: walked,
-                          tries: info && info.tries, teach: info && info.teach });
+                          tries: info && info.tries, teach: info && info.teach, reason: info && info.reason });
     });
     if (global.Input) Input.mode('locked');
     // WRITTEN DOWN AS IT BEGINS: the scene exactly as the child found it on

@@ -224,14 +224,18 @@ t('no wrong path ever contains words — the deck has no wrong-answer copy and t
     if (!earlier && !own) bad.push(s.id);
   });
   t('a reminder is a line already taught in its own voice, or its own line in the VO script', bad.length === 0, bad);
-  // (the user's per-card rule: the first miss on a card is a short nudge; the
-  // second on the SAME card is the stronger word, then what a polygon is)
+  // (the user's per-card rule: the first miss on a card is its own clue — "Try again!" and
+  // why that card is not a polygon; the second on the SAME card is "Try again!" and what a
+  // polygon is, and the card is put out)
   t('the first question reminds the child what a polygon is, on the second miss of the same card',
     !!Screens.byId['which-polygons'].remind && /closed shapes made from straight lines/.test(Screens.byId['which-polygons'].remind.say) &&
     Screens.byId['which-polygons'].remind.perCard === true && Screens.byId['which-polygons'].remind.after === 2);
   const diag = ['another-diagonal', 'hexagon-your-turn'].map((id) => Screens.byId[id].remind || {});
-  t('both screens where the child draws diagonals say what a diagonal is, from the second miss',
-    diag.every((r) => r.say === 'A diagonal connects non-adjacent vertices.' && r.after === 2 && r.vo === 'p14r'), diag);
+  t('both screens where the child draws diagonals say what a diagonal is, from the first miss',
+    diag.every((r) => r.say === 'A diagonal connects non-adjacent vertices.' && r.after === 1 && r.vo === 'p14r'), diag);
+  // the wrong cards of the first question each carry their own clue
+  const opts = (Screens.byId['which-polygons'].stage.options || []).filter((o) => !o.correct);
+  t('each wrong card of the first question names its own clue', opts.length === 2 && opts.every((o) => !!o.reason), opts);
 }
 
 t('every wrong path still reacts — Swiftee, a cue, or an effect',

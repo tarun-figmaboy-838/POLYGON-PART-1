@@ -43,10 +43,11 @@
     { wait: 400 }
   ];
 
-  // What a diagonal is, said after the second wrong line on a screen where
-  // the child draws them (`after`: the miss it starts on). It says
-  // "vertices" where page 13's definition says "sides" — see the note there.
-  var DIAGONAL_RULE = { say: 'A diagonal connects non-adjacent vertices.', vo: 'p14r', after: 2 };
+  // What a diagonal is, said after "Try again!" on EVERY wrong line where the
+  // child draws them (`after`: the miss it starts on — the first, since the
+  // Part 1 review: the rule is the clue, not a reward for failing twice). It
+  // says "vertices" where page 13's definition says "sides" — see the note there.
+  var DIAGONAL_RULE = { say: 'A diagonal connects non-adjacent vertices.', vo: 'p14r', after: 1 };
 
   /* A RIGHT ANSWER: THE CONFIRMATION FIRST, THEN HIM, THEN ON.
    *
@@ -209,8 +210,9 @@
         kind: 'choice-grid',
         options: [
           { id: 'pentagon', shape: 'pentagon', correct: true },
-          { id: 'circle',   shape: 'circle',   correct: false },
-          { id: 'open',     shape: 'open-path', correct: false },
+          // (each wrong card's own clue on its first miss — game.js CLUES)
+          { id: 'circle',   shape: 'circle',   correct: false, reason: 'curved' },
+          { id: 'open',     shape: 'open-path', correct: false, reason: 'open' },
           { id: 'octagon',  shape: 'octagon',  correct: true }
         ],
         multi: true
@@ -522,10 +524,10 @@
         // SAID ONCE: the line that echoed the instruction ("Are they inside or outside?") went —
         // the same request twice in a row read as a stutter, not a lesson.
         { swiftee: 'think' },
-        { input: { type: 'choice', correct: 'Inside' } },
+        { input: { type: 'choice', correct: 'Inside', reason: 'inside' } },
         { branch: true, until: 'correct',
           on: { correct: correct() },
-          otherwise: WRONG.concat([{ input: { type: 'choice', correct: 'Inside', retry: true } }]) }
+          otherwise: WRONG.concat([{ input: { type: 'choice', correct: 'Inside', retry: true, reason: 'inside' } }]) }
       ]
     },
 
@@ -985,10 +987,10 @@
         // the script's last two bubbles are the instruction: it settles into
         // one question over the answers, and is not said a second time
         { instruction: 'Are the sides and angles still equal?', vo: 'p32bi' },
-        { input: { type: 'choice', correct: 'Not equal' } },
+        { input: { type: 'choice', correct: 'Not equal', reason: 'compare' } },
         { branch: true, until: 'correct',
           on: { correct: correct() },
-          otherwise: WRONG.concat([{ input: { type: 'choice', correct: 'Not equal', retry: true } }]) }
+          otherwise: WRONG.concat([{ input: { type: 'choice', correct: 'Not equal', retry: true, reason: 'compare' } }]) }
       ]
     },
 

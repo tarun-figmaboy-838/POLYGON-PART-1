@@ -5812,7 +5812,8 @@
             // HEARD, as every other wrong answer is (the dent drags had no sound)
             sfx('wrong');
             // a dent too shallow to see gets the reason, not a bare "no"
-            onTap('wrong', spec.until === 'concave' ? { t: 'Pull it in more!', vo: 'fb11' } : null);
+            onTap('wrong', spec.until === 'concave' ? { t: 'Pull it in more!', vo: 'fb11' }
+                         : spec.until === 'irregular' ? { t: 'Try again! Stretch the corner a little further.', vo: 'fb40' } : null);
           }, ctx);
       });
     },
@@ -6021,10 +6022,12 @@
             var why = whyShape(card);
             onTap('wrong',
               // (never the answer itself: "regular" is the child's to say)
-              why === 'regular' ? { t: 'Every side AND every angle matches!', vo: 'fb12' } :
-              why === 'sides'   ? { t: 'Look \u2014 the sides are different lengths.', vo: 'fb13' } :
-              why === 'angles'  ? { t: 'Equal sides, but look at the corners!', vo: 'fb14' } :
-              why === 'both'    ? { t: 'Look \u2014 the sides and the angles are different.', vo: 'fb16' } : null);
+              // "Try again!" and the one thing the card's measurements show (asked for: only
+              // "Try again", never "Look —")
+              why === 'regular' ? { t: 'Try again! Every side and every angle is equal.', vo: 'fb35' } :
+              why === 'sides'   ? { t: 'Try again! The sides are not all equal.', vo: 'fb36' } :
+              why === 'angles'  ? { t: 'Try again! The angles are not all equal.', vo: 'fb37' } :
+              why === 'both'    ? { t: 'Try again! The sides and the angles are not all equal.', vo: 'fb38' } : null);
             var z = sw.zones[answer];
             if (z && !reduced() && z.animate) {
               z.animate([{ translate: '0 0' }, { translate: '-6px 0' }, { translate: '6px 0' }, { translate: '0 0' }],
@@ -6232,7 +6235,8 @@
                 // (the entrance left an inline opacity on it; the class decides now)
                 if (out && c.classList) { c.style.opacity = ''; c.classList.add('card-off'); }
               });
-              onTap('wrong', null, { card: c._opt.id, tries: c._misses, out: out });
+              // (with the card's own clue: a circle's curve, an open path's gap — screens.js `reason`)
+              onTap('wrong', null, { card: c._opt.id, tries: c._misses, out: out, reason: c._opt.reason });
             }
           });
         });
@@ -6429,7 +6433,10 @@
               bin._items = bin._items || [];
               bin._items.push(item);
               packBin(bin);
-              onTap('correct');
+              // RIGHT, AND WHY IN ONE LINE (said for the first card: game.js praises once per
+              // question): the reason the shape is in that bin
+              onTap('correct', bin._bin.id === 'convex' ? { t: 'Yes! It\u2019s convex: no corner goes inward.', vo: 'fb42' }
+                             : bin._bin.id === 'concave' ? { t: 'Yes! It\u2019s concave: one corner goes inward.', vo: 'fb43' } : null);
               if (S.placed >= S.total) { S.done = true; endInteraction(); resolve({ result: 'correct' }); }
             } else {
               // A MISS IS THE SHAPE TAUGHT UP CLOSE (spec.teach: every that-many

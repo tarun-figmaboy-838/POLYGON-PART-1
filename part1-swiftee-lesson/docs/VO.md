@@ -46,7 +46,7 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 | 11 | 8 | define-diagonal | `assets/vo/p13.mp3` | say | A line segment joining two non-adjacent vertices is a diagonal. | A line segment joining / two non-adjacent vertices / is a diagonal. | screen 8 | explaining, warm and clear | yes |
 | 12 | 9 | another-diagonal | `assets/vo/p14i.mp3` | instruction | Let’s draw another diagonal from the same vertex. |  | screen 9, the instruction | an instruction: plain, steady, every word clear | yes |
 | 13 | 9 | another-diagonal | `assets/vo/p14b.mp3` | say | All diagonals are still inside. |  | screen 9, after the right answer | explaining, warm and clear | yes |
-| 14 | 9 | another-diagonal | `assets/vo/p14r.mp3` | reminder | A diagonal connects non-adjacent vertices. |  | screens 9 and 10, from the second wrong answer on | a gentle reminder: warm, clear, never disappointed | yes |
+| 14 | 9 | another-diagonal | `assets/vo/p14r.mp3` | reminder | A diagonal connects non-adjacent vertices. |  | screens 9 and 10, from the first wrong answer on | a gentle reminder: warm, clear, never disappointed | yes |
 | 15 | 10 | hexagon-your-turn | `assets/vo/p15.mp3` | say | Your turn! Let’s draw all the diagonals from this vertex. | Your turn! / Let’s draw all the diagonals / from this vertex. | screen 10 | playful, inviting | yes |
 | 16 | 10 | hexagon-your-turn | `assets/vo/p15i.mp3` | instruction | Let’s draw all the diagonals from this vertex. |  | screen 10, the instruction | an instruction: plain, steady, every word clear | yes |
 | 17 | 11 | look-diagonals | `assets/vo/p16.mp3` | say | Look at the diagonals of this pentagon. | Look at the diagonals / of this pentagon. | screen 11 | explaining, warm and clear | yes |
@@ -84,7 +84,7 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 | 49 | 31 | summary | `assets/vo/p37h.mp3` | say | If the sides or angles are not all equal, the polygon is irregular. |  | screen 31 | explaining, warm and clear | yes |
 | 50 | 31 | summary | `assets/vo/p37i.mp3` | say | Amazing! You explored all these polygon ideas! |  | screen 31 | explaining, warm and clear | yes |
 
-## Answers (27), said when the child answers
+## Answers (31), said when the child answers
 
 | File | Line | When | Delivery | Recorded |
 |------|------|------|----------|----------|
@@ -103,18 +103,22 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 | `assets/vo/fb25.mp3` | Great job! You found them all. | a try that falls short, with the reason | a cheer, delighted | yes |
 | `assets/vo/fb26.mp3` | Yes! You got it! | a try that falls short, with the reason | a cheer, delighted | yes |
 | `assets/vo/fb32.mp3` | Try again! | a try that falls short, with the reason | explaining, warm and clear | yes |
-| `assets/vo/fb30.mp3` | Take another look. | a try that falls short, with the reason | explaining, warm and clear | yes |
-| `assets/vo/fb31.mp3` | Not quite. | a try that falls short, with the reason | explaining, warm and clear | yes |
+| `assets/vo/fb33.mp3` | Try again! A polygon has only straight sides. | a try that falls short, with the reason | explaining, warm and clear | yes |
+| `assets/vo/fb34.mp3` | Try again! A polygon must be closed. | a try that falls short, with the reason | explaining, warm and clear | yes |
+| `assets/vo/fb39.mp3` | Try again! Follow each diagonal from corner to corner. | a try that falls short, with the reason | explaining, warm and clear | yes |
+| `assets/vo/fb41.mp3` | Try again! Compare the sides and angles now. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/p38a.mp3` | Honk-tastic! | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/p38b.mp3` | You are a polygon adventurer! | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/p39.mp3` | You’re ready! Now let’s help Momo. | a try that falls short, with the reason | explaining, warm and clear | yes |
-| `assets/vo/fb10.mp3` | Not that one. | a wrong answer (rotates, at most every 3 s) | gentle and encouraging, never disappointed | yes |
 | `assets/vo/fb15.mp3` | Drop it on a corner! | a try that falls short, with the reason | gentle and encouraging, never disappointed | yes |
 | `assets/vo/fb11.mp3` | Pull it in more! | a try that falls short, with the reason | gentle and encouraging, never disappointed | yes |
-| `assets/vo/fb12.mp3` | Every side AND every angle matches! | a try that falls short, with the reason | gentle and encouraging, never disappointed | yes |
-| `assets/vo/fb13.mp3` | Look — the sides are different lengths. | a try that falls short, with the reason | gentle and encouraging, never disappointed | yes |
-| `assets/vo/fb14.mp3` | Equal sides, but look at the corners! | a try that falls short, with the reason | gentle and encouraging, never disappointed | yes |
-| `assets/vo/fb16.mp3` | Look — the sides and the angles are different. | a try that falls short, with the reason | gentle and encouraging, never disappointed | yes |
+| `assets/vo/fb40.mp3` | Try again! Stretch the corner a little further. | a try that falls short, with the reason | explaining, warm and clear | yes |
+| `assets/vo/fb35.mp3` | Try again! Every side and every angle is equal. | a try that falls short, with the reason | explaining, warm and clear | yes |
+| `assets/vo/fb36.mp3` | Try again! The sides are not all equal. | a try that falls short, with the reason | explaining, warm and clear | yes |
+| `assets/vo/fb37.mp3` | Try again! The angles are not all equal. | a try that falls short, with the reason | explaining, warm and clear | yes |
+| `assets/vo/fb38.mp3` | Try again! The sides and the angles are not all equal. | a try that falls short, with the reason | explaining, warm and clear | yes |
+| `assets/vo/fb42.mp3` | Yes! It’s convex: no corner goes inward. | a try that falls short, with the reason | a cheer, delighted | yes |
+| `assets/vo/fb43.mp3` | Yes! It’s concave: one corner goes inward. | a try that falls short, with the reason | a cheer, delighted | yes |
 
 ## Not recorded
 
