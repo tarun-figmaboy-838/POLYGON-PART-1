@@ -19,6 +19,7 @@ window.PreloadList = {
   "assets/swiftee/intro/sheet2.webp",
   "assets/swiftee/intro/sheet3.webp",
   "assets/swiftee/swiftee-measuring.webp",
+  "assets/swiftee/swiftee-angle-measuring.webp",
   "assets/ui/banner.webp?v=0f187566",
   "assets/ui/bin-concave.webp?v=182f77d5",
   "assets/ui/bin-convex.webp?v=3da12bf1",
@@ -38,6 +39,7 @@ window.PreloadList = {
   "assets/ui/zone-regular.webp?v=b52e2d9d"
  ],
  "sizes": {
+  "assets/swiftee/swiftee-angle-measuring.webp": 239060,
   "assets/bg/ice-vista.webp": 816574,
   "assets/bg/ledge-l.webp": 57702,
   "assets/bg/ledge-r.webp": 35716,
@@ -275,8 +277,8 @@ window.PreloadList = {
   "assets/vo/fb46.ogg": 7976,
   "assets/vo/fb47.mp3": 17324,
   "assets/vo/fb47.ogg": 8932,
-  "assets/vo/index.js": 7638,
-  "assets/vo/index.json": 14454,
+  "assets/vo/index.js": 7558,
+  "assets/vo/index.json": 14305,
   "assets/vo/p01.mp3": 20106,
   "assets/vo/p01.ogg": 10846,
   "assets/vo/p02.mp3": 24285,
@@ -299,8 +301,6 @@ window.PreloadList = {
   "assets/vo/p12.ogg": 16067,
   "assets/vo/p13.mp3": 44556,
   "assets/vo/p13.ogg": 27689,
-  "assets/vo/p14b.mp3": 23658,
-  "assets/vo/p14b.ogg": 14309,
   "assets/vo/p14i.mp3": 32017,
   "assets/vo/p14i.ogg": 19516,
   "assets/vo/p14r.mp3": 30137,
@@ -405,6 +405,6 @@ window.PreloadList = {
   "assets/vo/st4-momo.ogg": 18879,
   "assets/vo/st5-narrator.mp3": 66860,
   "assets/vo/st5-narrator.ogg": 32042,
-  "assets/vo/word-timings.json": 5785
+  "assets/vo/word-timings.json": 5733
  }
 };

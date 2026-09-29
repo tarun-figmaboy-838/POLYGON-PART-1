@@ -460,7 +460,7 @@
       // to the remaining corner the whole time was a hint shown before anyone
       // needed it. The hint ladder in stage.js shows the move only once the
       // child has been still for a while.
-      lines: ['All diagonals are still inside.'],
+      // (no "All diagonals are still inside." after it any more — the user: removed)
       // THE SECOND MISS IS ANSWERED WITH WHAT A DIAGONAL IS. The first wrong
       // line gets "Hmm, not quite." like any other; from the second on he
       // adds the rule the line broke — then the instruction comes back.
@@ -480,14 +480,7 @@
         // until: the retry is branched on, so a right second try still gets
         // the observation below — it used to skip straight to the next screen
         { branch: true, until: 'correct',
-          on: { correct: correct([{ sfx: 'slice' }]).concat([
-            { parallel: [
-              { stage: { observe: 'diagonals' } },
-              // he watches them light up, one and then the other
-              { swiftee: 'observe', at: 'polygon' },
-              { say: 'All diagonals are still inside.', vo: 'p14b' }
-            ] }
-          ]) },
+          on: { correct: correct([{ sfx: 'slice' }]) },
           otherwise: WRONG.concat([{ input: { type: 'draw-diagonal', from: 'picked', retry: true } }]) }
       ]
     },

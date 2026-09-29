@@ -1546,15 +1546,15 @@
                                'stroke-linecap': 'round', 'pointer-events': 'none', 'class': 'segment' }, g);
       st.segGlow = segEl; st.segLine = segEl;
     }
-    // THE SIDES ALREADY FOUND STAY FOUND (the user: "freeze the side line so the child can't
-    // pick that side point again — it looks like a loop"): each named side stays drawn over
-    // the outline, quieter than the one being named, and its far corner is spent (above)
+    // THE SIDES ALREADY FOUND STAY FOUND, LIT (the user: "freeze the side line, highlighted, so
+    // the child can see this is a side"): each named side stays drawn over the outline in the
+    // lit ice, glowing, and its far corner is not somewhere a line can go again (above)
     (st.sidesDone || []).forEach(function (sd) {
       var da = v[sd[0]], db = v[sd[1]];
       if (!da || !db) return;
-      mk('line', { x1: da.x, y1: da.y, x2: db.x, y2: db.y, stroke: HI.line, 'stroke-width': 4, opacity: 0.8,
+      mk('line', { x1: da.x, y1: da.y, x2: db.x, y2: db.y, stroke: HI.lit, 'stroke-width': 5.5, opacity: 1,
                    'stroke-linecap': 'round', 'pointer-events': 'none', 'class': 'segment-done',
-                   style: 'filter: drop-shadow(0 0 3px rgba(75, 224, 255, .55));' }, g);
+                   style: 'filter: drop-shadow(0 0 5px rgba(75, 224, 255, .9));' }, g);
     });
 
     // edges as tap targets (invisible, wide)
@@ -1630,8 +1630,9 @@
       var shown = !!(col || st.showVerts);
       // (NO RING round the corner the child chose — the user: "remove the large rings around
       // vertex dots". The dot itself says it: gold, and a size up.)
-      // A CORNER ALREADY JOINED BY A SIDE is done with (st.sidesDone): shown, dimmed, and no
-      // longer anything a line can be taken to
+      // A CORNER ALREADY JOINED BY A SIDE (st.sidesDone) is not somewhere a line can be taken
+      // again — but it is NOT dimmed (the user: "do not disable the dot; the frozen, highlighted
+      // side is what shows this is a side")
       var spent = !!(st.sidesDone && st.sidesDone.some(function (sd) { return sd[1] === j; }));
       var knob = mk('circle', {
         cx: v[j].x, cy: v[j].y,
@@ -1640,7 +1641,7 @@
         stroke: col ? '#ffffff' : (touch ? '#0b3f7a' : 'none'),
         'stroke-width': col ? 3 : (touch ? 3 : 2),
         'class': 'knob' + ((st.breathe && !col && touch) || (st.breatheAt && st.breatheAt[j]) ? ' breathe' : ''), 'data-i': j,
-        opacity: shown ? (spent ? 0.45 : 1) : 0,
+        opacity: shown ? 1 : 0,
         'pointer-events': 'none'
       }, g);
       // 18 units: 36 across, which is 37px on a 1024-wide window and more on
@@ -1870,6 +1871,134 @@
     };
     if (first && flies && startAt) fly({ x: 0, y: 0 }, { x: startAt.x - here.x, y: startAt.y - here.y }, false).then(begin);
     else begin();
+  }
+
+  // One rig owns the whole angle demonstration. All coordinates are in the
+  // polygon's SVG space, so the bird, instrument and vertex scale together.
+  function angleMeasurer() {
+    var frames = global.AngleMeasuringFrames;
+    if (reduced() || !frames || !global.requestAnimationFrame) return null;
+    var companion = global.Swiftee && Swiftee.el;
+    var opacity = companion && companion.style.opacity;
+    var g = mk('g', { 'class': 'swiftee-angle-measuring', 'pointer-events': 'none', 'aria-hidden': 'true' }, layers.fx);
+    var highlight = mk('g', { 'class': 'active-angle' }, g);
+    var bird = mk('g', {}, g), cell = 60;
+    var phaseFrames = frames.phases.carry, framePosition = 0;
+    var crop = mk('svg', { x: -30, y: -30, width: cell, height: cell, viewBox: '0 0 256 256', overflow: 'hidden' }, bird);
+    var sheet = mk('image', { href: frames.image, width: frames.cols * frames.cell, height: frames.rows * frames.cell }, crop);
+    var blend = mk('image', { href: frames.image, width: frames.cols * frames.cell, height: frames.rows * frames.cell, opacity: 0 }, crop);
+    var instrument = mk('g', { 'class': 'angle-protractor' }, g);
+    mk('path', { d: 'M-42 0 A42 42 0 0 1 42 0 Z', fill: '#d9f6ff', 'fill-opacity': 0.32, stroke: '#fff2ba', 'stroke-width': 1.5 }, instrument);
+    mk('path', { d: 'M-29 0 A29 29 0 0 1 29 0', fill: 'none', stroke: '#b9e4ef', 'stroke-width': 0.8 }, instrument);
+    for (var degree = 0; degree <= 180; degree += 10) {
+      var rad = -degree * Math.PI / 180, inner = degree % 30 === 0 ? 34 : 38;
+      mk('line', { x1: Math.cos(rad) * inner, y1: Math.sin(rad) * inner, x2: Math.cos(rad) * 42, y2: Math.sin(rad) * 42, stroke: '#325b70', 'stroke-width': 1 }, instrument);
+      if (degree % 30 === 0) {
+        var label = mk('text', { x: Math.cos(rad) * 25, y: Math.sin(rad) * 25 + 2, 'text-anchor': 'middle', 'font-size': 5, fill: '#23485f', 'font-weight': 700 }, instrument);
+        label.textContent = degree;
+      }
+    }
+    mk('circle', { r: 2, fill: '#fff4c9', stroke: '#325b70', 'stroke-width': 0.8 }, instrument);
+    var stopped = false, raf = null, pose = null, approaching = true, facing = 1;
+    function home() {
+      var bounds = companion && global.Swiftee.bounds && Swiftee.bounds();
+      var matrix = g.getScreenCTM && g.getScreenCTM();
+      if (bounds && matrix) {
+        var point = svg.createSVGPoint();
+        point.x = (bounds.left + bounds.right) / 2; point.y = bounds.bottom - bounds.height / 2;
+        return point.matrixTransform(matrix.inverse());
+      }
+      return { x: st.verts[0].x - 70, y: st.verts[0].y + 50 };
+    }
+    var origin = home();
+    pose = { x: origin.x, y: origin.y, px: origin.x + 22, py: origin.y + 10, rotation: 0, lean: 0 };
+    if (global.Swiftee && Swiftee.lock) Swiftee.lock('angle-measuring');
+    g.style.opacity = '0';
+    function stop() {
+      if (stopped) return;
+      stopped = true; global.cancelAnimationFrame(raf); g.remove();
+      if (companion) companion.style.opacity = opacity;
+      if (global.Swiftee && Swiftee.unlock) Swiftee.unlock('angle-measuring');
+    }
+    cleanup.push(stop);
+    function paint(time) {
+      bird.setAttribute('transform', 'translate(' + pose.x + ',' + pose.y + ') rotate(' + pose.lean + ') scale(' + facing + ',1)');
+      instrument.setAttribute('transform', 'translate(' + pose.px + ',' + pose.py + ') rotate(' + pose.rotation + ')');
+      var at = Math.min(phaseFrames.length - 1, framePosition), low = Math.floor(at), mix = at - low;
+      var frame = phaseFrames[low], nextFrame = phaseFrames[Math.min(low + 1, phaseFrames.length - 1)];
+      sheet.setAttribute('x', -(frame % frames.cols) * frames.cell);
+      sheet.setAttribute('y', -Math.floor(frame / frames.cols) * frames.cell);
+      blend.setAttribute('x', -(nextFrame % frames.cols) * frames.cell);
+      blend.setAttribute('y', -Math.floor(nextFrame / frames.cols) * frames.cell);
+      blend.setAttribute('opacity', mix);
+      bird.setAttribute('data-frame', frame);
+    }
+    paint(0);
+    function tween(state, target, duration, done, progress) {
+      if (stopped) return;
+      g.setAttribute('data-state', state);
+      var names = { MOVE_TO_VERTEX: 'carry', POSITION_PROTRACTOR: 'position', ALIGN: 'align', MEASURE: 'align', HOLD: 'hold', LIFT: 'lift', RETURN: 'carry', COMPLETE: 'carry' };
+      var incoming = frames.phases[names[state]];
+      // Start from the previous drawing, so phase changes also interpolate.
+      var prior = phaseFrames[Math.min(phaseFrames.length - 1, Math.round(framePosition))];
+      phaseFrames = [prior].concat(incoming); framePosition = 0;
+      var start = null, from = Object.assign({}, pose);
+      if (target.rotation != null) target.rotation = from.rotation + ((target.rotation - from.rotation + 540) % 360 + 360) % 360 - 180;
+      function tick(time) {
+        if (stopped) return;
+        if (start === null) start = time;
+        var t = Math.min(1, (time - start) / duration), eased = t * t * (3 - 2 * t);
+        Object.keys(target).forEach(function (key) { pose[key] = from[key] + (target[key] - from[key]) * eased; });
+        framePosition = t * (phaseFrames.length - 1);
+        paint(time); if (progress) progress(eased);
+        if (t < 1) raf = global.requestAnimationFrame(tick); else done();
+      }
+      raf = global.requestAnimationFrame(tick);
+    }
+    return function (index, last, done) {
+      var v = st.verts, p = v[index], prev = v[(index + v.length - 1) % v.length], next = v[(index + 1) % v.length];
+      var a = Math.atan2(prev.y - p.y, prev.x - p.x), b = Math.atan2(next.y - p.y, next.x - p.x);
+      var sweep = ((b - a) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+      if (!Poly.contains(v, { x: p.x + Math.cos(a + sweep / 2) * 2, y: p.y + Math.sin(a + sweep / 2) * 2 })) sweep -= 2 * Math.PI;
+      // The semicircle extends above its baseline. Choose the baseline ray
+      // that makes that half-plane contain the interior angle.
+      var rotation = (sweep < 0 ? a : b) * 180 / Math.PI;
+      var outward = a + sweep / 2 + Math.PI;
+      var bx = p.x + Math.cos(outward) * 34, by = p.y + Math.sin(outward) * 34;
+      var carry = { x: bx, y: by, px: bx + (p.x - bx) * 0.48, py: by + (p.y - by) * 0.48, lean: 0 };
+      g.setAttribute('data-angle', index);
+      highlight.replaceChildren();
+      var firstApproach = approaching; approaching = false;
+      tween('MOVE_TO_VERTEX', carry, 600, function () {
+        facing = p.x < bx ? -1 : 1;
+        tween('POSITION_PROTRACTOR', { px: p.x, py: p.y, lean: (p.x > bx ? 1 : -1) * 5 }, 380, function () {
+          tween('ALIGN', { rotation: rotation }, 420, function () {
+            drawArc(highlight, index, null, 1);
+            highlight.style.opacity = '0';
+            tween('MEASURE', {}, 300, function () {
+              tween('HOLD', {}, 850, function () {
+                tween('LIFT', { px: carry.px, py: carry.py, lean: 0 }, 320, function () {
+                  highlight.replaceChildren();
+                  if (!last) { done(); return; }
+                  var h = home();
+                  tween('RETURN', { x: h.x, y: h.y, px: h.x + 22, py: h.y + 10 }, 650, function () {
+                    tween('COMPLETE', {}, 250, function () { stop(); done(); }, function (t) {
+                      g.style.opacity = 1 - t;
+                      if (companion) companion.style.opacity = String(t * Number(opacity || 1));
+                    });
+                  });
+                });
+              });
+            }, function (t) { highlight.style.opacity = t; });
+          });
+        });
+      }, function (t) {
+        if (!firstApproach) return;
+        var visible = Math.min(1, t * 4);
+        g.style.opacity = visible;
+        if (companion) companion.style.opacity = String((1 - visible) * Number(opacity || 1));
+      });
+    };
   }
 
   /**
@@ -6596,7 +6725,7 @@
         st.measure = st.measure || {}; st.measure[isSides ? 'sides' : 'angles'] = [];
         // the corners take the tap (touchVerts) but show no dot: each angle
         // still to measure is drawn in outline instead (st.angleTodo)
-        st.showVerts = false; st.touchVerts = !isSides; st.angleTodo = !isSides;
+        st.showVerts = false; st.touchVerts = !isSides && !spec.auto; st.angleTodo = !isSides && !spec.auto;
         // every side starts on the to-do list, marked by a dot at its middle
         st.sideTodo = isSides ? st.verts.map(function (_, k) { return k; }) : null;
         renderPoly();
@@ -6608,7 +6737,7 @@
            review). Nothing is offered to tap: no pulse, no hand, no pointer; after a breath every
            side goes on the queue and the walk takes them one at a time, each dot going as its
            side is begun, at the pace the walk has always had. */
-        var auto = !!spec.auto;
+        var auto = !!spec.auto, angleRig = null;
         var hint = function () {
           if (auto) return;
           (isSides ? st.edgeEls : st.vertEls).forEach(function (el, i) {
@@ -6673,6 +6802,9 @@
             if (cancelled) return;
             count++;
             st.measure[isSides ? 'sides' : 'angles'].push(at); renderPoly();
+            if (auto && !isSides && count < need && st.measG) {
+              st.measG.querySelectorAll('[data-angle]').forEach(function (el) { el.style.opacity = '0.4'; });
+            }
             // the new reading pops in; the ones already there stay put
             var fresh = st.measG && st.measG.querySelector(isSides ? '.meas[data-side="' + i + '"]' : '[data-angle="' + at + '"]');
             if (fresh) enter(fresh, 'pop');
@@ -6702,7 +6834,12 @@
             }
             else next();
           }
-          if (auto && w) measureSide(i, reveal, { first: w === order[0], last: queue.length === 0 || count + 1 >= need, angle: !isSides, homeOpacity: homeOpacity });
+          if (auto && !isSides) {
+            if (!angleRig) angleRig = angleMeasurer();
+            if (angleRig) angleRig(at, queue.length === 0 || count + 1 >= need, reveal);
+            else reveal();
+          }
+          else if (auto && w) measureSide(i, reveal, { first: w === order[0], last: queue.length === 0 || count + 1 >= need, angle: !isSides, homeOpacity: homeOpacity });
           else if (isSides) measureSide(i, reveal);
           else reveal();
         }
@@ -7126,8 +7263,12 @@
            to a line let go along a side, in the open glass or on the card's frame: that line
            goes home, and the corners stay ready to try again. */
         var j = hot >= 0 ? hot : nearestVertex(inCard(pt(e)), from, 44);
-        // (and never on a corner that is done with — a side already found: st.sidesDone)
-        if (sides && j >= 0 && targets().indexOf(j) < 0) j = -1;
+        // (and never on a corner that is done with — a side already found: the frozen side
+        // flashes once, "this is a side already", and the line goes home)
+        if (sides && j >= 0 && targets().indexOf(j) < 0) {
+          if (st.polyG) pulseHint([].slice.call(st.polyG.querySelectorAll('.segment-done')), { pop: true });
+          j = -1;
+        }
         hot = -1;
         showTargets([], false);
         if (j < 0) {

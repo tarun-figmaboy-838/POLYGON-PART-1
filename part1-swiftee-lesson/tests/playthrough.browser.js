@@ -258,7 +258,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const may = window.Screens.wantsBuddyAt ? window.Screens.wantsBuddyAt(s)
                   : (window.Screens.wantsBuddy ? window.Screens.wantsBuddy(scr) : must);
         // Leaving at the end of his screen, or away measuring a side, is not absence.
-        const leaving = st === 'exit', measuring = !!document.querySelector('.swiftee-measuring');
+        // (the walk owns him — its lock — until he has flown home: fading back in on his mark,
+        // with the walker already gone, is still the walk)
+        const leaving = st === 'exit', measuring = !!document.querySelector('.swiftee-measuring, .swiftee-angle-measuring') || /measuring/.test((window.Swiftee && window.Swiftee.locked) || '');
         const bad = must ? !(on || leaving || measuring) : (!may && on && !leaving);
         if (bad) window.__buddy.push((s + 1) + ':' + (on ? 'on' : 'off'));
       }, 1400);
