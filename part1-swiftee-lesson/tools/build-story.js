@@ -14,10 +14,9 @@
  * Sep 28, 2026 at …" PNGs whose times do not run in story order, so they were matched to
  * the script by what they show and renamed for it:
  *   01_24_28 PM  scene1-friends      Momo and Popo face each other, deciding what to do
- *   01_24_45 PM  scene2-snacks       the basket in Momo's trunk, Popo pointing on ahead
+ *   (29 Sep, 12_02_53 PM)  scene2-ahead   Momo and Popo on the snow, Popo pointing on ahead (replaced the basket scene)
  *   01_32_40 PM  scene3-signpost     FROZEN PASS / Shortest Route, Snowy Ridge / Longer Route
- *   01_32_22 PM  scene4-frozen-pass  the ice cave, polygons hanging on brown ropes
- *   01_31_49 PM  scene5-the-way      the whole icy route, wide
+ *   (29 Sep, 01_28_35 PM)  scene5-the-way  Momo alone with the basket before the ice-block route — scenes 4 AND 5
  * Nothing in the paintings is changed: no text is drawn on them, nothing is retouched.
  *
  * WEBP AT 82, NOT THE PNG. The paintings are 1.9-2.4 MB each as PNG, which is most of a
@@ -52,7 +51,9 @@ catch (e) { sharp = require(path.join(ROOT, '..', 'part2-frozen-rush', 'node_mod
 const SRC = path.join(ROOT, 'assets', 'source', 'story');
 const OUT = path.join(ROOT, 'assets', 'story');
 const MANIFEST = path.join(ROOT, 'src', 'story', 'story-art.js');
-const SCENES = ['scene1-friends', 'scene2-snacks', 'scene3-signpost', 'scene4-frozen-pass', 'scene5-the-way'];
+// (scene2-ahead and scene5-the-way are the user's paintings of 29 Sep; scene 4 shows the same
+// painting as scene 5 — the user: "use the last scene for the second-last too")
+const SCENES = ['scene1-friends', 'scene2-ahead', 'scene3-signpost', 'scene5-the-way', 'scene5-the-way'];
 const QUALITY = 82;
 const AROUND = { x: 480, y: 380 };   // painting px mirrored out past each edge (see THE BAND)
 const AROUND_K = 4;                  // built at a quarter of the size

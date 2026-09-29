@@ -161,7 +161,6 @@ async function act(spec){
     [1,'narrator','It was a great day, and Momo and Popo were deciding what to do.'],
     [1,'momo','Popo, let’s go for a picnic!'],
     [1,'popo','Great idea, Momo!'],
-    [2,'momo','I’ll bring the snacks!'],
     [2,'popo','I’ll go ahead and find us a nice spot.'],
     [3,'narrator','Momo wanted to get there quickly, so he took the shortest route— through Frozen Pass.'],
     [4,'momo','This path looks trickier than last time!'],

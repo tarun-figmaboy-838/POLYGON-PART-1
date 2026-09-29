@@ -12,20 +12,20 @@ window.StoryArt = {
       "around": "assets/story/scene-1-around.webp?v=0789fd7e"
     },
     {
-      "src": "assets/story/scene-2.webp?v=23effb28",
-      "around": "assets/story/scene-2-around.webp?v=1a8875f5"
+      "src": "assets/story/scene-2.webp?v=62f2239e",
+      "around": "assets/story/scene-2-around.webp?v=b44d6860"
     },
     {
       "src": "assets/story/scene-3.webp?v=d1ae0b8d",
       "around": "assets/story/scene-3-around.webp?v=2fe2df6f"
     },
     {
-      "src": "assets/story/scene-4.webp?v=bd6638e6",
-      "around": "assets/story/scene-4-around.webp?v=ef7dbf0e"
+      "src": "assets/story/scene-4.webp?v=24201835",
+      "around": "assets/story/scene-4-around.webp?v=3f7fac38"
     },
     {
-      "src": "assets/story/scene-5.webp?v=f22b7dd7",
-      "around": "assets/story/scene-5-around.webp?v=89454de0"
+      "src": "assets/story/scene-5.webp?v=24201835",
+      "around": "assets/story/scene-5-around.webp?v=3f7fac38"
     }
   ]
 };

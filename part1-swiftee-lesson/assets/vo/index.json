@@ -77,7 +77,6 @@
     "st1-momo",
     "st1-narrator",
     "st1-popo",
-    "st2-momo",
     "st2-popo",
     "st3-narrator",
     "st4-momo",
@@ -151,7 +150,6 @@
     "st1-momo": 3.24,
     "st1-narrator": 5.9,
     "st1-popo": 2.86,
-    "st2-momo": 2.18,
     "st2-popo": 3.53,
     "st3-narrator": 7.58,
     "st4-momo": 3.91,
@@ -232,7 +230,6 @@
     "st1-momo": "d95ac70b",
     "st1-narrator": "9da36860",
     "st1-popo": "c2293f1e",
-    "st2-momo": "10e5d65b",
     "st2-popo": "e53a2a90",
     "st3-narrator": "e31f3599",
     "st4-momo": "2f9e906c",
@@ -850,12 +847,6 @@
       250,
       639,
       1780
-    ],
-    "st2-momo": [
-      230,
-      540,
-      823,
-      971
     ],
     "st2-popo": [
       250,

@@ -77,24 +77,20 @@
         ]
       },
 
-      /* SCENE 2 — SPLIT THE JOBS. The basket is in Momo's TRUNK from here on: it only ever
-         swings from the grip, so it can never come away from him. */
+      /* SCENE 2 — POPO GOES ON AHEAD (the user's new painting, scene2-ahead: Momo and Popo on
+         the snow, Popo pointing the way). There is no basket in this picture, so Momo's snack
+         line is not in it (the user: "do not add snack dialogue"): Popo speaks, with a little
+         two-step as he sets off. */
       {
         id: 2,
         regions: {
-          momo: { poly: [[260, 440], [410, 320], [520, 210], [680, 210], [720, 320], [780, 410], [830, 430], [846, 470], [896, 560], [904, 620], [872, 724], [640, 730], [660, 800], [224, 808], [200, 620], [250, 470]],
-                  origin: [430, 790], feather: 26 },
-          basket: { parent: 'momo', poly: [[684, 488], [730, 464], [778, 466], [812, 494], [828, 556], [888, 568], [894, 616], [866, 720], [632, 722], [608, 616], [614, 566], [676, 552]],
-                    origin: [752, 480], feather: 18 },
-          popo: { poly: [[1060, 368], [1210, 370], [1236, 460], [1310, 488], [1372, 500], [1376, 596], [1280, 628], [1270, 700], [1276, 822], [968, 822], [940, 720], [942, 530], [1010, 460], [1026, 400]],
-                  origin: [1120, 806], feather: 26 }
+          momo: { poly: [[230, 470], [330, 360], [440, 300], [560, 238], [680, 250], [740, 300], [790, 380], [790, 470], [760, 520], [700, 560], [680, 640], [650, 720], [640, 800], [220, 800], [210, 700], [215, 560]],
+                  origin: [430, 796], feather: 26 },
+          popo: { poly: [[1040, 470], [1070, 410], [1120, 398], [1180, 410], [1230, 470], [1330, 510], [1345, 560], [1300, 600], [1250, 700], [1260, 800], [960, 800], [965, 700], [960, 600], [980, 530]],
+                  origin: [1120, 790], feather: 26 }
         },
         lines: [
-          { who: 'momo', vo: 'st2-momo', box: { cx: 450, bottom: 212 }, tip: [575, 248],
-            start: [{ move: 'momo', as: 'hop' }, { move: 'basket', as: 'swing', after: 180, sfx: 'wicker' }],
-            key: ['snacks!'],
-            text: 'I’ll bring the snacks!' },
-          { who: 'popo', vo: 'st2-popo', box: { cx: 1290, bottom: 364 }, tip: [1150, 404],
+          { who: 'popo', vo: 'st2-popo', box: { cx: 1180, bottom: 372 }, tip: [1120, 404],
             start: [{ move: 'popo', as: 'twostep' }],
             key: ['nice', 'spot.'],
             text: 'I’ll go ahead and find us a nice spot.' }
@@ -125,60 +121,45 @@
         ]
       },
 
-      /* SCENE 4 — FROZEN PASS. The shapes hang on their brown ropes and swing, barely, each
-         on its own clock; Momo pulls up short — surprised and curious, not frightened. */
+      /* SCENE 4 — THE ROUTE AHEAD. The same painting as scene 5 (the user: "use the last scene
+         for the second-last too" — scene5-the-way: Momo alone with the basket, the ice blocks
+         out across the water). Momo pulls up short — surprised and curious, not frightened. */
       {
         id: 4,
         regions: {
-          momo: { poly: [[120, 420], [290, 346], [410, 282], [530, 282], [580, 390], [680, 430], [764, 462], [766, 668], [626, 672], [604, 764], [566, 818], [66, 818], [60, 640], [84, 556]],
-                  origin: [128, 800], feather: 24 },
-          pentagon: { poly: [[781, -24], [819, -24], [822, 88], [918, 146], [880, 280], [720, 278], [684, 150], [778, 88]],
-                      origin: [800, -12], feather: 16, sway: { deg: 0.9, ms: 3200, lag: 0 } },
-          rhombus: { poly: [[1004, -24], [1040, -24], [1042, 100], [1120, 214], [1030, 354], [932, 214], [1002, 100]],
-                     origin: [1022, -12], feather: 16, sway: { deg: 0.9, ms: 3600, lag: 1300 } },
-          triangle: { poly: [[1208, -24], [1248, -24], [1252, 90], [1364, 236], [1350, 266], [1144, 294], [1118, 272], [1206, 90]],
-                      origin: [1228, -12], feather: 16, sway: { deg: 0.9, ms: 3000, lag: 700 } },
-          cube: { poly: [[1480, -24], [1518, -24], [1522, 124], [1614, 154], [1614, 330], [1400, 330], [1400, 162], [1476, 124]],
-                  origin: [1499, -12], feather: 16, sway: { deg: 0.8, ms: 3800, lag: 2100 } }
+          momo: { poly: [[120, 640], [180, 560], [260, 500], [340, 472], [420, 468], [480, 520], [540, 600], [600, 660], [610, 760], [560, 830], [110, 830], [100, 740]],
+                  origin: [300, 822], feather: 24 }
         },
-        glints: [[705, 692, 0], [962, 588, 1500], [1182, 694, 2900], [1398, 612, 900], [1290, 500, 2300]],
+        glints: [[820, 760, 0], [1090, 720, 1500], [1200, 660, 2900], [960, 800, 900]],
         // he pulls up short first, and speaks once he has taken it in
         enter: [{ move: 'momo', as: 'recoil', after: 350, sfx: 'creak', level: 0.5 }, { sfx: 'chime', after: 700, level: 0.6 }, { sfx: 'air', after: 150 }],
         enterHold: 1150,
         lines: [
-          { who: 'momo', vo: 'st4-momo', box: { cx: 420, bottom: 276 }, tip: [492, 302],
+          { who: 'momo', vo: 'st4-momo', box: { cx: 440, bottom: 430 }, tip: [420, 466],
             key: ['trickier'],
             text: 'This path looks trickier than last time!' }
         ]
       },
 
-      /* SCENE 5 — OVER TO THE CHILD. Wide, the whole way ahead in view. On "polygons" the
-         ice answers once — a light crossing the hanging shapes — and then the lesson. */
+      /* SCENE 5 — OVER TO THE CHILD. The same wide view. On "polygons" the ice answers once —
+         a light crossing the blocks of the route — and then the lesson. */
       {
         id: 5,
         camera: { origin: [900, 620], to: 1.012, ms: 8000 },
         regions: {
-          momo: { poly: [[140, 600], [300, 480], [440, 466], [500, 540], [570, 580], [628, 630], [626, 770], [530, 776], [484, 824], [96, 824], [96, 690]],
-                  origin: [300, 812], feather: 24 },
-          triangle: { poly: [[1122, 226], [1150, 226], [1152, 330], [1214, 452], [1062, 452], [1120, 330]],
-                      origin: [1136, 238], feather: 14, sway: { deg: 0.7, ms: 3400, lag: 400 } },
-          hexagon: { poly: [[1266, 180], [1296, 180], [1298, 292], [1346, 312], [1346, 398], [1228, 398], [1228, 312], [1264, 292]],
-                     origin: [1281, 192], feather: 14, sway: { deg: 0.7, ms: 3000, lag: 1600 } },
-          rhombus: { poly: [[1526, -24], [1566, -24], [1570, 94], [1672, 212], [1554, 372], [1414, 250], [1524, 94]],
-                     origin: [1546, -12], feather: 16, sway: { deg: 0.55, ms: 4000, lag: 900 } }
+          momo: { poly: [[120, 640], [180, 560], [260, 500], [340, 472], [420, 468], [480, 520], [540, 600], [600, 660], [610, 760], [560, 830], [110, 830], [100, 740]],
+                  origin: [300, 822], feather: 24 }
         },
         sheens: {
-          triangle: { poly: [[1135, 340], [1198, 442], [1074, 442]], dir: 'ltr', ms: 900, strength: 0.75, lag: 0 },
-          hexagon: { poly: [[1262, 304], [1314, 304], [1334, 346], [1314, 388], [1262, 388], [1240, 346]], dir: 'ltr', ms: 900, strength: 0.75, lag: 220 },
-          crystal: { poly: [[1220, 458], [1256, 478], [1256, 520], [1220, 528], [1186, 512], [1188, 474]], dir: 'ltr', ms: 800, strength: 0.65, lag: 300 },
-          rhombus: { poly: [[1545, 108], [1654, 212], [1548, 354], [1434, 248]], dir: 'ltr', ms: 1100, strength: 0.7, lag: 440 }
+          block1: { poly: [[640, 700], [1000, 690], [1000, 800], [640, 830]], dir: 'ltr', ms: 900, strength: 0.7, lag: 0 },
+          block2: { poly: [[1010, 690], [1180, 680], [1180, 750], [1010, 760]], dir: 'ltr', ms: 900, strength: 0.7, lag: 220 },
+          block3: { poly: [[1160, 640], [1250, 635], [1250, 690], [1160, 700]], dir: 'ltr', ms: 800, strength: 0.65, lag: 400 }
         },
         enter: [{ move: 'momo', as: 'bob', after: 600 }],
         lines: [
-          // (it stops short of the rope the big rhombus hangs from, at x 1530)
           { who: 'narrator', vo: 'st5-narrator', box: { x: 66, top: 34, w1: 1440 },
-            at: [{ word: 'polygons.', sheen: ['triangle', 'hexagon', 'crystal', 'rhombus'], sfx: 'sparkle', level: 0.45,
-                   twinkle: [[1150, 380, 60], [1300, 330, 260], [1222, 486, 360], [1580, 196, 480]] }],
+            at: [{ word: 'polygons.', sheen: ['block1', 'block2', 'block3'], sfx: 'sparkle', level: 0.45,
+                   twinkle: [[820, 720, 60], [1090, 700, 260], [1200, 650, 360]] }],
             parts: ['Momo needs your help to reach Popo.', 'But first, you’ll need to learn a little more about polygons.'],
             key: ['help', 'polygons.'],
             text: 'Momo needs your help to reach Popo. But first, you’ll need to learn a little more about polygons.' }
