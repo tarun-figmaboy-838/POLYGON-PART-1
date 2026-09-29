@@ -307,10 +307,11 @@
       swiftee: { pos: 'log', size: 'medium' },
       say: 'Select any vertex.',
       beats: [
+        // THE CORNERS ARE UP BEFORE THE LINE, and its word "vertex" swells them one after
+        // another (the user); the input after it makes them touchable (stage.js vertex-pick)
+        { stage: { dots: true } },
         { say: 'Select any vertex.', vo: 'p06' },
         { swiftee: 'point', at: 'polygon' },
-        // (the corners appear with the input, after the line, and ONE of them breathes —
-        // stage.js vertex-pick; not every corner pulsing at once)
         // any corner is right, so it is not praised as an answer: the pop,
         // the nod, and straight on to "Let’s connect it to another vertex."
         { input: { type: 'vertex-pick', praise: false } },
@@ -376,7 +377,10 @@
               { swiftee: 'discover' },
               { say: 'This is a side of the polygon.', vo: 'p09' },
               { wait: 1200 },
-              { stage: { side: null } },
+              // THE SIDE STAYS, ITS CORNER IS SPENT (the user: "freeze the side line so the child
+              // can't pick that side point again"): only its tag goes, and the next try can only
+              // be a corner not tried yet — the other side, or the diagonal (stage.js freezeSide)
+              { stage: { side: 'done' } },
               { instruction: 'Let’s connect it to a different vertex.', vo: 'p10i' },
               { swiftee: 'point', at: 'picked' },
               { input: { type: 'draw-diagonal', from: 'picked', sides: true, praise: false, retry: true } }

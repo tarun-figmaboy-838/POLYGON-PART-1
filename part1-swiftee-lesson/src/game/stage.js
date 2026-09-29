@@ -494,6 +494,37 @@
     cleanup.push(stop);
     return stop;
   }
+  /* A BURST FROM BEHIND THE DOT (the user: "confetti bursts behind each connected dot"): the
+     corner a diagonal has just reached throws a small ring of confetti out from under itself —
+     a dozen bits in the lesson's colours, flying out, dropping a little and fading. Drawn in
+     the shape's group under the corner dots, so it comes from behind the dot, not over it. */
+  function dotBurst(i) {
+    var k = knobOf(i);
+    if (!k || reduced() || !k.animate || !st.polyG || !k.parentNode) return;
+    var cx = +k.getAttribute('cx'), cy = +k.getAttribute('cy');
+    var host = k.parentNode, first = host.querySelector('.knob');
+    var g = mk('g', { 'class': 'dot-burst', 'pointer-events': 'none' }, host);
+    if (first) host.insertBefore(g, first);
+    // (deep, saturated colours: pastels vanished against the pale glass the corners stand on)
+    var cols = ['#ffb300', '#ff3d7f', '#00a8f0', '#2fbf4f', '#8a5cff', '#ff7a00'];
+    for (var q = 0; q < 16; q++) {
+      var ang = (q / 16) * Math.PI * 2 + Math.random() * 0.4, dist = 32 + Math.random() * 26;
+      var bw = 8 + Math.random() * 3, bh = 4.5 + Math.random() * 1.5, col = cols[q % cols.length];
+      var bit = q % 3
+        ? mk('rect', { x: (cx - bw / 2).toFixed(1), y: (cy - bh / 2).toFixed(1), width: bw.toFixed(1), height: bh.toFixed(1), rx: 1.2, fill: col }, g)
+        : mk('circle', { cx: cx, cy: cy, r: 3.6, fill: col }, g);
+      var dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist;
+      bit.style.transformBox = 'fill-box'; bit.style.transformOrigin = 'center';
+      try {
+        bit.animate([
+          { transform: 'translate(0px,0px) rotate(0deg) scale(.6)', opacity: 1 },
+          { transform: 'translate(' + dx.toFixed(1) + 'px,' + dy.toFixed(1) + 'px) rotate(' + (180 + q * 40) + 'deg) scale(1)', opacity: 1, offset: 0.55 },
+          { transform: 'translate(' + (dx * 1.15).toFixed(1) + 'px,' + (dy + 14).toFixed(1) + 'px) rotate(' + (300 + q * 40) + 'deg) scale(.9)', opacity: 0 }
+        ], { duration: 720 + Math.random() * 160, easing: 'cubic-bezier(.2,.8,.3,1)', fill: 'forwards' });
+      } catch (e) {}
+    }
+    later(1000, function () { if (g.parentNode) g.remove(); });
+  }
   /** The visible knob at vertex i (the touch disc over it is st.vertEls[i]). */
   function knobOf(i) { return (st.knobEls && st.knobEls[i]) || null; }
   // (the stage's `gain` is how loud this cue is to be, 0..1 of itself: SFX's `level`)
@@ -896,9 +927,10 @@
   // a cyan of its own (the user: "why this color not using swiftee color")
   var HI = { fill: '#34b4a4', edge: '#0b4f9e', line: '#eafcff', lit: '#4be0ff', hot: '#7ff0d0',
              bad: '#b98cff', badLit: '#7a4cff', knob: '#eaf9ff', rim: '#4fb8ea',
-             // THE CHILD'S OWN CORNER is Swiftee's green — his body colour,
-             // measured off his sprite sheet — so "the one I picked" is the
-             // buddy's colour, and never the same blue as the shape
+             /* THE CORNER TO WORK WITH — the one picked, the one to drag, the other end of a
+                diagonal — is Swiftee's green (not yellow: the user), and it wears a WHITE rim:
+                green and the shape's blue are two mid tones that ran together, and the rim is
+                what stands the dot off the shape (renderPoly). */
              picked: '#34b4a4' };
   /** A lit line: the glow first (wider, translucent, the same dashes), then the ice core. Returns [glow, core]. */
   /**
@@ -1512,6 +1544,16 @@
                                'stroke-linecap': 'round', 'pointer-events': 'none', 'class': 'segment' }, g);
       st.segGlow = segEl; st.segLine = segEl;
     }
+    // THE SIDES ALREADY FOUND STAY FOUND (the user: "freeze the side line so the child can't
+    // pick that side point again — it looks like a loop"): each named side stays drawn over
+    // the outline, quieter than the one being named, and its far corner is spent (above)
+    (st.sidesDone || []).forEach(function (sd) {
+      var da = v[sd[0]], db = v[sd[1]];
+      if (!da || !db) return;
+      mk('line', { x1: da.x, y1: da.y, x2: db.x, y2: db.y, stroke: HI.line, 'stroke-width': 4, opacity: 0.8,
+                   'stroke-linecap': 'round', 'pointer-events': 'none', 'class': 'segment-done',
+                   style: 'filter: drop-shadow(0 0 3px rgba(75, 224, 255, .55));' }, g);
+    });
 
     // edges as tap targets (invisible, wide)
     st.edgeEls = [];
@@ -1584,22 +1626,19 @@
     for (var j = 0; j < n; j++) {
       var col = st.vcolor && st.vcolor[j] ? st.vcolor[j] : null;
       var shown = !!(col || st.showVerts);
-      // THE CORNER THE CHILD CHOSE keeps a quiet icy ring for as long as it
-      // is the start of their lines — both diagonals are drawn from it — so
-      // "this is my corner" never has to be remembered.
-      if (st.picked === j) {
-        mk('circle', { cx: v[j].x, cy: v[j].y, r: 16, fill: 'none', stroke: HI.line, 'stroke-width': 3,
-                       opacity: 0.95, 'class': 'anchor-ring', 'pointer-events': 'none',
-                       style: 'filter: drop-shadow(0 0 4px rgba(52, 180, 164, .9));' }, g);
-      }
+      // (NO RING round the corner the child chose — the user: "remove the large rings around
+      // vertex dots". The dot itself says it: gold, and a size up.)
+      // A CORNER ALREADY JOINED BY A SIDE is done with (st.sidesDone): shown, dimmed, and no
+      // longer anything a line can be taken to
+      var spent = !!(st.sidesDone && st.sidesDone.some(function (sd) { return sd[1] === j; }));
       var knob = mk('circle', {
         cx: v[j].x, cy: v[j].y,
         r: col ? 10 : (touch ? 9 : 6),
-        fill: col || (touch ? HI.knob : SHAPE.edge),
-        stroke: col ? shade(col, -0.45) : (touch ? HI.edge : 'none'),
-        'stroke-width': col ? 3 : (touch ? 2.5 : 2),
+        fill: col || (touch ? '#ffffff' : SHAPE.edge),
+        stroke: col ? '#ffffff' : (touch ? '#0b3f7a' : 'none'),
+        'stroke-width': col ? 3 : (touch ? 3 : 2),
         'class': 'knob' + ((st.breathe && !col && touch) || (st.breatheAt && st.breatheAt[j]) ? ' breathe' : ''), 'data-i': j,
-        opacity: shown ? 1 : 0,
+        opacity: shown ? (spent ? 0.45 : 1) : 0,
         'pointer-events': 'none'
       }, g);
       // 18 units: 36 across, which is 37px on a 1024-wide window and more on
@@ -1610,7 +1649,7 @@
         fill: '#000', 'fill-opacity': 0, stroke: 'none',
         'class': 'vertex', 'data-i': j
       }, g);
-      c.style.pointerEvents = touch ? 'all' : 'none';
+      c.style.pointerEvents = touch && !spent ? 'all' : 'none';
       if (st.breathe && !col && touch) knob.style.animationDelay = (j * 0.22).toFixed(2) + 's';   // one after another, round the shape
       st.knobEls.push(knob);
       st.vertEls.push(c);
@@ -1651,9 +1690,6 @@
       var C = st.vertEls[i]; if (C) { C.setAttribute('cx', v[i].x); C.setAttribute('cy', v[i].y); }
       var K = st.knobEls && st.knobEls[i]; if (K) { K.setAttribute('cx', v[i].x); K.setAttribute('cy', v[i].y); }
     }
-    // the chosen corner's ring goes where the corner goes
-    var ring = st.polyG && st.picked != null && v[st.picked] ? st.polyG.querySelector('.anchor-ring') : null;
-    if (ring) { ring.setAttribute('cx', v[st.picked].x); ring.setAttribute('cy', v[st.picked].y); }
     if (st.measG) { while (st.measG.firstChild) st.measG.removeChild(st.measG.firstChild); if (st.measure) drawMeasurements(st.measG); }
   }
 
@@ -5218,6 +5254,17 @@
     if (spec.label === null && st.labelEl) { st.labelEl.remove(); st.labelEl = null; st.labelSpec = null; }
     // the side that was named, and its tag, fade before the next try
     if (spec.side === null) clearSide();
+    if (spec.side === 'done') freezeSide();
+    /* THE CORNERS SHOWN BEFORE THEY ARE ASKED FOR (the user: "the dots appear before 'Select
+       any vertex'"): up, softly, ahead of the line — so its word "vertex" has corners to swell
+       (emphasize) — and touchable once the input that follows is armed. */
+    if (spec.dots != null && st.polyG) {
+      var were = !!st.showVerts;
+      st.showVerts = !!spec.dots; st.touchVerts = !!spec.dots; renderPoly();
+      if (spec.dots && !were && !reduced()) (st.knobEls || []).forEach(function (k) {
+        try { k.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 320, easing: 'ease-out' }); } catch (e) {}
+      });
+    }
     if (spec.badge && !spec.kind) op.badge(spec.badge);
     if ('choices' in spec) op.choices(spec.choices, spec);
     if (spec.measurements) op.measurements(spec.measurements);
@@ -5772,20 +5819,21 @@
     'vertex-pick': function (spec, ctx) {
       return new Promise(function (resolve) {
         if (global.Input) Input.mode('polygon');
-        /* THE POINTS COME WITH THE INSTRUCTION, AND ONE BREATHES (the user: "the vertex point
-           should appear only after the instruction", "pulse only the currently interactive
-           point"). This input is armed once "Select any vertex." has been said, and that is
-           when the corners appear — together, softly. Every one is a right answer and every
-           one can be tapped, but only ONE breathes, so the eye has one place to go: the lowest
-           on the right, where the hand taps when it shows the move (the glove lies outside the
-           shape there rather than over it). They stop on the pick. */
+        /* THE POINTS ARE THERE BEFORE THE INSTRUCTION, AND ANSWER ITS WORD (the user: "the dots
+           appear before 'Select any vertex'", "on 'vertex', pulse the dots"). The screen puts
+           them up ahead of the line; "vertex" swells them one after another; and this input,
+           armed once the line has been said, makes them touchable. None of them breathes on
+           its own after that — every one is a right answer. If the child waits, the hand taps
+           one: the lowest on the right, where the glove lies outside the shape. */
         var v0 = st.verts || [], sug = 0;
         v0.forEach(function (p, j) { if (p.x + p.y > v0[sug].x + v0[sug].y) sug = j; });
-        st.showVerts = true; st.touchVerts = true; st.breathe = false; st.breatheAt = {}; st.breatheAt[sug] = true; renderPoly();
-        if (!reduced()) (st.knobEls || []).forEach(function (k) {
+        // (usually already up — the screen puts them there before its line, stage `dots` — and
+        // pulsed on the line's word "vertex"; if not, they come up now)
+        var were = !!st.showVerts;
+        st.showVerts = true; st.touchVerts = true; st.breathe = false; st.breatheAt = null; renderPoly();
+        if (!were && !reduced()) (st.knobEls || []).forEach(function (k) {
           try { k.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, easing: 'ease-out' }); } catch (e) {}
         });
-        cleanup.push(function () { if (st.breatheAt) { st.breatheAt = null; if (st.polyG) renderPoly(); } });
         setConnect('SELECT_VERTEX');
         // ON THE FIRST IDLE HINT, not the last: tapping is the move, and a child who has not
         // tapped yet is shown it — on the corner that is breathing, and that one only
@@ -5804,6 +5852,8 @@
             e.preventDefault();
             evt('vertex:selected', { vertex: i });
             st.picked = i; st.lastEl = knobOf(i) || c; st.vcolor = {}; st.vcolor[i] = HI.picked; st.showVerts = false; st.breathe = false; st.breatheAt = null; renderPoly();
+            // the tap answered on the dot itself: a brief glow as it turns gold
+            juice('good', knobOf(i));
             setConnect('VERTEX_SELECTED', { from: i });
             endInteraction(); resolve({ result: 'correct', vertex: i });
           });
@@ -5857,7 +5907,7 @@
         // "I want to pulse the dot"): a swell and a glow until it is taken,
         // again if it is let go short of the answer, and not once it is done
         if (spec.vertex !== 'any') {
-          idxs.forEach(function (i) { st.vcolor = st.vcolor || {}; if (!st.vcolor[i]) st.vcolor[i] = HI.fill; });
+          idxs.forEach(function (i) { st.vcolor = st.vcolor || {}; if (!st.vcolor[i]) st.vcolor[i] = HI.picked; });
           st.breatheAt = {}; idxs.forEach(function (i) { st.breatheAt[i] = true; });
           cleanup.push(function () { st.breatheAt = null; });
           renderPoly();
@@ -5875,7 +5925,7 @@
               held = i; grabAt = { x: st.verts[i].x, y: st.verts[i].y };
               if (!start) start = grabAt;
               breathe(i, false);
-              st.vcolor = st.vcolor || {}; st.vcolor[i] = HI.fill;
+              st.vcolor = st.vcolor || {}; st.vcolor[i] = HI.picked;
               var hk = knobOf(i);
               if (hk) { hk.setAttribute('fill', HI.fill); hk.setAttribute('stroke', shade(HI.fill, -0.45)); hk.setAttribute('stroke-width', 3); hk.setAttribute('r', 10); }
             }
@@ -5910,7 +5960,7 @@
             if (judge(i)) {
               done = true; st.lastEl = st.polyG; endInteraction();
               // the vertex they moved keeps its knob: the dent IS a vertex
-              st.vcolor = {}; st.vcolor[i] = HI.fill;
+              st.vcolor = {}; st.vcolor[i] = HI.picked;
               // the dent is made: the diagonals that stayed inside step back,
               // and the one that went outside is the whole picture
               if (spec.live === 'diagonals') st.onlyOutside = true;
@@ -6747,6 +6797,23 @@
 
   /** The side that was named goes: its mark and its tag fade, and the shape is
       as it was before the line was drawn (the corner stays theirs). */
+  /* The named side kept, frozen, and its corner spent (screens.js `side: 'done'`): only its
+     tag goes. The next try can only be a new corner. */
+  function freezeSide() {
+    var tag = st.labelEl;
+    if (st.segment) { st.sidesDone = (st.sidesDone || []).concat([st.segment.slice()]); st.segment = null; }
+    st.segLine = st.segGlow = null;
+    if (tag) { st.labelEl = null; st.labelSpec = null; fadeOut(tag); }
+    if (st.polyG) renderPoly();
+  }
+  function fadeOut(el) {
+    if (!el) return;
+    if (reduced() || !el.animate) { el.remove(); return; }
+    try {
+      var a = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 280, easing: 'ease-in', fill: 'forwards' });
+      a.onfinish = function () { el.remove(); };
+    } catch (e) { el.remove(); }
+  }
   function clearSide() {
     var ln = st.segLine, tag = st.labelEl;
     st.segment = null; st.segLine = st.segGlow = null;
@@ -6778,7 +6845,12 @@
          corner points, and their own stays bright and ringed; the one the
          line snaps to grows under the finger. */
       var sides = !!spec.sides;
-      st.picked = from; st.vcolor = {}; st.vcolor[from] = HI.picked; st.showVerts = true; st.touchVerts = true; renderPoly();
+      // THE CORNER TO DRAW FROM breathes — it, and nothing else (the user: "subtle pulse only on
+      // the active dot") — while it waits to be taken
+      st.picked = from; st.vcolor = {}; st.vcolor[from] = HI.picked; st.showVerts = true; st.touchVerts = true;
+      st.breatheAt = {}; st.breatheAt[from] = true; renderPoly();
+      var still = function (on) { var fk = knobOf(from); if (fk && fk.classList) fk.classList.toggle('breathe', !!on); };
+      cleanup.push(function () { st.breatheAt = null; still(false); });
       /* THE CORNER THE LINE STARTS FROM TAKES A HAND. It is the one thing on
          the shape to press, and it showed the plain arrow: the corners are
          rebuilt after every line, so the hand is put back each time. */
@@ -6790,8 +6862,10 @@
       var valid = function () { return Poly.diagonalsFrom(from, st.n).filter(function (j) { return !diagonalUsed(from, j); }); };
       var targets = function () {
         if (!sides) return valid();
+        // (a corner already joined by a side is done with: st.sidesDone)
+        var spentAt = (st.sidesDone || []).map(function (sd) { return sd[1]; });
         var all = [];
-        for (var q = 0; q < st.n; q++) if (q !== from && !diagonalUsed(from, q)) all.push(q);
+        for (var q = 0; q < st.n; q++) if (q !== from && !diagonalUsed(from, q) && spentAt.indexOf(q) < 0) all.push(q);
         return all;
       };
       // THE MOVE, SHOWN — once the child has been still a while (hintLadder).
@@ -6836,6 +6910,7 @@
         if (sides && st.connect !== 'READY_TO_CONNECT') return;
         if (active) return;
         active = true; pid = e.pointerId; e.preventDefault();
+        still(false);
         try { svg.setPointerCapture && svg.setPointerCapture(e.pointerId); } catch (x) {}
         // connecting, nothing lights up front; the corner the line finds does
         if (sides) { showTargets([], false); setConnect('DRAWING', { from: from }); }
@@ -6864,9 +6939,12 @@
            to a line let go along a side, in the open glass or on the card's frame: that line
            goes home, and the corners stay ready to try again. */
         var j = hot >= 0 ? hot : nearestVertex(inCard(pt(e)), from, 44);
+        // (and never on a corner that is done with — a side already found: st.sidesDone)
+        if (sides && j >= 0 && targets().indexOf(j) < 0) j = -1;
         hot = -1;
         showTargets([], false);
         if (j < 0) {
+          still(true);
           retract(line, from, function () { line = previewLine(from); });
           if (sides) {
             // NOTHING WAS CONNECTED, SO THERE IS NO VERDICT. The line goes home,
@@ -6899,19 +6977,26 @@
         }
         if (ok) {
           if (sides) {
-            // the side that was named steps aside for the diagonal
+            // the side that was named — and the ones found before it — step aside for the diagonal
             st.segment = null;
             if (st.labelEl) { st.labelEl.remove(); st.labelEl = null; st.labelSpec = null; }
+            if (st.sidesDone && st.sidesDone.length && st.polyG) {
+              [].slice.call(st.polyG.querySelectorAll('.segment-done')).forEach(function (ln) {
+                var c2 = ln.cloneNode(true); if (st.polyG.parentNode) st.polyG.parentNode.appendChild(c2); fadeOut(c2);
+              });
+            }
+            st.sidesDone = null;
           }
           line.remove(); line = previewLine(from);
           // (connecting: the corner it reached shows as a corner too — a
           // diagonal joins two vertices, and a line into a hidden corner read
           // as a line that stopped in mid-air)
-          if (sides) st.vcolor[j] = HI.fill;
+          if (sides) st.vcolor[j] = HI.picked;
           st.diagonals = st.diagonals || []; st.diagonals.push(Object.assign([Math.min(from, j), Math.max(from, j)], { solid: true })); st.ghost = null; renderPoly(); made++;
           if (made < count) dressFrom();
           st.lastEl = knobOf(j) || st.vertEls[j];
           shimmer(st.diagonals.length - 1, sides);
+          dotBurst(j);
           if (sides) setConnect('DIAGONAL_SUCCESS', { from: from, to: j });
           evt('diagonal:complete', { from: from, to: j });
           if (count > 1) onTap('correct', null, { last: made >= count });
@@ -6926,7 +7011,7 @@
       };
       var cancel = function () {
         if (!active) return; active = false; pid = null; hot = -1; showTargets([], false);
-        svg.style.cursor = '';
+        svg.style.cursor = ''; still(true);
         if (sides) setConnect('READY_TO_CONNECT', { from: from });
         retract(line, from, function () { line = previewLine(from); });
       };
