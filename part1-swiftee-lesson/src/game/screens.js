@@ -631,11 +631,12 @@
 
     {
       id: 'compare', page: 21,
+      log: true,   // (the log stays in the scene while he is elsewhere in it: it does not blink out between screens that share it)
       // Both panels sit across the middle and nothing is drawn under them on
       // this screen, so the whole foot of the stage is his — centre stage,
       // with the line directly over his head in the band he leaves.
       // Small: at medium his head reaches 46 units up into the compare panels.
-      swiftee: { pos: 'centre', size: 'small' },
+      swiftee: { pos: 'log', size: 'medium' },
       instruction: null,
       say: 'Let\u2019s compare the diagonals in both the pentagons.',
       original: 'Both are pentagons.',
@@ -726,9 +727,10 @@
 
     {
       id: 'convex', page: 24,
+      log: true,   // (the log stays in the scene while he is elsewhere in it: it does not blink out between screens that share it)
       // On the ice at the left like the rest of the run (markFor): the pair
       // fills the middle and his line sits by his head.
-      swiftee: { pos: 'peek', size: 'small', purpose: 'concept'},
+      swiftee: { pos: 'log', size: 'medium', purpose: 'concept' },
       instruction: null,
       // FLAG: grammar. Deck: "That's convex polygon." The author's line
       // for this step is the rule itself.
@@ -753,7 +755,8 @@
 
     {
       id: 'concave', page: 25,
-      swiftee: { pos: 'peek', size: 'small', purpose: 'concept'},
+      log: true,   // (the log stays in the scene while he is elsewhere in it: it does not blink out between screens that share it)
+      swiftee: { pos: 'log', size: 'medium', purpose: 'concept' },
       instruction: null,
       // FLAG: grammar and capitalisation. Deck: "So it is Concave polygon."
       say: 'Atleast one diagonal outside means concave polygon.',
