@@ -619,7 +619,8 @@
     var drag = (type || (inputSpec && inputSpec.type)) === 'drag-vertex';
     var el = drag ? Stage.element('polygon') : (Stage.element('answer') || Stage.element('polygon'));
     try {
-      if (kind === 'wrong') { if (Juice.bad) Juice.bad(el); if (Juice.shake) Juice.shake(stageEl); }
+      // (the card's own red and buzz say it; the whole stage shaking on top was excess — the review)
+      if (kind === 'wrong') { if (Juice.bad) Juice.bad(el); }
       else if (kind === 'correct' && Juice.good) Juice.good(el);
     } catch (e) {}
   }
@@ -3598,6 +3599,9 @@
         if (!(inputSpec && inputSpec.type === 'tap-each') && !(info && info.soft)) verdictFx(kind);
       }
       var list = s.perTap ? (s.perTap[kind] || s.perTap.any) : null;
+      // (confetti for the answer that COMPLETES the question, not for every right card on the
+      // way — the animation review: confetti at completions)
+      if (list && kind === 'correct' && info && info.last === false) list = list.filter(function (b) { return !(b && b.juice === 'confetti'); });
       if (list) fire(list);
       // ONE FACE PER TAP: the storyboard's, when its per-tap list gives him
       // one, and otherwise react()'s. On the side-measuring screen the walk

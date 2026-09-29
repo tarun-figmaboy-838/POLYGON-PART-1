@@ -686,7 +686,9 @@
   var LOG_SINK = 9;
   function perchPoint() { return { x: LOG.x + LOG.w * LOG.at, y: LOG.y + LOG.h * (LOG.crest / LOG.ih) + LOG_SINK }; }
   var perchLog = null;
-  var SNOW = 26, GUST = 16, GLINTS = 10;  // ambient element counts — see ambientLife()
+  // ambient element counts — see ambientLife(). Halved, and no wind streaks (the animation
+  // review: background motion is noticed second, and must never compete with the lesson)
+  var SNOW = 12, GUST = 16, GLINTS = 4;   // (the gust is the snow wipe's own flurry, paused until it is needed)
   var ambient = [];           // running WAAPI animations, so they can be stopped
   var snowAnims = [];         // just the snowfall, so a gust can speed it up
   var gustAnims = [], gustG = null, gusting = false;
@@ -5643,7 +5645,7 @@
         // "this one" is the card in focus; "both" and no focus, the pair
         if (kind === 'compare') return warmPulse(Object.keys(st.compare || {}).filter(function (k) { return !st.compareFocus || /both/.test(line) || k === st.compareFocus; })
                                                    .map(function (k) { return st.compare[k].pg; }), { together: true });
-        if (kind === 'sort') return warmPulse(st.sort && st.sort.items, { together: true, peak: '1.06' });
+        if (kind === 'sort') return 0;   // (every tray card swelling at once: the animation review)
         if (kind === 'swipe-sort') return warmPulse(st.swipe && st.swipe.card ? [st.swipe.card] : [], { peak: '1.03' });
         return warmPulse([st.polyG]);
       case 'vertex': {
@@ -6049,7 +6051,7 @@
           return gestureGhost(gv, to, { r: 11 });
         };
         hintLadder({
-          pulse: function () { return done ? null : pulseHint(idxs.map(knobOf)); },
+          pulse: function () { return done ? null : pulseHint([knobOf(spec.vertex === 'any' ? sug : idxs[0])].filter(Boolean)); },
           demo: ghostOf
         });
         // WHAT THE DRAG IS ASKED TO MAKE, judged from the shape as it stands
@@ -6164,10 +6166,8 @@
         if (global.Input) Input.mode('polygon');
         // Both answers breathe when the child has been still a while — never
         // the right one alone, which would be the answer given away.
-        hintLadder({
-          pulse: function () { return pulseHint((st.choiceEls || []).slice()); },
-          demo: function () { return pulseHint((st.choiceEls || []).slice(), { strong: true }); }
-        });
+        // (no idle pulse: two answers swelling together said nothing but "look at me" — the
+        // buttons read as buttons; the animation review)
         (st.choiceEls || []).forEach(function (b) {
           // THE HAND COMES BACK FOR A RETRY. endInteraction() strips every
           // cursor when an answer lands; the retry input arms the same

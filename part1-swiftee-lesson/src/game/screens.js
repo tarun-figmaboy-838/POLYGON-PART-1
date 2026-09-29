@@ -83,19 +83,17 @@
   function correct(extra, face, o) {
     extra = extra || [];
     var sounds = extra.some(function (b) { return b && b.sfx; });
-    // (o.burst false: each right answer already threw its own as it was given — perTap)
-    var bursts = (o && o.burst === false) || extra.some(function (b) { return b && b.juice === 'confetti'; });
-    // A BURST FROM THE ANSWER. The audit's child got a chime and a face for a
-    // right answer and nothing that said so on the screen; now the answer
-    // throws a small burst from its own edges — one, from the thing that
-    // earned it (a milestone that brings its own bigger one keeps that).
+    // CONFETTI ONLY AT A MILESTONE (o.burst — the animation review: "confetti only when
+    // appropriate, especially major completion"). An ordinary right answer is the glow, the
+    // chime and his face; a level's last answer (milestone) throws the burst.
+    var bursts = !!(o && o.burst === true) && !extra.some(function (b) { return b && b.juice === 'confetti'; });
     return [{ juice: 'collect', target: 'answer' }]
       .concat(sounds ? [] : [{ sfx: 'correct' }])
-      .concat(bursts ? [] : [{ juice: 'confetti', target: 'answer', count: 16, fromEdge: true }])
+      .concat(bursts ? [{ juice: 'confetti', target: 'answer', count: 20, fromEdge: true }] : [])
       .concat(extra)
       .concat([{ swiftee: face || 'happySmall' }, { wait: FEEDBACK_MS }]);
   }
-  function milestone(extra, face) { return correct(extra, face || 'celebrate'); }
+  function milestone(extra, face) { return correct(extra, face || 'celebrate', { burst: true }); }
 
   /* ------------------------------------------------------------------ *
    * THE END-GAME SUMMARY, as data

@@ -399,12 +399,15 @@
   #stage .edge.hint { stroke: transparent; }
   /* A side still to measure breathes along its length (stage.js side-todo):
      slow and soft, a beat apart side to side, and still once it is measured. */
-  #stage .side-todo { animation: sideTodo 1.8s ease-in-out infinite; stroke-opacity: .3; }
+  /* (still, not pulsing: the marks say what is left to measure while he walks — a loop there
+     competed with the walk, the one thing to watch) */
+  #stage .side-todo { stroke-opacity: .35; }
   @keyframes sideTodo { 0%, 100% { stroke-opacity: .22; } 50% { stroke-opacity: .85; } }
   @media (prefers-reduced-motion: reduce) { #stage .side-todo { animation: none; stroke-opacity: .6; } }
   /* a bird on a mark with no ground under it bobs on the air */
-  .swiftee.air { animation: hoverBob 1.6s ease-in-out infinite; }
-  @keyframes hoverBob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -12px; } }
+  /* a slow, small rise and fall — enough to say "hovering", not a bounce (the animation review) */
+  .swiftee.air { animation: hoverBob 2.6s ease-in-out infinite; }
+  @keyframes hoverBob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -5px; } }
   #stage .knob.hint {
     transform-box: fill-box; transform-origin: center;
     filter: drop-shadow(0 0 4px rgba(75, 224, 255, .85));
@@ -422,7 +425,7 @@
   }
   /* AN ANGLE STILL TO MEASURE breathes in outline (stage.js drawArc todo),
      a beat apart round the shape, until it is tapped and fills. */
-  #stage .angle-todo { animation: angleTodo 1.7s ease-in-out infinite; }
+  #stage .angle-todo { opacity: .6; }
   #stage .angle-todo[data-todo="1"] { animation-delay: .22s; } #stage .angle-todo[data-todo="2"] { animation-delay: .44s; }
   #stage .angle-todo[data-todo="3"] { animation-delay: .66s; } #stage .angle-todo[data-todo="4"] { animation-delay: .88s; }
   @keyframes angleTodo {
