@@ -4588,6 +4588,8 @@
     // a jump drops whatever he was doing, at once (and anything a sequence was
     // holding for him: the rebuild below lets go of the measuring walk)
     if (global.Swiftee && Swiftee.settle) Swiftee.settle({ now: true });
+    // (a jump past the opening does not replay the sled ride on whatever screen it lands on)
+    if (n > 0 && global.Swiftee && Swiftee.markArrived) Swiftee.markArrived();
     // and a jump back from the finale takes its buttons down; playGen has
     // already called off the move to Part 2
     hud.querySelector('.replay').classList.remove('show');

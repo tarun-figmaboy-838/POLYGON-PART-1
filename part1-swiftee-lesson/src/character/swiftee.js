@@ -1885,6 +1885,9 @@
     get pos() { return pos; },
     /** Has the sleigh been? Read by the suites and probes. */
     get arrived() { return arrived; },
+    /** The review tool's jump past the opening: the sled ride is the opening's alone, so a
+        lesson entered part way through brings him on with the ordinary walk-on (game.js goTo). */
+    markArrived: function () { arrived = true; },
     get size() { return size; },
     get state() { return stateName; },
     get scale() { return scale; },
