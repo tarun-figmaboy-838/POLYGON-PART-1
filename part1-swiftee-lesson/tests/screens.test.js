@@ -665,10 +665,18 @@ const levelOf = (st) => { const d = RIG[st]; return d ? (d.level || 1) : 0; };
     });
   });
   t('every answer, tag, bin and control that waits for a word hears it on its own screen', deaf.length === 0, deaf);
-  t('the word-and-thing sync is used across the lesson, not on one screen', held >= 10, held);
-  const io = Screens.byId['inside-or-outside'].beats;
-  t('"Inside" and "Outside" are built before the question is asked, so they can arrive with its words',
-    io.findIndex((b) => b.stage && b.stage.choices) < io.findIndex((b) => b.say || typeof b.instruction === 'string'));
+  t('the word-and-thing sync is used across the lesson, not on one screen', held >= 8, held);
+  /* THE QUESTION BEFORE ITS ANSWERS (the user: "never expose an interaction before the learner
+     has been introduced to it"). On both answer screens the two buttons are dealt only after
+     the question has been asked and a beat has passed — not built first to arrive with its
+     words, as they once were. */
+  ['inside-or-outside', 'stayed-changed'].forEach((id) => {
+    const bs = Screens.byId[id].beats;
+    const asked = bs.findIndex((b) => b.say || typeof b.instruction === 'string');
+    const dealt = bs.findIndex((b) => b.stage && b.stage.choices);
+    const paused = bs.slice(asked + 1, dealt).some((b) => b.wait);
+    t(id + ': the answers are dealt after the question is asked, and a beat later', asked >= 0 && dealt > asked && paused, { asked, dealt, paused });
+  });
 }
 
 /* EVERY WORD THE BUBBLE LETTERS HAS A MEANING ON THE BOARD. The vocabulary's

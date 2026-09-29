@@ -587,16 +587,17 @@
       lines: ['These diagonals stay inside the polygon, so the answer is Inside.'],
       stage: { kind: 'polygon', sides: 5, diagonals: 'all', choices: ['Inside', 'Outside'] },
       beats: [
-        // THE ANSWERS COME IN WITH THEIR WORDS: built first, held, and each
-        // one arrives as the question reaches it — "Inside" on "inside",
-        // "Outside" on "outside" (stage.js holdForWord). The name tag from the
-        // screen before comes down: the question is about where the
-        // diagonals are, not what they are called.
-        { stage: { choices: ['Inside', 'Outside'], cue: true, label: null } },
+        // THE QUESTION FIRST, THEN THE ANSWERS (the user: never a button before the learner has
+        // been introduced to it). The name tag from the screen before comes down; he asks — on
+        // "inside" the shape's inside glows with its diagonals, on "outside" the band round it
+        // (dual coding) — a beat to take it in, and only then are the two answers dealt.
+        { stage: { label: null } },
         { instruction: 'Are the diagonals inside or outside?', vo: 'p17i' },
         // SAID ONCE: the line that echoed the instruction ("Are they inside or outside?") went —
         // the same request twice in a row read as a stutter, not a lesson.
         { swiftee: 'think' },
+        { wait: 500 },
+        { stage: { choices: ['Inside', 'Outside'] } },
         /* TWO TRIES (the user, the inside/outside question). The first miss is "Try again!" and
            nothing more — the answer is not given away. The second is answered: the diagonals
            light one after another inside the shape, he says why the answer is Inside, the
@@ -1118,13 +1119,15 @@
       stage: { choices: ['Still equal', 'Not equal'] },
       beats: [
         { instruction: null },
-        // the answers are held until the question reaches "equal", its last word
-        { stage: { choices: ['Still equal', 'Not equal'], cue: { 'Still equal': 'equal', 'Not equal': 'equal' } } },
+        // THE QUESTION FIRST, THEN THE ANSWERS (the user): he asks, the question settles on the
+        // plank, a beat, and only then are the two answers dealt
         { swiftee: 'think' },
         { say: 'It’s still a pentagon. But are the sides and angles still equal?', parts: ['It\u2019s still a pentagon.', 'But are the sides', 'and angles still equal?'], vo: 'p32b' },
         // the script's last two bubbles are the instruction: it settles into
         // one question over the answers, and is not said a second time
         { instruction: 'Are the sides and angles still equal?', vo: 'p32bi' },
+        { wait: 400 },
+        { stage: { choices: ['Still equal', 'Not equal'] } },
         /* TWO TRIES (the user, screen 28): the first miss is the clue and a retry; the second is
            explained — the readings light as he says why — the Not equal button shows green on
            the word, a moment, and the lesson goes on. No third attempt. */
