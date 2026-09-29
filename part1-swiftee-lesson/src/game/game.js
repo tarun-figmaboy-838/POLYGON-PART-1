@@ -2365,6 +2365,48 @@
     nextBtn.disabled = !on;
   }
 
+  /* THE LESSON GOES ON BY ITSELF (the Part 1 review, section 2).
+   *
+   * Every screen ended on a Next button. Now a screen that has said and shown everything
+   * it has to — his line finished and its reading pause over (the say beat before this),
+   * no reply of his still being said, his voice quiet, him not on his way in — waits one
+   * reading breath more and goes on: longer on a screen whose line names one of the
+   * lesson's ideas, so a definition is left up a moment after it has been said. It never
+   * goes on over his voice or over a reply; those are waited for, with a ceiling, so a
+   * stalled clip cannot hold the lesson for ever. Scaled with the lesson's pace (a test
+   * harness runs it fast), and called off by anything that takes the screen away.
+   */
+  var AUTO_SETTLE = 1200, AUTO_CONCEPT = 700, AUTO_CEILING = 20000;
+  var CONCEPT_RE = /\b(polygons?|vertex|vertices|diagonals?|convex|concave|sides?|angles?|regular|irregular)\b/i;
+  function autoAdvance(ctx) {
+    var gen = playGen, screenAt = current, off = false, t0 = Date.now();
+    if (ctx && ctx.onCancel) ctx.onCancel(function () { off = true; });
+    var sc = Screens.list[current] || {};
+    var extra = CONCEPT_RE.test(String(sc.say || '')) ? AUTO_CONCEPT : 0;
+    var alive = function () { return !off && gen === playGen && screenAt === current; };
+    var ceiling = Math.max(200, AUTO_CEILING * paceScale());
+    var quiet = function () {
+      if (Date.now() - t0 > ceiling) return true;
+      return !replying() && !entering && !(global.VO && VO.id);
+    };
+    var tries = 0;
+    var go = function () {
+      if (!alive()) return;
+      // (Input answers only while the gate is open and past its guard: try again shortly)
+      if (global.Input && Input.advance && Input.advance()) return;
+      if (++tries < 12) setTimeout(go, 250);
+    };
+    (function settle() {
+      if (!alive()) return;
+      if (!quiet()) { setTimeout(settle, 120); return; }
+      setTimeout(function () {
+        if (!alive()) return;
+        if (!quiet()) { settle(); return; }                  // something began in the breath
+        go();
+      }, Math.round((AUTO_SETTLE + extra) * paceScale()));
+    })();
+  }
+
   function setProgress(i) {
     progress.style.width = ((i + 1) / Screens.list.length * 100).toFixed(1) + '%';
   }
@@ -3079,7 +3121,9 @@
         if (global.Swiftee && Swiftee.warm) Swiftee.warm();
 
         var waiting = spec.type === 'tap-anywhere';
-        showNext(waiting);
+        // NO NEXT BUTTON IN THE LESSON: the screen goes on by itself once all of it has been
+        // said and seen (autoAdvance). The story before it keeps its own Next.
+        if (waiting) autoAdvance(ctx);
         if (ctx && ctx.onCancel) ctx.onCancel(function () { showNext(false); });
         if (ctx && ctx.onCancel) ctx.onCancel(function () { inputLive = false; inputSpec = null; });
 
@@ -3811,9 +3855,10 @@
     var won = quest.snapshot();
     var score = won.xp + ' XP and ' + won.badges.length + (won.badges.length === 1 ? ' badge' : ' badges') + '.';
     // spoken and word by word, one voice at a time, his last words kept up —
-    // and once they are said, Next, the button that has moved the lesson on
-    // all along, opens the hand-over screen (readyScene). A replay, a restart
-    // or a screen picked in the review tool bumps playGen and so calls it off.
+    // and a breath after they are said, the hand-over screen comes in by itself
+    // (readyScene), as every screen of the lesson has gone on (autoAdvance). A
+    // replay, a restart or a screen picked in the review tool bumps playGen and
+    // so calls it off.
     var gen = playGen;
     finaleOn = true;
     pop([{ t: FINALE[0].t, vo: FINALE[0].vo, mood: 'win' },
@@ -3821,7 +3866,9 @@
          { t: FINALE[1].t, vo: FINALE[1].vo, mood: 'win' }], { keep: true }).then(function () {
       if (gen !== playGen) return;
       if (!finaleOn || readyOn) return;
-      showNext(true);
+      setTimeout(function () {
+        if (gen === playGen && finaleOn && !readyOn) readyScene();
+      }, Math.round(1800 * paceScale()));
     });
     // one burst, wide, for the finale — two from different points read as a stutter
     if (global.Juice) Juice.confetti(Stage.svg, { count: 72, spread: 2.6 });
@@ -3848,8 +3895,8 @@
    * It does NOT go on by itself. It is a doorway, and the child walks through it:
    * the button breathes after a moment (index.html, .ready-scene) so nobody is left
    * wondering what to press. It comes in under the lesson's own snow, like a new level,
-   * when Next is pressed on the finale — and the button answers only once it is in
-   * (readyUp), so a double tap on Next cannot carry on through it unseen.
+   * a breath after the finale's last words — and the button answers only once it is in
+   * (readyUp), so a tap on the way in cannot carry on through it unseen.
    */
   var finaleOn = false, readyOn = false, readyUp = false, continueLabel = null;
   function readyScene() {

@@ -42,7 +42,7 @@ const lerp=(a,b,n)=>{const o=[];for(let i=1;i<=n;i++)o.push({x:a.x+(b.x-a.x)*i/n
 // SFX/juice sync counters for the section-6 check
 let cues={correct:0,wrong:0}; const origPlay=w.SFX.play.bind(w.SFX); w.SFX.play=(n,o)=>{ if(n==='correct')cues.correct++; if(n==='wrong')cues.wrong++; return origPlay(n,o); };
 
-let wrongTried=0, screensSeen=new Set(), asked=[], sideTries={};
+let wrongTried=0, screensSeen=new Set(), asked=[], sideTries={}, nextInLesson=false;
 
 // HANDED BACK: while he replies to an answer the stage takes nothing (game.js
 // pop(): lock, his line, unlock), and a child cannot answer again in that time
@@ -51,12 +51,12 @@ async function act(spec){
   const s=St(), v=()=>St().verts, P=w.Poly;
   await until(()=>!w.Input.guarded);
   switch(spec.type){
-    // Advancing is the Next button now, not a tap on the stage. The button
-    // only appears while the game is waiting, so waiting for it to show is
-    // also the assertion that it appears at all.
+    // THE LESSON GOES ON BY ITSELF (game.js autoAdvance): nothing is pressed at the end of a
+    // screen, and the Next button never shows in the lesson (it is the story's alone). Wait for
+    // the gate to pass on its own, and note any Next that appears while it is open.
     case 'tap-anywhere': {
-      await until(()=>w.Input.mode()==='dialogue' && !w.Input.guarded && d.querySelector('#next.show'));
-      d.querySelector('#next').click();
+      const scr=w.Game.screen;
+      await until(()=>{ if(d.querySelector('#next.show')) nextInLesson=true; return w.Game.screen!==scr || w.Input.mode()!=='dialogue' || !!d.querySelector('#hud .replay.show'); }, 30000).catch(()=>{});
       return;
     }
     case 'vertex-pick': await until(()=>svg().querySelectorAll('.vertex').length>0); tapEl(svg().querySelectorAll('.vertex')[0]); return;   // picked=0 -> adjacent 1, non-adjacent 2,3
@@ -194,32 +194,47 @@ async function act(spec){
     JSON.stringify({lessonDuringStory,screen:w.Game.screen,screen1Starts,hidden:d.getElementById('story').hidden}));
 
   const N=w.Screens.list.length; const t0=Date.now();
+  // THE FINALE, CAUGHT AS IT BEGINS. It goes on to the hand-over screen by itself — in a few
+  // milliseconds at this pace — so what must be true of the finale is read the moment the
+  // replay button comes up, and Part 2's button is pressed then, while the finale is up, when
+  // a press must go nowhere. (Leaving starts the snow at once, game.js goOn, so a press that
+  // left would show as a cover.) And Part 2's button never shows before the hand-over screen.
+  const cont=d.getElementById('continue'), cover=w.Transition&&w.Transition.cover; let covers=0;
+  let atFinale=null, contBeforeReady=false;
+  const watch=new w.MutationObserver(()=>{
+    if(d.querySelector('#continue.show') && !d.getElementById('game').classList.contains('ready-scene')) contBeforeReady=true;
+    if(atFinale || !d.querySelector('#hud .replay.show')) return;
+    atFinale={ next: !!d.querySelector('#next.show'), cont: !!d.querySelector('#continue.show'),
+               SM: w.Stage.summaryState&&w.Stage.summaryState() };
+    if(cover) w.Transition.cover=function(){ covers++; return cover.apply(this,arguments); };
+    cont.click();   // a press while the finale is up goes nowhere
+    atFinale.leftEarly=covers>0;
+  });
+  watch.observe(d.body, { attributes:true, subtree:true, attributeFilter:['class'] });
   while(!d.querySelector('#hud .replay.show') && Date.now()-t0<180000){
     if(pending){ const sp=pending; pending=null; try{ await act(sp); }catch(e){ errors.push('act '+sp.type+' on screen '+w.Game.screen+': '+e.message); } }
     await sleep(15);
   }
   const done=!!d.querySelector('#hud .replay.show');
   t('played to the end and the replay button appeared', done, 'stopped at screen '+w.Game.screen+' ('+(w.Screens.list[w.Game.screen]||{}).id+')');
-  // the finale moves on with Next, like every screen before it, and Part 2's
-  // button waits for the hand-over screen: shown with the finale, it was
-  // pressed before that screen was ever seen
-  await until(()=>d.querySelector('#next.show'), 30000);
-  // (the summary's own state, read before Next builds the hand-over screen over it)
-  const SM=w.Stage.summaryState&&w.Stage.summaryState();
-  t('the finale offers Next, and not Part 2 yet', !!d.querySelector('#next.show') && !d.querySelector('#continue.show'));
-  // leaving starts the snow at once (game.js goOn), so a press that left would show here
-  const cont=d.getElementById('continue'), cover=w.Transition&&w.Transition.cover; let covers=0;
-  if(cover) w.Transition.cover=function(){ covers++; return cover.apply(this,arguments); };
-  cont.click();   // a press while the finale is up goes nowhere
-  const leftEarly=covers>0;
-  d.getElementById('next').click();
+  // the finale goes on by itself, like every screen before it, and Part 2's button waits
+  // for the hand-over screen: shown with the finale, it was pressed before that screen was
+  // ever seen
+  // (the summary's own state, read as the finale began — before the hand-over screen is
+  // built over it)
+  const SM=atFinale&&atFinale.SM;
+  t('the finale shows no Next, and not Part 2 yet', !!atFinale && !atFinale.next && !atFinale.cont, JSON.stringify(atFinale&&{ next: atFinale.next, cont: atFinale.cont }));
+  t('no Next button anywhere in the lesson', !nextInLesson);
+  const leftEarly=!!(atFinale&&atFinale.leftEarly);
   await until(()=>d.getElementById('game').classList.contains('ready-scene') && d.querySelector('#continue.show') &&
     /help Momo/.test(d.getElementById('bubble').textContent), 30000);
-  t('Next opens the hand-over screen: his line, and the button on to Part 2',
+  t('the finale opens the hand-over screen by itself: his line, and the button on to Part 2',
     d.getElementById('game').classList.contains('ready-scene') && !!d.querySelector('#continue.show') && !d.querySelector('#next.show') &&
     /Play Part 2/.test(cont.textContent) && /help Momo/.test(d.getElementById('bubble').textContent),
     JSON.stringify({ ready: d.getElementById('game').classList.contains('ready-scene'), cont: cont.className, next: d.getElementById('next').className, line: d.getElementById('bubble').textContent }));
-  t('nothing left for Part 2 before the hand-over screen', !!cover && !leftEarly && covers===1, 'covers '+covers);
+  t('nothing left for Part 2 before the hand-over screen', !!cover && !!atFinale && !leftEarly && covers===1, 'covers '+covers);
+  t('Part 2\u2019s button never shows before the hand-over screen', !contBeforeReady);
+  watch.disconnect();
   t('no runtime errors across the whole game', errors.length===0, errors.slice(0,3).join(' | '));
   t('all '+N+' screens were visited', screensSeen.size===N, screensSeen.size+'/'+N);
   const types=new Set(asked.map(a=>a.type));

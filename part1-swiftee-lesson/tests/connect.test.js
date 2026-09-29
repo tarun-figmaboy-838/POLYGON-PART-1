@@ -139,7 +139,8 @@ async function play(k, { w, d, errors, voice }) {
   for (let guard = 0; guard < 20 && !picked; guard++) {
     const sp = await next();
     if (!sp) { t('k=' + k + ': reached the pick', false, stalled()); return; }
-    if (sp.type === 'tap-anywhere') { await keep(() => { const b = d.querySelector('#next.show'); if (b) b.click(); }); continue; }
+    // (the end of a screen: the lesson goes on by itself — game.js autoAdvance — so this waits)
+    if (sp.type === 'tap-anywhere') { await keep(() => {}); continue; }
     if (sp.type === 'multi-select') {
       await keep(() => { (w.Stage.state.cards || []).filter((c) => c._opt && c._opt.correct && !c._done).forEach(tapEl); });
       continue;
@@ -224,7 +225,7 @@ async function play(k, { w, d, errors, voice }) {
   t('k=' + k + ': no second line while the diagonal is cheered', (St().diagonals || []).length === 1);
 
   sp = await next();
-  t('k=' + k + ': then the screen waits for Next', sp && sp.type === 'tap-anywhere' && w.Game.screen === connectAt);
+  t('k=' + k + ': then the screen comes to its end, and goes on by itself', sp && sp.type === 'tap-anywhere' && w.Game.screen === connectAt);
   t('k=' + k + ': the diagonal stays', (St().diagonals || []).length === 1);
   t('k=' + k + ': the right-answer sound played for the diagonal', sfx.includes('correct'));
   t('k=' + k + ': a side was never a wrong answer', sfx.filter((s) => s === 'wrong').length === mistakesBefore && !faces.includes('oops'), { wrong: sfx.filter((s) => s === 'wrong').length, faces });

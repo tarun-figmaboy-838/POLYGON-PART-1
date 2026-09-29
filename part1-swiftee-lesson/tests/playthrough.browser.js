@@ -454,10 +454,16 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const free = () => page.waitForFunction(() => window.Input.mode() !== 'locked', null, { timeout: 15000 }).catch(() => {});
 
     switch (spec.type) {
-      case 'tap-anywhere':
-        await page.waitForSelector('#next.show', { timeout: 8000 });
-        await page.click('#next');
+      // the end of a screen: the lesson goes on by itself (game.js autoAdvance) — nothing is
+      // pressed, and a Next button showing in the lesson is a fault
+      case 'tap-anywhere': {
+        const scr = await page.evaluate(() => window.Game.screen);
+        // (on to the next screen — or, after the last one, the finale)
+        await page.waitForFunction(s => window.Game.screen !== s || window.Input.mode() !== 'dialogue' ||
+          !!document.querySelector('#hud .replay.show'), scr, { timeout: 30000 });
+        if (await page.evaluate(() => !!document.querySelector('#next.show'))) throw new Error('a Next button showed in the lesson on screen ' + scr);
         return;
+      }
 
       case 'vertex-pick':
         await page.waitForFunction(() => window.Stage.svg.querySelectorAll('.vertex').length > 0, null, { timeout: 8000 });
@@ -694,7 +700,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     // stop for this check, and a reading from after a screen change is a
     // reading of a different pose at a different size on a different mark —
     // which looks exactly like the shift this exists to catch.
-    const screenOf = () => (window.Game && window.Game.screen);
+    // (and with the mark he is on: the lesson goes on by itself now, so it can move him to his
+    // next mark in the middle of these readings — that is a walk, not a face shifting him)
+    const screenOf = () => (window.Game && window.Game.screen) + '|' + (window.Swiftee && (window.Swiftee.pos + ':' + window.Swiftee.size));
     // A MILESTONE MAY HOP; A FACE MAY NOT MOVE HIM. A celebration lifts him
     // off the ice for a moment (swiftee.js BODY.cheer) and lands him where he
     // stood; what this guards is his REGISTRATION — the pivot and baseline a

@@ -5637,22 +5637,16 @@
   var INTERACT = {
 
     /**
-     * Wait for the child to say they are ready.
+     * The end of a screen: the lesson goes on from here.
      *
-     * Named for the gesture it used to be; it is the Next button now, and
-     * screens.js did not have to change for that. Only Input.advance()
-     * resolves it, and only the Next button calls Input.advance().
+     * Named for the gesture it used to be. It was the Next button's gate; now
+     * game.js autoAdvance calls Input.advance() once everything on the screen
+     * has been said and seen, and only that resolves it.
      */
     'tap-anywhere': function (spec, ctx) {
-      // THE WHOLE STAGE IS THE BUTTON HERE, so the whole stage shows a hand.
-      // Every other interaction in this file marks its own targets and the
-      // cursor follows; this one has no target to mark, and was the only
-      // place in the lesson where something was pressable and looked inert.
-      var wide = [svg, svg.parentNode].filter(Boolean);
-      wide.forEach(function (n) { if (n.style) n.style.cursor = 'pointer'; });
-      cleanup.push(function () {
-        wide.forEach(function (n) { if (n.style) n.style.cursor = ''; });
-      });
+      // (Nothing on the stage is pressed here any more: the lesson goes on by itself —
+      // game.js autoAdvance — so the stage keeps its ordinary cursor. It was a hand over the
+      // whole stage while this was the Next button's gate.)
       return new Promise(function (resolve) {
         if (!global.Input) { on(svg, 'pointerdown', function () { resolve({ result: 'tap' }); }); return; }
         Input.mode('dialogue');
