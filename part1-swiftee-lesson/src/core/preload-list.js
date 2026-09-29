@@ -42,6 +42,8 @@ window.PreloadList = {
   "assets/bg/ledge-l.webp": 57702,
   "assets/bg/ledge-r.webp": 35716,
   "assets/bg/log-snowy.webp": 40500,
+  "assets/story/ChatGPT Image Sep 29, 2026 at 01_28_35 PM.png": 2096088,
+  "assets/story/ChatGPT Image Sep 29, 2026 at 12_02_53 PM.png": 1764039,
   "assets/story/scene-1-around.webp": 8758,
   "assets/story/scene-1.webp": 137110,
   "assets/story/scene-2-around.webp": 8970,
@@ -273,8 +275,8 @@ window.PreloadList = {
   "assets/vo/fb45.ogg": 29183,
   "assets/vo/fb46.mp3": 17324,
   "assets/vo/fb46.ogg": 7976,
-  "assets/vo/index.js": 7319,
-  "assets/vo/index.json": 13781,
+  "assets/vo/index.js": 7400,
+  "assets/vo/index.json": 13954,
   "assets/vo/p01.mp3": 20106,
   "assets/vo/p01.ogg": 10846,
   "assets/vo/p02.mp3": 24285,
@@ -359,6 +361,8 @@ window.PreloadList = {
   "assets/vo/p32bi.ogg": 15948,
   "assets/vo/p32c.mp3": 55423,
   "assets/vo/p32c.ogg": 32541,
+  "assets/vo/p32r.mp3": 38636,
+  "assets/vo/p32r.ogg": 21526,
   "assets/vo/p33.mp3": 19897,
   "assets/vo/p33.ogg": 11750,
   "assets/vo/p37a.mp3": 30137,
@@ -401,6 +405,6 @@ window.PreloadList = {
   "assets/vo/st4-momo.ogg": 18879,
   "assets/vo/st5-narrator.mp3": 66860,
   "assets/vo/st5-narrator.ogg": 32042,
-  "assets/vo/word-timings.json": 5446
+  "assets/vo/word-timings.json": 5537
  }
 };

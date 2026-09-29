@@ -3591,7 +3591,8 @@
         verdictAt = Date.now();
         if (director) director.emit(kind === 'correct' ? 'answer:correct' : 'answer:incorrect', { perTap: true });
         // (not the measuring taps: a measured side is not an answer)
-        if (!(inputSpec && inputSpec.type === 'tap-each')) verdictFx(kind);
+        // (nor a corner let go short of the answer: guidance, not a verdict — stage `soft`)
+        if (!(inputSpec && inputSpec.type === 'tap-each') && !(info && info.soft)) verdictFx(kind);
       }
       var list = s.perTap ? (s.perTap[kind] || s.perTap.any) : null;
       if (list) fire(list);

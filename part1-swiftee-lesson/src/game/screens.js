@@ -1087,6 +1087,7 @@
       swiftee: { pos: 'corner', size: 'tiny', purpose: 'ask' },
       instruction: 'Are the sides and angles still equal?',
       say: 'It’s still a pentagon. But are the sides and angles still equal?',
+      lines: ['The sides and angles changed, so they are not equal.'],
       stage: { choices: ['Still equal', 'Not equal'] },
       beats: [
         { instruction: null },
@@ -1097,10 +1098,27 @@
         // the script's last two bubbles are the instruction: it settles into
         // one question over the answers, and is not said a second time
         { instruction: 'Are the sides and angles still equal?', vo: 'p32bi' },
+        /* TWO TRIES (the user, screen 28): the first miss is the clue and a retry; the second is
+           explained — the readings light as he says why — the Not equal button shows green on
+           the word, a moment, and the lesson goes on. No third attempt. */
         { input: { type: 'choice', correct: 'Not equal', reason: 'compare' } },
-        { branch: true, until: 'correct',
+        { branch: true,
           on: { correct: correct() },
-          otherwise: WRONG.concat([{ input: { type: 'choice', correct: 'Not equal', retry: true, reason: 'compare' } }]) }
+          otherwise: WRONG.concat([
+            { input: { type: 'choice', correct: 'Not equal', retry: true, quietMiss: true } },
+            { branch: true,
+              on: { correct: correct() },
+              otherwise: [
+                { juice: 'refuse', target: 'answer' }, { sfx: 'wrong' },
+                { parallel: [
+                  { stage: { reveal: 'Not equal', cue: 'equal' } },
+                  { swiftee: 'explain', at: 'polygon' },
+                  { say: 'The sides and angles changed, so they are not equal.', vo: 'p32r' }
+                ] },
+                { sfx: 'correct' },
+                { wait: 1200 }
+              ] }
+          ]) }
       ]
     },
 

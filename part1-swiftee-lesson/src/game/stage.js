@@ -704,7 +704,9 @@
       '<linearGradient id="panelFace" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".93"/><stop offset=".55" stop-color="#f2fbff" stop-opacity=".88"/><stop offset="1" stop-color="#d9eefb" stop-opacity=".9"/></linearGradient>' +
       '<linearGradient id="panelSheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".85"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient>' +
       // the camera's softness on the log (Stage.blurLog): scenery on the intro's close shot
-      '<filter id="logSoft" x="-8%" y="-8%" width="116%" height="116%"><feGaussianBlur stdDeviation="0"/></filter>';
+      '<filter id="logSoft" x="-8%" y="-8%" width="116%" height="116%"><feGaussianBlur stdDeviation="0"/></filter>' +
+      // the soft halo behind the compare card in focus (focus())
+      '<filter id="cardGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"/></filter>';
 
     /* THE PAINTING IS ONE LAYER, AND IT IS NOT THIS ONE.
      *
@@ -2057,7 +2059,9 @@
     // side, round the arc, and back along the other — so the angle reads as
     // a piece of the shape rather than as a line drawn near it
     var wedge = 'M' + p.x + ' ' + p.y + ' L' + x1 + ' ' + y1 + ' ' + d.slice(d.indexOf('A')) + ' Z';
-    if (deg != null && Math.abs(deg - 90) < 1.5) {
+    // (a right angle within 2.5°, from the corner's own geometry — wide enough that a child
+    // need not place it to the pixel, narrow enough that 87° is not called square)
+    if (deg != null && Math.abs(deg - 90) < 2.5) {
       // the right-angle square: two short lines meeting inside the corner
       var rs = r * 0.7, ux = Math.cos(a1) * rs, uy = Math.sin(a1) * rs, wx = Math.cos(a2) * rs, wy = Math.sin(a2) * rs;
       d = 'M' + (p.x + ux) + ' ' + (p.y + uy) + ' L' + (p.x + ux + wx) + ' ' + (p.y + uy + wy) + ' L' + (p.x + wx) + ' ' + (p.y + wy);
@@ -2481,13 +2485,15 @@
         /* WHICH ONE HE MEANS. "This one" and "this one" over two pentagons that look alike from a
            distance: each card wears its name on a tab hung on its top edge (cfg.name — "Pentagon
            A", "Pentagon B"), clear of the marks and badges that arrive under it, and the card he
-           is talking about wears a gold ring just outside its rim (focus()). The ring is its own
-           stroke rather than a glow on the card: the card's face is glass, and a shadow on it
-           showed through as a pale line inside the rim. */
+           is talking about has a soft warm glow BEHIND it (focus()) — not a thick yellow stroke
+           (the user, screen 17): a blurred pale-gold plate under the card, so it shows round the
+           rim and never over the glass or the lines drawn on it. */
         var tab = cfg.name ? nameTag(layers.ui, pnl.x + pnl.w / 2, pnl.y + 1, cfg.name, null, { h: 32, size: 17, pad: 30, rim: 2.5 }) : null;
         if (tab) tab.setAttribute('class', 'badge name-tab');
-        var ring = mk('rect', { x: pnl.x - 7, y: pnl.y - 7, width: pnl.w + 14, height: pnl.h + 14, rx: 38, fill: 'none',
-                                stroke: '#ffc23c', 'stroke-width': 5, 'class': 'focus-ring', opacity: 0, 'pointer-events': 'none' }, layers.ui);
+        var ring = mk('rect', { x: pnl.x - 12, y: pnl.y - 12, width: pnl.w + 24, height: pnl.h + 24, rx: 44, fill: '#ffe08a',
+                                'class': 'focus-ring', opacity: 0, 'pointer-events': 'none' }, layers.panel);
+        ring.style.filter = 'url(#cardGlow)';                      // (inline: the stylesheet's drop-shadow would win over the attribute)
+        layers.panel.insertBefore(ring, layers.panel.firstChild);  // behind every card
         if (tab) layers.ui.appendChild(tab);                       // over the ring, where the two meet
         st.compare[s[0]] = { panel: pnl, g: g, pg: pg, dg: dg, diags: diags, verts: P.verts, tone: cfg.tone, tag: tagEl, nameTab: tab, ring: ring };
       });
@@ -5821,7 +5827,16 @@
   // card-sized polygon a notch of about twenty-five pixels, which nobody
   // can mistake for a straight edge. The answer and the live badge both
   // wait for it, so the word and the picture always agree.
-  var DENT_MIN = 0.15;
+  /* DEEPER, AND CLEARLY REFLEX (the user, screen 14: "the student can stop too early after
+     creating a quadrilateral-like shape"): at fifteen percent the corner had only just crossed
+     the line between its neighbours (the pentagon with a flat top), and the diagonal across the
+     dent barely left it. Eighteen percent of the mean radius, AND an inward corner of at least
+     198° (dentAngleOk) — on the pentagon that is the corner pulled some five sixths of the way
+     to the middle, a notch nobody can miss, and still well short of the middle itself (the
+     line between the neighbours is at seven tenths, and the middle gives only 0.28). */
+  var DENT_MIN = 0.18, DENT_REFLEX = 198, STRAIGHT_BAND = 12;
+  function dentAngleOk(v, i) { var A = Poly.interiorAngles(v); return A[i] >= DENT_REFLEX; }
+  function isDented(v, i) { return Poly.classify(v).concave && dentDepth(v, i) >= DENT_MIN && dentAngleOk(v, i); }
 
   var INTERACT = {
 
@@ -5927,7 +5942,7 @@
         // WHAT THE DRAG IS ASKED TO MAKE, judged from the shape as it stands
         var judge = function (i) {
           var np = st.verts[i];
-          return spec.until === 'concave' ? (Poly.classify(st.verts).concave && dentDepth(st.verts, i) >= DENT_MIN)
+          return spec.until === 'concave' ? isDented(st.verts, i)
                : spec.until === 'irregular' ? (!Poly.isRegular(st.verts) && !!start && Math.hypot(np.x - start.x, np.y - start.y) >= (spec.minMove || 0))
                : false;
         };
@@ -5967,13 +5982,24 @@
              * taught about was half off the thing it was drawn on. The glass
              * is the boundary, with room left for the knob and its ring. */
             var np = Poly.clampSimple(st.verts, i, clampToCard(p));
+            /* NEVER A STRAIGHT CORNER (the user, screen 27: "the student should not be able to
+               create a 180° angle"): stretching a corner, a step that would flatten it — or a
+               neighbour — to within STRAIGHT_BAND of 180° is not taken; the corner stays where
+               it was. (The dent drags must pass through 180° to go inward, so not there.) */
+            if (spec.until === 'irregular') {
+              var was = st.verts[i]; st.verts[i] = np;
+              var An = Poly.interiorAngles(st.verts), nn = st.verts.length;
+              var flat = [i, (i + nn - 1) % nn, (i + 1) % nn].some(function (q) { return Math.abs(An[q] - 180) < STRAIGHT_BAND; });
+              st.verts[i] = was;
+              if (flat) np = was;
+            }
             st.verts[i] = np;
             updatePoly();
             if (spec.live === 'badge' && st.liveBadge) {
               // the readout flips when the dent is one a child can SEE — the
               // same depth the answer is judged by. A shape concave by a hair
               // that still reads convex must not be called concave.
-              var cc = Poly.classify(st.verts).concave && dentDepth(st.verts, i) >= DENT_MIN;
+              var cc = isDented(st.verts, i);
               st.liveBadge._text.textContent = cc ? 'Concave' : 'Convex';
               if (st.liveBadge._retint) st.liveBadge._retint(cc ? 'concave' : 'convex');
             }
@@ -6003,12 +6029,13 @@
             var moved = Math.hypot(st.verts[i].x - from.x, st.verts[i].y - from.y);
             if (moved < 6) return;
             st.lastEl = knobOf(i) || st.polyG;
-            juice('refuse', knobOf(i) || st.polyG);
-            // HEARD, as every other wrong answer is (the dent drags had no sound)
-            sfx('wrong');
-            // a dent too shallow to see gets the reason, not a bare "no"
+            /* NOT FAR ENOUGH: guidance, not a verdict (the user, screen 14: "do not mark success,
+               keep the interaction active, provide subtle guidance"). The corner wobbles once
+               and keeps breathing, and he says how much further — no miss sound, no red. */
+            juice('wobble', knobOf(i) || st.polyG);
             onTap('wrong', spec.until === 'concave' ? { t: 'Pull it in more!', vo: 'fb11' }
-                         : spec.until === 'irregular' ? { t: 'Try again! Stretch the corner a little further.', vo: 'fb40' } : null);
+                         : spec.until === 'irregular' ? { t: 'Try again! Stretch the corner a little further.', vo: 'fb40' } : null,
+                  { soft: true });
           }, ctx);
       });
     },

@@ -80,7 +80,7 @@ async function act(spec){
     }
     case 'drag-vertex': {
       const V=v(); const i=spec.vertex==='any'?0:spec.vertex; const c=P.centroid(V);
-      const target=spec.until==='concave'?{x:V[i].x+(c.x-V[i].x)*0.85,y:V[i].y+(c.y-V[i].y)*0.85}:{x:V[i].x,y:V[i].y-70};
+      const target=spec.until==='concave'?{x:V[i].x+(c.x-V[i].x)*0.92,y:V[i].y+(c.y-V[i].y)*0.92}:{x:V[i].x,y:V[i].y-70};
       // first: grab, move a little, RELEASE early (the bug we fixed), then grab again and finish
       await drag(svg().querySelectorAll('.vertex')[i], lerp(V[i],target,10).slice(0,2)); await sleep(40); await free();
       const V2=v(); await drag(svg().querySelectorAll('.vertex')[i], lerp(V2[i],target,14)); return;
