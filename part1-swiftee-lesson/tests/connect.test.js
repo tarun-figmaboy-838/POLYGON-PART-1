@@ -205,13 +205,16 @@ async function play(k, { w, d, errors, voice }) {
   t('k=' + k + ': asked again with the same corner', sp && sp.retry && St().picked === k, { retry: sp && sp.retry, picked: St().picked });
   t('k=' + k + ': the side and its tag are gone before the next try', !St().segment && !St().labelEl);
   t('k=' + k + ': the retry waits for "Let’s connect it to a different vertex." to be heard', !voice.current && lines[lines.length - 1] === 'Let’s connect it to a different vertex.', { last: lines.slice(-3) });
+  // ONE SIDE IS THE LESSON (the user: "the child made a side, so why can the card draw the other
+  // side?"): the other neighbour is no longer a place the line may go — the frozen side flashes,
+  // the line goes home, and the same try stands
   await drag(from(), lerp(V()[k], V()[left], 6));
-  await sleep(30);
-  t('k=' + k + ': neighbour ' + left + ' is a SIDE too' + (k === 0 || k === 4 ? ' (the wrap-around)' : ''), w.Stage.connectState() === 'SIDE_FEEDBACK' && St().segment && St().segment[1] === left, St().segment);
+  await sleep(300);
+  t('k=' + k + ': neighbour ' + left + ' is NOT a second side' + (k === 0 || k === 4 ? ' (the wrap-around)' : ''),
+    w.Stage.connectState() === 'READY_TO_CONNECT' && !St().segment && (St().sidesDone || []).length === 1 && pending === null,
+    { st: w.Stage.connectState(), seg: St().segment, sides: St().sidesDone });
 
-  // 3 — a corner that is not a neighbour
-  sp = await next();
-  t('k=' + k + ': asked a third time, same corner', sp && sp.retry && St().picked === k);
+  // 3 — a corner that is not a neighbour, on the same try
   const nonAdj = w.Poly.diagonalsFrom(k, n);
   t('k=' + k + ': the far corners are ' + nonAdj.join(','), nonAdj.length === 2 && nonAdj.indexOf(left) < 0 && nonAdj.indexOf(right) < 0);
   const target = nonAdj[k % 2];
@@ -233,12 +236,11 @@ async function play(k, { w, d, errors, voice }) {
   // the words, in the spec's order
   const want = ['Select any vertex.', 'Let’s connect it to another vertex.',
                 'This is a side of the polygon.', 'Let’s connect it to a different vertex.',
-                'This is a side of the polygon.', 'Let’s connect it to a different vertex.',
                 'Yay! You made a diagonal!'];
   const got = lines.slice(lines.indexOf('Select any vertex.'));
   t('k=' + k + ': the lines come in the order the spec gives', JSON.stringify(got) === JSON.stringify(want), got);
   const clips = voice.played.slice(voice.played.indexOf('p06'));
-  t('k=' + k + ': and so do the voices — one per line, no stock praise between', JSON.stringify(clips) === JSON.stringify(['p06', 'p07i', 'p09', 'p10i', 'p09', 'p10i', 'p12']), clips);
+  t('k=' + k + ': and so do the voices — one per line, no stock praise between', JSON.stringify(clips) === JSON.stringify(['p06', 'p07i', 'p09', 'p10i', 'p12']), clips);
   t('k=' + k + ': no voice was ever cut off', voice.cut.length === 0, voice.cut);
   t('k=' + k + ': no runtime errors', errors.length === 0, errors.slice(0, 3));
 }

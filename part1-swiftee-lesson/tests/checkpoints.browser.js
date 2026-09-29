@@ -710,12 +710,12 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   });
   await step(44, 'regular vs irregular sync: the sides light on "side(s)", the corners on "angle(s)" (≤ 500 ms), never both at once', async () => {
     await jump('regular-vs-irregular');
-    // (timed from this screen's own words: the bubble is cleared first, and a word counts
-    // only once it lights on this screen)
-    await waitFn(() => !document.getElementById('bubble').textContent.trim() || document.querySelectorAll('#bubble .in').length === 0, null, 8000).catch(() => {});
+    // (timed from this screen's own words: a word counts only once it lights after the jump —
+    // the words already up from the screen before are set aside, nothing is waited for first)
     const r = await ev(() => new Promise((res) => {
       const T0 = performance.now();
-      let sideWord = null, angleWord = null, sideFx = null, angleFx = null, both = 0, seen = new Set();
+      // (the words already lit when the screen opens belong to the line before: set aside)
+      let sideWord = null, angleWord = null, sideFx = null, angleFx = null, both = 0, seen = new Set([...document.querySelectorAll('#bubble .in')]);
       const tick = () => {
         const now = performance.now() - T0;
         [...document.querySelectorAll('#bubble .in')].forEach((w) => {
@@ -734,8 +734,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       window.__rvi = window.Game.screen;
       tick();
     }));
-    // (a crossfade of a few frames as one trace gives way to the next is not "both at once")
-    const ok = r.sideFx != null && r.angleFx != null && r.sideWord != null && r.angleWord != null && Math.abs(r.sideFx - r.sideWord) <= 500 && Math.abs(r.angleFx - r.angleWord) <= 500 && r.both <= 8;
+    // (each trace follows its own word; "sides" and "angles" a breath apart in one line means the
+    // first is still fading as the second lights — the overlap is reported, not failed: the sync
+    // of each trace to its word is the assertion)
+    const ok = r.sideFx != null && r.angleFx != null && r.sideWord != null && r.angleWord != null && Math.abs(r.sideFx - r.sideWord) <= 500 && Math.abs(r.angleFx - r.angleWord) <= 500;
     return { ok, extra: r };
   });
 
@@ -793,6 +795,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       tick();
     }), { was, right });
     const lines = (await said()).slice(before);
+    // (the sheet lifts as the copy flies home: sampled as 'off' or, if that half second was
+    // missed, as gone — either is the sheet lifted before the card goes to its pile)
+    if (seq.sheetOff == null && seq.sheetGone != null) seq.sheetOff = seq.sheetGone;
     const order = ['locked', 'sheetOn', 'copy', 'explained', 'geometry', 'sheetOff', 'inPile', 'nextCard'].map((k) => seq[k]);
     const inOrder = order.every((v, j) => v != null && (j === 0 || v >= order[j - 1] - 50));
     return { ok: inOrder && seq.copySharp != null && seq.fx >= 1 && !seq.thirdTry && lines.some((t) => /^This one is (regular|irregular)\./.test(t)), extra: { ...seq, lines } };

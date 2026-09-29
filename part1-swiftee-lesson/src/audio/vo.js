@@ -277,6 +277,25 @@
     current = a;
     liveId = id;
     voiceBus(true);
+    /* A CLOCK THAT DOES NOT MOVE IS NOT A VOICE. A browser with no working audio sink (a
+       headless run, a tablet with sound blocked, a device that lost its output) can report an
+       element as playing while its currentTime never advances: it never ends, so `at()` kept
+       answering, and everything stepped against the voice's clock — the words, the cues, the
+       hint gate — waited on it for the rest of the screen. Two seconds without a tick while
+       "playing" and the clip is taken off air; the lesson goes on by its text clock, as it
+       does for a clip that failed to load. */
+    var lastT = -1, lastTick = Date.now();
+    var watch = setInterval(function () {
+      if (current !== a) { clearInterval(watch); return; }
+      var t = a.currentTime;
+      if (t !== lastT) { lastT = t; lastTick = Date.now(); return; }
+      if (!a.paused && !a.ended && Date.now() - lastTick > 2000) {
+        clearInterval(watch);
+        if (global.console) console.warn('[VO] playback stalled, going on without it: ' + id);
+        try { a.pause(); } catch (e) {}
+        current = null; liveId = null; voiceBus(false); done();
+      }
+    }, 250);
     var p = a.play();
     if (p && p.catch) p.catch(function () {
       // refused (autoplay policy) or failed: release anything waiting on it
