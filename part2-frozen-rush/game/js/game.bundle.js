@@ -14960,15 +14960,11 @@ class Hud {
      * stuck: if there is a message and the element is not showing it, it shows it.
      * The entrance animation is still only restarted for a genuinely NEW line, so a
      * re-assert does not make the pill flash. */
-    /* THE TRAIL, from the two numbers the engine publishes. Shown for the whole of the
-       journey and hidden on the cover, the tutorial and the ending — the ending has a
-       celebration of its own and does not need a scoreboard over it. */
-    /* The card is on screen for the whole journey, and slides out of the left band
-       whenever the question board is in it — `message` is the same value that decides
-       whether the board shows at all, a few lines below, so the two can never disagree
-       about which of them owns the band. */
-    this.setTrail(h.step || 0, h.steps || 0,
-                  !!h.steps && !h.complete && !!h.playing, !!message);
+    /* NO PROGRESS TRAIL (the user: "remove the left side progress bar"). The journey card
+       that sat in the sky at the top left — Momo, the stones and the cave — is never shown:
+       it stays `hidden`, as the markup leaves it, and nothing is built into it, so none of
+       its art is fetched either. (setTrail is left in place, unused; the question board
+       that shared the left band with it now has the band to itself.) */
 
     const el = this.el.instruction;
     this._voDur = h.voDur || 0;          // paces the fallback reveal
