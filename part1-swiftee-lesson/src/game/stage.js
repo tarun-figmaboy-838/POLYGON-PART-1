@@ -2082,9 +2082,9 @@
     // side, round the arc, and back along the other — so the angle reads as
     // a piece of the shape rather than as a line drawn near it
     var wedge = 'M' + p.x + ' ' + p.y + ' L' + x1 + ' ' + y1 + ' ' + d.slice(d.indexOf('A')) + ' Z';
-    // (a right angle within 2.5°, from the corner's own geometry — wide enough that a child
-    // need not place it to the pixel, narrow enough that 87° is not called square)
-    if (deg != null && Math.abs(deg - 90) < 2.5) {
+    // (the square only when the label beside it reads 90° — at 88° or 89° a square is a lie:
+    // the user, screen 27)
+    if (deg != null && Math.abs(deg - 90) < 0.5) {
       // the right-angle square: two short lines meeting inside the corner
       var rs = r * 0.7, ux = Math.cos(a1) * rs, uy = Math.sin(a1) * rs, wx = Math.cos(a2) * rs, wy = Math.sin(a2) * rs;
       d = 'M' + (p.x + ux) + ' ' + (p.y + uy) + ' L' + (p.x + ux + wx) + ' ' + (p.y + uy + wy) + ' L' + (p.x + wx) + ' ' + (p.y + wy);
@@ -3307,15 +3307,16 @@
       bx /= bl; by /= bl;
       if (!Poly.contains(v, { x: p.x + bx * 4, y: p.y + by * 4 })) { bx = -bx; by = -by; }
       var deg = A[j], right = Math.abs(deg - 90) < 0.6, s = SWF.right, R = SWF.arc;
+      // THE MARK STANDS OFF THE SHAPE (the user: "the angle colour is the same, the arc or
+      // square can't be seen"): white, on a dark rim of the shape's ink, over a pale wash
+      var markOn = function (d, closed) {
+        mk('path', { d: d, fill: closed ? '#ffffff' : 'none', 'fill-opacity': 0.42, stroke: ink, 'stroke-opacity': 0.95, 'stroke-width': 5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, g);
+        mk('path', { d: d, fill: 'none', stroke: '#ffffff', 'stroke-width': 2.4, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, g);
+      };
       if (right) {
-        mk('path', { d: 'M' + p.x + ' ' + p.y + ' L' + (p.x + u0.x * s) + ' ' + (p.y + u0.y * s) +
-                        ' L' + (p.x + (u0.x + u1.x) * s) + ' ' + (p.y + (u0.y + u1.y) * s) +
-                        ' L' + (p.x + u1.x * s) + ' ' + (p.y + u1.y * s) + ' Z',
-                     fill: ink, 'fill-opacity': 0.16, stroke: 'none' }, g);
-        mk('path', { d: 'M' + (p.x + u0.x * s) + ' ' + (p.y + u0.y * s) +
-                        ' L' + (p.x + (u0.x + u1.x) * s) + ' ' + (p.y + (u0.y + u1.y) * s) +
-                        ' L' + (p.x + u1.x * s) + ' ' + (p.y + u1.y * s),
-                     fill: 'none', stroke: ink, 'stroke-opacity': 0.9, 'stroke-width': 2, 'stroke-linejoin': 'miter' }, g);
+        markOn('M' + (p.x + u0.x * s) + ' ' + (p.y + u0.y * s) +
+               ' L' + (p.x + (u0.x + u1.x) * s) + ' ' + (p.y + (u0.y + u1.y) * s) +
+               ' L' + (p.x + u1.x * s) + ' ' + (p.y + u1.y * s), false);
       } else {
         var a0 = Math.atan2(u0.y, u0.x), a1 = Math.atan2(u1.y, u1.x);
         var sweep = ((a1 - a0) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);   // a0 to a1, clockwise on screen
@@ -3325,8 +3326,7 @@
         var d = 'M' + p.x + ' ' + p.y + ' L' + (p.x + u0.x * R) + ' ' + (p.y + u0.y * R) +
                 ' A' + R + ' ' + R + ' 0 ' + (span > Math.PI ? 1 : 0) + ' ' + (cw ? 1 : 0) + ' ' +
                 (p.x + u1.x * R) + ' ' + (p.y + u1.y * R) + ' Z';
-        mk('path', { d: d, fill: ink, 'fill-opacity': 0.18, stroke: ink, 'stroke-opacity': 0.9,
-                     'stroke-width': 2, 'stroke-linejoin': 'round' }, g);
+        markOn(d, true);
       }
       var dt = Math.round(deg) + '°', dw = textW(dt, SWF.angle), dh = SWF.angle + 1;
       var base = (right ? s * 1.42 : R) + 4 + Math.max(dw, dh) / 2, dc = [];
@@ -5611,25 +5611,22 @@
   }
   function traceAngles(v) {
     if (!v || !v.length || reduced()) return 0;
-    var g = mk('g', { 'class': 'word-angles', 'pointer-events': 'none' }, layers.fx), n = v.length, R = 22;
+    var g = mk('g', { 'class': 'word-angles', 'pointer-events': 'none' }, layers.fx), n = v.length, R = 24, c = Poly.centroid(v);
     v.forEach(function (p, i) {
       var a = v[(i + n - 1) % n], b = v[(i + 1) % n];
       var a1 = Math.atan2(a.y - p.y, a.x - p.x), a2 = Math.atan2(b.y - p.y, b.x - p.x);
+      // THE ARC THROUGH THE INSIDE OF THE CORNER: from the side to the previous corner round
+      // to the side to the next, the way that passes the direction of the shape's middle
+      var bis = Math.atan2(c.y - p.y, c.x - p.x), TAU = 2 * Math.PI;
+      var d1 = ((a2 - a1) % TAU + TAU) % TAU, db = ((bis - a1) % TAU + TAU) % TAU;
+      var sweep = db < d1 ? 1 : 0, span = sweep ? d1 : TAU - d1, large = span > Math.PI ? 1 : 0;
       var x1 = p.x + Math.cos(a1) * R, y1 = p.y + Math.sin(a1) * R, x2 = p.x + Math.cos(a2) * R, y2 = p.y + Math.sin(a2) * R;
-      // the arc that runs through the INSIDE of the corner: of the two, the one whose middle is in the shape
-      var d = null;
-      [[0, 1], [0, 0], [1, 1], [1, 0]].some(function (f) {
-        var path = 'M' + x1 + ' ' + y1 + ' A' + R + ' ' + R + ' 0 ' + f[0] + ' ' + f[1] + ' ' + x2 + ' ' + y2;
-        var probe = mk('path', { d: path }, g), ok = false;
-        try { var L = probe.getTotalLength(), m = probe.getPointAtLength(L / 2); ok = Poly.contains(v, { x: m.x, y: m.y }); } catch (e) { ok = false; }
-        probe.remove();
-        if (ok) d = path;
-        return ok;
-      });
-      if (!d) return;
+      var d = 'M' + x1.toFixed(1) + ' ' + y1.toFixed(1) + ' A' + R + ' ' + R + ' 0 ' + large + ' ' + sweep + ' ' + x2.toFixed(1) + ' ' + y2.toFixed(1);
+      var wedge = mk('path', { d: 'M' + p.x + ' ' + p.y + ' L' + x1.toFixed(1) + ' ' + y1.toFixed(1) + d.slice(d.indexOf('A') - 1) + ' Z', fill: WARM, 'fill-opacity': 0.35, stroke: 'none', opacity: 0 }, g);
       var arc = mk('path', { d: d, fill: 'none', stroke: WARM, 'stroke-width': 4, 'stroke-linecap': 'round', opacity: 0 }, g);
-      try { arc.animate([{ opacity: 0, scale: '.6' }, { opacity: 1, scale: '1' }], { duration: 240, delay: i * 150, easing: 'ease-out', fill: 'forwards' }); } catch (e) {}
-      arc.style.transformBox = 'fill-box'; arc.style.transformOrigin = 'center';
+      [wedge, arc].forEach(function (el) {
+        try { el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240, delay: i * 150, easing: 'ease-out', fill: 'forwards' }); } catch (e) {}
+      });
     });
     later(n * 150 + 700, function () { fadeOut(g); });
     return n;
@@ -5931,6 +5928,21 @@
   var DENT_MIN = 0.18, DENT_REFLEX = 198, STRAIGHT_BAND = 12;
   function dentAngleOk(v, i) { var A = Poly.interiorAngles(v); return A[i] >= DENT_REFLEX; }
   function isDented(v, i) { return Poly.classify(v).concave && dentDepth(v, i) >= DENT_MIN && dentAngleOk(v, i); }
+  /* A corner sprung back to `to` over a third of a second, the shape following (screens 14/21). */
+  function springBack(i, to) {
+    if (!st.verts || !st.verts[i]) return;
+    var from = { x: st.verts[i].x, y: st.verts[i].y }, t0 = null;
+    if (reduced() || !global.requestAnimationFrame) { st.verts[i] = { x: to.x, y: to.y }; updatePoly(); return; }
+    var step = function (tn) {
+      if (t0 == null) t0 = tn;
+      var k = Math.min(1, (tn - t0) / 340), e = 1 + 2.7 * Math.pow(k - 1, 3) + 1.7 * Math.pow(k - 1, 2);   // a small overshoot
+      st.verts[i] = { x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e };
+      updatePoly();
+      if (k < 1) global.requestAnimationFrame(step);
+    };
+    global.requestAnimationFrame(step);
+  }
+
 
   var INTERACT = {
 
@@ -6130,10 +6142,12 @@
             var moved = Math.hypot(st.verts[i].x - from.x, st.verts[i].y - from.y);
             if (moved < 6) return;
             st.lastEl = knobOf(i) || st.polyG;
-            /* NOT FAR ENOUGH: guidance, not a verdict (the user, screen 14: "do not mark success,
-               keep the interaction active, provide subtle guidance"). The corner wobbles once
-               and keeps breathing, and he says how much further — no miss sound, no red. */
-            juice('wobble', knobOf(i) || st.polyG);
+            /* NOT FAR ENOUGH: THE CORNER GOES BACK (the user, screen 14: a corner left on the line
+               between its neighbours made the pentagon look like a quadrilateral — wrong for the
+               lesson). It springs back to where it started, so the shape is a pentagon again,
+               and he says how much further to pull — no miss sound, no red. */
+            if (spec.until === 'concave' && from) springBack(i, from);
+            else juice('wobble', knobOf(i) || st.polyG);
             /* A TRY THAT COUNTS (spec.attempts — screen 21's two-attempt teach): a release short of
                the answer ends this input as a miss, and the screen's beats answer it (the
                diagonals shown, the rule; then, the second time, the dent made for them). */
@@ -6263,10 +6277,9 @@
             Object.keys(sw.zones).forEach(function (k) { if (sw.zones[k].classList) sw.zones[k].classList.remove('hint'); });
             juice('pop', card);
             leanZone(null, false);
-            /* RIGHT, AND WHY — THEN AWAY. The card glows green where the child let go of it and
-               says what makes it what it is (swipeVerdict: equal sides, equal angles), and is
-               held there long enough to read that; only then does it fly, its words fading on
-               the way, and the zone lights up as it LANDS rather than before it has left. */
+            /* RIGHT — THEN AWAY. The card glows green where the child let go of it and, a beat
+               later, flies into its pile, its readings fading on the way; the zone lights up as
+               it LANDS rather than before it has left. */
             if (card._cardEl && card._cardEl._mark) card._cardEl._mark('correct');
             var landIn = function () {
               if (zone && zone.classList) {
@@ -6330,7 +6343,9 @@
                 later(420, function () { if (st.swipe && sw.card && !dragging) evt('swipe:home', { i: sw.i, dealt: true }); });
               });
             };
-            later(reduced() ? 0 : 1100, function () {
+            // (a short beat — the green seen — then away: the second-long hold that let the old
+            // verdict tag be read left the card looking stuck — the user)
+            later(reduced() ? 0 : 200, function () {
               fadeFace(card, 380);
               flyCard(card, { x: SWIPE_HOME.x + pulled, y: SWIPE_HOME.y, rot: tilt, s: 1 }, { x: tx, y: ty, rot: 0, s: k }, 560, 46, after);
             });
@@ -6553,8 +6568,8 @@
               var out = c._misses >= (spec.outAfter || 2);
               if (c._card) c._card._mark('wrong');
               if (out) { c._off = true; c.style.cursor = ''; c.style.pointerEvents = 'none'; }
-              // the red stays up long enough to be seen (it was half a second)
-              later(1100, function () {
+              // the red stays up long enough to be seen
+              later(1500, function () {
                 if (c._card) c._card._mark(null);
                 // (the entrance left an inline opacity on it; the class decides now)
                 if (out && c.classList) { c.style.opacity = ''; c.classList.add('card-off'); }

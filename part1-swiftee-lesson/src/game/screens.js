@@ -549,8 +549,9 @@
       // This is a look-only screen, so the card is cleared.
       instruction: null,
       originalInstruction: 'Draw another diagonal from the same vertex.',
-      say: 'Look at the diagonals of this pentagon.',
-      lines: ['Let\u2019s look.'],
+      // ONE LINE, NOT "Let's look." AND THEN "Look at…" (the user): the invitation and what to
+      // look at are one sentence, said first; a breath; then the diagonals draw
+      say: 'Let\u2019s look at the diagonals of this pentagon.',
       // The diagonals are NOT on the screen-level stage: they arrive by
       // their own beat, one after another, once the chapter's snow has
       // cleared — a shape that comes up already starred shows nothing.
@@ -558,9 +559,8 @@
       beats: [
         { instruction: null },
         { stage: { kind: 'polygon', sides: 5, enter: 'morph' } },
-        // "LET'S LOOK." FIRST (the user, screen 11): a short word into what comes next, and a
-        // breath, and only then do the diagonals start to draw
-        { say: 'Let\u2019s look.', vo: 'p16a' },
+        // the line first, a breath, and only then do the diagonals start to draw
+        { say: 'Let\u2019s look at the diagonals of this pentagon.', parts: ['Let\u2019s look at the diagonals', 'of this pentagon.'], vo: 'p16b' },
         { wait: 450 },
         // THE FIVE DRAW IN ONCE, one after another, after the chapter's snow
         // has melted — a shape that arrives already starred shows nothing.
@@ -572,7 +572,6 @@
         { stage: { diagonals: 'all', style: 'dashed', animate: 'sequential', each: 1150, afterReveal: true } },
         { sfx: 'sparkle' },
         { wait: 700 },
-        { say: 'Look at the diagonals of this pentagon.', parts: ['Look at the diagonals', 'of this pentagon.'], vo: 'p16' },
         { swiftee: 'observe', at: 'polygon' },
         { input: { type: 'tap-anywhere' } }
       ]
@@ -1164,6 +1163,7 @@
       // the band above them is the only place a sentence fits.
       swiftee: { pos: 'peek', size: 'small', purpose: 'concept'},
       say: 'All sides AND all angles same: regular. Otherwise, it\u2019s irregular.',
+      lines: ['This one is a regular pentagon, and this one is an irregular pentagon.'],
       stage: {
         kind: 'compare',
         // each name tag on its word; the irregular one is the pentagon the
@@ -1184,7 +1184,12 @@
         { focus: 'compare.left', style: 'lean' },
         { stage: { onWord: [{ word: 'otherwise', focus: 'right' }] } },
         { say: 'All sides AND all angles same: regular. Otherwise, it\u2019s irregular.', parts: ['All sides AND all angles same:', 'regular.', 'Otherwise, it\u2019s irregular.'], vo: 'p32c' },
+        // AND THE TWO NAMED (the user): the pair side by side, and each named as he turns to it
         { focus: 'compare', style: 'even' },
+        { wait: 300 },
+        { stage: { onWord: [{ word: 'regular', focus: 'left' }, { word: 'irregular', focus: 'right' }] } },
+        { say: 'This one is a regular pentagon, and this one is an irregular pentagon.', parts: ['This one is a regular pentagon,', 'and this one is an irregular pentagon.'], vo: 'p32d' },
+        { wait: 300 },
         { input: { type: 'tap-anywhere' } }
       ]
     },

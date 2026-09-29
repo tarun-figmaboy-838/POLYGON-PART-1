@@ -503,13 +503,14 @@
      of ten ("Nice!", "You got it!", "Perfect!", "Well done!"…) mixed its phrases at random from
      level to level, and is gone. */
   var PRAISE_FOR = {
-    keepGoing: { t: 'Keep going!', vo: 'fb46' },
-    levelDone: { t: 'Great job!', vo: 'fb03' }
+    keepGoing:  { t: 'Keep going!', vo: 'fb46' },   // right, and the same screen has more to do
+    screenDone: { t: 'Amazing!', vo: 'fb47' },      // right, and the screen is done (the user: not "Keep going!" there)
+    levelDone:  { t: 'Great job!', vo: 'fb03' }     // right, and the level is done
   };
   /* HIS FACE GOES WITH THE WORD — each cheer its own drawing from the rig:
      a hop with happy eyes, the wings up, a proud little nod, a point at the
      answer, relief after a miss. */
-  var EMOTE = { fb03: 'celebrate', fb46: 'nice' };
+  var EMOTE = { fb03: 'celebrate', fb46: 'nice', fb47: 'happy' };
   // A MISS IS MET GENTLY, and says to try again rather than only "no" — "Try again!" (asked
   // for, twice): not "Almost!", "Hmm, look again.", "Try once more." or "Take another look.".
   // Where the miss has a reason, the reason follows it in the same breath (CLUES, the stage's
@@ -787,7 +788,8 @@
   var lastPraise = null, levelCheered = -1;
   function levelEnd() { return ((global.Quest && Quest.chapters) || []).some(function (c) { return c.end === current; }); }
   function praiseFor(o) {
-    var pick = (levelEnd() && (o.final || o.last)) ? PRAISE_FOR.levelDone : PRAISE_FOR.keepGoing;
+    var done = !!(o.final || o.last);
+    var pick = (levelEnd() && done) ? PRAISE_FOR.levelDone : done ? PRAISE_FOR.screenDone : PRAISE_FOR.keepGoing;
     lastPraise = pick.vo;
     return pick;
   }
@@ -4031,8 +4033,8 @@
   function finish() {
     say(null); setCard(null); showNext(false);
     if (global.Music) Music.mood('win');   // the tune lifts for the last screen
-    var won = quest.snapshot();
-    var score = won.xp + ' XP and ' + won.badges.length + (won.badges.length === 1 ? ' badge' : ' badges') + '.';
+    // (no score sentence between his two lines any more: "180 XP and 5 badges." had no voice and
+    // read as noise in his mouth — the user)
     // spoken and word by word, one voice at a time, his last words kept up —
     // and a breath after they are said, the hand-over screen comes in by itself
     // (readyScene), as every screen of the lesson has gone on (autoAdvance). A
@@ -4041,7 +4043,6 @@
     var gen = playGen;
     finaleOn = true;
     pop([{ t: FINALE[0].t, vo: FINALE[0].vo, mood: 'win' },
-         { t: score, mood: 'win' },
          { t: FINALE[1].t, vo: FINALE[1].vo, mood: 'win' }], { keep: true }).then(function () {
       if (gen !== playGen) return;
       if (!finaleOn || readyOn) return;

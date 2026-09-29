@@ -273,8 +273,10 @@ window.PreloadList = {
   "assets/vo/fb45.ogg": 29183,
   "assets/vo/fb46.mp3": 17324,
   "assets/vo/fb46.ogg": 7976,
-  "assets/vo/index.js": 7552,
-  "assets/vo/index.json": 14272,
+  "assets/vo/fb47.mp3": 17324,
+  "assets/vo/fb47.ogg": 8932,
+  "assets/vo/index.js": 7699,
+  "assets/vo/index.json": 14556,
   "assets/vo/p01.mp3": 20106,
   "assets/vo/p01.ogg": 10846,
   "assets/vo/p02.mp3": 24285,
@@ -307,10 +309,8 @@ window.PreloadList = {
   "assets/vo/p15.ogg": 25642,
   "assets/vo/p15i.mp3": 31599,
   "assets/vo/p15i.ogg": 19090,
-  "assets/vo/p16.mp3": 25748,
-  "assets/vo/p16.ogg": 15710,
-  "assets/vo/p16a.mp3": 17324,
-  "assets/vo/p16a.ogg": 8036,
+  "assets/vo/p16b.mp3": 31532,
+  "assets/vo/p16b.ogg": 17529,
   "assets/vo/p17i.mp3": 27838,
   "assets/vo/p17i.ogg": 18800,
   "assets/vo/p17r.mp3": 47468,
@@ -363,6 +363,8 @@ window.PreloadList = {
   "assets/vo/p32bi.ogg": 15948,
   "assets/vo/p32c.mp3": 55423,
   "assets/vo/p32c.ogg": 32541,
+  "assets/vo/p32d.mp3": 48812,
+  "assets/vo/p32d.ogg": 28110,
   "assets/vo/p32r.mp3": 38636,
   "assets/vo/p32r.ogg": 21526,
   "assets/vo/p33.mp3": 19897,
@@ -405,6 +407,6 @@ window.PreloadList = {
   "assets/vo/st4-momo.ogg": 18879,
   "assets/vo/st5-narrator.mp3": 66860,
   "assets/vo/st5-narrator.ogg": 32042,
-  "assets/vo/word-timings.json": 5691
+  "assets/vo/word-timings.json": 5806
  }
 };
