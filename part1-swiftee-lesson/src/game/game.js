@@ -827,10 +827,12 @@
       }
       // the stage's own reason first; then, on a card's second miss, "Try again!" and the
       // screen's reminder; then the clue the card or the question names (CLUES); else the nudge
+      // (a card with a clue of its own says it on every miss — the explanation is the useful
+      // part, and a second miss on the same card gets it again as the card goes out)
       var clue = o.reason && CLUES[o.reason];
       if (said && said.t) pick = said;
-      else if (o.tries >= 2) pick = NUDGE_STRONG;
       else if (clue) pick = clue;
+      else if (o.tries >= 2) pick = NUDGE_STRONG;
       else pick = NUDGE[nudgeN++ % NUDGE.length];
       wrongSinceRight = true; wrongRepliedSeq = inputSeq;
       lines.push({ t: pick.t, vo: pick.vo, mood: 'hint', miss: true });

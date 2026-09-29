@@ -666,15 +666,8 @@
 
   var HORIZON = 405;          // where the painted snowfield begins, in viewBox units
 
-  /* THE LOG ARC HIS PERCH IS (Stage.perch): Part 2's own log — part2-frozen-rush's
-   * assets/env/obs-log-arch.webp, copied as it is to assets/bg/log-arch.webp, because the
-   * lesson also runs on its own, off the disk and on its own test servers, where Part 2 is not
-   * beside it. It stands on the snow at the left of the ground; he flies onto it at the end of
-   * the intro and sits there through the first question.
-   *
-   * Placed by what touches: the picture's lowest opaque row (409 of 411) on the snow line, and
-   * his feet on the log's crest — 45% across, where the snow is highest between the two branch
-   * stubs (row 83).
+  /* THE LOG HIS PERCH IS (Stage.perch): it stands on the snow at the left of the ground; he
+   * flies onto it at the end of the intro and sits there through the lesson.
    *
    * ON TOP OF THE SNOW, NOT IN IT (the user: "Swiftee looks behind the log"). He was sunk
    * 22 units into the cap with a copy of the log laid over his feet, and that read as a bird
@@ -682,11 +675,16 @@
    * cap's top surface — in front of its back edge, well above its front — so the whole of him
    * shows, sitting on the log, and his shadow lands on the snow under him.
  */
-  var LOG = { src: 'assets/bg/log-arch.webp?v=55947ce2', x: 38, w: 236, iw: 684, ih: 411, foot: 409, ground: 520 };
+  /* THE LOG IS THE USER'S OWN (assets/source/log-snowy.png → assets/bg/log-snowy.webp, trimmed
+     to its opaque box and brought to 720 wide): a fallen log under a cap of snow, the cut end
+     with its rings at the left, snow drifts at both feet. Placed by what touches: its lowest
+     opaque row (`foot`, the drifts) on the snow line; he sits in the middle of the cap
+     (`at`), whose top is `crest` rows down the picture. */
+  var LOG = { src: 'assets/bg/log-snowy.webp?v=d6396655', x: 38, w: 320, iw: 720, ih: 249, foot: 248, crest: 8, at: 0.5, ground: 520 };
   LOG.h = LOG.w * LOG.ih / LOG.iw;
   LOG.y = LOG.ground - LOG.h * (LOG.foot / LOG.ih);
   var LOG_SINK = 9;
-  function perchPoint() { return { x: LOG.x + LOG.w * 0.45, y: LOG.y + LOG.h * (83 / LOG.ih) + LOG_SINK }; }
+  function perchPoint() { return { x: LOG.x + LOG.w * LOG.at, y: LOG.y + LOG.h * (LOG.crest / LOG.ih) + LOG_SINK }; }
   var perchLog = null;
   var SNOW = 26, GUST = 16, GLINTS = 10;  // ambient element counts — see ambientLife()
   var ambient = [];           // running WAAPI animations, so they can be stopped

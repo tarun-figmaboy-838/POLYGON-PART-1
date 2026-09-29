@@ -236,8 +236,10 @@
       // A MISS IS ANSWERED WITH THE LESSON, THE FIRST TIME (the user's bug list: "do not make
       // the student fail twice before receiving the useful explanation"). The card glows red
       // and buzzes, and he says "Not quite." and what is true of THAT shape — the circle is
-      // curved, the path is open (game.js CLUES, by the card's `reason`) — and the card is
-      // put out, dimmed and still readable, for the rest of the question (outAfter: 1).
+      // curved, the path is open (game.js CLUES, by the card's `reason`). The card stays in
+      // play; a SECOND miss on the same card says it again and puts the card out, dimmed and
+      // still readable, for the rest of the question (the user: "disable after the 2nd wrong
+      // attempt" — outAfter: 2).
       stage: {
         kind: 'choice-grid',
         options: [
@@ -259,7 +261,7 @@
         // shape, and the screen completes when both polygons are selected.
         // "Keep going!" for the first polygon found, "Great job!" for the one that completes
         // the level (game.js PRAISE_FOR) — not a "Great job!" for every card
-        { input: { type: 'multi-select', until: 'all-correct-selected', outAfter: 1, cheer: { more: 'keepGoing', last: 'levelDone' } } },
+        { input: { type: 'multi-select', until: 'all-correct-selected', outAfter: 2, cheer: { more: 'keepGoing', last: 'levelDone' } } },
         // no second burst when the last polygon is found: its own press already threw one
         { feedback: correct([], null, { burst: false }) }
       ],

@@ -233,8 +233,8 @@ t('no wrong path ever contains words — the deck has no wrong-answer copy and t
     const wrongs = wp.stage.options.filter((o) => !o.correct);
     const gameSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'src', 'game', 'game.js'), 'utf8');
     const clueOf = (r) => (new RegExp(r + ":\\s*\\{ t: '([^']+)'")).exec(gameSrc);
-    t('Level 1 explains a miss at once: "Not quite." and why that shape is not a polygon, then the card is out',
-      !wp.remind && input.outAfter === 1 && wrongs.length > 0 &&
+    t('Level 1 explains a miss at once: "Not quite." and why that shape is not a polygon; the card is out after the second',
+      !wp.remind && input.outAfter === 2 && wrongs.length > 0 &&
       wrongs.every((o) => o.reason && clueOf(o.reason) && /^Not quite\. /.test(clueOf(o.reason)[1])),
       wrongs.map((o) => o.reason + ': ' + ((clueOf(o.reason) || [])[1])));
     t('Level 1 cheers "Keep going!" on the way and "Great job!" only when the level is complete',
