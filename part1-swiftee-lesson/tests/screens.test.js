@@ -189,18 +189,24 @@ t('there are judged screens to check', judged.length >= 8, judged.length);
 t('every interaction is either judging or open, with nothing unclassified',
   S.every((s) => inputsOf(s).every((ty) => JUDGING.indexOf(ty) >= 0 || OPEN.indexOf(ty) >= 0)),
   S.flatMap(inputsOf).filter((ty) => JUDGING.indexOf(ty) < 0 && OPEN.indexOf(ty) < 0));
+// (a drag whose tries are counted — `attempts`, the user's two-attempt teach on screen 21 — DOES
+// reach its wrong path: a corner let go short of the answer ends the try)
+const counted = (s) => allBeats(s).some((b) => b.input && b.input.attempts);
 t('no open interaction ships a wrong path it can never reach',
-  S.filter((s) => inputsOf(s).length && inputsOf(s).every((ty) => OPEN.indexOf(ty) >= 0))
+  S.filter((s) => inputsOf(s).length && inputsOf(s).every((ty) => OPEN.indexOf(ty) >= 0) && !counted(s))
    .every((s) => wrongBeats(s).length === 0),
-  S.filter((s) => inputsOf(s).length && inputsOf(s).every((ty) => OPEN.indexOf(ty) >= 0) && wrongBeats(s).length).map((s) => s.id));
+  S.filter((s) => inputsOf(s).length && inputsOf(s).every((ty) => OPEN.indexOf(ty) >= 0) && !counted(s) && wrongBeats(s).length).map((s) => s.id));
 
 t('every judged screen offers a wrong path',
   judged.every((s) => wrongBeats(s).length > 0 || (s.perTap && s.perTap.wrong)),
   judged.filter((s) => wrongBeats(s).length === 0 && !(s.perTap && s.perTap.wrong)).map((s) => s.id));
 
+// (except the explanations the user asked for on a two-attempt screen, each declared in the
+// screen's `lines`, and the task shown again after one)
 const verbalWrong = [];
 S.forEach((s) => {
-  wrongBeats(s).forEach((b) => { if (b.say != null || b.instruction != null) verbalWrong.push(s.id); });
+  const declared = (s.lines || []).concat(s.instruction ? [s.instruction] : []);
+  wrongBeats(s).forEach((b) => { if ((b.say != null && declared.indexOf(b.say) < 0) || (b.instruction != null && declared.indexOf(b.instruction) < 0)) verbalWrong.push(s.id); });
   if (s.perTap && s.perTap.wrong) {
     s.perTap.wrong.forEach((b) => { if (b.say != null || b.instruction != null) verbalWrong.push(s.id + ':perTap'); });
   }

@@ -867,19 +867,48 @@
       id: 'make-concave', page: 26,
       swiftee: { pos: 'off', size: 'medium' },
       instruction: 'Drag any vertex to make this polygon concave.',
-      // The deck shows the badge reading "Convex" during the task. It is a
-      // live readout: it flips to "Concave" the moment the shape does.
-      stage: { kind: 'polygon', sides: 6, panel: 'center', badge: { text: 'Convex', live: true } },
+      lines: ['The diagonals are still inside the shape, so it is still convex.', 'Now one diagonal goes outside, so the polygon is concave.', 'Great job!'],
+      // A QUADRILATERAL (the user, screen 21), and the badge reading "Convex" during the task — a
+      // live readout that flips to "Concave" the moment the shape does. TWO TRIES: a corner let
+      // go short of a dent is answered with the diagonals drawn on the shape as it stands, kept,
+      // and why it is still convex; a second short try, and the dent is made for them — the
+      // corner pulled in, the diagonal that goes outside lit — and explained. No third attempt.
+      stage: { kind: 'polygon', sides: 4, panel: 'center', badge: { text: 'Convex', live: true } },
       beats: [
         { swiftee: 'exit', to: 'left' },
-        { stage: { kind: 'polygon', sides: 6, panel: 'center', enter: 'pop', badge: { text: 'Convex', live: true } } },
+        { stage: { kind: 'polygon', sides: 4, panel: 'center', enter: 'pop', badge: { text: 'Convex', live: true } } },
         { sfx: 'pop' },
         { instruction: 'Drag any vertex to make this polygon concave.', vo: 'p26i' },
-        { focus: 'polygon.vertices', style: 'pulse' },
-        { input: { type: 'drag-vertex', vertex: 'any', until: 'concave', live: 'badge' } },
-        { feedback: [{ sfx: 'correct' }, { juice: 'celebrate', target: 'polygon' }] },
-        { swiftee: 'enter', from: 'left' },
-        { swiftee: 'celebrate' }
+        // (the suggested corner — the top one — is the one dot that breathes: stage.js drag-vertex)
+        { input: { type: 'drag-vertex', vertex: 'any', until: 'concave', live: 'badge', attempts: true } },
+        { branch: true,
+          on: { correct: [] },
+          otherwise: [
+            { stage: { diagonals: 'all', style: 'dashed', animate: 'sequential', each: 420 } },
+            { say: 'The diagonals are still inside the shape, so it is still convex.', vo: 'p26r1' },
+            // (the task, shown again — not said again)
+            { instruction: 'Drag any vertex to make this polygon concave.' },
+            // (the diagonals stay, and the one that leaves lights as the corner goes in: live 'both')
+            { input: { type: 'drag-vertex', vertex: 'any', until: 'concave', live: 'both', attempts: true, retry: true } },
+            { branch: true,
+              on: { correct: [] },
+              otherwise: [
+                { stage: { autoConcave: { vertex: 0 } } },
+                { say: 'Now one diagonal goes outside, so the polygon is concave.', vo: 'p26r2' },
+                { wait: 1200 },
+                { swiftee: 'enter', from: 'left' }
+              ] }
+          ] },
+        // the child's own dent, either time: the cheer, and he is back for it (a dent made for
+        // them is explained above, and not cheered)
+        { branch: true,
+          on: { correct: [
+            { feedback: [{ sfx: 'correct' }, { juice: 'celebrate', target: 'polygon' }] },
+            { say: 'Great job!', vo: 'fb03' },
+            { swiftee: 'enter', from: 'left' },
+            { swiftee: 'celebrate' }
+          ] },
+          otherwise: [] }
       ]
     },
 

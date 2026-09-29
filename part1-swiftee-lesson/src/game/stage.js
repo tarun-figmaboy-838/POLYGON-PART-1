@@ -5275,6 +5275,34 @@
     if (spec.measurements) op.measurements(spec.measurements);
     if (spec.observe) op.observe(spec.observe);
     if (spec.returnItem && st.sort && st.sort.dragging) returnItem(st.sort.dragging);
+    /* THE DENT MADE FOR THEM (`autoConcave: { vertex }` — screen 21's second miss): the corner
+       travels inward past the line between its neighbours over a second, the shape and its
+       diagonals moving with it, the readout flipping as it becomes concave, and the diagonal
+       that has gone outside lights and stays lit. The beat waits for it. */
+    if (spec.autoConcave && st.verts && st.polyG) {
+      var ai = spec.autoConcave.vertex || 0, av = st.verts[ai], ac = Poly.centroid(st.verts);
+      var at = st.verts.length === 4 ? 1.3 : 0.88;
+      var target = { x: av.x + (ac.x - av.x) * at, y: av.y + (ac.y - av.y) * at }, from = { x: av.x, y: av.y };
+      st.highlightOutside = true; st.showVerts = true; st.touchVerts = false; st.breatheAt = null;
+      st.vcolor = {}; st.vcolor[ai] = HI.picked; renderPoly();
+      return new Promise(function (res) {
+        var t0 = null, ms = reduced() ? 0 : 1000;
+        var step = function (tn) {
+          if (t0 == null) t0 = tn;
+          var k = ms ? Math.min(1, (tn - t0) / ms) : 1, e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+          st.verts[ai] = { x: from.x + (target.x - from.x) * e, y: from.y + (target.y - from.y) * e };
+          updatePoly();
+          if (st.liveBadge) {
+            var cc = isDented(st.verts, ai);
+            st.liveBadge._text.textContent = cc ? 'Concave' : 'Convex';
+            if (st.liveBadge._retint) st.liveBadge._retint(cc ? 'concave' : 'convex');
+          }
+          if (k < 1 && global.requestAnimationFrame) global.requestAnimationFrame(step);
+          else { rememberMade('concave', st.verts, ai); renderPoly(); if (st.diagG) juice('flash', st.diagG); sfx('zip', { gain: 0.5 }); later(200, res); }
+        };
+        if (global.requestAnimationFrame && ms) global.requestAnimationFrame(step); else step(0);
+      });
+    }
     /* THE RIGHT ANSWER SHOWN (`reveal`: a choice's label — the second miss of a two-try
        question): that button goes green and glints, the way it would have for the child. */
     if (spec.reveal && st.choiceEls) {
@@ -5958,11 +5986,15 @@
         if (global.Input) Input.mode('polygon');
         // Every vertex may be taken: dress them all as handles, now that
         // they are. A single named vertex keeps its own highlight instead.
-        if (spec.vertex === 'any') { st.showVerts = true; st.touchVerts = true; }
+        // (any corner may be taken, and ONE breathes as the suggestion — the top one — so there is
+        // one pulsing dot, never five: the user, screen 21)
+        var sug = spec.suggest == null ? 0 : spec.suggest;
+        if (spec.vertex === 'any') { st.showVerts = true; st.touchVerts = true; st.breatheAt = {}; st.breatheAt[sug] = true; cleanup.push(function () { st.breatheAt = null; }); }
         renderPoly();
         var idxs = spec.vertex === 'any' ? st.verts.map(function (_, i) { return i; }) : [spec.vertex];
         var start = null, done = false, held = -1, grabAt = null;
-        if (spec.live === 'diagonals') st.highlightOutside = true;
+        var liveDiags = spec.live === 'diagonals' || spec.live === 'both', liveBadge = spec.live === 'badge' || spec.live === 'both';
+        if (liveDiags) st.highlightOutside = true;
         // the gesture: from the vertex, inward toward the middle to make a
         // dent, or out along its own line to stretch the shape
         var ghostOf = function () {
@@ -5973,8 +6005,11 @@
           // the drag the screen accepts — it taught a gesture that fails —
           // so the dent ghost goes most of the way to the middle, which is
           // what making a notch actually takes.
+          // (on a four-sided shape the line between a corner's neighbours runs through the
+          // middle, so the dent is PAST the middle: the ghost goes there)
+          var gt = st.verts.length === 4 ? 1.3 : 0.9;
           var to = spec.until === 'concave'
-            ? { x: gv.x + (gc.x - gv.x) * 0.9, y: gv.y + (gc.y - gv.y) * 0.9 }
+            ? { x: gv.x + (gc.x - gv.x) * gt, y: gv.y + (gc.y - gv.y) * gt }
             : { x: gv.x - (gc.x - gv.x) / glen * 78 * 0.55, y: gv.y - (gc.y - gv.y) / glen * 78 * 0.55 };
           return gestureGhost(gv, to, { r: 11 });
         };
@@ -6001,7 +6036,7 @@
           renderPoly();
         }
         var breathe = function (i, on) {
-          if (spec.vertex === 'any') return;
+          if (spec.vertex === 'any' && i !== sug) return;
           st.breatheAt = on ? {} : null; if (on) st.breatheAt[i] = true;
           var k = knobOf(i); if (k && k.classList) k.classList.toggle('breathe', !!on);
         };
@@ -6038,7 +6073,7 @@
             }
             st.verts[i] = np;
             updatePoly();
-            if (spec.live === 'badge' && st.liveBadge) {
+            if (liveBadge && st.liveBadge) {
               // the readout flips when the dent is one a child can SEE — the
               // same depth the answer is judged by. A shape concave by a hair
               // that still reads convex must not be called concave.
@@ -6062,7 +6097,7 @@
               st.vcolor = {}; st.vcolor[i] = HI.picked;
               // the dent is made: the diagonals that stayed inside step back,
               // and the one that went outside is the whole picture
-              if (spec.live === 'diagonals') st.onlyOutside = true;
+              if (liveDiags) st.onlyOutside = true;
               // KEPT: the shape the child made, so a later card that shows
               // "a concave pentagon" or "an irregular pentagon" can show theirs
               if (spec.until) rememberMade(spec.until, st.verts, i);
@@ -6076,6 +6111,10 @@
                keep the interaction active, provide subtle guidance"). The corner wobbles once
                and keeps breathing, and he says how much further — no miss sound, no red. */
             juice('wobble', knobOf(i) || st.polyG);
+            /* A TRY THAT COUNTS (spec.attempts — screen 21's two-attempt teach): a release short of
+               the answer ends this input as a miss, and the screen's beats answer it (the
+               diagonals shown, the rule; then, the second time, the dent made for them). */
+            if (spec.attempts) { done = true; endInteraction(); resolve({ result: 'wrong', vertex: i }); return; }
             onTap('wrong', spec.until === 'concave' ? { t: 'Pull it in more!', vo: 'fb11' }
                          : spec.until === 'irregular' ? { t: 'Try again! Stretch the corner a little further.', vo: 'fb40' } : null,
                   { soft: true });

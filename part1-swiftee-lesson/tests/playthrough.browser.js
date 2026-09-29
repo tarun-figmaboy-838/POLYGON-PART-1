@@ -498,8 +498,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const s = await st();
         const i = spec.vertex === 'any' ? 0 : spec.vertex;
         const c = s.verts.reduce((a, p) => ({ x: a.x + p.x / s.verts.length, y: a.y + p.y / s.verts.length }), { x: 0, y: 0 });
+        const tt = s.verts.length === 4 ? 1.35 : 0.9;   // (a quadrilateral's dent is past its middle)
         const to = spec.until === 'concave'
-          ? { x: s.verts[i].x + (c.x - s.verts[i].x) * 0.9, y: s.verts[i].y + (c.y - s.verts[i].y) * 0.9 }
+          ? { x: s.verts[i].x + (c.x - s.verts[i].x) * tt, y: s.verts[i].y + (c.y - s.verts[i].y) * tt }
           : { x: s.verts[i].x + 30, y: s.verts[i].y - 80 };
         await dragPath(s.verts[i], to, 16);
         return;
