@@ -740,7 +740,7 @@
         var screenAt = current;
         return pause(Math.round(450 * paceScale())).then(function () {
           if (current !== screenAt) return null;
-          T = Stage.teach(t.el);
+          T = Stage.teach(t.el, t);
           return T ? lift() : null;
         });
       },
@@ -828,10 +828,12 @@
       // lines for a concave or a convex shape, each lighting its part on the
       // card as the word is said (teachHooks)
       var lesson = o.teach && (Screens.list[current] || {}).teach;
-      var set = lesson && (o.teach.concave ? lesson.concave : lesson.convex);
+      // (the sort's convex/concave pair, or the set the stage names — the swipe's regular /
+      // sides / angles / both)
+      var set = lesson && (o.teach.kind ? lesson[o.teach.kind] : (o.teach.concave ? lesson.concave : lesson.convex));
       if (set && set.length && global.Stage && Stage.teach) {
         wrongSinceRight = true; wrongRepliedSeq = inputSeq;
-        return { lines: set.map(function (b) { return { t: b.say, vo: b.vo, mood: 'hint', show: b.show, on: b.on || 0 }; }),
+        return { lines: set.map(function (b) { return { t: b.say, vo: b.vo, mood: 'hint', show: b.show, on: b.on || 0, shows: b.shows }; }),
                  teach: o.teach };
       }
       // the stage's own reason first; then, on a card's second miss, "Try again!" and the
@@ -3926,9 +3928,12 @@
     talkFor(vid, voiced || (lastWord + Math.round(300 * k)));
     // ON ITS WORD: what the line names lights up as it is said — on the
     // voice's own clock when there is a voice, else when the word appears
-    if (hooks && hooks.cue && ln.show) {
-      var g = popGen, cueMs = cues && cues[ln.on || 0] != null ? cues[ln.on || 0] : 0, t0 = Date.now(), fired = false;
-      var fire = function () { if (!fired && g === popGen) { fired = true; hooks.cue(ln.show); } };
+    // (one `show` on its `on` word, or several — `shows: [{ what, on }]` — for a line that
+    // names two things: the swipe's "every side is equal, and every angle is equal too")
+    var shows = ln.shows ? ln.shows.slice() : ln.show ? [{ what: ln.show, on: ln.on || 0 }] : [];
+    if (hooks && hooks.cue) shows.forEach(function (sh) {
+      var g = popGen, cueMs = cues && cues[sh.on || 0] != null ? cues[sh.on || 0] : 0, t0 = Date.now(), fired = false;
+      var fire = function () { if (!fired && g === popGen) { fired = true; hooks.cue(sh.what); } };
       if (vid) {
         (function wait() {
           if (fired || g !== popGen) return;
@@ -3937,7 +3942,7 @@
           setTimeout(wait, 25);
         })();
       } else setTimeout(fire, cueMs + Math.round((T.PANEL_LEAD || 120) * k));
-    }
+    });
     /* HELD FOR THE VOICE ITSELF. This was a timer from the moment the clip
        was asked for — so a clip that started late (fetched cold, a slow
        decode) lost its last word to it: "That's right!" cut at 0.81 s of
@@ -3990,7 +3995,14 @@
       }, Promise.resolve());
     }).then(function () {
       if (!alive()) return;
-      if (behind) { say(null); return leave(); }
+      if (behind) {
+        say(null);
+        // a teaching moment given from behind the swipe card ends the same way as any other:
+        // the card back in its place and the sheet lifted (hooks.close) — and only then does
+        // he go down behind the card again
+        var closed = hooks && hooks.close ? hooks.close() : null;
+        return Promise.resolve(closed).then(function () { if (alive()) return leave(); });
+      }
       if (hooks && hooks.keep) return;          // (the finale: his last words stay up)
       // THE INSTRUCTION COMES BACK: the child is still working, and the words
       // they are working to return in place — not a blank bubble, and not

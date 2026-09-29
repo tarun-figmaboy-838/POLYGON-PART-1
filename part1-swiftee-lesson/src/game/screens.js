@@ -1240,6 +1240,19 @@
         items: ['pentagon', 'rhombus', 'triangle', 'stretched-hexagon', 'square', 'rectangle', 'hexagon', 'l-shape']
       },
       originalMechanic: 'swipe',
+      /* THE CARD TAUGHT UP CLOSE — the same card wrong twice (the user's swipe briefs: no
+         third try; "a short teaching spotlight": the play blurs and dims under the sheet, the
+         card comes forward, and he names which pile it belongs in and WHY, with the reason
+         lit on the card as he says it — the sides on "side(s)", the corners on "angle(s)" —
+         then the card goes into its own pile). Keyed by what the card's measurements show
+         (stage.js whyShape): every side and angle equal; the sides unequal; the angles
+         unequal though the sides match; both unequal. */
+      teach: {
+        regular: [{ say: 'This one is regular. Every side is equal, and every angle is equal too.', vo: 'fb48', shows: [{ what: 'sides', on: 5 }, { what: 'angles', on: 10 }] }],
+        sides:   [{ say: 'This one is irregular. Its sides are not all the same length.', vo: 'fb49', shows: [{ what: 'sides', on: 5 }] }],
+        angles:  [{ say: 'This one is irregular. Its sides match, but its angles are not all equal.', vo: 'fb50', shows: [{ what: 'sides', on: 5 }, { what: 'angles', on: 9 }] }],
+        both:    [{ say: 'This one is irregular. Its sides are not equal, and its angles are not equal either.', vo: 'fb51', shows: [{ what: 'sides', on: 5 }, { what: 'angles', on: 11 }] }]
+      },
       beats: [
         // Clear the card first. Without this the instruction from the screen
         // before stays up — "Drag the highlighted vertex." over a screen that

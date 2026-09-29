@@ -1968,10 +1968,16 @@
       bird.setAttribute('data-frame', frame);
     }
     paint(0);
-    function tween(state, target, duration, done, progress) {
+    /* opts.lift: the flight rises this much at its middle and settles — a curve, not a slide
+       (the user's brief: "slight upward movement before moving, curved path, slow down when
+       approaching"); opts.carry: the tool rides his wing every frame of it (carried), with a
+       small sway (opts.sway, degrees) as it is carried — never tweened on its own, so it can
+       neither lag behind him nor arrive before him. */
+    function tween(state, target, duration, done, progress, opts) {
       if (stopped) return;
+      opts = opts || {};
       g.setAttribute('data-state', state);
-      var names = { MOVE_TO_VERTEX: 'carry', POSITION_PROTRACTOR: 'position', ALIGN: 'align', MEASURE: 'align', HOLD: 'hold', LIFT: 'lift', RETURN: 'carry', COMPLETE: 'carry' };
+      var names = { MOVE_TO_VERTEX: 'carry', SETTLE: 'position', POSITION_PROTRACTOR: 'position', ALIGN: 'align', ADJUST: 'align', MEASURE: 'align', HOLD: 'hold', NOD: 'hold', LIFT: 'lift', RETURN: 'carry', COMPLETE: 'carry' };
       var incoming = frames.phases[names[state]];
       // Start from the previous drawing, so phase changes also interpolate.
       var prior = phaseFrames[Math.min(phaseFrames.length - 1, Math.round(framePosition))];
@@ -1983,6 +1989,12 @@
         if (start === null) start = time;
         var t = Math.min(1, (time - start) / duration), eased = t * t * (3 - 2 * t);
         Object.keys(target).forEach(function (key) { pose[key] = from[key] + (target[key] - from[key]) * eased; });
+        if (opts.lift) pose.y -= opts.lift * Math.sin(Math.PI * t);
+        if (opts.carry) {
+          var held = carried(pose.x, pose.y);
+          pose.px = held.px; pose.py = held.py;
+          pose.rotation = held.rotation + (opts.sway || 0) * Math.sin(2 * Math.PI * t);
+        }
         framePosition = t * (phaseFrames.length - 1);
         paint(time); if (progress) progress(eased);
         if (t < 1) raf = global.requestAnimationFrame(tick); else done();
@@ -2015,39 +2027,53 @@
       var firstApproach = approaching; approaching = false;
       // he flies the way he is going, tool in wing, and turns to the corner on landing
       if (Math.abs(stand.x - pose.x) > 4) facing = stand.x < pose.x ? -1 : 1;
-      tween('MOVE_TO_VERTEX', Object.assign({ x: stand.x, y: stand.y, lean: 0 }, carried(stand.x, stand.y)), 600, function () {
+      /* THE FLIGHT, A CURVE (opts.lift), THE TOOL ON HIS WING THE WHOLE WAY (opts.carry);
+         then, at the corner: he turns to it and settles (SETTLE), reaches the tool out to the
+         vertex (POSITION), lays its edge along the side a touch past true and adjusts it
+         back (ALIGN, ADJUST — the small correction anyone makes), the reading (MEASURE,
+         HOLD), a small nod at it (NOD), and the tool back into his wing (LIFT). */
+      var far = Math.hypot(stand.x - pose.x, stand.y - pose.y);
+      tween('MOVE_TO_VERTEX', { x: stand.x, y: stand.y, lean: 0 }, far < 40 ? 250 : 600, function () {
         // turned to the corner, and the tool turned over if this corner wants it — in the
         // wing, where the disc stays ahead of him either way (carried), so nothing jumps
         if (facing !== face || mirror !== side) { facing = face; mirror = side; Object.assign(pose, carried(pose.x, pose.y)); paint(0); }
+        tween('SETTLE', { lean: face * 2 }, 180, function () {
         tween('POSITION_PROTRACTOR', { px: p.x, py: p.y, lean: face * 4 }, 380, function () {
-          tween('ALIGN', { rotation: rotation }, 420, function () {
+          tween('ALIGN', { rotation: rotation + face * 5 }, 300, function () {
+          tween('ADJUST', { rotation: rotation }, 240, function () {
             drawArc(highlight, index, null, 1);
             highlight.style.opacity = '0';
             tween('MEASURE', {}, 300, function () {
               tween('HOLD', {}, 850, function () {
+              tween('NOD', { lean: face * 8 }, 170, function () {
+              tween('NOD', { lean: face * 3 }, 150, function () {
                 var back = carried(pose.x, pose.y);
                 tween('LIFT', { px: back.px, py: back.py, rotation: back.rotation, lean: 0 }, 320, function () {
                   highlight.replaceChildren();
                   if (!last) { done(); return; }
                   var h = home();
                   if (Math.abs(h.x - pose.x) > 4) facing = h.x < pose.x ? -1 : 1;
-                  tween('RETURN', Object.assign({ x: h.x, y: h.y }, carried(h.x, h.y)), 650, function () {
+                  tween('RETURN', { x: h.x, y: h.y }, 650, function () {
                     tween('COMPLETE', {}, 250, function () { stop(); done(); }, function (t) {
                       g.style.opacity = 1 - t;
                       if (companion) companion.style.opacity = String(t * Number(opacity || 1));
                     });
-                  });
+                  }, null, { lift: 16, carry: true, sway: 4 });
                 });
+              });
+              });
               });
             }, function (t) { highlight.style.opacity = t; });
           });
+          });
+        });
         });
       }, function (t) {
         if (!firstApproach) return;
         var visible = Math.min(1, t * 4);
         g.style.opacity = visible;
         if (companion) companion.style.opacity = String((1 - visible) * Number(opacity || 1));
-      });
+      }, { lift: far < 40 ? 0 : 18, carry: true, sway: 4 });
     };
   }
 
@@ -6546,8 +6572,9 @@
               card._cardEl._mark('wrong');
               later(1100, function () { if (card._cardEl) card._cardEl._mark(null); });
             }
-            // the marks go on the card and he names what they show
-            var why = whyShape(card);
+            // the marks go on the card and he names what they show (on the second miss the
+            // card is not brought forward here: the teaching sheet lifts it, once it is home)
+            var why = card._misses >= 2 ? verdictOf(card._verts) : whyShape(card);
             var z = sw.zones[answer];
             if (z && !reduced() && z.animate) {
               z.animate([{ translate: '0 0' }, { translate: '-6px 0' }, { translate: '6px 0' }, { translate: '0 0' }],
@@ -6600,18 +6627,17 @@
               leanZone(null, false);
               // (still resolving: the card is locked)
               evt('swipe:home', { i: sw.i, back: true, locked: true });
-              // the reason, lit on the card as he names it
-              var lit = card.querySelectorAll(why === 'sides' ? '.u-side' : why === 'angles' ? '.u-angle' : '.u-side, .u-angle');
-              later(350, function () { if (st.swipe && sw.card === card) pulseHint(Array.prototype.slice.call(lit), { strong: true }); });
-              onTap('wrong',
-                why === 'regular' ? { t: 'This one is regular. Every side is equal, and every angle is equal too.', vo: 'fb48' } :
-                why === 'sides'   ? { t: 'This one is irregular. Its sides are not all the same length.', vo: 'fb49' } :
-                why === 'angles'  ? { t: 'This one is irregular. Its sides match, but its angles are not all equal.', vo: 'fb50' } :
-                                    { t: 'This one is irregular. Its sides are not equal, and its angles are not equal either.', vo: 'fb51' },
-                { tries: 2, after: function () { later(reduced() ? 0 : 320, explain); } });
+              /* THE TEACHING SPOTLIGHT (the user's brief): the play blurs and dims under the
+                 sheet, this card — the one they answered — comes a little forward, and he
+                 stands beside it and says which pile it belongs in and why (the screen's
+                 `teach` lines, screens.js), the sides and the corners lit on the card as he
+                 names them (Stage.teach 'sides' / 'angles'); then the sheet lifts and the card
+                 glides into its own pile (`after`, once he is down again). */
+              onTap('wrong', null, { tries: 2, teach: { el: card, kind: why || 'both', fit: 'swipe' },
+                                     after: function () { later(reduced() ? 0 : 320, explain); } });
               // never stuck: with nobody to say it (reduced motion, a review jump) the card
               // goes to its pile once the reason has been seen
-              later(9000, explain);
+              later(14000, explain);
             };
             flyCard(card, { x: SWIPE_HOME.x + pulledBack, y: SWIPE_HOME.y, rot: tiltBack, s: 1 }, { x: SWIPE_HOME.x, y: SWIPE_HOME.y, rot: 0, s: 1 }, 260, 0, settle);
           }
@@ -7500,7 +7526,8 @@
   // scale 3: at 2.3 the lifted card read as one of the tray ("the size of
   // the card not look big?") — three times the tray card fills the middle
   var TEACH = { scale: 3, flyMs: 620, backMs: 520, out: '#7a4cff', warm: '#ffc83d' };
-  function teachShape(item) {
+  function teachShape(item, opts) {
+    opts = opts || {};
     if (!svg || !item || !item._verts || !svg.parentNode) return null;
     var doc = svg.ownerDocument, host = svg.parentNode;
     var sheet = doc.createElement('div'); sheet.className = 'teach-sheet';
@@ -7516,11 +7543,28 @@
     };
     var mid = { x: W / 2 + 40, y: H * 0.52, s: TEACH.scale };   // a touch right: he stands at its left
     var from = toStage(item) || { x: mid.x, y: mid.y, s: 1 };
+    /* THE SWIPE CARD IS ALREADY LARGE AND IN THE MIDDLE (opts.fit 'swipe'): it comes forward
+       only a little — a touch bigger, a touch up and to the right of where it was, so it is
+       plainly the same card — rather than flying to the sort's three-times seat (the brief:
+       "do not make the card jump dramatically into another position"). */
+    /* IN PLACE, AND ALONE (the user: "bug: 2 layers and one is cropped in the explanation"):
+       shifted sideways, the enlarged copy uncovered the deck of cards waiting under it — a
+       second, blurred, cut-off card at its edge. It grows where it stands, and the deck under
+       it is faded out for as long as the sheet is up. */
+    var deck = opts.fit === 'swipe' ? layers.ui.querySelector('.swipe-stack') : null;
+    if (opts.fit === 'swipe') mid = { x: from.x, y: from.y - 6, s: from.s * 1.1 };
+    var deckShown = function (on) {
+      if (!deck) return;
+      deck.style.transition = 'opacity .3s ease';
+      deck.style.opacity = on ? '' : '0';
+    };
     // the copy, and a layer on it for what lights up (in the card's own units,
     // so it grows with the card)
     var copy = item.cloneNode(true);
     st.teachCopy = copy;
     copy.removeAttribute('style'); copy.setAttribute('class', 'teach-card');
+    // (not still red from the miss it is here to explain)
+    [].slice.call(copy.querySelectorAll('.mark-bad, .mark-good')).forEach(function (e) { e.classList.remove('mark-bad', 'mark-good'); });
     tsvg.appendChild(copy);
     var fx = mk('g', { 'class': 'teach-fx', 'pointer-events': 'none' }, copy);
     item.style.visibility = 'hidden';
@@ -7593,6 +7637,7 @@
       concave: dent >= 0,
       open: function () {
         global.requestAnimationFrame ? global.requestAnimationFrame(function () { sheet.classList.add('on'); }) : sheet.classList.add('on');
+        deckShown(false);
         sfx('menuWhoosh', { gain: 0.5 });
         return fly(from, mid, TEACH.flyMs, true).then(breathe);
       },
@@ -7622,6 +7667,24 @@
           pairs.forEach(function (q, i) { grow(v[q[0]], v[q[1]], i * 260, false); });
           later(pairs.length * 260 + 200, function () { if (copy.parentNode) sparkle(Poly.centroid(v)); });
           sfx('zip', { gain: 0.5 });
+        } else if (what === 'sides') {
+          /* THE SIDES, AS HE SAYS "SIDE(S)" (the swipe's teaching spotlight): each side traced
+             one after another — gold where it matches the others, violet where it does not
+             (marksBy: the largest set of equal lengths is the match) — and the lengths
+             printed on the card pulse with them. On a regular shape every side comes up gold. */
+          var L = Poly.sideLengths(v), sm = marksBy(L, v.map(function (_, i) { return i; }), 15);
+          v.forEach(function (p, i) { grow(p, v[(i + 1) % n], i * 140, sm.mark[i] !== 1); });
+          pulseHint([].slice.call(copy.querySelectorAll('.u-side')), { strong: true });
+          sfx('tick', { gain: 0.6 }); breathe();
+        } else if (what === 'angles') {
+          /* THE CORNERS, AS HE SAYS "ANGLE(S)": each corner's dot, gold where its angle
+             matches the others and violet where it does not, and the arcs and degrees on the
+             card pulse with them. */
+          var am = marksBy(A, v.map(function (_, i) { return i; }), 3);
+          v.forEach(function (p, i) { later(i * 110, function () { if (copy.parentNode) ring(p, 0, am.mark[i] === 1 ? TEACH.warm : TEACH.out); }); });
+          pulseHint([].slice.call(copy.querySelectorAll('.u-angle')), { strong: true });
+          later(n * 110 + 150, function () { if (copy.parentNode) sparkle(Poly.centroid(v)); });
+          sfx('tick', { gain: 0.6 }); breathe();
         }
       },
       close: function () {
@@ -7631,6 +7694,7 @@
         var home = toStage(item) || from;
         fx.style.transition = 'opacity .25s ease'; fx.style.opacity = '0';
         sheet.classList.remove('on');
+        deckShown(true);
         return fly(now, home, bin ? TEACH.backMs + 180 : TEACH.backMs, false).then(function () {
           if (st.teachCopy === copy) st.teachCopy = null;
           item.style.visibility = '';
@@ -7648,7 +7712,7 @@
       }
     };
     // a screen change or the end of the question takes it all away
-    cleanup.push(function () { if (st.teachCopy === copy) st.teachCopy = null; item.style.visibility = ''; if (sheet.parentNode) sheet.parentNode.removeChild(sheet); });
+    cleanup.push(function () { if (st.teachCopy === copy) st.teachCopy = null; item.style.visibility = ''; deckShown(true); if (sheet.parentNode) sheet.parentNode.removeChild(sheet); });
     return api;
   }
 
@@ -8035,7 +8099,7 @@
         keeps clear of — everything else is dimmed scenery under the sheet */
     teachBox: function () { return st.teachCopy && st.teachCopy.parentNode ? st.teachCopy.getBoundingClientRect() : null; },
     /** game.js: lift a card out and teach it (see teachShape) */
-    teach: function (el) { return teachShape(el); },
+    teach: function (el, opts) { return teachShape(el, opts); },
     /** game.js: may a hint play now? (only while the lesson is only waiting) */
     hintGate: function (fn) { hintGate = typeof fn === 'function' ? fn : function () { return true; }; },
     /** Forget which interactions have been demonstrated (Restart). */
