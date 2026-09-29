@@ -150,7 +150,9 @@
 
     {
       id: 'intro-hi', page: 1,
-      log: true,   // the log arc he perches on stands at the left of the ground (Stage.perch)
+      // THE CLOSE SHOT (the MASTER brief §1): the opening lines are filmed close on him, the
+      // painting soft behind him (game.js setCam); the log is not in the picture yet
+      camera: 'close',
       swiftee: { pos: 'left', size: 'large', purpose: 'introduce'},
       say: 'Hi! I am Swiftee.',
       stage: { kind: 'vista' },
@@ -167,7 +169,9 @@
 
     {
       id: 'intro-remember', page: 2,
-      log: true,   // the log arc he perches on stands at the left of the ground (Stage.perch)
+      // THE CLOSE SHOT (the MASTER brief §1): the opening lines are filmed close on him, the
+      // painting soft behind him (game.js setCam); the log is not in the picture yet
+      camera: 'close',
       swiftee: { pos: 'left', size: 'large', purpose: 'introduce'},
       say: 'Remember we learned about polygons before.',
       beats: [
@@ -181,17 +185,19 @@
 
     {
       id: 'intro-define', page: 3,
-      log: true,   // the log arc he perches on stands at the left of the ground (Stage.perch)
+      camera: 'close',   // still close; it draws back at the end of this screen (below)
       swiftee: { pos: 'left', size: 'large', purpose: 'concept'},
       say: 'Polygons are closed shapes made from straight lines.',
       beats: [
         // "Ta-da — here is the idea": one open-winged flourish, then talking
         { swiftee: 'present' },
         { say: 'Polygons are closed shapes made from straight lines.', parts: ['Polygons are closed shapes', 'made from straight lines.'], vo: 'p03' },
-        // ONTO THE LOG (the user's spec): the third line said to its end, a breath, then a
-        // short curved flight to the log arc on the left of the ground, down onto its crest
-        // with a small squash — and a moment perched there before the first question comes
+        // ONTO THE LOG (the user's spec, and the MASTER brief §2): the third line said to its
+        // end, a breath, then the camera draws back to the whole scene and the log arc comes up
+        // on the ground at his left; a short curved flight onto its crest, a small squash, and
+        // a moment perched there before the first question comes
         { wait: 600 },
+        { stage: { camera: 'wide', ms: 900, log: true } },
         { swiftee: 'perch' },
         { input: { type: 'tap-anywhere', pause: 650 } }
       ]
@@ -742,7 +748,8 @@
         { focus: 'compare.left', style: 'lean' },
         // THE NAME ARRIVES ON ITS WORD, in the INSIDE mark's place: a soft
         // chime, a few sparkles, and his nod
-        { stage: { badge: { under: 'compare.left', text: 'Convex', tone: 'convex', enter: 'pop', cue: 'convex', sfx: 'correct', sparkle: true, react: 'nod' } } },
+        // ...and its tab, "Pentagon A" till now, takes the name: "Convex pentagon" (MASTER brief §12)
+        { stage: { badge: { under: 'compare.left', text: 'Convex', tone: 'convex', enter: 'pop', cue: 'convex', sfx: 'correct', sparkle: true, react: 'nod', tab: 'Convex pentagon' } } },
         { parallel: [
           // stating the rule
           { swiftee: 'explain', at: 'compare.left' },
@@ -767,7 +774,7 @@
         { focus: 'compare.right', style: 'lean' },
         // on "outside" the diagonal that leaves lights again (emphasize);
         // on "concave" the name, in the OUTSIDE mark's place, and his "got it!"
-        { stage: { badge: { under: 'compare.right', text: 'Concave', tone: 'concave', enter: 'pop', cue: 'concave', sfx: 'correct', sparkle: true, react: 'happySmall' } } },
+        { stage: { badge: { under: 'compare.right', text: 'Concave', tone: 'concave', enter: 'pop', cue: 'concave', sfx: 'correct', sparkle: true, react: 'happySmall', tab: 'Concave pentagon' } } },
         { parallel: [
           // he points at it
           { swiftee: 'point', at: 'compare.right' },

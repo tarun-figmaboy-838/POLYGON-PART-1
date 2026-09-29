@@ -928,6 +928,72 @@
     return { x: (r.width - w) / 2, y: (r.height - h) / 2, w: w, h: h, portrait: r.height > r.width };
   }
 
+  /* THE CAMERA (the user's MASTER brief, sections 1–2). The three opening lines are shot
+   * close: the world drawn larger round him and the painting behind him out of focus, so he
+   * is the one thing to look at while he introduces himself. After the third the camera draws
+   * back (cameraTo), and the ground on his left, with the log on it, comes into view for the
+   * flight that ends the intro.
+   *
+   * The zoom is held about his feet on the centre mark (layout's 'centre', where he stands on
+   * the empty intro stage), so they stay on the same snow the whole way. The painting
+   * (#backdrop) and the board (Stage.svg) are scaled by the browser; he is laid out through
+   * the same mapping (layout), so he, his bubble and the ground cannot drift apart. The
+   * board's own box (#stage) is never transformed: frame(), and everything laid out from it,
+   * is exactly what it was. */
+  var CAM_CLOSE = 1.25;                  // the close shot: everything a quarter larger
+  var CAM_BLUR = 0.0036;                 // ...and the painting this far out of focus (of the board's height)
+  var CAM_AT = { x: 0.5, y: 0.93 };      // the point held still: his feet on the centre mark
+  var cam = { k: 1, blur: 0 }, camGen = 0;
+  function applyCam() {
+    var f = frame(), on = cam.k !== 1;
+    var ox = f.x + CAM_AT.x * f.w, oy = f.y + CAM_AT.y * f.h;
+    var bd = document.getElementById('backdrop'), sv = global.Stage && Stage.svg;
+    [bd, sv].forEach(function (n) {
+      if (!n) return;
+      n.style.transformOrigin = on ? ox.toFixed(1) + 'px ' + oy.toFixed(1) + 'px' : '';
+      n.style.transform = on ? 'scale(' + cam.k.toFixed(4) + ')' : '';
+      n.style.willChange = on ? 'transform' : '';
+    });
+    if (bd) bd.style.filter = cam.blur > 0.0001 ? 'blur(' + (cam.blur * f.h).toFixed(2) + 'px)' : '';
+  }
+  /* Close or wide at once, as a screen starts (screens.js `camera: 'close'`) — so a restart,
+     or a jump into the intro, opens on the close shot, and any other screen is wide. Never
+     in portrait (the board is a band there, and he stands under it) or with reduced motion. */
+  function setCam(close) {
+    camGen++;
+    var k = (close && !frame().portrait && !(global.Juice && Juice.reducedMotion)) ? CAM_CLOSE : 1;
+    if (cam.k === k && cam.blur === (k !== 1 ? CAM_BLUR : 0)) return;
+    cam.k = k; cam.blur = k !== 1 ? CAM_BLUR : 0;
+    applyCam();
+  }
+  /* The camera drawing back to the wide shot (the stage beat `{ camera: 'wide' }`), eased in
+     and out over `ms`: every frame the world and he are redrawn together, and the painting
+     comes into focus as it goes. Anything that takes the screen away ends it on the wide
+     shot — never a lesson left half zoomed. */
+  function cameraTo(ms, ctx) {
+    var gen = ++camGen, k0 = cam.k, b0 = cam.blur;
+    var dur = Math.max(0, (ms || 0) * paceScale());
+    var raf = global.requestAnimationFrame ? function (f) { global.requestAnimationFrame(f); }
+                                            : function (f) { setTimeout(function () { f(Date.now()); }, 16); };
+    return new Promise(function (resolve) {
+      var t0 = null;
+      var settle = function () { cam.k = 1; cam.blur = 0; applyCam(); relayout(); resolve(); };
+      if (ctx && ctx.onCancel) ctx.onCancel(function () { if (gen === camGen) { camGen++; settle(); } else resolve(); });
+      if (k0 === 1 || dur < 17) { settle(); return; }
+      var step = function (t) {
+        if (gen !== camGen) return;
+        if (t0 == null) t0 = t;
+        var u = Math.min(1, (t - t0) / dur);
+        var e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+        cam.k = k0 + (1 - k0) * e; cam.blur = b0 * (1 - e);
+        applyCam();
+        if (global.Swiftee && Swiftee.relayout) Swiftee.relayout();
+        if (u < 1) raf(step); else { camGen++; settle(); }
+      };
+      raf(step);
+    });
+  }
+
   /**
    * Swiftee's size, as a fraction of the stage height he should occupy.
    *
@@ -1132,7 +1198,17 @@
       y = Math.max(y, f.y + f.h + 8 + 256 * CONTENT_FRAC * scale);
     }
 
+    // THROUGH THE CAMERA (applyCam): on the close shot he is drawn where the zoomed ground
+    // puts his mark, and as much larger as the world round him. `cam` goes with it, so the
+    // sprite keeps the sheet it has at his usual size (swiftee.js place): a zoom that swapped
+    // sheets would blank him for as long as the other sheet took to arrive.
+    if (cam.k !== 1 && pos !== 'off') {
+      var cox = f.x + CAM_AT.x * f.w, coy = f.y + CAM_AT.y * f.h;
+      x = cox + (x - cox) * cam.k; y = coy + (y - coy) * cam.k; scale *= cam.k;
+    }
+
     var L = fit({ x: x, y: y, scale: scale }, pos);
+    if (cam.k !== 1 && pos !== 'off') L.cam = cam.k;
     if (clipPage != null) L.clip = clipPage;
     if (m.air) L.air = true;
     return L;
@@ -2409,6 +2485,7 @@
    */
   function relayout() {
     seatFurniture();
+    applyCam();   // the camera's origin is in pixels of the board: a resize moves it
     Swiftee.relayout();
     syncPeekRim();
     // placeBubble, not fitLine: the fit was worked out when the line was set
@@ -2434,16 +2511,27 @@
    * goes on over his voice or over a reply; those are waited for, with a ceiling, so a
    * stalled clip cannot hold the lesson for ever. Scaled with the lesson's pace (a test
    * harness runs it fast), and called off by anything that takes the screen away.
+   *
+   * THE HOLD IS SIZED TO THE LINE (the MASTER brief §23): 700–900 ms for an ordinary line,
+   * 1000–1400 ms for one that states an idea of the lesson, longer the more words it has —
+   * and counted from the moment his voice stopped (VO.quietAt), so the breath the screen has
+   * already taken (the say beat's tail, a `wait` it asked for to look at something) is part
+   * of the hold rather than added to it. Never under a short beat once the gate is open.
    */
-  var AUTO_SETTLE = 1200, AUTO_CONCEPT = 700, AUTO_CEILING = 20000;
-  var CONCEPT_RE = /\b(polygons?|vertex|vertices|diagonals?|convex|concave|sides?|angles?|regular|irregular)\b/i;
+  var AUTO_CEILING = 20000, HOLD_FLOOR = 300;
+  var IDEA_RE = /\b(vertex|vertices|diagonals?|convex|concave|sides?|angles?|regular|irregular)\b/i;
+  function holdFor(sc) {
+    var say = String(sc.say || '').trim(), n = say ? say.split(/\s+/).length : 0;
+    var idea = (sc.swiftee && sc.swiftee.purpose === 'concept') || IDEA_RE.test(say);
+    return idea ? Math.min(1400, 1000 + 40 * n) : Math.min(900, 700 + 20 * n);
+  }
   function autoAdvance(ctx, spec) {
     var gen = playGen, screenAt = current, off = false, t0 = Date.now();
     if (ctx && ctx.onCancel) ctx.onCancel(function () { off = true; });
     var sc = Screens.list[current] || {};
-    var extra = CONCEPT_RE.test(String(sc.say || '')) ? AUTO_CONCEPT : 0;
     // (a screen whose last beat is already a pause — the flight onto the log — names its own)
     var settleMs = spec && spec.pause != null ? spec.pause : null;
+    var hold = settleMs != null ? settleMs : holdFor(sc);
     var alive = function () { return !off && gen === playGen && screenAt === current; };
     var ceiling = Math.max(200, AUTO_CEILING * paceScale());
     var quiet = function () {
@@ -2460,11 +2548,14 @@
     (function settle() {
       if (!alive()) return;
       if (!quiet()) { setTimeout(settle, 120); return; }
+      // (a named pause is its own: it follows a flight, not his voice)
+      var hushed = global.VO && VO.quietAt ? Date.now() - VO.quietAt : 0;
+      var ms = settleMs != null ? settleMs : Math.max(HOLD_FLOOR, hold - Math.max(0, hushed));
       setTimeout(function () {
         if (!alive()) return;
         if (!quiet()) { settle(); return; }                  // something began in the breath
         go();
-      }, Math.round((settleMs != null ? settleMs : AUTO_SETTLE + extra) * paceScale()));
+      }, Math.round(ms * paceScale()));
     })();
   }
 
@@ -2666,7 +2757,15 @@
   var H = null;   // the live handler table, so one handler can hand off to another
   function handlers() {
     H = {
-      stage: function (spec) {
+      stage: function (spec, ctx) {
+        /* THE CAMERA DRAWS BACK (the end of the intro — MASTER brief §2): the third line is
+           said and its bubble goes, then the close shot eases out to the whole scene, and the
+           log comes up on the ground at his left as it does, for the flight that follows. */
+        if (spec && spec.camera === 'wide') {
+          standing = null; say(null);
+          if (spec.log && Stage.perch) Stage.perch(true, Math.round((spec.ms || 900) * 0.8 * paceScale()));
+          return cameraTo(spec.ms || 900, ctx);
+        }
         // AFTER THE SNOW. A beat marked afterReveal waits for the veil to
         // melt before it draws, so what it draws — diagonals arriving one
         // by one — is seen arriving, not found already there when the snow
@@ -2758,7 +2857,8 @@
           logFlying = true; syncLogFront();
           var landed = function () { logFlying = false; syncLogFront(); };
           return Promise.resolve(Swiftee.play('perch', { size: (opts && opts.size) || Swiftee.size,
-                                                         arc: Math.round(fr.h * 0.13), ms: 900, onLand: landed }))
+                                                         // the bow in screen pixels (swiftee.js move): a sixth of the board
+                                                         arc: Math.round(fr.h * 0.16), ms: 900, onLand: landed }))
             .then(function () { landed(); placeBubble(); }, function () { landed(); });
         }
         if (state === 'enter' && opts && opts.from === 'below' && !opts.to) {
@@ -3431,6 +3531,9 @@
     // transition on every screen that wipes rather than as a jump.
     // ONLY A PURPOSE PUTS HIM ON SCREEN. Every screen has a position for him;
     // eleven have a reason. The rest get the plank.
+    // (Through the camera: the intro's close shot, screens.js `camera`, and every other screen
+    // wide — set first, so he is laid out through it wherever this screen puts him.)
+    setCam(s.camera === 'close');
     buddyOn = wantsBuddy(i);
 
     // THE PLANK IS NOT BLANK WHILE THE CHILD IS ASKED TO ACT.

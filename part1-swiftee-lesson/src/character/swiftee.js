@@ -968,7 +968,7 @@
     el.style.left = L.x + 'px';
     el.style.top = L.y + 'px';
     el.style.transform = 'translate(-50%,-' + (F.baselineY * 100).toFixed(1) + '%) scale(' + L.scale + ')';
-    chooseScale(L.scale);
+    chooseScale(L.scale / (L.cam || 1));   // the sheet for his usual size, not the camera's (game.js applyCam)
     clipY = L.clip == null ? null : L.clip;
     applyClip();
     airborne = !!L.air;
@@ -1385,13 +1385,21 @@
       // rim while still in the air he would arrive in two pieces.
       var landingClip = clipY; clipY = null; applyClip();
 
-      var dx = toP.x - fromP.x, dy = toP.y - fromP.y, ds = fromP.scale / toP.scale;
+      /* IN HIS OWN PIXELS. The movement is ADDED to his resting transform (anim: composite
+         'add'), and that ends in his scale — so a translate added after it is multiplied by
+         the scale on its way to the screen. Taken as screen pixels, every move started that
+         many times too far from where he stood: at 1080p the flight to the log began with a
+         jump to the lower right, half off the screen. Divided by it, the first frame is
+         exactly where he was, and the bow is the height it was asked for. */
+      var S = toP.scale || 1;
+      var dx = (toP.x - fromP.x) / S, dy = (toP.y - fromP.y) / S, ds = fromP.scale / toP.scale;
+      var bow = arc / S;
       var keys;
       if (arc) {
         keys = [];
         for (var k = 0; k <= 20; k++) {
           var t = k / 20, e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-          var px = -dx * (1 - e), py = -dy * (1 - e) - arc * 4 * e * (1 - e), sc = ds + (1 - ds) * e;
+          var px = -dx * (1 - e), py = -dy * (1 - e) - bow * 4 * e * (1 - e), sc = ds + (1 - ds) * e;
           keys.push({ transform: 'translate(' + px.toFixed(2) + 'px,' + py.toFixed(2) + 'px) scale(' + sc.toFixed(4) + ')', offset: t });
         }
       } else {

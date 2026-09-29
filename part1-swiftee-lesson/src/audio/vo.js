@@ -119,7 +119,9 @@
   /* THE MUSIC STEPS BACK WHILE HE SPEAKS (sfx.js voice: a smooth dip, and a
      smooth return a breath after the line). Every line goes through play(),
      so this is the one place that knows a voice is on air. */
-  function voiceBus(on) { try { if (global.SFX && SFX.voice) SFX.voice(on); } catch (e) {} }
+  // when the last clip went off air: game.js counts the hold after a line from it (autoAdvance)
+  var quietAt = 0;
+  function voiceBus(on) { if (!on) quietAt = Date.now(); try { if (global.SFX && SFX.voice) SFX.voice(on); } catch (e) {} }
 
   /* WAITING FOR THE VOICE.
    *
@@ -358,6 +360,7 @@
                 urls: urls,
                 ready: ready,
                 get isReady() { return indexSettled; },
+                get quietAt() { return quietAt; },
                 get playing() { return current; },
                 /* Which clip is on air. The bubbles check this before they
                    trust at(): a line must never be paced by another line's

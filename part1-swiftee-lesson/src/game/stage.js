@@ -4085,8 +4085,26 @@
                             fill: c ? c.wash : '#f3fcff', stroke: c ? c.deep : HI.edge, 'stroke-width': (o && o.rim) || 3 }, g);
     g.insertBefore(face, probe);
     g._text = probe;
+    g._face = face; g._pad = (o && o.pad) || 52;
     g._rect = { x: bx, y: by, w: bw, h: H0 };
     return g;
+  }
+
+  /* A TAB THAT LEARNS ITS CARD'S NAME (the MASTER brief §12): "Pentagon A" becomes "Convex
+     pentagon" on the word that names it — the same pill on the same spot, re-measured round
+     its new words and coloured in the concept's own tone. */
+  function renameTag(g, text, tone) {
+    if (!g || !g._text || !g._face || !g._rect) return;
+    var c = CONCEPT[tone] || null, t = g._text;
+    t.textContent = text;
+    var fs = parseFloat(t.getAttribute('font-size')) || 17;
+    var w = 0; try { w = t.getComputedTextLength ? t.getComputedTextLength() : 0; } catch (e) { w = 0; }
+    if (!w) w = text.length * fs * 0.54;
+    var cx = g._rect.x + g._rect.w / 2, bw = w + g._pad;
+    g._face.setAttribute('x', (cx - bw / 2).toFixed(1));
+    g._face.setAttribute('width', bw.toFixed(1));
+    g._rect.x = cx - bw / 2; g._rect.w = bw;
+    if (c) { g._face.setAttribute('fill', c.wash); g._face.setAttribute('stroke', c.deep); t.setAttribute('fill', c.ink); }
   }
 
   function tag(parent, o) {
@@ -4854,6 +4872,8 @@
       var side = b.under && b.under.indexOf('compare.') === 0 ? b.under.split('.')[1] : null;
       var shown = function () {
         if (side) dropMark(side, true);
+        // and the card's tab takes the name with it ("Convex pentagon": b.tab)
+        if (side && b.tab && st.compare[side]) renameTag(st.compare[side].nameTab, b.tab, b.tone || conceptOf(b.text));
         if (!b.enter) return;
         if (b.sfx) sfx(b.sfx, { gain: 0.55 });
         if (b.sparkle && global.Juice && Juice.sparkle && !reduced()) { try { Juice.sparkle(g); } catch (e) {} }
@@ -7355,11 +7375,12 @@
     /** game.js: the log arc on the left of the ground — shown on the screens that sit him on
         it (screens.js `log`), fading in or out; perchAt: where his feet go on it, as fractions
         of the board, for his 'log' mark */
-    perch: function (on) {
+    perch: function (on, ms) {
       if (!perchLog) return;
       var want = on ? '1' : '0';
       if (perchLog.style.opacity === want) return;
-      perchLog.style.transition = reduced() ? '' : 'opacity 320ms ease';
+      // (slower as the intro's camera draws back and brings it into view: game.js cameraTo)
+      perchLog.style.transition = reduced() ? '' : 'opacity ' + (ms || 320) + 'ms ease';
       perchLog.style.opacity = want;
     },
     perchAt: function () { return { x: LOG_PERCH.x / W, y: LOG_PERCH.y / H }; },
