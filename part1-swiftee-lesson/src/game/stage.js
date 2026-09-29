@@ -2032,8 +2032,10 @@
          vertex (POSITION), lays its edge along the side a touch past true and adjusts it
          back (ALIGN, ADJUST — the small correction anyone makes), the reading (MEASURE,
          HOLD), a small nod at it (NOD), and the tool back into his wing (LIFT). */
-      var far = Math.hypot(stand.x - pose.x, stand.y - pose.y);
-      tween('MOVE_TO_VERTEX', { x: stand.x, y: stand.y, lean: 0 }, far < 40 ? 250 : 600, function () {
+      // (as long as the way is far: a hop to the next corner in half a second, the long first
+      // flight from his perch in a full one — never a dash)
+      var far = Math.hypot(stand.x - pose.x, stand.y - pose.y), flightMs = far < 40 ? 250 : Math.min(1100, Math.max(500, far * 1.8));
+      tween('MOVE_TO_VERTEX', { x: stand.x, y: stand.y, lean: 0 }, flightMs, function () {
         // turned to the corner, and the tool turned over if this corner wants it — in the
         // wing, where the disc stays ahead of him either way (carried), so nothing jumps
         if (facing !== face || mirror !== side) { facing = face; mirror = side; Object.assign(pose, carried(pose.x, pose.y)); paint(0); }
@@ -2053,7 +2055,7 @@
                   if (!last) { done(); return; }
                   var h = home();
                   if (Math.abs(h.x - pose.x) > 4) facing = h.x < pose.x ? -1 : 1;
-                  tween('RETURN', { x: h.x, y: h.y }, 650, function () {
+                  tween('RETURN', { x: h.x, y: h.y }, Math.min(1100, Math.max(500, Math.hypot(h.x - pose.x, h.y - pose.y) * 1.8)), function () {
                     tween('COMPLETE', {}, 250, function () { stop(); done(); }, function (t) {
                       g.style.opacity = 1 - t;
                       if (companion) companion.style.opacity = String(t * Number(opacity || 1));
@@ -2630,8 +2632,13 @@
     },
 
     'choice-grid': function (spec) {
-      reset(); st.kind = 'grid';
       var opts = spec.options || [];
+      /* ALREADY ON THE TABLE: the review tool's jump puts the screen's own grid up before the
+         screen's first beat builds it again (game.js goTo), and the four shapes popped in over
+         four shapes already there — a flash. The same grid asked for twice is left as it is. */
+      if (st.kind === 'grid' && st.cards && st.cards.length === opts.length && opts.length &&
+          st.cards.every(function (c, i) { return c._opt && c._opt.id === opts[i].id; })) return;
+      reset(); st.kind = 'grid';
       // CENTRED. The four cells sat at 500..970 of a 1000-wide stage, so the
       // question filled the right-hand third and the left half of the screen
       // held nothing at all. Pulled in far enough to read as the middle of the
@@ -2674,11 +2681,19 @@
         var seat = mk('g', { transform: 'translate(' + x + ',' + y + ')' }, g);
         g._card = optionCard(seat, HALF, o.shape);
         g._opt = o;
-        /* NO POP (the user: "remove the pop animation of the cards when Level 1 starts"): the
-           four cards are simply there, each fading up a moment after the one before — never
-           parked at opacity 0 (fill: backwards from a visible rest), never scaled. */
-        if (spec.enter === 'stagger' && !reduced() && g.animate) {
-          try { g.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, delay: i * 70, easing: 'ease-out', fill: 'backwards' }); } catch (e) {}
+        /* THE CARDS DO NOT POP — THE SHAPES INSIDE THEM DO (the user: "when Level 1 starts do
+           not pop the cards; instead pop the shapes inside"): the four cards are simply there,
+           still, and each shape springs up on its glass a moment after the one before. Reduced
+           motion draws them in place. */
+        if (spec.enter === 'stagger' && !reduced()) {
+          var shape = g.querySelector('.shape');
+          if (shape && shape.animate) {
+            shape.style.transformBox = 'fill-box'; shape.style.transformOrigin = 'center';
+            try {
+              shape.animate([{ transform: 'scale(0.2)', opacity: 0 }, { transform: 'scale(1.12)', opacity: 1, offset: 0.7 }, { transform: 'scale(1)', opacity: 1 }],
+                            { duration: 420, delay: 140 + i * 110, easing: 'cubic-bezier(.3,1.4,.5,1)', fill: 'backwards' });
+            } catch (e) {}
+          }
         }
         return g;
       });
@@ -2777,10 +2792,7 @@
       [{ id: 'regular', x: ZM },
        { id: 'irregular', x: W - ZM - ZW }].forEach(function (z) {
         var def = (spec.zones || []).filter(function (d) { return d.id === z.id; })[0] || { id: z.id, label: z.id };
-        var c = CONCEPT[z.id] || CONCEPT.regular;
-        // the Regular card is the supplied orange one: its word is lettered in the card's own
-        // colours, not the teal the concept uses elsewhere
-        if (ZONE_TONE[z.id]) c = Object.assign({}, c, ZONE_TONE[z.id]);
+        var c = CONCEPT[z.id] || CONCEPT.regular;   // (the concept's own colours: the piles' cards set them)
         var tone = [c.wash, c.face, c.ink];
         var Z0 = global.CardFrame && CardFrame[z.id];
         var ZH = Z0 ? Math.round(ZW * Z0.h / Z0.w) : 268, ZY = Math.round(SWIPE_HOME.y - ZH / 2);
@@ -4216,22 +4228,31 @@
     // wrong one flushes red and shrinks back. No ring, no tick: the glow is
     // the verdict, and the burst comes out from under the card's edges
     // rather than being sprayed over the shape.
+    /* THE VERDICT IS A GLOW, DRAWN — AND NO POP (the user, Level 1, several times: "why does
+       the card pop, and no glow?"). The glow was a CSS `filter` of stacked drop-shadows on this
+       SVG group, which Chrome draws and Safari/iPad quietly does not, so on a tablet the only
+       thing seen was the scale bounce that went with it. Now it is geometry: a halo rect behind
+       the card (blurred by the stage's own SVG filter, #cardGlow, which every browser renders)
+       and a crisp rim around it, green for right, red for wrong, faded in — and the card itself
+       never changes size. (mark-good / mark-bad stay on the group as the state's name.) */
+    var halo = null;
     g._mark = function (state) {
       if (g.classList) {
         g.classList.remove('mark-good', 'mark-bad');
         if (state === 'correct') g.classList.add('mark-good');
         if (state === 'wrong') g.classList.add('mark-bad');
       }
-      // (a right card's confetti bursts from its own edges as it is pressed: the screen's
-      // perTap in screens.js — one burst, from the card that earned it)
-      if (state && !reduced() && g.animate) {
-        g.style.transformBox = 'fill-box';
-        g.style.transformOrigin = 'center';
-        try {
-          g.animate([{ scale: '1' }, { scale: state === 'wrong' ? '.93' : '1.09' }, { scale: '1' }],
-                    { duration: 320, easing: 'cubic-bezier(.3,1.35,.5,1)' });
-        } catch (e) {}
-      }
+      if (halo) { var gone = halo; halo = null; if (reduced() || !gone.animate) gone.remove(); else { try { gone.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: 'forwards' }).finished.then(function () { gone.remove(); }, function () { gone.remove(); }); } catch (e) { gone.remove(); } } }
+      if (!state) return;
+      var col = state === 'wrong' ? '#ff5a5a' : '#3ad46e', deep = state === 'wrong' ? '#c62828' : '#1f8f46';
+      halo = mk('g', { 'class': 'verdict-glow', 'pointer-events': 'none' });
+      g.insertBefore(halo, g.firstChild);
+      var pad = Math.max(8, half * 0.08), rx = half * 0.26;
+      mk('rect', { x: -half - pad, y: -halfH - pad, width: 2 * (half + pad), height: 2 * (halfH + pad), rx: rx, ry: rx,
+                   fill: col, 'fill-opacity': 0.9, filter: 'url(#cardGlow)' }, halo);
+      mk('rect', { x: -half - 2, y: -halfH - 2, width: 2 * (half + 2), height: 2 * (halfH + 2), rx: rx * 0.8, ry: rx * 0.8,
+                   fill: 'none', stroke: deep, 'stroke-width': 5, 'stroke-opacity': 0.9 }, halo);
+      if (!reduced() && halo.animate) { try { halo.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: 'ease-out', fill: 'backwards' }); } catch (e) {} }
     };
 
     g._pane = { cx: cx, cy: cy, r: r, w: paneW, h: paneH };
@@ -4307,14 +4328,15 @@
   var CONCEPT = {
     convex:    { face: '#2bb8d6', deep: '#0f6f86', wash: '#e4f8fc', ink: '#0b5566' },
     concave:   { face: '#f2a222', deep: '#95590a', wash: '#fff3dd', ink: '#6d4100' },
-    regular:   { face: '#19b5a2', deep: '#0a6c60', wash: '#e3f8f4', ink: '#07564c' },
+    /* REGULAR IS ORANGE EVERYWHERE (the user: "the swipe's colours do not match the Regular and
+       Irregular collection cards"): the Regular pile on the swipe screen is the supplied orange
+       card (assets/source/reg.png) and the Irregular pile the supplied violet one, but "regular"
+       wore teal everywhere else — the Regular tag on the comparison, the Regular card in the
+       collection — so the same idea had two colours. One now: the pile's orange, with a deep
+       burnt-orange for type on it (white on `deep` still clears 4.5:1, `ink` on `wash` 7:1). */
+    regular:   { face: '#f08a2c', deep: '#a04e0a', wash: '#fff0e0', ink: '#7a3300' },
     irregular: { face: '#9270e6', deep: '#54399e', wash: '#f1ebfe', ink: '#3d2775' }
   };
-  /* THE SWIPE ZONES' OWN LETTERING. The Regular zone is the supplied orange card
-     (assets/source/reg.png), so its word is set in the card's colours — a band of its orange
-     and a deep burnt-orange ink — rather than in the teal "regular" wears elsewhere, which on
-     orange reads as a label from another set. */
-  var ZONE_TONE = { regular: { face: '#f08a2c', ink: '#7a3300' } };
 
   /** The four words this lesson sorts shapes by. Anything else is not a
       category and must not borrow a category's colour. */
@@ -5130,34 +5152,46 @@
       // pinned to the thing it names, and the leader is its string.
       // (a size down from 26: a name on a card, not a heading — and a smaller
       // plate finds a clear place beside a side where the big one found none)
-      var LF = 22, LH = 34, LPAD = 14;
+      /* A GAME TAG, NOT A LABEL (the user: "the diagonal arrow does not look good — not
+         gamified"): a pill in the colour of the thing it names — gold for a lit line, the
+         glacier blue for a side — over a soft shadow, and a curved leader with a chunky
+         rounded head, white-edged so it reads over the blue shape. Everything is in stage
+         units, so it is the same tag at every screen size. */
+      var LF = 22, LH = 36, LPAD = 16;
+      var tone = l.at === 'diagonal' ? (HI.lit || '#ffc83d') : HI.rim, toneDeep = shade(tone, -0.35);
       var lt = mk('text', { x: x, y: y, 'text-anchor': 'middle', 'font-size': LF, 'font-weight': 800,
                             fill: '#0f3f8f', text: l.text }, g);
       var lw = 0; try { lw = lt.getComputedTextLength ? lt.getComputedTextLength() : 0; } catch (e) { lw = 0; }
       if (!lw) lw = l.text.length * 13;
-      var plate = mk('rect', { x: x - lw / 2 - LPAD, y: y - 6 - LH / 2, width: lw + LPAD * 2, height: LH, rx: 10,
-                               fill: '#f3fcff', stroke: HI.rim, 'stroke-width': 3 }, g);
-      g.insertBefore(plate, lt);
+      var px0 = x - lw / 2 - LPAD, py0 = y - 6 - LH / 2, pw = lw + LPAD * 2;
+      var shadow = mk('rect', { x: px0, y: py0 + 3, width: pw, height: LH, rx: LH / 2, fill: '#0f3f8f', 'fill-opacity': 0.16 }, g);
+      var plate = mk('rect', { x: px0, y: py0, width: pw, height: LH, rx: LH / 2, fill: '#ffffff', stroke: tone, 'stroke-width': 3.5 }, g);
+      var sheen = mk('rect', { x: px0 + 6, y: py0 + 4, width: pw - 12, height: LH * 0.38, rx: LH * 0.19, fill: tone, 'fill-opacity': 0.16, 'pointer-events': 'none' }, g);
+      g.insertBefore(sheen, lt); g.insertBefore(plate, sheen); g.insertBefore(shadow, plate);
       if (l.arrow && m) {
-        /* AN ARROW FROM THE TAG TO THE SIDE. It ended in a pin — a dot on the
-           side's middle — which read as one more corner (the user: "use arrow
-           to point, not dot"). It leaves the plate at its edge, square to the
-           side when the tag stands square to it, and its head stops just
-           short of the line, pointing straight at it. */
-        var pcx = x, pcy = y - 6, phx = lw / 2 + LPAD, phy = LH / 2;
+        /* THE LEADER: it leaves the pill's edge, bends a little on its way (a string, not a
+           ruler line), and its head stops just short of the line it names, pointing straight
+           at it — never a dot on the line (the user: "use an arrow to point, not a dot"). */
+        var pcx = x, pcy = y - 6, phx = pw / 2, phy = LH / 2;
         var dx = m.x - pcx, dy = m.y - pcy, d = Math.sqrt(dx * dx + dy * dy) || 1, ax = dx / d, ay = dy / d;
         var te = Math.min(dx ? phx / Math.abs(dx) : Infinity, dy ? phy / Math.abs(dy) : Infinity);
         var sx = pcx + dx * te + ax * 3, sy = pcy + dy * te + ay * 3;
-        var tipX = m.x - ax * 5, tipY = m.y - ay * 5, HL = 13, HW = 7.5;
+        var tipX = m.x - ax * 6, tipY = m.y - ay * 6, HL = 16, HW = 9;
         var bx = tipX - ax * HL, by = tipY - ay * HL;
         if (te < 1) {
-          if ((bx - sx) * ax + (by - sy) * ay > 2) {
-            mk('line', { x1: sx, y1: sy, x2: bx, y2: by, stroke: HI.rim, 'stroke-width': 3.5, 'stroke-linecap': 'round' }, g);
+          var run = (bx - sx) * ax + (by - sy) * ay;
+          if (run > 2) {
+            // bent a fifth of its length to the side, and drawn twice: a white edge under the colour
+            var cx2 = (sx + bx) / 2 - ay * Math.min(14, run * 0.2), cy2 = (sy + by) / 2 + ax * Math.min(14, run * 0.2);
+            var dpath = 'M' + sx.toFixed(1) + ' ' + sy.toFixed(1) + ' Q' + cx2.toFixed(1) + ' ' + cy2.toFixed(1) + ' ' + bx.toFixed(1) + ' ' + by.toFixed(1);
+            mk('path', { d: dpath, fill: 'none', stroke: '#ffffff', 'stroke-width': 7.5, 'stroke-linecap': 'round', 'stroke-opacity': 0.9 }, g);
+            mk('path', { d: dpath, fill: 'none', stroke: tone, 'stroke-width': 4.2, 'stroke-linecap': 'round' }, g);
           }
-          mk('path', { d: 'M' + tipX.toFixed(1) + ' ' + tipY.toFixed(1) +
-                          ' L' + (bx - ay * HW).toFixed(1) + ' ' + (by + ax * HW).toFixed(1) +
-                          ' L' + (bx + ay * HW).toFixed(1) + ' ' + (by - ax * HW).toFixed(1) + ' Z',
-                       fill: HI.rim, stroke: HI.rim, 'stroke-width': 2, 'stroke-linejoin': 'round', 'class': 'tag-arrow' }, g);
+          var head = 'M' + tipX.toFixed(1) + ' ' + tipY.toFixed(1) +
+                     ' L' + (bx - ay * HW).toFixed(1) + ' ' + (by + ax * HW).toFixed(1) +
+                     ' L' + (bx + ay * HW).toFixed(1) + ' ' + (by - ax * HW).toFixed(1) + ' Z';
+          mk('path', { d: head, fill: '#ffffff', stroke: '#ffffff', 'stroke-width': 6, 'stroke-linejoin': 'round', 'stroke-opacity': 0.9 }, g);
+          mk('path', { d: head, fill: tone, stroke: toneDeep, 'stroke-width': 1.5, 'stroke-linejoin': 'round', 'class': 'tag-arrow' }, g);
         }
       }
       st.labelEl = g;
@@ -6143,6 +6177,17 @@
   function dentAngleOk(v, i) { var A = Poly.interiorAngles(v); return A[i] >= DENT_REFLEX; }
   function isDented(v, i) { return Poly.classify(v).concave && dentDepth(v, i) >= DENT_MIN && dentAngleOk(v, i); }
   var DENT_SNAP = 0.22, CONVEX_KEEP = 0.2;    // the smallest dent the drag lands on; how far outside the line a corner stays (a corner of ~156°, never a flat one)
+  /* The dent drag's one degree of freedom: how far in along the line from the corner's rest
+     to the middle (`start` → centroid), from not at all to well past the middle (a four-sided
+     shape's dent lies beyond it). The pointer is projected onto that line. */
+  var DENT_REACH = 1.6;
+  function inwardOnly(i, p, start) {
+    if (!start) return p;
+    var c = Poly.centroid(st.verts.map(function (q, k) { return k === i ? start : q; }));
+    var dx = c.x - start.x, dy = c.y - start.y, len = Math.hypot(dx, dy) || 1, ux = dx / len, uy = dy / len;
+    var t = Math.max(0, Math.min(len * DENT_REACH, (p.x - start.x) * ux + (p.y - start.y) * uy));
+    return { x: start.x + ux * t, y: start.y + uy * t };
+  }
   function offTheLine(i, p) {
     var v = st.verts.slice(); v[i] = p;
     var n = v.length, a = v[(i + n - 1) % n], b = v[(i + 1) % n];
@@ -6324,7 +6369,13 @@
              * drag a vertex out onto the snow and the shape they were being
              * taught about was half off the thing it was drawn on. The glass
              * is the boundary, with room left for the knob and its ring. */
-            var np = Poly.clampSimple(st.verts, i, clampToCard(p));
+            /* THE DENT IS A SLIDE INWARD (the user: "the child can still stretch the point
+               outside and make a quadrilateral, then it bounces back — I want a condition so
+               they cannot"): on a dent drag the corner moves only along the line from where it
+               was toward the middle of the shape — never outward, never sideways onto a side's
+               line — so the shape cannot be stretched or flattened on the way, and the purple
+               diagonal appears only for a real dent (offTheLine, below). */
+            var np = Poly.clampSimple(st.verts, i, spec.until === 'concave' ? inwardOnly(i, clampToCard(p), start) : clampToCard(p));
             /* NEVER A STRAIGHT CORNER (the user, screen 27: "the student should not be able to
                create a 180° angle"): stretching a corner, a step that would flatten it — or a
                neighbour — to within STRAIGHT_BAND of 180° is not taken; the corner stays where
@@ -6513,12 +6564,15 @@
         function classify(answer) {
           if (resolving || !answer || !sw.card) return;
           stopDemo();
-          evt('answer:selected', { item: sw.card._name, zone: answer });
-          resolving = true;
           var card = sw.card;
-          st.lastEl = card;
           var right = Poly.isRegular(card._verts) ? 'regular' : 'irregular';
           var ok = answer === right;
+          // (`correct` travels with the event: game.js holds the input for a wrong answer, which
+          // his reply then releases — a right card is answered by the card itself and must not
+          // leave the next one locked for the failsafe's three seconds)
+          evt('answer:selected', { item: card._name, zone: answer, correct: ok });
+          resolving = true;
+          st.lastEl = card;
 
           if (ok) {
             var zone = sw.zones[answer];
@@ -6590,7 +6644,7 @@
                 why === 'sides'   ? { t: 'Try again! The sides are not all equal.', vo: 'fb36' } :
                 why === 'angles'  ? { t: 'Try again! The angles are not all equal.', vo: 'fb37' } :
                 why === 'both'    ? { t: 'Try again! The sides and the angles are not all equal.', vo: 'fb38' } : null,
-                { tries: 1 });
+                { tries: 1, marked: true });
               // NOT A SWING AND A SPRING: it glides back to the middle, where the
               // marks on it say why (whyShape), and waits for another try
               var reset2 = function () {
@@ -6633,7 +6687,7 @@
                  `teach` lines, screens.js), the sides and the corners lit on the card as he
                  names them (Stage.teach 'sides' / 'angles'); then the sheet lifts and the card
                  glides into its own pile (`after`, once he is down again). */
-              onTap('wrong', null, { tries: 2, teach: { el: card, kind: why || 'both', fit: 'swipe' },
+              onTap('wrong', null, { tries: 2, marked: true, teach: { el: card, kind: why || 'both', fit: 'swipe' },
                                      after: function () { later(reduced() ? 0 : 320, explain); } });
               // never stuck: with nobody to say it (reduced motion, a review jump) the card
               // goes to its pile once the reason has been seen
@@ -6832,15 +6886,18 @@
           c.style.cursor = 'pointer';
           on(c, 'pointerdown', function (e) {
             e.preventDefault(); if (c._done || c._off) return;
-            // ONE PRESS, ONE ANSWER: a double click on a wrong card is one miss, not two
+            // ONE PRESS, ONE ANSWER: a double click on a wrong card is one miss, not two — and a
+            // card pressed again while he is still answering its miss (the QA checkpoints:
+            // "duplicate taps are ignored while feedback runs") is not a second miss either
             var at = Date.now(); if (c._pressedAt && at - c._pressedAt < 450) return; c._pressedAt = at;
+            if (c._missAt && at - c._missAt < 2500) return;
             st.lastEl = c;
             evt('answer:selected', { option: c._opt.id, correct: !!c._opt.correct });
             if (c._opt.correct) {
               c._done = true; got++; c.style.cursor = '';
               if (c._card) c._card._mark('correct');
               // (`last`: the one that completes the question — game.js cheers the level, not the card)
-              onTap('correct', null, { last: got >= need });
+              onTap('correct', null, { last: got >= need, marked: true });
               if (got >= need) { endInteraction(); resolve({ result: 'correct' }); }
             } else {
               /* EACH WRONG CARD KEEPS ITS OWN COUNT (the user's spec). The
@@ -6850,7 +6907,7 @@
                  for the rest of this question. The right cards and the other
                  wrong one are never touched by it, and nothing is revealed.
                  A new question builds new cards, so nothing carries over. */
-              c._misses = (c._misses || 0) + 1;
+              c._misses = (c._misses || 0) + 1; c._missAt = at;
               // (spec.outAfter: on Level 1 the explanation comes with the FIRST miss — the user:
               // "do not make the student fail twice" — so the card goes out after it)
               var out = c._misses >= (spec.outAfter || 2);
@@ -6863,7 +6920,7 @@
                 if (out && c.classList) { c.style.opacity = ''; c.classList.add('card-off'); }
               });
               // (with the card's own clue: a circle's curve, an open path's gap — screens.js `reason`)
-              onTap('wrong', null, { card: c._opt.id, tries: c._misses, out: out, reason: c._opt.reason });
+              onTap('wrong', null, { card: c._opt.id, tries: c._misses, out: out, reason: c._opt.reason, marked: true });
             }
           });
         });
@@ -7345,10 +7402,18 @@
       var valid = function () { return Poly.diagonalsFrom(from, st.n).filter(function (j) { return !diagonalUsed(from, j); }); };
       var targets = function () {
         if (!sides) return valid();
-        // (a corner already joined by a side is done with: st.sidesDone)
+        // (a corner already joined by a side is done with: st.sidesDone — AND SO IS THE OTHER
+        // NEIGHBOUR once a side has been named: the user, "the child made a side, so why can the
+        // card draw the other side?" One side is the lesson; a second is the same lesson
+        // again. After it, only a corner a diagonal can reach is a place the line may go.)
         var spentAt = (st.sidesDone || []).map(function (sd) { return sd[1]; });
+        var sideMade = !!(st.sidesDone && st.sidesDone.length);
         var all = [];
-        for (var q = 0; q < st.n; q++) if (q !== from && !diagonalUsed(from, q) && spentAt.indexOf(q) < 0) all.push(q);
+        for (var q = 0; q < st.n; q++) {
+          if (q === from || diagonalUsed(from, q) || spentAt.indexOf(q) >= 0) continue;
+          if (sideMade && Poly.isAdjacent(from, q, st.n)) continue;
+          all.push(q);
+        }
         return all;
       };
       // THE MOVE, SHOWN — once the child has been still a while (hintLadder).
@@ -8093,7 +8158,7 @@
       var f = svg.querySelector('#logSoft feGaussianBlur');
       if (!f) return;
       if (sd > 0.05) { f.setAttribute('stdDeviation', sd.toFixed(2)); perchLog.setAttribute('filter', 'url(#logSoft)'); }
-      else perchLog.removeAttribute('filter');
+      else { perchLog.removeAttribute('filter'); f.setAttribute('stdDeviation', '0'); }
     },
     /** game.js: while a card is being taught, IT is the content the bubble
         keeps clear of — everything else is dimmed scenery under the sheet */

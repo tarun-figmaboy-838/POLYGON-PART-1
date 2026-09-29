@@ -805,10 +805,12 @@
     var now = Date.now(), lines = [], pick = null;
     if (current !== feedbackScreen) { feedbackScreen = current; lastPraiseAt = 0; }
     if (kind === 'correct') {
-      if (o.quiet || o.face === 'dip') { if (o.final) wrongSinceRight = false; return null; }
-      if (!o.final && inputSpec && inputSpec.praise === false) return null;
-      // (the answer that completes a level is always met, once: it is the level's own cheer)
+      // (the answer that completes a level is always met, once: it is the level's own cheer —
+      // even on a question that cheers nothing else (praise: false, the swipe: its right cards
+      // are answered by the cards themselves, and "Great job!" comes when the last one is in)
       var ends = levelEnd() && (o.final || o.last);
+      if ((o.quiet && !ends) || o.face === 'dip') { if (o.final) wrongSinceRight = false; return null; }
+      if (!o.final && !ends && inputSpec && inputSpec.praise === false) return null;
       var due = ends ? levelCheered !== current : o.final ? now - lastPraiseAt > 1500 : praisedInput !== inputSeq;
       if (!due) return null;
       praisedInput = inputSeq; lastPraiseAt = now;
@@ -3603,7 +3605,9 @@
         if (director) director.emit(kind === 'correct' ? 'answer:correct' : 'answer:incorrect', { perTap: true });
         // (not the measuring taps: a measured side is not an answer)
         // (nor a corner let go short of the answer: guidance, not a verdict — stage `soft`)
-        if (!(inputSpec && inputSpec.type === 'tap-each') && !(info && info.soft)) verdictFx(kind);
+        // (nor a card that draws its own verdict — the option cards' halo, stage.js optionCard
+        // _mark: the generic flash, shake and shrink on top of it were the "pop" the user saw)
+        if (!(inputSpec && inputSpec.type === 'tap-each') && !(info && info.soft) && !(info && info.marked)) verdictFx(kind);
       }
       var list = s.perTap ? (s.perTap[kind] || s.perTap.any) : null;
       // (confetti for the answer that COMPLETES the question, not for every right card on the
@@ -4358,10 +4362,11 @@
       director.emit(name, payload);
       if (name === 'hint:show') hintGesture(payload);
       if (name === 'swipe:home') swipeHome(payload);
-      // THE ANSWER IS GIVEN: nothing more can be done to the card until he
-      // has answered it (react(): the reason) or asked about the next one
-      // (swipeHome) and gone back down
-      if (name === 'answer:selected' && popsHere()) holdInput(true);
+      // A WRONG ANSWER IS GIVEN: nothing more can be done to the card until he has answered it
+      // (react(): the reason, which releases the hold). Not a right one: a right card is
+      // answered by the card itself and the next is dealt — held here, the next card sat
+      // locked until the failsafe let go three seconds later (the QA checkpoints found it)
+      if (name === 'answer:selected' && popsHere() && !(payload && payload.correct)) holdInput(true);
       if (name === 'measurement:start' && payload && payload.what === 'side') tailWhenHome();
       // THE COMPARE PAIR TELLS HIM WHAT HAPPENED: a diagonal left the shape
       // (surprised), a card was named (the badge's `react`)

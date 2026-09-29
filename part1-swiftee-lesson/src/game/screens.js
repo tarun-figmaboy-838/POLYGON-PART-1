@@ -267,7 +267,8 @@
          throws a burst of confetti from behind its own edges — one burst per card, only from
          the card that was pressed (a found card cannot be pressed again). A wrong card glows
          red and shrinks back. */
-      perTap: { correct: [{ juice: 'pop', target: 'option' }, { sfx: 'correct' },
+      // (no pop on the card — the user: the verdict is the glow, stage.js optionCard _mark)
+      perTap: { correct: [{ sfx: 'correct' },
                           { juice: 'confetti', target: 'option', count: 18, fromEdge: true }],
                 wrong:   BUZZ }
     },
@@ -546,7 +547,11 @@
       // The diagonals are NOT on the screen-level stage: they arrive by
       // their own beat, one after another, once the chapter's snow has
       // cleared — a shape that comes up already starred shows nothing.
-      stage: { kind: 'polygon', sides: 5, label: { text: 'Diagonal' } },
+      // AND NO "Diagonal" TAG UNDER THE CARD (the user: "I told you, no diagonal name tag
+      // outside, below the card"): the screen-level stage carried one with no place to point
+      // to, so a rebuild — a jump, a replay, a resize — printed it under the shape. The name
+      // was taught on the connect screen, beside the line it names, and is not repeated here.
+      stage: { kind: 'polygon', sides: 5 },
       beats: [
         { instruction: null },
         { stage: { kind: 'polygon', sides: 5, enter: 'morph' } },
@@ -578,19 +583,26 @@
       swiftee: { pos: 'log', size: 'medium' },
       instruction: 'Are the diagonals inside or outside?',
       lines: ['These diagonals stay inside the polygon, so the answer is Inside.'],
-      stage: { kind: 'polygon', sides: 5, diagonals: 'all', choices: ['Inside', 'Outside'] },
+      // (no choices on the screen-level stage: the beats deal them on the question's words, and
+      // a rebuild — a jump, a resize — must not put them up before the question)
+      stage: { kind: 'polygon', sides: 5, diagonals: 'all' },
       beats: [
         // THE QUESTION FIRST, THEN THE ANSWERS (the user: never a button before the learner has
         // been introduced to it). The name tag from the screen before comes down; he asks — on
         // "inside" the shape's inside glows with its diagonals, on "outside" the band round it
         // (dual coding) — a beat to take it in, and only then are the two answers dealt.
         { stage: { label: null } },
-        { instruction: 'Are the diagonals inside or outside?', vo: 'p17i' },
+        // THE ANSWERS ARRIVE ON THEIR WORDS (the user: "the buttons are delayed — when the VO says
+        // 'are the diagonals inside or outside?'"): "Inside" is dealt as he says inside, "Outside"
+        // as he says outside — introduced by the question itself, not after a pause behind it.
+        // The question is still asked before either can be pressed (the input comes after).
+        { parallel: [
+          { instruction: 'Are the diagonals inside or outside?', vo: 'p17i' },
+          { stage: { choices: ['Inside', 'Outside'], cue: true } }
+        ] },
         // SAID ONCE: the line that echoed the instruction ("Are they inside or outside?") went —
         // the same request twice in a row read as a stutter, not a lesson.
         { swiftee: 'think' },
-        { wait: 500 },
-        { stage: { choices: ['Inside', 'Outside'] } },
         /* TWO TRIES (the user, the inside/outside question). The first miss is "Try again!" and
            nothing more — the answer is not given away. The second is answered: the diagonals
            light one after another inside the shape, he says why the answer is Inside, the
@@ -1109,7 +1121,8 @@
       instruction: 'Are the sides and angles still equal?',
       say: 'It’s still a pentagon. But are the sides and angles still equal?',
       lines: ['The sides and angles changed, so they are not equal.'],
-      stage: { choices: ['Still equal', 'Not equal'] },
+      // (the answers are dealt by the beats, on the question's words — not by a rebuild)
+      stage: {},
       beats: [
         { instruction: null },
         // THE QUESTION FIRST, THEN THE ANSWERS (the user): he asks, the question settles on the
@@ -1118,9 +1131,12 @@
         { say: 'It’s still a pentagon. But are the sides and angles still equal?', parts: ['It\u2019s still a pentagon.', 'But are the sides', 'and angles still equal?'], vo: 'p32b' },
         // the script's last two bubbles are the instruction: it settles into
         // one question over the answers, and is not said a second time
-        { instruction: 'Are the sides and angles still equal?', vo: 'p32bi' },
-        { wait: 400 },
-        { stage: { choices: ['Still equal', 'Not equal'] } },
+        // (the two answers dealt on the question's own words — "still", "equal" — as on the
+        // inside/outside question: no pause behind the question before they can be seen)
+        { parallel: [
+          { instruction: 'Are the sides and angles still equal?', vo: 'p32bi' },
+          { stage: { choices: ['Still equal', 'Not equal'], cue: { 'Still equal': ['still'], 'Not equal': ['equal'] } } }
+        ] },
         /* TWO TRIES (the user, screen 28): the first miss is the clue and a retry; the second is
            explained — the readings light as he says why — the Not equal button shows green on
            the word, a moment, and the lesson goes on. No third attempt. */

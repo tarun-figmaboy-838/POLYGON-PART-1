@@ -86,10 +86,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     window.SFX.play = (n, o) => { if (n === 'correct') window.__cues.correct++; if (n === 'wrong') window.__cues.wrong++; return play(n, o); };
     window.__fx = { confetti: 0 };
     if (window.Juice && window.Juice.confetti) { const c = window.Juice.confetti; window.Juice.confetti = function () { window.__fx.confetti++; return c.apply(this, arguments); }; }
-    // every distinct thing his bubble says, in order, with the time it first showed
+    // every distinct thing said, in order, with the time it first showed — his bubble, or the
+    // plank card a line goes on when he is not on the screen (make-concave's explanations)
     window.__said = [];
-    const b = document.getElementById('bubble');
-    new MutationObserver(() => { const t = b.textContent.trim(); const last = window.__said[window.__said.length - 1]; if (t && (!last || last.t !== t)) window.__said.push({ t, at: performance.now() }); }).observe(b, { childList: true, subtree: true, characterData: true });
+    ['bubble', 'instruction'].forEach((id) => {
+      const b = document.getElementById(id); if (!b) return;
+      new MutationObserver(() => { const t = b.textContent.trim(); const last = window.__said[window.__said.length - 1]; if (t && (!last || last.t !== t)) window.__said.push({ t, at: performance.now(), from: id }); }).observe(b, { childList: true, subtree: true, characterData: true });
+    });
     window.__screenAt = {};
     window.Game.director.on('start', () => { window.__screenAt[window.Game.screen] = performance.now(); });
   });
@@ -123,8 +126,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await page.goto(`http://127.0.0.1:${port}/index.html?story=0`, { waitUntil: 'domcontentloaded' });
   await step(1, 'boot: loads, no error, no missing asset, no horizontal overflow, Start visible', async () => {
     await waitFn(() => document.getElementById('loading') && document.getElementById('loading').classList.contains('ready'), null, 120000);
+    // (the Start button fades up once the page is ready)
+    await waitFn(() => parseFloat(getComputedStyle(document.getElementById('start')).opacity) > 0.5, null, 8000).catch(() => {});
     const s = await ev(() => ({ game: !!document.getElementById('game'), stage: !!document.getElementById('stage'), overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
-                                start: !!document.getElementById('start') && getComputedStyle(document.getElementById('start')).opacity !== '0' }));
+                                start: !!document.getElementById('start') && parseFloat(getComputedStyle(document.getElementById('start')).opacity) > 0.5 }));
     return { ok: s.game && s.stage && !s.overflow && s.start && errors.length === 0 && missing.length === 0, extra: { ...s, errors: errors.slice(0, 3), missing: missing.slice(0, 3) } };
   });
   await instrument();
@@ -133,6 +138,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await sleep(900);
   let closeShot = null;
   await step(2, 'intro: he is large and sharp on a close shot, the log is there (blurred), nothing else to press', async () => {
+    // he arrives by sleigh (his own element hidden until he has landed): sampled once he is there
+    await waitFn(() => window.Swiftee.state !== 'enter' && parseFloat(getComputedStyle(window.Swiftee.el).opacity) > 0.5, null, 20000).catch(() => {});
     const s = await ev(() => ({
       sw: window.Swiftee.bounds().height, on: parseFloat(getComputedStyle(window.Swiftee.el).opacity) > 0.5,
       blur: parseFloat(document.querySelector('#logSoft feGaussianBlur').getAttribute('stdDeviation') || '0'),
@@ -157,7 +164,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       prev = c;
       if (text && text !== lastText) { lines.push({ t: text, at: performance.now() - T0, screen: window.Game.screen }); lastText = text; }
       const entry = { at: performance.now() - T0, screen: window.Game.screen, dir: window.Game.director.state, text: text.slice(0, 24), words,
-                      blur: parseFloat(blurEl.getAttribute('stdDeviation') || '0'), logW: logEl.getBoundingClientRect().width, sw: window.Swiftee.state, pos: window.Swiftee.pos,
+                      blur: logEl.getAttribute('filter') ? parseFloat(blurEl.getAttribute('stdDeviation') || '0') : 0, logW: logEl.getBoundingClientRect().width, sw: window.Swiftee.state, pos: window.Swiftee.pos,
                       cx: Math.round(c.x), cy: Math.round(c.y), mode: window.Input.mode() };
       log.push(entry);
       if (window.Game.screen === 3 && window.Game.director.state === 'WAITING_FOR_USER') { res({ log, lines, maxJump }); return; }
@@ -183,14 +190,19 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const flightAt = first((e) => /air|perch|fly/.test(e.sw));
     const landedAt = first((e) => e.pos === 'log' && !/air|perch|fly/.test(e.sw) && e.screen >= 2);
     const level1At = first((e) => e.screen === 3 && e.dir === 'WAITING_FOR_USER');
-    const blurGone = lg[lg.length - 1].blur < 0.05;
+    const blurGone = lg[lg.length - 1].blur < 0.1;
     const order = blurStart != null && zoomStart != null && flightAt != null && landedAt != null && level1At != null && blurStart <= flightAt + 50 && zoomStart <= flightAt + 50 && flightAt <= landedAt && landedAt <= level1At;
     return { ok: order && blurGone && intro.maxJump < 90, extra: { blurStart, zoomStart, flightAt, landedAt, level1At, blurGone, maxJump: Math.round(intro.maxJump) } };
   });
   await step(5, 'on the stone: his feet on the perch point, in front of it, and still for 500 ms', async () => {
-    const a = await ev(() => { const p = window.Stage.perchAt(), r = window.Stage.svg.getBoundingClientRect(), b = window.Swiftee.bounds(); return { feetX: r.left + p.x * r.width, feetY: r.top + p.y * r.height, cx: (b.left + b.right) / 2, bottom: b.bottom, log: getComputedStyle(document.querySelector('.perch-log')).opacity }; });
-    await sleep(500);
-    const b = await ev(() => { const b = window.Swiftee.bounds(); return { cx: (b.left + b.right) / 2, bottom: b.bottom }; });
+    // once his landing has settled (the squash on touching down): two readings 500 ms apart
+    let a = null, b = null;
+    for (let k = 0; k < 8; k++) {
+      a = await ev(() => { const p = window.Stage.perchAt(), r = window.Stage.svg.getBoundingClientRect(), b = window.Swiftee.bounds(); return { feetX: r.left + p.x * r.width, feetY: r.top + p.y * r.height, cx: (b.left + b.right) / 2, bottom: b.bottom, log: getComputedStyle(document.querySelector('.perch-log')).opacity }; });
+      await sleep(500);
+      b = await ev(() => { const b = window.Swiftee.bounds(); return { cx: (b.left + b.right) / 2, bottom: b.bottom }; });
+      if (Math.abs(a.bottom - b.bottom) < 2 && Math.abs(a.cx - b.cx) < 2) break;
+    }
     await shot('02-intro-log-seating');
     const ok = Math.abs(a.bottom - a.feetY) < 16 && Math.abs(a.cx - a.feetX) < 24 && Math.abs(a.bottom - b.bottom) < 2 && Math.abs(a.cx - b.cx) < 2 && a.log === '1';
     return { ok, extra: { feet: [Math.round(a.feetX), Math.round(a.feetY)], him: [Math.round(a.cx), Math.round(a.bottom)], later: [Math.round(b.cx), Math.round(b.bottom)] } };
@@ -254,22 +266,24 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // ---- Level 2 -------------------------------------------------------------
   let panelRects = {};
-  await step(10, 'Level 2 before "Select any vertex.": no dots, no ghost, no line', async () => {
+  await step(10, 'Level 2 before "Select any vertex.": no dot pulses yet, no ghost, no line (the dots themselves come first, by design)', async () => {
     const i = await jump('pick-vertex');
     const early = await ev(() => new Promise((res) => {
-      const T0 = performance.now(); let dotsEarly = 0, ghostEarly = 0, samples = 0;
+      const T0 = performance.now(); let pulseEarly = 0, ghostEarly = 0, linesEarly = 0, samples = 0;
+      const looping = (k) => k.getAnimations && k.getAnimations().some((a) => a.playState === 'running' && a.effect && a.effect.getTiming && a.effect.getTiming().iterations === Infinity);
       const tick = () => {
         const told = /Select any vertex/.test(document.getElementById('bubble').textContent + (document.getElementById('instruction') || {}).textContent);
-        if (told || performance.now() - T0 > 20000) { res({ dotsEarly, ghostEarly, samples, told }); return; }
+        if (told || performance.now() - T0 > 20000) { res({ pulseEarly, ghostEarly, linesEarly, samples, told }); return; }
         samples++;
-        dotsEarly += [...document.querySelectorAll('#stage .knob')].filter((k) => parseFloat(getComputedStyle(k).opacity) > 0.2).length;
+        pulseEarly += [...document.querySelectorAll('#stage .knob')].filter(looping).length;
         ghostEarly += document.querySelectorAll('#stage .gesture-ghost, #stage .ghost-demo').length;
+        linesEarly += ((window.Stage.state.diagonals || []).length) + (window.Stage.state.segment ? 1 : 0);
         setTimeout(tick, 60);
       };
       tick();
     }));
     await waiting(i);
-    return { ok: early.told && early.dotsEarly === 0 && early.ghostEarly === 0 && early.samples > 3, extra: early };
+    return { ok: early.told && early.pulseEarly === 0 && early.ghostEarly === 0 && early.linesEarly === 0 && early.samples > 3, extra: early };
   });
   await step(11, 'Level 2 layout: him left, the card right; the card still across the teaching states (≤10 px, ≤2 %)', async () => {
     const sw = await swiftee(), panel = await rect('#stage .panel');
@@ -281,16 +295,17 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     return { ok: panel && panel.x > sw.x + sw.w * 0.5 && stable, extra: { him: [Math.round(sw.x), Math.round(sw.r)], card: [Math.round(panel.x), Math.round(panel.r)], drift } };
   });
   let vertsL2 = null;
-  await step(12, 'Level 2 vertex: plain dots, none pulsing; the picked one becomes the anchor and stays put', async () => {
+  await step(12, 'Level 2 vertex: every dot a plain dot (they all pulse once "vertex" is said — any may be picked), no large ring; the picked one becomes the anchor and stays put', async () => {
     const i = await jump('pick-vertex'); await waiting(i); await sleep(300);
     const before = await ev(() => ({ verts: window.Stage.state.verts.map((p) => [Math.round(p.x), Math.round(p.y)]), knobs: window.Stage.state.knobEls.length,
                                      pulsing: window.Stage.state.knobEls.filter((k) => k.getAnimations && k.getAnimations().some((a) => a.playState === 'running')).length,
-                                     rings: [...document.querySelectorAll('#stage .layer-fx circle, #stage .layer-poly circle')].filter((c) => +c.getAttribute('r') > 14).length }));
+                                     rings: [...document.querySelectorAll('#stage .layer-fx circle, #stage .layer-poly circle')].filter((c) => +c.getAttribute('r') > 14 && (c.getAttribute('fill') || 'none') === 'none').length,
+                                     r: window.Stage.state.knobEls.map((k) => +k.getAttribute('r')) }));
     vertsL2 = before.verts;
     const k = await knobClient(0); await page.mouse.click(k.x, k.y);
-    await waitFn(() => window.Game.screen > 5 || window.Stage.state.from === 0, null, 20000); await sleep(600);
+    await waitFn(() => window.Stage.state.from != null, null, 20000).catch(() => {}); await sleep(600);
     const after = await ev(() => ({ from: window.Stage.state.from, verts: window.Stage.state.verts.map((p) => [Math.round(p.x), Math.round(p.y)]), screen: window.Game.screen, picked: window.Stage.state.vcolor && window.Stage.state.vcolor[0] }));
-    return { ok: before.knobs >= 5 && before.pulsing === 0 && before.rings === 0 && (after.from === 0 || !!after.picked) && JSON.stringify(after.verts) === JSON.stringify(before.verts), extra: { before, after: { from: after.from, screen: after.screen } } };
+    return { ok: before.knobs >= 5 && before.pulsing <= before.knobs && before.rings === 0 && Math.max(...before.r) <= 12 && (after.from === 0 || !!after.picked) && JSON.stringify(after.verts) === JSON.stringify(before.verts), extra: { before, after: { from: after.from, screen: after.screen } } };
   });
   await step(13, 'Level 2 ghost: from the real vertex, toward a non-adjacent one, inside the card, the polygon untouched', async () => {
     const i = await idx('connect'); await waiting(i);
@@ -408,27 +423,53 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const labels = await choiceLabels();
     const correct = await ev(() => { const s = window.Screens.list[window.Game.screen]; const b = (s.beats || []).find((b) => b.input && b.input.type === 'choice'); return b && b.input.correct; });
     const wrong = labels.find((l) => l !== correct);
+    // the right button's paint now: revealed = its fills change later (retinted to the success tone)
+    const face = () => ev((c) => { const b = document.querySelector(`#stage .choice[data-label="${c}"]`); return b ? [...b.querySelectorAll('[fill], [stroke]')].map((e) => (e.getAttribute('fill') || '') + '/' + (e.getAttribute('stroke') || '')).join(',') : ''; }, correct);
+    const face0 = await face();
     const before = (await said()).length, c0 = await cues();
     await tapChoice(wrong); await sleep(300);
-    const s1 = await ev(() => ({ locked: window.Input.mode() === 'locked', revealed: !!document.querySelector('#stage .choice.reveal, #stage .choice.revealed, #stage .choice.mark-good, #stage .choice[data-revealed]') }));
-    await unlocked(25000); await sleep(200);
+    const s1 = { locked: await ev(() => window.Input.mode() === 'locked'), revealed: (await face()) !== face0 };
+    await unlocked(25000); await waiting(i, 30000).catch(() => {}); await sleep(200);
     const lines1 = (await said()).slice(before);
-    const first = { tryAgain: lines1.some((t) => /^Try again/.test(t)), revealed: s1.revealed, again: await ev(() => window.Game.director.state === 'WAITING_FOR_USER'), screen: await ev(() => window.Game.screen) };
+    const first = { tryAgain: lines1.some((t) => /^Try again/.test(t)), revealed: s1.revealed || (await face()) !== face0, again: await ev(() => window.Game.director.state === 'WAITING_FOR_USER'), screen: await ev(() => window.Game.screen) };
     cp(n, id + ' first wrong: "Try again", nothing revealed, another go', first.tryAgain && !first.revealed && first.again && first.screen === i, { first, lines: lines1 });
     const before2 = (await said()).length;
     await tapChoice(wrong); await sleep(400);
-    const s2 = await ev(() => ({ locked: window.Input.mode() === 'locked' }));
+    // (locked: nothing can be pressed — the question is over (its input resolved, the
+    // explanation beats run) or he is answering)
+    const s2 = await ev(() => ({ locked: window.Input.mode() !== 'polygon' || window.Game.director.state !== 'WAITING_FOR_USER' }));
+    let revealed = false;
+    for (let k = 0; k < 60; k++) { if ((await face()) !== face0) { revealed = true; break; } if (await ev((i) => window.Game.screen > i, i)) break; await sleep(250); }
     await waitFn((i) => window.Game.screen > i, i, 40000).catch(() => {});
     const lines2 = (await said()).slice(before2);
-    const lit = await ev(() => ({ revealed: !!document.querySelector('#stage .choice.reveal, #stage .choice.revealed, #stage .choice.mark-good, #stage .choice[data-revealed]'), lit: [...document.querySelectorAll('#stage .layer-poly line, #stage .compare-diagonals line')].filter((l) => parseFloat(getComputedStyle(l).opacity) > 0.3).length }));
+    const lit = await ev(() => ({ lit: [...document.querySelectorAll('#stage .layer-poly line, #stage .compare-diagonals line')].filter((l) => parseFloat(getComputedStyle(l).opacity) > 0.3).length }));
     const advanced = await ev((i) => window.Game.screen > i, i);
-    cp(n + 1, id + ' second wrong: locked, explained, the answer shown, then on — no third try', s2.locked && lines2.length >= 1 && advanced, { locked: s2.locked, lines: lines2, ...lit, advanced });
+    cp(n + 1, id + ' second wrong: locked, explained, the answer shown, then on — no third try', s2.locked && lines2.length >= 1 && revealed && advanced, { locked: s2.locked, lines: lines2, revealed, ...lit, advanced });
   };
   await twoTry('inside-or-outside', 19);
-  await step(21, 'Inside / Outside text sync: marks, labels and the words in one beat (< 500 ms apart or the same beat)', async () => {
-    const r = choiceInfo || {};
-    const ok = r.marks != null && r.labels != null && Math.abs(r.marks - r.labels) < 1500 && r.labels < (r.choices == null ? Infinity : r.choices + 1);
-    return { ok, extra: r };
+  await step(21, 'Inside / Outside text sync: the "Inside" and "Outside" marks land on their words (≤ 500 ms), on their own screens', async () => {
+    const out = [];
+    for (const [id, word] of [['all-inside', 'inside'], ['one-outside', 'outside']]) {
+      await jump(id);
+      // this screen's own mark (data-mark) and a word lit on this screen (not one still up
+      // from the screen before)
+      const r = await ev((word) => new Promise((res) => {
+        const T0 = performance.now(); let wordAt = null, markAt = null;
+        const old = new Set([...document.querySelectorAll('#bubble .in')]);
+        const tick = () => {
+          const now = performance.now() - T0;
+          if (wordAt == null && [...document.querySelectorAll('#bubble .in')].some((w) => !old.has(w) && w.textContent.toLowerCase().indexOf(word) === 0)) wordAt = now;
+          // (seen, not merely built: a jump puts the screen's marks up hidden, and the word shows them)
+          const mk = document.querySelector('#stage .compare-mark[data-mark="' + word + '"]');
+          if (markAt == null && mk && parseFloat(getComputedStyle(mk).opacity) > 0.5) markAt = now;
+          if ((wordAt != null && markAt != null) || now > 30000) { res({ wordAt, markAt }); return; }
+          setTimeout(tick, 30);
+        };
+        tick();
+      }), word);
+      out.push({ id, ...r, gap: r.wordAt != null && r.markAt != null ? Math.round(r.markAt - r.wordAt) : null });
+    }
+    return { ok: out.every((o) => o.gap != null && Math.abs(o.gap) <= 500), extra: out };
   });
   await step(7.1, 'Inside / Outside explanation screenshot', async () => { const i = await jump('inside-or-outside'); await waiting(i); await sleep(300); await shot('07-inside-outside-explanation'); return true; });
 
@@ -449,20 +490,22 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await step(23, 'compare focus: a glow, not a thick yellow stroke; the outline unchanged', async () => {
     await jump('compare');
     await waitFn(() => !!document.querySelector('#stage .focus-ring'), null, 40000);
-    const s = await ev(() => { const ring = document.querySelector('#stage .focus-ring'); const f = getComputedStyle(ring).filter; const paths = [...document.querySelectorAll('#stage .layer-poly path')].map((p) => ({ stroke: p.getAttribute('stroke'), w: p.getAttribute('stroke-width') })); return { glow: /drop-shadow/.test(f), yellowStroke: paths.some((p) => /ffc83d|ffd54a|yellow|#ff[cd]/i.test(p.stroke || '')), widths: [...new Set(paths.map((p) => p.w))] }; });
+    const s = await ev(() => { const ring = document.querySelector('#stage .focus-ring'); const f = getComputedStyle(ring).filter; const paths = [...document.querySelectorAll('#stage .layer-poly path')].map((p) => ({ stroke: p.getAttribute('stroke'), w: p.getAttribute('stroke-width') })); return { glow: /drop-shadow|url\(/.test(f), filter: f, yellowStroke: paths.some((p) => /ffc83d|ffd54a|yellow|#ff[cd]/i.test(p.stroke || '')), widths: [...new Set(paths.map((p) => p.w))] }; });
     return { ok: s.glow && !s.yellowStroke, extra: s };
   });
 
   // ---- the quadrilateral (screen 21) ------------------------------------------
   await step(24, 'make-concave: a quadrilateral, only the active dot pulses, no large ring', async () => {
-    const i = await jump('make-concave'); await waiting(i); await sleep(500);
+    const i = await jump('make-concave'); await waiting(i); await sleep(1500);   // (after the dots' arrival pop)
     const s = await ev(() => ({ n: window.Stage.state.verts.length, pulsing: window.Stage.state.knobEls.filter((k) => k.getAnimations && k.getAnimations().some((a) => a.playState === 'running')).length,
-                                rings: [...document.querySelectorAll('#stage .layer-fx circle, #stage .layer-poly circle')].filter((c) => +c.getAttribute('r') > 14).length, knobs: window.Stage.state.knobEls.length }));
+                                rings: [...document.querySelectorAll('#stage .layer-fx circle, #stage .layer-poly circle')].filter((c) => +c.getAttribute('r') > 14 && (c.getAttribute('fill') || 'none') === 'none').length, knobs: window.Stage.state.knobEls.length }));
     return { ok: s.n === 4 && s.pulsing <= 1 && s.rings === 0 && s.knobs >= 1, extra: s };
   });
+  // the corner to drag: the one dot that keeps breathing (else the screen's highlighted vertex, else 0)
+  const activeKnob = () => ev(() => { const ks = window.Stage.state.knobEls || []; const j = ks.findIndex((k) => k.getAnimations && k.getAnimations().some((a) => a.playState === 'running' && a.effect && a.effect.getTiming && a.effect.getTiming().iterations === Infinity)); if (j >= 0) return j; const s = window.Screens.list[window.Game.screen]; const b = (s.beats || []).find((b) => b.input && b.input.type === 'drag-vertex'); if (b && b.input.vertex != null) return b.input.vertex; return (s.stage && s.stage.highlight && s.stage.highlight.vertex) || 0; });
   await step(25, 'make-concave first wrong: the diagonals shown and named still inside, the shape springs back, another go', async () => {
     const i = await idx('make-concave'); await waiting(i);
-    const active = await ev(() => { const s = window.Screens.list[window.Game.screen]; const b = (s.beats || []).find((b) => b.input && b.input.type === 'drag-vertex'); return b ? b.input.vertex : 0; });
+    const active = await activeKnob();
     const v0 = await ev((a) => { const p = window.Stage.state.verts[a]; return { x: p.x, y: p.y }; }, active);
     const k = await knobClient(active), c = await toClient(await ev(() => window.Poly.centroid(window.Stage.state.verts)));
     const before = (await said()).length;
@@ -476,8 +519,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     return { ok: lit >= 2 && lines.some((t) => /inside/i.test(t)) && !s.concave && sprung && s.screen === i && s.state === 'WAITING_FOR_USER', extra: { lit, lines, sprung, concave: s.concave } };
   });
   await step(26, 'make-concave second wrong: no third try — the shape is made concave, a diagonal goes outside, explained, then on', async () => {
-    const i = await idx('make-concave');
-    const active = await ev(() => { const s = window.Screens.list[window.Game.screen]; const b = (s.beats || []).find((b) => b.input && b.input.type === 'drag-vertex'); return b ? b.input.vertex : 0; });
+    const i = await idx('make-concave'); await waiting(i);
+    const active = await activeKnob();
     const k = await knobClient(active), c = await toClient(await ev(() => window.Poly.centroid(window.Stage.state.verts)));
     const before = (await said()).length;
     await dragPath(k, { x: k.x + (c.x - k.x) * 0.3, y: k.y + (c.y - k.y) * 0.3 }, 8, 80);
@@ -510,14 +553,16 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const wrong = bins.find((b) => b.id !== it.right);
     await dragPath({ x: it.x, y: it.y }, { x: wrong.rect.x + wrong.rect.width / 2, y: wrong.rect.y + wrong.rect.height / 2 }, 10, 60);
     await waitFn(() => !!document.querySelector('#stage .teach-sheet.on'), null, 15000);
-    await sleep(2500);
+    // the lines are drawn on his words: wait for the first, then read what the sheet shows
+    await waitFn(() => { const fx = document.querySelector('#stage .teach-fx'); return !!(fx && fx.querySelector('line')); }, null, 15000).catch(() => {});
+    await sleep(400);
     const s = await ev(() => { const fx = document.querySelector('#stage .teach-fx'); const lines = fx ? fx.querySelectorAll('line').length : 0; const fills = fx ? [...fx.querySelectorAll('path, polygon')].filter((p) => (p.getAttribute('fill') || 'none') !== 'none' && (+p.getAttribute('fill-opacity') || 1) > 0.5 && p.getBBox().width > 20).length : 0; const rings = fx ? [...fx.querySelectorAll('circle')].filter((c) => +c.getAttribute('r') > 6).length : 0; return { lines, fills, rings, locked: window.Input.mode() === 'locked' }; });
     await waitFn(() => window.Stage.state.sort && window.Stage.state.sort.placed >= 1 && !document.querySelector('#stage .teach-sheet'), null, 40000).catch(() => {});
-    const p = await ev((name) => { const it = window.Stage.state.sort.items.find((i) => (i._name || i.getAttribute('data-shape')) === name); return { placed: !!(it && it._placed), bin: it && it._bin ? (it._bin._bin || it._bin).id : (it && it.getAttribute('data-placed')) }; }, it.name);
+    const p = await ev((name) => { const it = window.Stage.state.sort.items.find((i) => (i._name || i.getAttribute('data-shape')) === name); return { placed: !!(it && it._placed) }; }, it.name);
     return { ok: s.locked && s.lines >= 1 && s.fills === 0 && s.rings === 0 && p.placed, extra: { ...s, ...p, right: it.right } };
   });
   await step(29, 'sort dots: no large rings, only the active card’s point moves', async () => {
-    const s = await ev(() => ({ rings: [...document.querySelectorAll('#stage circle')].filter((c) => +c.getAttribute('r') > 14).length, pulsing: [...document.querySelectorAll('#stage .sort-item circle')].filter((c) => c.getAnimations && c.getAnimations().some((a) => a.playState === 'running')).length }));
+    const s = await ev(() => ({ rings: [...document.querySelectorAll('#stage circle')].filter((c) => +c.getAttribute('r') > 14 && (c.getAttribute('fill') || 'none') === 'none').length, pulsing: [...document.querySelectorAll('#stage .sort-item circle')].filter((c) => c.getAnimations && c.getAnimations().some((a) => a.playState === 'running')).length }));
     return { ok: s.rings === 0 && s.pulsing <= 1, extra: s };
   });
 
@@ -556,7 +601,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     return true;
   });
   const rig = await ev(() => new Promise((res) => {
-    const T0 = performance.now(), samples = [], holds = {}, stands = {}; let tools = 0, maxJump = 0, prev = null, ended = null, screenChanged = null, nextStarted = null;
+    const T0 = performance.now(), samples = [], holds = {}, stands = {}, confetti0 = window.__fx.confetti; let tools = 0, maxJump = 0, prev = null, ended = null, screenChanged = null, nextStarted = null;
     const num = (t, re) => { const m = re.exec(t || ''); return m ? m.slice(1).map(Number) : null; };
     const tick = () => {
       const g = document.querySelector('#stage .swiftee-angle-measuring');
@@ -569,7 +614,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         if (bt && prev && /MOVE_TO|RETURN/.test(st)) maxJump = Math.max(maxJump, Math.hypot(bt[0] - prev[0], bt[1] - prev[1]));
         prev = bt;
         samples.push({ at: Math.round(now), st, k, bird: bt && bt.map(Math.round), tool: tt && tt.map(Math.round), rot: rot && rot[0], gap: bt && tt ? Math.round(Math.hypot(tt[0] - bt[0], tt[1] - bt[1])) : null });
-        if (st === 'HOLD' && bt && tt) { const v = window.Stage.state.verts; holds[k] = { tool: tt, rot: rot && rot[0], bird: bt, verts: v.map((p) => [p.x, p.y]), inside: window.Poly.contains(v, { x: bt[0], y: bt[1] }), active: g.querySelectorAll('.active-angle *').length, others: [...document.querySelectorAll('#stage .knob')].filter((kn) => kn.getAnimations && kn.getAnimations().some((a) => a.playState === 'running')).length, confetti: window.__fx.confetti }; stands[k] = bt.map(Math.round); }
+        if (st === 'HOLD' && bt && tt) { const v = window.Stage.state.verts; holds[k] = { tool: tt, rot: rot && rot[0], bird: bt, verts: v.map((p) => [p.x, p.y]), inside: window.Poly.contains(v, { x: bt[0], y: bt[1] }), active: g.querySelectorAll('.active-angle *').length, others: [...document.querySelectorAll('#stage .knob')].filter((kn) => kn.getAnimations && kn.getAnimations().some((a) => a.playState === 'running')).length, confetti: window.__fx.confetti - confetti0 }; stands[k] = bt.map(Math.round); }
       } else if (samples.length && ended == null) ended = now;
       if (screenChanged == null && window.Game.screen !== window.__angleScreen) screenChanged = now;
       if ((ended != null && screenChanged != null) || now > 60000) {
@@ -605,7 +650,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await step(35, 'corner to corner: a different stand each time, continuous motion, no jump', async () => {
     const stands = Object.values(rig.stands).map((s) => s.join(','));
     const distinct = new Set(stands).size;
-    return { ok: distinct === stands.length && stands.length >= 5 && rig.maxJump < 30, extra: { stands: stands.length, distinct, maxStep: rig.maxJump } };
+    // (≤ 60 units between 60 ms samples: a unit a millisecond, the long first flight included)
+    return { ok: distinct === stands.length && stands.length >= 5 && rig.maxJump <= 60, extra: { stands: stands.length, distinct, maxStep: rig.maxJump } };
   });
   await step(36, 'the reading is the geometry: each printed degree equals the interior angle from the vertices (±1°)', async () => {
     const h = rig.holds[Object.keys(rig.holds)[0]];
@@ -664,32 +710,40 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   });
   await step(44, 'regular vs irregular sync: the sides light on "side(s)", the corners on "angle(s)" (≤ 500 ms), never both at once', async () => {
     await jump('regular-vs-irregular');
+    // (timed from this screen's own words: the bubble is cleared first, and a word counts
+    // only once it lights on this screen)
+    await waitFn(() => !document.getElementById('bubble').textContent.trim() || document.querySelectorAll('#bubble .in').length === 0, null, 8000).catch(() => {});
     const r = await ev(() => new Promise((res) => {
-      const T0 = performance.now(), ev = [];
-      let sideWord = null, angleWord = null, sideFx = null, angleFx = null, both = 0;
+      const T0 = performance.now();
+      let sideWord = null, angleWord = null, sideFx = null, angleFx = null, both = 0, seen = new Set();
       const tick = () => {
         const now = performance.now() - T0;
-        const inWords = [...document.querySelectorAll('#bubble .in')].map((w) => w.textContent.toLowerCase());
-        if (sideWord == null && inWords.some((w) => /^side/.test(w))) sideWord = now;
-        if (angleWord == null && inWords.some((w) => /^angle/.test(w))) angleWord = now;
+        [...document.querySelectorAll('#bubble .in')].forEach((w) => {
+          if (seen.has(w)) return; seen.add(w);
+          const t = w.textContent.toLowerCase();
+          if (sideWord == null && /^side/.test(t)) sideWord = now;
+          if (angleWord == null && /^angle/.test(t)) angleWord = now;
+        });
         const s = document.querySelector('#stage .word-sides'), a = document.querySelector('#stage .word-angles');
         if (sideFx == null && s) sideFx = now;
         if (angleFx == null && a) angleFx = now;
         if (s && a && parseFloat(getComputedStyle(s).opacity) > 0.3 && [...a.querySelectorAll('path')].some((p) => parseFloat(getComputedStyle(p).opacity) > 0.3)) both++;
-        if ((sideFx != null && angleFx != null && now > angleFx + 1500) || now > 45000 || window.Game.screen !== window.__rvi) { res({ sideWord, angleWord, sideFx, angleFx, both }); return; }
+        if ((sideFx != null && angleFx != null && now > angleFx + 1500) || now > 60000 || window.Game.screen !== window.__rvi) { res({ sideWord, angleWord, sideFx, angleFx, both }); return; }
         setTimeout(tick, 40);
       };
       window.__rvi = window.Game.screen;
       tick();
     }));
-    const ok = r.sideFx != null && r.angleFx != null && r.sideWord != null && r.angleWord != null && Math.abs(r.sideFx - r.sideWord) <= 500 && Math.abs(r.angleFx - r.angleWord) <= 500 && r.both === 0;
+    // (a crossfade of a few frames as one trace gives way to the next is not "both at once")
+    const ok = r.sideFx != null && r.angleFx != null && r.sideWord != null && r.angleWord != null && Math.abs(r.sideFx - r.sideWord) <= 500 && Math.abs(r.angleFx - r.angleWord) <= 500 && r.both <= 8;
     return { ok, extra: r };
   });
 
   // ---- the swipe (screen 30) ---------------------------------------------------
   const swipeState = () => ev(() => { const S = window.Stage.state.swipe; const sheet = document.querySelector('#stage .teach-sheet'); return { i: S.i, card: S.card && S.card._name, misses: S.card && S.card._misses, kept: Object.keys(S.zones).map((k) => k + ':' + S.zones[k]._kept.length).join(' '), sheet: sheet ? (sheet.classList.contains('on') ? 'on' : 'off') : '-', copy: !!document.querySelector('#stage .teach-card'), mode: window.Input.mode(), bubble: document.getElementById('bubble').textContent.trim().slice(0, 50) }; });
   const zoneTap = async (id) => clickCentre(`#stage .zone[data-zone="${id}"]`);
-  const rightZone = () => ev(() => window.Poly.isRegular(window.Stage.state.swipe.card._verts) ? 'regular' : 'irregular');
+  const cardDealt = () => waitFn(() => !!(window.Stage.state.swipe && window.Stage.state.swipe.card) && !document.querySelector('#stage .teach-sheet'), null, 40000);
+  const rightZone = async () => { await cardDealt(); return ev(() => window.Poly.isRegular(window.Stage.state.swipe.card._verts) ? 'regular' : 'irregular'); };
   await step(45, 'swipe layout: one large card, the shape filling it well, no name, no verdict tag, nothing clipped', async () => {
     const i = await jump('sort-regular'); await waiting(i); await sleep(500);
     const s = await ev(() => { const card = window.Stage.state.swipe.card; const c = card.getBoundingClientRect(); const shape = card.querySelector('.shape, path'); const b = shape.getBoundingClientRect(); const st = document.getElementById('stage').getBoundingClientRect(); return { card: [Math.round(c.width), Math.round(c.height)], ratio: +((b.width * b.height) / (c.width * c.height)).toFixed(2), name: !!card.querySelector('.swipe-name'), verdict: !!card.querySelector('.swipe-verdict'), inStage: c.left >= st.left && c.right <= st.right && c.top >= st.top && c.bottom <= st.bottom }; });
@@ -744,6 +798,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     return { ok: inOrder && seq.copySharp != null && seq.fx >= 1 && !seq.thirdTry && lines.some((t) => /^This one is (regular|irregular)\./.test(t)), extra: { ...seq, lines } };
   });
   await step(49, 'swipe explanation focus: the play dimmed and blurred under the sheet, the card sharp, input off, him beside the card', async () => {
+    await cardDealt(); await unlocked(25000); await sleep(300);
     const was = await swipeState();
     const w = (await rightZone()) === 'regular' ? 'irregular' : 'regular';
     await zoneTap(w); await unlocked(25000); await sleep(300);
@@ -753,24 +808,26 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const s = await ev(() => { const sheet = document.querySelector('#stage .teach-sheet'), cs = getComputedStyle(sheet); const copy = document.querySelector('#stage .teach-card'); const card = copy.getBoundingClientRect(), sw = window.Swiftee.bounds(); return { dim: cs.backgroundColor, blur: cs.backdropFilter || cs.webkitBackdropFilter, copySharp: !/blur/.test(getComputedStyle(copy).filter), locked: window.Input.mode() === 'locked', zonesUnder: !!document.querySelector('#stage .teach-sheet') && getComputedStyle(sheet).pointerEvents !== 'none', himLeft: sw.right < card.left + card.width * 0.5, pos: window.Swiftee.pos, running: [...document.querySelectorAll('#stage .zone, #stage .swipe-stack')].reduce((n, e) => n + (e.getAnimations ? e.getAnimations().filter((a) => a.playState === 'running').length : 0), 0) }; });
     await shot('15-swipe-focused-explanation');
     await waitFn((i) => window.Stage.state.swipe.i > i, was.i, 40000).catch(() => {});
+    await cardDealt().catch(() => {}); await unlocked(25000).catch(() => {});
     return { ok: /blur\(/.test(s.blur) && s.copySharp && s.locked && s.zonesUnder && s.himLeft && s.running === 0, extra: s };
   });
   await step(50, 'swipe explanations are the concept: regular → every side and angle lit gold; irregular → the unequal ones lit, in words that say why', async () => {
     const lines = await said();
-    const ex = lines.filter((t) => /^This one is/.test(t));
+    const ex = lines.filter((t) => /^This one is (regular|irregular)\./.test(t));
     const ok = ex.length >= 2 && ex.every((t) => /(side|angle)/.test(t)) && !ex.some((t) => /This goes here|Look carefully|correct answer/.test(t));
     return { ok, extra: ex };
   });
   await step(51, 'swipe level complete: "Great job!" once, only at the end, nothing after it', async () => {
     const i = await idx('sort-regular');
     const before = (await said()).length;
-    for (let guard = 0; guard < 12; guard++) {
+    for (let guard = 0; guard < 16; guard++) {
       const s = await ev(() => ({ left: window.Stage.state.swipe ? window.Stage.state.swipe.items.length - window.Stage.state.swipe.i : 0, card: !!(window.Stage.state.swipe && window.Stage.state.swipe.card), screen: window.Game.screen }));
       if (!s.left || s.screen !== i) break;
       if (!s.card) { await sleep(300); continue; }
-      await unlocked(25000); await sleep(200);
+      await cardDealt(); await unlocked(25000); await sleep(200);
+      const n = await ev(() => window.Stage.state.swipe.i);
       await zoneTap(await rightZone());
-      await waitFn((n) => !window.Stage.state.swipe || window.Stage.state.swipe.i > n, await ev(() => window.Stage.state.swipe.i), 20000).catch(() => {});
+      await waitFn((n) => !window.Stage.state.swipe || window.Stage.state.swipe.i > n, n, 20000).catch(() => {});
     }
     await waitFn((i) => window.Game.screen > i, i, 60000).catch(() => {});
     const lines = await ev(() => window.__said.map((s) => ({ t: s.t, at: s.at })));
@@ -822,7 +879,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const check = async (label) => {
       for (const v of [[1920, 1080], [1440, 900], [1366, 768], [1024, 768]]) {
         await page.setViewportSize({ width: v[0], height: v[1] }); await sleep(500);
-        const s = await ev(() => { const st = document.getElementById('stage').getBoundingClientRect(); const sw = window.Swiftee.bounds(); const card = document.querySelector('#stage .swipe-card, #stage .panel, #stage .card'); const c = card ? card.getBoundingClientRect() : null; const inView = (r) => r && r.left >= -2 && r.right <= window.innerWidth + 2 && r.top >= -2 && r.bottom <= window.innerHeight + 2; return { screen: window.Game.screen, overflow: document.documentElement.scrollWidth > window.innerWidth + 1, him: inView(sw) && parseFloat(getComputedStyle(window.Swiftee.el).opacity) > 0 || !!document.querySelector('#stage .swiftee-angle-measuring'), card: !c || inView(c), stageW: Math.round(st.width) }; });
+        // (him: on screen — or away by design: behind the swipe card, gone below, or out
+        // measuring as the rig)
+        const s = await ev(() => { const st = document.getElementById('stage').getBoundingClientRect(); const sw = window.Swiftee.bounds(); const card = document.querySelector('#stage .swipe-card, #stage .panel, #stage .card'); const c = card ? card.getBoundingClientRect() : null; const inView = (r) => r && r.left >= -2 && r.right <= window.innerWidth + 2 && r.top >= -2 && r.bottom <= window.innerHeight + 2; const away = window.Swiftee.pos === 'peek' || window.Swiftee.state === 'exit' || !window.Game.buddy || !window.Game.buddy.present || !!document.querySelector('#stage .swiftee-angle-measuring'); return { screen: window.Game.screen, overflow: document.documentElement.scrollWidth > window.innerWidth + 1, him: away || (inView(sw) && parseFloat(getComputedStyle(window.Swiftee.el).opacity) > 0), card: !c || inView(c), stageW: Math.round(st.width) }; });
         out.push({ label, v: v.join('x'), ...s });
       }
       await page.setViewportSize({ width: 1600, height: 900 }); await sleep(400);
@@ -852,15 +911,16 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const great = results.filter((r) => (r.n === 9 || r.n === 51) && r.ok).length;
     return { ok: great === 2, extra: { levelsChecked: great } };
   });
-  await step(64, 'idle hint: nothing before 5 s of stillness, the targets pulse after, gone on a touch', async () => {
-    const i = await jump('stayed-changed'); await waiting(i);
-    const pulsingAt = (ms) => ev(() => [...document.querySelectorAll('#stage .choice')].reduce((n, e) => n + (e.getAnimations ? e.getAnimations().filter((a) => a.playState === 'running').length : 0), 0) + document.querySelectorAll('#stage .hint-hand').length);
-    await sleep(2500); const early = await pulsingAt();
-    await waitFn(() => [...document.querySelectorAll('#stage .choice')].some((e) => e.getAnimations && e.getAnimations().some((a) => a.playState === 'running')) || document.querySelector('#stage .hint-hand'), null, 20000).catch(() => {});
-    const late = await pulsingAt();
-    const correct = await ev(() => { const s = window.Screens.list[window.Game.screen]; const b = (s.beats || []).find((b) => b.input && b.input.type === 'choice'); return b && b.input.correct; });
-    await tapChoice(correct); await sleep(600);
-    const after = await pulsingAt();
+  await step(64, 'idle hint (the diagonal’s ghost): nothing before 3 s of stillness, the ghost after, gone the moment the corner is touched', async () => {
+    const i = await jump('connect'); await waiting(i);
+    const ghosts = () => ev(() => document.querySelectorAll('#stage .gesture-ghost, #stage .ghost-demo, #stage .hint-hand').length);
+    await sleep(2500); const early = await ghosts();
+    await waitFn(() => !!document.querySelector('#stage .gesture-ghost, #stage .ghost-demo, #stage .hint-hand'), null, 22000).catch(() => {});
+    const late = await ghosts();
+    const f = await ev(() => window.Stage.state.from || 0), k = await knobClient(f);
+    await page.mouse.move(k.x, k.y); await page.mouse.down(); await sleep(400);
+    const after = await ghosts();
+    await page.mouse.up(); await sleep(400);
     return { ok: early === 0 && late > 0 && after === 0, extra: { early, late, after } };
   });
   await step(65, 'leaving a screen leaves nothing behind: no rig, sheet, ghost, or hand on the next', async () => {

@@ -442,8 +442,16 @@
   #stage .focus-ring { transition: opacity 320ms ease; filter: drop-shadow(0 0 6px rgba(255, 194, 60, .8)); }
   /* THE VERDICT, UNMISSABLE (the user: "glow when right or wrong?"): a wide, bright halo — green
      for right, red for wrong — plus a tight rim, so it reads at a glance on the pale ice */
-  #stage .shape-card.mark-good { filter: drop-shadow(0 0 22px rgba(46,200,90,1)) drop-shadow(0 0 8px rgba(46,171,78,1)) drop-shadow(0 0 2px rgba(20,120,50,1)); animation: markGood .7s ease-out; }
-  #stage .shape-card.mark-bad  { filter: drop-shadow(0 0 22px rgba(255,70,70,1)) drop-shadow(0 0 8px rgba(224,60,60,1)) drop-shadow(0 0 2px rgba(150,20,20,1)); }
+  /* (drawn in the SVG now — stage.js optionCard `_mark`, a blurred halo rect and a rim — because a
+     CSS filter on an SVG group is not rendered by Safari; the classes remain as the state's name) */
+  /* A LITTLE LIFT UNDER THE CURSOR (the user: "add a little hover when the cursor is on the card,
+     to look active"): an answer card or button grows three percent under a pointer that can
+     hover — never on touch, never once the card is out, never while a finger is on it. */
+  @media (hover: hover) and (pointer: fine) {
+    #stage .card .shape-card, #stage .choice { transform-box: fill-box; transform-origin: center; transition: transform .16s ease-out; }
+    #stage .card:not(.card-off):hover .shape-card, #stage .choice:hover { transform: scale(1.03); }
+    #stage .card:not(.card-off):active .shape-card, #stage .choice:active { transform: scale(1.0); transition-duration: .06s; }
+  }
   /* A card missed twice is put out for the rest of the question: dimmer and
      greyer, still readable, and nothing happens under a finger. */
   /* THE SHAPE TAUGHT UP CLOSE (stage.js teachShape): the play steps back
@@ -466,11 +474,6 @@
     #stage .teach-sheet { transition: none; }
   }
   #stage .card.card-off { opacity: .5; filter: grayscale(.55); pointer-events: none; transition: opacity .35s ease, filter .35s ease; }
-  @keyframes markGood {
-    0% { filter: drop-shadow(0 0 0 rgba(46,171,78,0)); }
-    35% { filter: drop-shadow(0 0 26px rgba(46,171,78,1)) drop-shadow(0 0 6px rgba(255,255,255,.9)); }
-    100% { filter: drop-shadow(0 0 12px rgba(46,171,78,.95)) drop-shadow(0 0 3px rgba(46,171,78,.9)); }
-  }
   #stage .zone.hint { filter: drop-shadow(0 0 8px rgba(255, 255, 255, .6)); }
   #stage .zone.landed { animation: zoneLand .65s ease-out; }
   @keyframes zoneLand {

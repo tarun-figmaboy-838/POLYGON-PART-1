@@ -666,16 +666,19 @@ const levelOf = (st) => { const d = RIG[st]; return d ? (d.level || 1) : 0; };
   });
   t('every answer, tag, bin and control that waits for a word hears it on its own screen', deaf.length === 0, deaf);
   t('the word-and-thing sync is used across the lesson, not on one screen', held >= 8, held);
-  /* THE QUESTION BEFORE ITS ANSWERS (the user: "never expose an interaction before the learner
-     has been introduced to it"). On both answer screens the two buttons are dealt only after
-     the question has been asked and a beat has passed — not built first to arrive with its
-     words, as they once were. */
+  /* THE QUESTION INTRODUCES ITS ANSWERS (the user: "never expose an interaction before the
+     learner has been introduced to it" — and then: "the buttons are delayed; deal them when the
+     VO says 'inside or outside'"). On both answer screens the two buttons arrive on the
+     question's own words — the instruction and the choices in one `parallel`, each answer
+     waiting for its word (`cue`) — and never from a beat before the question, nor from the
+     screen-level stage (a rebuild would put them up ahead of it). */
   ['inside-or-outside', 'stayed-changed'].forEach((id) => {
-    const bs = Screens.byId[id].beats;
-    const asked = bs.findIndex((b) => b.say || typeof b.instruction === 'string');
-    const dealt = bs.findIndex((b) => b.stage && b.stage.choices);
-    const paused = bs.slice(asked + 1, dealt).some((b) => b.wait);
-    t(id + ': the answers are dealt after the question is asked, and a beat later', asked >= 0 && dealt > asked && paused, { asked, dealt, paused });
+    const s = Screens.byId[id], bs = s.beats;
+    const par = bs.find((b) => b.parallel && b.parallel.some((x) => typeof x.instruction === 'string') &&
+                               b.parallel.some((x) => x.stage && x.stage.choices && x.stage.cue));
+    const early = par ? bs.slice(0, bs.indexOf(par)).some((b) => b.stage && b.stage.choices) : true;
+    const onStage = !!(s.stage && s.stage.choices);
+    t(id + ': the answers are dealt on the question’s own words — with it, never before it', !!par && !early && !onStage, { par: !!par, early, onStage });
   });
 }
 
