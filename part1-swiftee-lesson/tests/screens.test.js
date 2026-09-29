@@ -492,17 +492,28 @@ const intentsIn = (list) => {
 };
 const levelOf = (st) => { const d = RIG[st]; return d ? (d.level || 1) : 0; };
 
-/* A WRONG ANSWER CANNOT MOVE THE LESSON ON. Every branch whose wrong arm asks
-   again has `until: 'correct'`, so the retry's own answer is branched on:
-   a right retry gets the right arm, a wrong one is asked again. */
+/* A WRONG ANSWER CANNOT MOVE THE LESSON ON UNANSWERED. Every branch whose wrong
+   arm asks again has its retry's own answer branched on: either `until:
+   'correct'` (asked until right), or — a TWO-TRY question (the user's rule: the
+   first miss is "Try again!", the second is explained and the answer shown) — a
+   branch after the retry with a right arm and a last wrong arm that asks nothing
+   more and SHOWS the answer (a reveal or a teaching line). */
 {
   const loose = [];
+  const lastTry = (arm) => {
+    const i = (arm || []).findIndex((x) => x && x.input);
+    const nb = (arm || []).slice(i + 1).find((x) => x && x.branch);
+    if (!nb || !(nb.on && nb.on.correct)) return false;
+    const last = nb.otherwise || [];
+    const shows = JSON.stringify(last);
+    return !last.some((x) => x && x.input) && /"reveal"|"say"|"autoConcave"|"teach"/.test(shows);
+  };
   S.forEach((s) => (s.beats || []).forEach((b) => {
     if (!b || !b.branch) return;
     const asksAgain = (b.otherwise || []).some((x) => x && x.input);
-    if (asksAgain && b.until !== 'correct') loose.push(s.id);
+    if (asksAgain && b.until !== 'correct' && !lastTry(b.otherwise)) loose.push(s.id);
   }));
-  t('every retry is branched on until the answer is right', loose.length === 0, loose);
+  t('every retry is branched on: until the answer is right, or shown on the last try', loose.length === 0, loose);
 }
 
 /* THE REACTION MATCHES THE VERDICT. No right-answer face in a wrong arm,
@@ -511,9 +522,14 @@ const levelOf = (st) => { const d = RIG[st]; return d ? (d.level || 1) : 0; };
   const crossed = [];
   const GLAD = /^(happySmall|nice|chuffed|wink|phew|celebrate|excited|delight|nod|proud|happy)$/;
   S.forEach((s) => {
+    // (a wrong arm's own intents — not those of a right arm nested in it, a retry's)
+    const missIntents = (list) => { const out = []; (function walk(bs) { (bs || []).forEach((x) => {
+      if (!x || typeof x !== 'object') return; if (x.swiftee) out.push(x.swiftee);
+      ['feedback', 'parallel', 'otherwise'].forEach((k) => { if (x[k]) walk(x[k]); });
+      if (x.on) Object.keys(x.on).forEach((k) => { if (k !== 'correct') walk(x.on[k]); }); }); })(list); return out; };
     (s.beats || []).forEach((b) => {
       if (!b || !b.branch) return;
-      intentsIn(b.otherwise).forEach((i) => { if (GLAD.test(i)) crossed.push(s.id + ' wrong arm: ' + i); });
+      missIntents(b.otherwise).forEach((i) => { if (GLAD.test(i)) crossed.push(s.id + ' wrong arm: ' + i); });
       intentsIn((b.on || {}).correct).forEach((i) => { if (/^(oops|rethink|confused)$/.test(i)) crossed.push(s.id + ' right arm: ' + i); });
     });
     ((s.perTap || {}).wrong || []).forEach((x) => { if (x.swiftee && GLAD.test(x.swiftee)) crossed.push(s.id + ' per-tap wrong: ' + x.swiftee); });

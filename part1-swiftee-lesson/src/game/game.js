@@ -3314,7 +3314,9 @@
             // the one place his word on an answer comes from. His FACE is the
             // screen's own feedback beat, a moment later — one reaction, not two.
             react('correct', null, { face: false, quiet: spec.praise === false, final: true, type: spec.type });
-          } else if (r && r.result === 'wrong') react('wrong', null, { face: false, final: true, reason: spec.reason });
+          // (a last try's miss is answered by the screen's own explanation — spec.quietMiss — not
+          // by one more "Try again!" in front of it)
+          } else if (r && r.result === 'wrong' && !spec.quietMiss) react('wrong', null, { face: false, final: true, reason: spec.reason });
           return r;
         }, function (e) { showNext(false); throw e; });
       },

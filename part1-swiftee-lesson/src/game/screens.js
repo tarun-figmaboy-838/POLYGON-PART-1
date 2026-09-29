@@ -548,6 +548,7 @@
       instruction: null,
       originalInstruction: 'Draw another diagonal from the same vertex.',
       say: 'Look at the diagonals of this pentagon.',
+      lines: ['Let\u2019s look.'],
       // The diagonals are NOT on the screen-level stage: they arrive by
       // their own beat, one after another, once the chapter's snow has
       // cleared — a shape that comes up already starred shows nothing.
@@ -555,6 +556,10 @@
       beats: [
         { instruction: null },
         { stage: { kind: 'polygon', sides: 5, enter: 'morph' } },
+        // "LET'S LOOK." FIRST (the user, screen 11): a short word into what comes next, and a
+        // breath, and only then do the diagonals start to draw
+        { say: 'Let\u2019s look.', vo: 'p16a' },
+        { wait: 450 },
         // THE FIVE DRAW IN ONCE, one after another, after the chapter's snow
         // has melted — a shape that arrives already starred shows nothing.
         // There were two of these beats for a while, one before the line and
@@ -580,6 +585,7 @@
       log: true,   // on the log arc at the left of the ground, as since the intro (the user: "after level-1, the log sit too")
       swiftee: { pos: 'log', size: 'medium' },
       instruction: 'Are the diagonals inside or outside?',
+      lines: ['These diagonals stay inside the polygon, so the answer is Inside.'],
       stage: { kind: 'polygon', sides: 5, diagonals: 'all', choices: ['Inside', 'Outside'] },
       beats: [
         // THE ANSWERS COME IN WITH THEIR WORDS: built first, held, and each
@@ -592,10 +598,31 @@
         // SAID ONCE: the line that echoed the instruction ("Are they inside or outside?") went —
         // the same request twice in a row read as a stutter, not a lesson.
         { swiftee: 'think' },
-        { input: { type: 'choice', correct: 'Inside', reason: 'inside' } },
-        { branch: true, until: 'correct',
+        /* TWO TRIES (the user, the inside/outside question). The first miss is "Try again!" and
+           nothing more — the answer is not given away. The second is answered: the diagonals
+           light one after another inside the shape, he says why the answer is Inside, the
+           Inside button shows green, a moment to take it in, and the lesson goes on. */
+        { input: { type: 'choice', correct: 'Inside' } },
+        { branch: true,
           on: { correct: correct() },
-          otherwise: WRONG.concat([{ input: { type: 'choice', correct: 'Inside', retry: true, reason: 'inside' } }]) }
+          otherwise: WRONG.concat([
+            { input: { type: 'choice', correct: 'Inside', retry: true, quietMiss: true } },
+            { branch: true,
+              on: { correct: correct() },
+              otherwise: [
+                { juice: 'refuse', target: 'answer' }, { sfx: 'wrong' },
+                { parallel: [
+                  // the diagonals light one after another and stay lit while he explains; the
+                  // Inside button goes green as he says "inside"
+                  { stage: { lit: 'diagonals' } },
+                  { stage: { reveal: 'Inside', cue: 'inside' } },
+                  { swiftee: 'explain', at: 'polygon' },
+                  { say: 'These diagonals stay inside the polygon, so the answer is Inside.', vo: 'p17r' }
+                ] },
+                { sfx: 'correct' },
+                { wait: 1200 }
+              ] }
+          ]) }
       ]
     },
 
@@ -729,6 +756,8 @@
         // on "inside" its inside glows with its diagonals (emphasize), and a
         // small bright chime says so
         { stage: { onWord: { word: 'inside', sfx: 'sparkle', gain: 0.4 } } },
+        // ...and its mark, INSIDE, comes up under it on the same word (not a screen later)
+        { stage: { marks: { left: 'Inside', cue: true } } },
         { parallel: [
           // its diagonals grow one after another as he says it
           { stage: { grow: { card: 'left', each: 430, ms: 540 } } },
@@ -753,8 +782,12 @@
       beats: [
         { instruction: null },
         { stage: { grow: { card: 'left', instant: true } } },
+        // (the left card's INSIDE mark, from the screen before — put back quietly on a jump)
+        { stage: { marks: { left: 'Inside', enter: false } } },
         // the convex one back to normal, only less important
         { focus: 'compare.right', style: 'lean' },
+        // OUTSIDE comes up under this one on the word "outside", with the diagonal that leaves
+        { stage: { marks: { right: 'Outside', cue: true } } },
         { parallel: [
           // the ones that stay inside grow first; the one that leaves the
           // shape waits for its word (and he is surprised when it does)
@@ -766,10 +799,7 @@
         // under each, and a moment to look
         { stage: { grow: { card: 'right', instant: true } } },
         { focus: 'compare', style: 'even' },
-        { parallel: [
-          { stage: { marks: { left: 'Inside', right: 'Outside' } } },
-          { swiftee: 'compare', at: ['compare.left', 'compare.right'] }
-        ] },
+        { swiftee: 'compare', at: ['compare.left', 'compare.right'] },
         { wait: 1000 },
         { input: { type: 'tap-anywhere' } }
       ]

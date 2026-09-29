@@ -273,8 +273,8 @@ window.PreloadList = {
   "assets/vo/fb45.ogg": 29183,
   "assets/vo/fb46.mp3": 17324,
   "assets/vo/fb46.ogg": 7976,
-  "assets/vo/index.js": 7190,
-  "assets/vo/index.json": 13517,
+  "assets/vo/index.js": 7319,
+  "assets/vo/index.json": 13781,
   "assets/vo/p01.mp3": 20106,
   "assets/vo/p01.ogg": 10846,
   "assets/vo/p02.mp3": 24285,
@@ -309,8 +309,12 @@ window.PreloadList = {
   "assets/vo/p15i.ogg": 19090,
   "assets/vo/p16.mp3": 25748,
   "assets/vo/p16.ogg": 15710,
+  "assets/vo/p16a.mp3": 17324,
+  "assets/vo/p16a.ogg": 8036,
   "assets/vo/p17i.mp3": 27838,
   "assets/vo/p17i.ogg": 18800,
+  "assets/vo/p17r.mp3": 47468,
+  "assets/vo/p17r.ogg": 27076,
   "assets/vo/p18.mp3": 14463,
   "assets/vo/p18.ogg": 8200,
   "assets/vo/p19i.mp3": 24076,
@@ -397,6 +401,6 @@ window.PreloadList = {
   "assets/vo/st4-momo.ogg": 18879,
   "assets/vo/st5-narrator.mp3": 66860,
   "assets/vo/st5-narrator.ogg": 32042,
-  "assets/vo/word-timings.json": 5318
+  "assets/vo/word-timings.json": 5446
  }
 };

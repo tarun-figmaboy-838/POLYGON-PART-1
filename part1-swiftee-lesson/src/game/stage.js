@@ -5032,6 +5032,10 @@
         if (!m[side]) return;
         var g = compareMark(side, m[side]);
         if (!g || m.enter === false || reduced()) return;
+        // ON ITS WORD (m.cue — the user: "the Inside/Outside text must appear at the same time
+        // the concept is shown, not later or on the next screen"): the mark waits for the voice
+        // to say it, and pops as the line it names is drawn
+        if (m.cue && holdForWord(g, String(m[side]).toLowerCase(), function () { enter(g, 'ui'); sfx('pop', { gain: 0.35 }); })) return;
         g.style.opacity = 0;
         later(i * 240, function () { g.style.opacity = ''; enter(g, 'ui'); sfx('pop', { gain: 0.35 }); });
       });
@@ -5270,6 +5274,34 @@
     if (spec.measurements) op.measurements(spec.measurements);
     if (spec.observe) op.observe(spec.observe);
     if (spec.returnItem && st.sort && st.sort.dragging) returnItem(st.sort.dragging);
+    /* THE RIGHT ANSWER SHOWN (`reveal`: a choice's label — the second miss of a two-try
+       question): that button goes green and glints, the way it would have for the child. */
+    if (spec.reveal && st.choiceEls) {
+      var doReveal = function () {
+        (st.choiceEls || []).forEach(function (b) {
+          if (b.getAttribute('data-label') !== spec.reveal) return;
+          if (b._retint) b._retint('uiSuccess');
+          if (global.Juice && Juice.sparkle && !reduced()) { try { Juice.sparkle(b); } catch (x) {} }
+        });
+      };
+      // (on its word, `cue`, when he says it)
+      if (!(spec.cue && onWord(spec.cue, doReveal))) doReveal();
+    }
+    /* THE DIAGONALS LIT, AND LEFT LIT (`lit: 'diagonals'` — a two-try question's explanation):
+       each brightens in turn and stays glowing while he explains, so the lines he is talking
+       about are the brightest thing on the card — not a flash that has gone by the time he
+       says why. A scene rebuilt after it draws them plain again. */
+    if (spec.lit === 'diagonals' && st.diagG) {
+      [].slice.call(st.diagG.childNodes).filter(function (g) { return g.style && g.style.display !== 'none'; }).forEach(function (g, k) {
+        later(reduced() ? 0 : k * 260, function () {
+          // solid and glowing: dashes turned bright are still dashes; a lit line is a new state
+          [].slice.call(g.querySelectorAll('line')).forEach(function (ln) { ln.style.strokeDasharray = 'none'; });
+          g.style.transition = reduced() ? '' : 'filter 320ms ease';
+          g.style.filter = 'brightness(1.25) drop-shadow(0 0 6px rgba(75, 224, 255, .95))';
+          if (g.animate && !reduced()) { try { g.animate([{ opacity: 0.5 }, { opacity: 1 }], { duration: 300, easing: 'ease-out' }); } catch (e) {} }
+        });
+      });
+    }
     // the compare sequence: words that answer, diagonals that grow (a beat
     // that lasts until they have), and the small marks
     if (spec.onWord) op.onWord(spec.onWord);
