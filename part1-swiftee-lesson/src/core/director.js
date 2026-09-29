@@ -311,7 +311,8 @@
       // seconds after the diagonal was made, and every right answer held the
       // lesson that long. He celebrates while the lesson goes on — into the
       // next line, which he then says glad (swiftee.js moods).
-      var transitional = /^(enter|exit|move|hop)$/.test(beat.swiftee);
+      // (a flight onto his perch is travel too: the lesson waits for him to land)
+      var transitional = /^(enter|exit|move|hop|perch)$/.test(beat.swiftee);
       if (beat.await === false || (!transitional && beat.await !== true)) return Promise.resolve();
       return guard(p, token, cfg.beatCeilingMs);
     }

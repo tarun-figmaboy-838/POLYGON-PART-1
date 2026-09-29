@@ -150,6 +150,7 @@
 
     {
       id: 'intro-hi', page: 1,
+      log: true,   // the log arc he perches on stands at the left of the ground (Stage.perch)
       swiftee: { pos: 'left', size: 'large', purpose: 'introduce'},
       say: 'Hi! I am Swiftee.',
       stage: { kind: 'vista' },
@@ -166,6 +167,7 @@
 
     {
       id: 'intro-remember', page: 2,
+      log: true,   // the log arc he perches on stands at the left of the ground (Stage.perch)
       swiftee: { pos: 'left', size: 'large', purpose: 'introduce'},
       say: 'Remember we learned about polygons before.',
       beats: [
@@ -179,13 +181,19 @@
 
     {
       id: 'intro-define', page: 3,
+      log: true,   // the log arc he perches on stands at the left of the ground (Stage.perch)
       swiftee: { pos: 'left', size: 'large', purpose: 'concept'},
       say: 'Polygons are closed shapes made from straight lines.',
       beats: [
         // "Ta-da — here is the idea": one open-winged flourish, then talking
         { swiftee: 'present' },
         { say: 'Polygons are closed shapes made from straight lines.', parts: ['Polygons are closed shapes', 'made from straight lines.'], vo: 'p03' },
-        { input: { type: 'tap-anywhere' } }
+        // ONTO THE LOG (the user's spec): the third line said to its end, a breath, then a
+        // short curved flight to the log arc on the left of the ground, down onto its crest
+        // with a small squash — and a moment perched there before the first question comes
+        { wait: 600 },
+        { swiftee: 'perch' },
+        { input: { type: 'tap-anywhere', pause: 650 } }
       ]
     },
 
@@ -196,9 +204,10 @@
     {
       id: 'which-polygons', page: 4,
       transition: false,   // straight on from the intro: no ice between the definition and the first question
-      // The same mark as the three screens before: no wipe, no walk — the
-      // options simply appear on his right and he asks about them.
-      swiftee: { pos: 'left', size: 'large', purpose: 'ask' },
+      log: true,
+      // ON THE LOG, where the intro left him: no wipe, no walk — the options
+      // simply appear on his right and he asks about them from his perch.
+      swiftee: { pos: 'log', size: 'large', purpose: 'ask' },
       say: 'Which of these are polygons?',
       // A MISS IS ANSWERED CARD BY CARD (the user's spec). The first miss on
       // a card is a gentle nudge; the second on that SAME card is the
@@ -244,7 +253,8 @@
 
     {
       id: 'lets-play', page: 5,
-      swiftee: { pos: 'left-low', size: 'medium' },
+      log: true,   // on the log arc at the left of the ground, as since the intro (the user: "after level-1, the log sit too")
+      swiftee: { pos: 'log', size: 'medium' },
       say: 'Let\u2019s play with this one.',
       stage: { kind: 'polygon', sides: 5, panel: 'right' },
       beats: [
@@ -262,7 +272,8 @@
 
     {
       id: 'pick-vertex', page: 6,
-      swiftee: { pos: 'left-low', size: 'medium' },
+      log: true,   // on the log arc at the left of the ground, as since the intro (the user: "after level-1, the log sit too")
+      swiftee: { pos: 'log', size: 'medium' },
       say: 'Select any vertex.',
       beats: [
         { say: 'Select any vertex.', vo: 'p06' },
@@ -308,7 +319,8 @@
        * refuses a line outside READY_TO_CONNECT. until: 'correct' keeps asking
        * until the diagonal is made. */
       id: 'connect', page: 7,
-      swiftee: { pos: 'left-low', size: 'medium' },
+      log: true,   // on the log arc at the left of the ground, as since the intro (the user: "after level-1, the log sit too")
+      swiftee: { pos: 'log', size: 'medium' },
       instruction: 'Let’s connect it to another vertex.',
       lines: ['This is a side of the polygon.', 'Yay! You made a diagonal!'],
       stage: { highlight: { vertex: 'picked', color: 'yellow' } },
@@ -359,7 +371,9 @@
 
     {
       id: 'define-diagonal', page: 13,
-      swiftee: { pos: 'peek', size: 'small', purpose: 'concept'},
+      // (on the log, like the screens either side: this card has no rim to peek over)
+      log: true,
+      swiftee: { pos: 'log', size: 'medium', purpose: 'concept' },
       instruction: null,
       // THE SUPPLIED WORDING, AND A STANDING OBJECTION TO IT.
       //
@@ -387,7 +401,8 @@
 
     {
       id: 'another-diagonal', page: 14,
-      swiftee: { pos: 'left-low', size: 'medium' },
+      log: true,   // on the log arc at the left of the ground, as since the intro (the user: "after level-1, the log sit too")
+      swiftee: { pos: 'log', size: 'medium' },
       instruction: 'Let’s draw another diagonal from the same vertex.',
       // THE SAME CORNER, A SECOND DIAGONAL, AND WHAT THEY SHOW.
       //
@@ -433,7 +448,8 @@
 
     {
       id: 'hexagon-your-turn', page: 15,
-      swiftee: { pos: 'left-low', size: 'medium' },
+      log: true,   // on the log arc at the left of the ground, as since the intro (the user: "after level-1, the log sit too")
+      swiftee: { pos: 'log', size: 'medium' },
       instruction: 'Let’s draw all the diagonals from this vertex.',
       say: 'Your turn! Let’s draw all the diagonals from this vertex.',
       // FLAG: two problems on this page.
@@ -473,7 +489,8 @@
 
     {
       id: 'look-diagonals', page: 16,
-      swiftee: { pos: 'left-low', size: 'medium' },
+      log: true,   // on the log arc at the left of the ground, as since the intro (the user: "after level-1, the log sit too")
+      swiftee: { pos: 'log', size: 'medium' },
       // FLAG: the deck's instruction card on this page still reads "Draw
       // another diagonal from the same vertex." while the dialogue is "Look
       // at the diagonals of this pentagon." — a stale card from page 14.
@@ -510,7 +527,8 @@
 
     {
       id: 'inside-or-outside', page: 17,
-      swiftee: { pos: 'left-low', size: 'medium' },
+      log: true,   // on the log arc at the left of the ground, as since the intro (the user: "after level-1, the log sit too")
+      swiftee: { pos: 'log', size: 'medium' },
       instruction: 'Are the diagonals inside or outside?',
       stage: { kind: 'polygon', sides: 5, diagonals: 'all', choices: ['Inside', 'Outside'] },
       beats: [
@@ -533,7 +551,8 @@
 
     {
       id: 'lets-change', page: 18,
-      swiftee: { pos: 'left-low', size: 'medium' },
+      log: true,   // on the log arc at the left of the ground, as since the intro (the user: "after level-1, the log sit too")
+      swiftee: { pos: 'log', size: 'medium' },
       say: 'Let\u2019s make a change.',
       beats: [
         { instruction: null },
@@ -546,7 +565,8 @@
 
     {
       id: 'drag-inward', page: 19,
-      swiftee: { pos: 'left-low', size: 'medium' },
+      log: true,   // on the log arc at the left of the ground, as since the intro (the user: "after level-1, the log sit too")
+      swiftee: { pos: 'log', size: 'medium' },
       instruction: 'Help me pull this vertex inside.',
       stage: { highlight: { vertex: 0, color: 'yellow' } },
       beats: [
@@ -570,7 +590,9 @@
 
     {
       id: 'whoa', page: 20,
-      swiftee: { pos: 'peek', size: 'small', purpose: 'surprise'},
+      // (on the log, like the screens either side: this card has no rim to peek over)
+      log: true,
+      swiftee: { pos: 'log', size: 'medium', purpose: 'surprise' },
       say: 'Whoa! One of the diagonals went outside.',
       stage: { highlight: { diagonal: 'outside', color: 'red', style: 'dashed' } },
       beats: [
@@ -642,10 +664,11 @@
 
     {
       id: 'all-inside', page: 22,
+      log: true,   // on the log arc at the left of the ground, as since the intro (the user: "after level-1, the log sit too")
       // ON THE ICE AT THE LEFT. The pair begins at x 270, so the ground to
       // its left is his, and the bubble sits by his head wherever he stands
       // (game.js placeBubble). Hovering him in the corner read as floating.
-      swiftee: { pos: 'left-low', size: 'medium' },
+      swiftee: { pos: 'log', size: 'medium' },
       say: 'This one has all the diagonals inside.',
       original: 'This one has all diagonals inside.',
       beats: [
@@ -670,8 +693,9 @@
       // page 24 in the deck, where it followed "convex"; the author moved it
       // ahead of the names, so the pages are numbered in the order they are met
       id: 'one-outside', page: 23,
+      log: true,   // on the log arc at the left of the ground, as since the intro (the user: "after level-1, the log sit too")
       // On the ice at the left, like the screen before it.
-      swiftee: { pos: 'left-low', size: 'medium' },
+      swiftee: { pos: 'log', size: 'medium' },
       // FLAG: punctuation. Deck line has no full stop.
       say: 'But this one has atleast one diagonal outside.',
       original: 'This one has at least one diagonal outside',

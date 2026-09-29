@@ -360,7 +360,41 @@
    * into the frame of the card: behind it, as far as the eye can tell.
    */
   var rimEl = null;
+  /* HE SITS IN THE SNOW ON THE LOG (the user: "sit on the log, not floating or disconnected").
+   * The log is in the stage, under him; drawn on top of it he could only ever stand on its
+   * outline. So, as the rim of a card is laid over him when he peeks, a copy of the log is laid
+   * over him while he is perched — only round his feet, a soft oval of it — and his mark is a
+   * little down into the snow (Stage LOG_SINK): the snow's front edge covers his feet, and he
+   * is settled on the log. Off while he flies (logFlying), on at the moment he touches down. */
+  var logFrontEl = null, logFlying = false;
+  function syncLogFront() {
+    var L = global.Stage && Stage.perchLog && Stage.perchLog();
+    var m = L && Stage.svg && Stage.svg.getScreenCTM && Stage.svg.getScreenCTM();
+    var want = !!(m && global.Swiftee && Swiftee.el && Swiftee.pos === 'log' && present && !entering && !leaving && !logFlying);
+    if (!want) { if (logFrontEl) logFrontEl.style.display = 'none'; return; }
+    if (!logFrontEl) {
+      logFrontEl = document.createElement('img');
+      logFrontEl.className = 'log-front';
+      logFrontEl.alt = '';
+      logFrontEl.setAttribute('aria-hidden', 'true');
+      logFrontEl.style.cssText = 'position:absolute;z-index:4;pointer-events:none;';
+      var host = Swiftee.el.parentNode || document.body;
+      if (Swiftee.el.nextSibling) host.insertBefore(logFrontEl, Swiftee.el.nextSibling); else host.appendChild(logFrontEl);
+    }
+    if (logFrontEl.getAttribute('src') !== L.src) logFrontEl.src = L.src;
+    var hostBox = logFrontEl.parentNode.getBoundingClientRect();
+    logFrontEl.style.display = '';
+    logFrontEl.style.left = (m.a * L.x + m.e - hostBox.left) + 'px';
+    logFrontEl.style.top = (m.d * L.y + m.f - hostBox.top) + 'px';
+    logFrontEl.style.width = (m.a * L.w) + 'px';
+    logFrontEl.style.height = (m.d * L.h) + 'px';
+    // only round his feet: where it matches the log under it exactly, and nowhere it could
+    // hide the snow that falls in front of the rest of the log
+    var mask = 'radial-gradient(ellipse 26% 32% at ' + (L.fx * 100).toFixed(1) + '% ' + (L.fy * 100).toFixed(1) + '%, #000 72%, transparent 100%)';
+    logFrontEl.style.webkitMaskImage = mask; logFrontEl.style.maskImage = mask;
+  }
   function syncPeekRim() {
+    syncLogFront();
     var want = !riseWait && global.Swiftee && Swiftee.pos === 'peek' && (present || entering || leaving) &&
                global.Stage && Stage.peekAnchor && Stage.peekAnchor({ home: true }) &&
                global.CardFrame && CardFrame.panel && Stage.svg && Stage.svg.getScreenCTM;
@@ -488,7 +522,7 @@
     var behind = peeksBehind(i);
     if (!s.swiftee.purpose) {
       if (behind) { pos = 'peek'; size = 'small'; }
-      else if (!/^(left|top-left)/.test(pos)) { pos = 'left-low'; size = 'medium'; }
+      else if (!/^(left|top-left|log$)/.test(pos)) { pos = 'left-low'; size = 'medium'; }   // (the log is a left-hand mark too)
     } else if (pos === 'peek' && !behind) { pos = 'left-low'; size = 'medium'; }
     return { pos: pos, size: size };
   }
@@ -987,6 +1021,9 @@
       // ON MOMO'S GROUND, the hand-over screen (readyScene): on the left ledge, feet on
       // its snow line — y is Stage's LEDGE_WALK (455 of 562), so the two must move together
       'ledge':              { x: 0.17, y: 0.81 },
+      // ON THE LOG ARC at the left of the ground (Stage.perch): his feet on the snow along its
+      // crest — read from the stage, which placed the log, so the two cannot drift apart
+      'log':                (global.Stage && Stage.perchAt) ? Stage.perchAt() : { x: 0.144, y: 0.729 },
       'off':                { x: -0.3, y: 0.9 }
     };
 
@@ -1079,7 +1116,8 @@
     var m = map[pos] || map['left-low'];
     // ...except the ledge: that scene is scenery too, but the ledge IS where he stands —
     // moved to the middle he was over the gap, feet in the rock (readyScene)
-    if (pos !== 'off' && pos !== 'ledge' && soloed()) { m = map['centre']; }
+    // (and the log: it is his seat, wherever the rest of the stage is)
+    if (pos !== 'off' && pos !== 'ledge' && pos !== 'log' && soloed()) { m = map['centre']; }
 
     var x = f.x + m.x * f.w;
 
@@ -2399,11 +2437,13 @@
    */
   var AUTO_SETTLE = 1200, AUTO_CONCEPT = 700, AUTO_CEILING = 20000;
   var CONCEPT_RE = /\b(polygons?|vertex|vertices|diagonals?|convex|concave|sides?|angles?|regular|irregular)\b/i;
-  function autoAdvance(ctx) {
+  function autoAdvance(ctx, spec) {
     var gen = playGen, screenAt = current, off = false, t0 = Date.now();
     if (ctx && ctx.onCancel) ctx.onCancel(function () { off = true; });
     var sc = Screens.list[current] || {};
     var extra = CONCEPT_RE.test(String(sc.say || '')) ? AUTO_CONCEPT : 0;
+    // (a screen whose last beat is already a pause — the flight onto the log — names its own)
+    var settleMs = spec && spec.pause != null ? spec.pause : null;
     var alive = function () { return !off && gen === playGen && screenAt === current; };
     var ceiling = Math.max(200, AUTO_CEILING * paceScale());
     var quiet = function () {
@@ -2424,7 +2464,7 @@
         if (!alive()) return;
         if (!quiet()) { settle(); return; }                  // something began in the breath
         go();
-      }, Math.round((AUTO_SETTLE + extra) * paceScale()));
+      }, Math.round((settleMs != null ? settleMs : AUTO_SETTLE + extra) * paceScale()));
     })();
   }
 
@@ -2709,6 +2749,18 @@
         // into the open middle.)
         // IN BY AIR, looking the shape over on the way (flyIn)
         if (state === 'enter' && opts && opts.from === 'air') return flyIn();
+        /* ONTO THE LOG (the end of the intro — the user's "fly to the log arc"): his line is said
+           and its bubble comes down with it, then a short curved flight from wherever he is to
+           the log at the left of the ground, the landing squash, and he is perched there. */
+        if (state === 'perch' && present && global.Swiftee && Swiftee.play) {
+          standing = null; say(null);
+          var fr = frame();
+          logFlying = true; syncLogFront();
+          var landed = function () { logFlying = false; syncLogFront(); };
+          return Promise.resolve(Swiftee.play('perch', { size: (opts && opts.size) || Swiftee.size,
+                                                         arc: Math.round(fr.h * 0.13), ms: 900, onLand: landed }))
+            .then(function () { landed(); placeBubble(); }, function () { landed(); });
+        }
         if (state === 'enter' && opts && opts.from === 'below' && !opts.to) {
           return entrance({ quick: !!opts.quick, ms: opts.ms }).then(function () { placeBubble(); });
         }
@@ -3144,7 +3196,7 @@
         var waiting = spec.type === 'tap-anywhere';
         // NO NEXT BUTTON IN THE LESSON: the screen goes on by itself once all of it has been
         // said and seen (autoAdvance). The story before it keeps its own Next.
-        if (waiting) autoAdvance(ctx);
+        if (waiting) autoAdvance(ctx, spec);
         if (ctx && ctx.onCancel) ctx.onCancel(function () { showNext(false); });
         if (ctx && ctx.onCancel) ctx.onCancel(function () { inputLive = false; inputSpec = null; });
 
@@ -3445,6 +3497,9 @@
     }
 
     current = i; setProgress(i);
+    // the log arc stands on the screens that sit him on it (screens.js `log`); off, it fades —
+    // under the snow, when the screen after them is built behind the cover
+    if (Stage.perch) Stage.perch(!!s.log);
     // A carried card rides up when this screen has no plank, and eases back
     // under the band when it has; a scene built by this screen's beats is
     // seated as it is built.

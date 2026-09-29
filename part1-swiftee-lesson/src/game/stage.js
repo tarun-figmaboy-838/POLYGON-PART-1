@@ -601,6 +601,29 @@
    * ------------------------------------------------------------------ */
 
   var HORIZON = 405;          // where the painted snowfield begins, in viewBox units
+
+  /* THE LOG ARC HIS PERCH IS (Stage.perch): Part 2's own log — part2-frozen-rush's
+   * assets/env/obs-log-arch.webp, copied as it is to assets/bg/log-arch.webp, because the
+   * lesson also runs on its own, off the disk and on its own test servers, where Part 2 is not
+   * beside it. It stands on the snow at the left of the ground; he flies onto it at the end of
+   * the intro and sits there through the first question.
+   *
+   * Placed by what touches: the picture's lowest opaque row (409 of 411) on the snow line, and
+   * his feet on the log's crest — 45% across, where the snow is highest between the two branch
+   * stubs (row 83).
+   *
+   * SITTING IN THE SNOW, NOT STANDING ON THE AIR OVER IT (asked for: "not floating or
+   * disconnected"). His feet were ON the top line of the snow, and the drawing's feet stop a
+   * little above the sheet's baseline: a sliver of sky showed under him — and with his feet
+   * only just in, his legs still showed, standing. He sits 22 units down into the snow now, a
+   * leg's length, and game.js lays a copy of the log over him (syncLogFront), so the snow's
+   * front edge runs across his belly: a bird sitting on a snowy log. */
+  var LOG = { src: 'assets/bg/log-arch.webp?v=55947ce2', x: 38, w: 236, iw: 684, ih: 411, foot: 409, ground: 520 };
+  LOG.h = LOG.w * LOG.ih / LOG.iw;
+  LOG.y = LOG.ground - LOG.h * (LOG.foot / LOG.ih);
+  var LOG_SINK = 22;
+  var LOG_PERCH = { x: LOG.x + LOG.w * 0.45, y: LOG.y + LOG.h * (83 / LOG.ih) + LOG_SINK };
+  var perchLog = null;
   var SNOW = 26, GUST = 16, GLINTS = 10;  // ambient element counts — see ambientLife()
   var ambient = [];           // running WAAPI animations, so they can be stopped
   var snowAnims = [];         // just the snowfall, so a gust can speed it up
@@ -633,6 +656,13 @@
      * the board instead of stopping at it. The weather still belongs here,
      * because it is drawn in board coordinates like everything else.
      */
+    // the log, on the snow (hidden until a screen stands him on it: perch), under the weather
+    perchLog = mk('g', { 'class': 'perch-log', 'pointer-events': 'none' }, layers.bg);
+    perchLog.style.opacity = '0';
+    var li = mk('image', { x: LOG.x, y: LOG.y.toFixed(1), width: LOG.w, height: LOG.h.toFixed(1),
+                           preserveAspectRatio: 'xMidYMid meet' }, perchLog);
+    li.setAttributeNS('http://www.w3.org/1999/xlink', 'href', LOG.src);
+    li.setAttribute('href', LOG.src);
     ambientLife();
   }
 
@@ -2316,7 +2346,8 @@
       // the top-right card and the buttons never meet. Sat on the plank band
       // it started a fifth of the way down and its bottom row touched the
       // floor. Without him the block is centred and spread to use the width.
-      var standsLeft = global.Swiftee && Swiftee.pos === 'left';
+      // (he is at the left on the ground, or on the log arc there: the cards take the right)
+      var standsLeft = global.Swiftee && /^(left|log)$/.test(Swiftee.pos);
       var HALF = standsLeft ? 124 : 98, GAP = standsLeft ? 22 : 28, band = BOTTOM - TOP;
       var OF = global.CardFrame && CardFrame.option;
       var cardH = 2 * HALF * (OF ? OF.h / OF.w : 1);
@@ -7321,6 +7352,26 @@
     hintRestart: function () { if (hintRearm) hintRearm(); },
     /** game.js: hold the stage's input while he speaks (see holdOn) */
     hold: function (on) { holdOn = !!on; },
+    /** game.js: the log arc on the left of the ground — shown on the screens that sit him on
+        it (screens.js `log`), fading in or out; perchAt: where his feet go on it, as fractions
+        of the board, for his 'log' mark */
+    perch: function (on) {
+      if (!perchLog) return;
+      var want = on ? '1' : '0';
+      if (perchLog.style.opacity === want) return;
+      perchLog.style.transition = reduced() ? '' : 'opacity 320ms ease';
+      perchLog.style.opacity = want;
+    },
+    perchAt: function () { return { x: LOG_PERCH.x / W, y: LOG_PERCH.y / H }; },
+    /** the log as drawn (board units) and where on its picture his feet are (fractions), for
+        the copy of it game.js lays over his feet; null while it is not up */
+    perchLog: function () {
+      if (!perchLog || perchLog.style.opacity !== '1') return null;
+      // (fy: half way from the crest, where the snow's front edge crosses him, down to his
+      // feet — the copy is centred there, so both are well inside its solid middle)
+      return { src: LOG.src, x: LOG.x, y: LOG.y, w: LOG.w, h: LOG.h,
+               fx: (LOG_PERCH.x - LOG.x) / LOG.w, fy: 83 / LOG.ih + (LOG_SINK / 2) / LOG.h };
+    },
     /** game.js: while a card is being taught, IT is the content the bubble
         keeps clear of — everything else is dimmed scenery under the sheet */
     teachBox: function () { return st.teachCopy && st.teachCopy.parentNode ? st.teachCopy.getBoundingClientRect() : null; },

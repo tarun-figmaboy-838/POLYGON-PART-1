@@ -249,6 +249,8 @@
     // No flight rig exists either. He waves as he goes, and travels on the
     // liveliest loop the set has.
     exit:        { rig: 'flapping',    hold: true },   // he flies off, wings going
+    // onto the log arc at the left of the ground: a short curved flight and a landing (MOVES.perch)
+    perch:       { rig: 'flapping',    hold: true },
     move:        { rig: 'flapping',    hold: true }
   };
 
@@ -1360,6 +1362,9 @@
      * the truth and the bubble can be placed against it the moment this
      * resolves.
      */
+    /** Onto the log arc (the 'log' mark): the move, as a flight — o.arc, o.ms, o.size. */
+    perch: function (o) { return MOVES.move(Object.assign({}, o || {}, { to: 'log' })); },
+
     move: function (o) {
       if (!layout) return Promise.resolve();
       var fromP = layout(pos, size);
@@ -1369,22 +1374,41 @@
       el.style.opacity = toPos === 'off' ? '0' : '1';
 
       var g = fresh(); stateName = 'move'; rigLoop = null;
+      /* A FLIGHT, NOT A SLIDE (o.arc, px): up and over along one smooth curve — bowed up by
+         `arc` at its middle, eased in and out — and down onto the new mark with the landing
+         squash (BODY.land), in o.ms. Without it, the move it always was. */
+      var arc = Math.max(0, +o.arc || 0), ms = Math.max(200, +o.ms || 680);
       clip('flapping', Infinity);
-      liftShadow(680);
+      liftShadow(arc ? ms : 680);
       place(pos, size);
       // The clip belongs to where he lands, not to the flight: cut at the
       // rim while still in the air he would arrive in two pieces.
       var landingClip = clipY; clipY = null; applyClip();
 
       var dx = toP.x - fromP.x, dy = toP.y - fromP.y, ds = fromP.scale / toP.scale;
-      var a = anim([
-        { transform: 'translate(' + (-dx) + 'px,' + (-dy) + 'px) scale(' + ds + ')' },
-        { transform: 'translate(0,0) scale(1)' }
-      ], { duration: 680, easing: 'cubic-bezier(.22,1,.36,1)' });
+      var keys;
+      if (arc) {
+        keys = [];
+        for (var k = 0; k <= 20; k++) {
+          var t = k / 20, e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+          var px = -dx * (1 - e), py = -dy * (1 - e) - arc * 4 * e * (1 - e), sc = ds + (1 - ds) * e;
+          keys.push({ transform: 'translate(' + px.toFixed(2) + 'px,' + py.toFixed(2) + 'px) scale(' + sc.toFixed(4) + ')', offset: t });
+        }
+      } else {
+        keys = [
+          { transform: 'translate(' + (-dx) + 'px,' + (-dy) + 'px) scale(' + ds + ')' },
+          { transform: 'translate(0,0) scale(1)' }
+        ];
+      }
+      var a = anim(keys, { duration: arc ? ms : 680, easing: arc ? 'linear' : 'cubic-bezier(.22,1,.36,1)' });
       var land = function () { clipY = landingClip; applyClip(); };
       return a.finished.then(function () {
         land();
         if (stale(g)) return;
+        // (touchdown: whoever put something at his feet to land in is told now — the squash
+        // happens there, not a beat later)
+        if (typeof o.onLand === 'function') { try { o.onLand(); } catch (e) {} }
+        if (arc) return bounce('land').then(function () { return stale(g) ? null : rest(); });
         return rest();
       }, land);
     }
@@ -1542,7 +1566,8 @@
     else if (def.again && opts && opts.misses > 1 && STATES[def.again]) state = def.again;
     else if (def.variants && def.variants.length) state = def.variants[hashOf(opts && opts.key) % def.variants.length];
     def = STATES[state];
-    if (def && def.seated && airborne && STATES[def.seated]) state = def.seated;
+    // (and on the log: those prop drawings sit on the ground, and he is sitting on a log)
+    if (def && def.seated && (airborne || pos === 'log') && STATES[def.seated]) state = def.seated;
     return state;
   }
 
