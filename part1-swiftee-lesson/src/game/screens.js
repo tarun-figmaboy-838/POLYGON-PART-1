@@ -932,7 +932,10 @@
         { wait: 300 },
         { say: 'Can you sort these polygons as convex or concave?', vo: 'p27' },
         { swiftee: 'observe', at: 'sort.tray' },
-        { input: { type: 'sort', until: 'all-placed-correctly', teach: 1, autoPlace: true } },
+        // (the FIRST wrong drop is brief feedback and the card goes home for another try; the
+        // second wrong drop of the SAME card is taught up close and put in its bin — the user,
+        // screen 22)
+        { input: { type: 'sort', until: 'all-placed-correctly', teach: 2, autoPlace: true } },
         // a finished sort is a milestone
         { feedback: milestone([{ sfx: 'levelUp' }, { juice: 'confetti', target: 'stage' }]) }
       ],
@@ -1138,8 +1141,9 @@
         kind: 'compare',
         // each name tag on its word; the irregular one is the pentagon the
         // child stretched a screen ago (made), the stock stretch without it
-        left:  { sides: 5, caption: 'Regular pentagon',   tone: 'regular', captionCue: 'regular' },
-        right: { sides: 5, stretch: 0, made: 'irregular', caption: 'Irregular pentagon', tone: 'irregular', captionCue: 'irregular' }
+        // the PROPERTY compared, not the shape's name (the user, screen 29: "Regular" and "Irregular", not "Pentagon")
+        left:  { sides: 5, caption: 'Regular',   tone: 'regular', captionCue: 'regular' },
+        right: { sides: 5, stretch: 0, made: 'irregular', caption: 'Irregular', tone: 'irregular', captionCue: 'irregular' }
       },
       beats: [
         { instruction: null },

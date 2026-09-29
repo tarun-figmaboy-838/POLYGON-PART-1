@@ -2730,7 +2730,9 @@
     // on the left, the kinds on the right; the inner columns stop short of
     // his widest line over the big card (x 216..786, y <= 133) and the rows
     // sit in the middle of the height, clear of the HUD and of Back / Next.
-    mini: { w: 104, x: [[72, 190], [810, 928]], y: [205, 375], zoom: 1.12, plate: { w: 94, h: 24, size: 13.5, rim: 2 } },
+    // 132 wide, not 104 (the user, screen 31: "noticeably larger, better use of the negative
+    // space"): the albums still stop short of the big card (350..650) and of the HUD's corner
+    mini: { w: 132, x: [[80, 224], [776, 920]], y: [200, 378], zoom: 1.12, plate: { w: 118, h: 27, size: 15.5, rim: 2 } },
     enterMs: 420, collectMs: 580
   };
 
@@ -3175,10 +3177,10 @@
     var k = half / SWIPE_HALF;
     var gl = -half + half * 2 * p.x, gw = half * 2 * p.w;
     var gt = -halfH + halfH * 2 * p.y, gh = halfH * 2 * p.h;
-    // (the figure starts a clear twelve below the name's descenders — "Hexagon" has a g — so a
-    // top side's length is never read as part of the name)
+    // (no name over the figure any more — the user, screen 30 — so the glass is the figure's
+    // from a few units under the rim: as big as its readings let it be, swipeFit)
     return { halfH: halfH, titleY: gt + 23 * k,
-             l: gl + 4 * k, r: gl + gw - 4 * k, t: gt + 40 * k, b: gt + gh - 4 * k };
+             l: gl + 4 * k, r: gl + gw - 4 * k, t: gt + 8 * k, b: gt + gh - 4 * k };
   }
 
   /** Each side's length label at its first-choice place: just off the middle of the side,
@@ -3221,8 +3223,8 @@
       var v = shapeVerts(name, r, 0, 0), bb = boxOf(v, sideLabelBoxes(v, texts, SWF.side));
       return { ok: bb.r - bb.l <= A.r - A.l && bb.b - bb.t <= A.b - A.t, bb: bb };
     };
-    var lo = 20, hi = 170;
-    for (var it = 0; it < 16; it++) { var mid = (lo + hi) / 2; if (test(mid).ok) lo = mid; else hi = mid; }
+    var lo = 20, hi = 260;
+    for (var it = 0; it < 18; it++) { var mid = (lo + hi) / 2; if (test(mid).ok) lo = mid; else hi = mid; }
     var bb = test(lo).bb;
     return { r: lo, cx: (A.l + A.r) / 2 - (bb.l + bb.r) / 2, cy: (A.t + A.b) / 2 - (bb.t + bb.b) / 2, area: A };
   }
@@ -3243,12 +3245,7 @@
   function swipeFace(g, half, name, bare) {
     var texts = swipeLengths(name), F = swipeFit(name, texts), k = half / SWIPE_HALF;
     drawShape(name, F.r * k, F.cx * k, F.cy * k, g);
-    if (!bare) {
-      mk('text', { x: 0, y: F.area.titleY * k, 'text-anchor': 'middle', 'font-size': SWF.title * k,
-                   'font-weight': 800, fill: shade(COLORS[name] || '#5b95ee', -0.42), 'letter-spacing': 0.3,
-                   'class': 'swipe-name', 'pointer-events': 'none',
-                   text: POLY_NAME[shapeVerts(name, 1, 0, 0).length] || 'Polygon' }, g);
-    }
+    // (no name on the card — the user, screen 30: "the student should focus on the geometry")
     return { verts: shapeVerts(name, F.r * k, F.cx * k, F.cy * k), fit: F, texts: texts };
   }
 
@@ -5545,6 +5542,47 @@
       default: return 0;
     }
   }
+  /* THE SIDES, THEN THE ANGLES, AS HE SAYS THEM (the compare pair — the user, screen 29: "animate
+     the corresponding mathematical feature at the same moment"). Each side is drawn over in warm
+     light out of its corner, one after another round the shape; each corner gets an arc inside
+     it, one after another; both hold a moment and fade, and change nothing real. */
+  function traceSides(v) {
+    if (!v || !v.length || reduced()) return 0;
+    var g = mk('g', { 'class': 'word-sides', 'pointer-events': 'none' }, layers.fx), n = v.length;
+    v.forEach(function (a, i) {
+      var b = v[(i + 1) % n], len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+      var ln = mk('line', { x1: a.x, y1: a.y, x2: b.x, y2: b.y, stroke: WARM, 'stroke-width': 6, 'stroke-linecap': 'round', opacity: 0.95 }, g);
+      ln.style.strokeDasharray = len + ' ' + len; ln.style.strokeDashoffset = len + 'px';
+      try { ln.animate([{ strokeDashoffset: len + 'px' }, { strokeDashoffset: '0px' }], { duration: 260, delay: i * 150, easing: 'ease-out', fill: 'forwards' }); } catch (e) {}
+    });
+    later(n * 150 + 700, function () { fadeOut(g); });
+    return n;
+  }
+  function traceAngles(v) {
+    if (!v || !v.length || reduced()) return 0;
+    var g = mk('g', { 'class': 'word-angles', 'pointer-events': 'none' }, layers.fx), n = v.length, R = 22;
+    v.forEach(function (p, i) {
+      var a = v[(i + n - 1) % n], b = v[(i + 1) % n];
+      var a1 = Math.atan2(a.y - p.y, a.x - p.x), a2 = Math.atan2(b.y - p.y, b.x - p.x);
+      var x1 = p.x + Math.cos(a1) * R, y1 = p.y + Math.sin(a1) * R, x2 = p.x + Math.cos(a2) * R, y2 = p.y + Math.sin(a2) * R;
+      // the arc that runs through the INSIDE of the corner: of the two, the one whose middle is in the shape
+      var d = null;
+      [[0, 1], [0, 0], [1, 1], [1, 0]].some(function (f) {
+        var path = 'M' + x1 + ' ' + y1 + ' A' + R + ' ' + R + ' 0 ' + f[0] + ' ' + f[1] + ' ' + x2 + ' ' + y2;
+        var probe = mk('path', { d: path }, g), ok = false;
+        try { var L = probe.getTotalLength(), m = probe.getPointAtLength(L / 2); ok = Poly.contains(v, { x: m.x, y: m.y }); } catch (e) { ok = false; }
+        probe.remove();
+        if (ok) d = path;
+        return ok;
+      });
+      if (!d) return;
+      var arc = mk('path', { d: d, fill: 'none', stroke: WARM, 'stroke-width': 4, 'stroke-linecap': 'round', opacity: 0 }, g);
+      try { arc.animate([{ opacity: 0, scale: '.6' }, { opacity: 1, scale: '1' }], { duration: 240, delay: i * 150, easing: 'ease-out', fill: 'forwards' }); } catch (e) {}
+      arc.style.transformBox = 'fill-box'; arc.style.transformOrigin = 'center';
+    });
+    later(n * 150 + 700, function () { fadeOut(g); });
+    return n;
+  }
   function emphasize(term, ctx) {
     if (!svg || reduced() || dragging()) return 0;
     var kind = st.kind, line = String((ctx && ctx.line) || '').toLowerCase();
@@ -5570,6 +5608,9 @@
         return warmPulse(mine);
       }
       case 'side':
+        // THE PAIR: the sides of the card in focus, drawn over one after another as he says
+        // it (the user, screen 29: the line follows the VO — sides on "sides")
+        if (kind === 'compare') { var fs = st.compareFocus ? st.compare[st.compareFocus] : null; return fs ? traceSides(fs.verts) : 0; }
         if (st.segLine) return trace([st.segLine]);
         if (st.sideDotEls && st.sideDotEls.filter(Boolean).length) return warmPulse(st.sideDotEls, { peak: '1.6' });
         return st.fill ? trace([st.fill]) : 0;
@@ -5589,6 +5630,8 @@
         return shown.length ? trace(shown) : 0;
       }
       case 'angle': {
+        // THE PAIR: an arc in each corner of the card in focus, one after another, on "angles"
+        if (kind === 'compare') { var fa = st.compareFocus ? st.compare[st.compareFocus] : null; return fa ? traceAngles(fa.verts) : 0; }
         var wedges = st.measG ? [].slice.call(st.measG.querySelectorAll('[data-angle]')) : [];
         return wedges.length ? warmPulse(wedges, { peak: '1.15' }) : warmPulse(relevantKnobs());
       }
@@ -6163,7 +6206,6 @@
                held there long enough to read that; only then does it fly, its words fading on
                the way, and the zone lights up as it LANDS rather than before it has left. */
             if (card._cardEl && card._cardEl._mark) card._cardEl._mark('correct');
-            swipeVerdict(card);
             var landIn = function () {
               if (zone && zone.classList) {
                 zone.classList.remove('landed'); void zone.getBBox && zone.getBBox();
@@ -6239,7 +6281,6 @@
               card._cardEl._mark('wrong');
               later(1100, function () { if (card._cardEl) card._cardEl._mark(null); });
             }
-            swipeVerdict(card);
             // the marks go on the card and he names what they show
             var why = whyShape(card);
             onTap('wrong',
@@ -6660,12 +6701,13 @@
                              : bin._bin.id === 'concave' ? { t: 'Yes! It\u2019s concave: one corner goes inward.', vo: 'fb43' } : null);
               if (S.placed >= S.total) { S.done = true; endInteraction(); resolve({ result: 'correct' }); }
             } else {
-              // A MISS IS THE SHAPE TAUGHT UP CLOSE (spec.teach: every that-many
-              // misses — 1 on the convex/concave sort; game.js lifts the card
-              // with Stage.teach and explains it, and with spec.autoPlace the
-              // lesson then puts it in its bin). The card goes home first.
-              S.misses = (S.misses || 0) + 1;
-              var teachIt = spec.teach && S.misses % spec.teach === 0;
+              // A MISS IS THE SHAPE TAUGHT UP CLOSE — on that card's spec.teach-th miss (2 on
+              // the convex/concave sort: the first is brief feedback and another try — the
+              // user, screen 22; the second is explained, and with spec.autoPlace the lesson
+              // then puts it in its bin: game.js lifts the card with Stage.teach). The card
+              // goes home first.
+              item._misses = (item._misses || 0) + 1;
+              var teachIt = spec.teach && item._misses >= spec.teach;
               onTap('wrong', null, teachIt ? { teach: { el: item, concave: !!c.concave } } : null);
               returnItem(item, true);
             }
@@ -7145,10 +7187,11 @@
     var dent = -1;
     A.forEach(function (a, i) { if (a > 180.5 && (dent < 0 || a > A[dent] + 0.5 || (Math.abs(a - A[dent]) <= 0.5 && v[i].y < v[dent].y))) dent = i; });
     var sw = 1.9;                                       // local units: ~4-5 stage units once grown
+    // THE CORNER ITSELF, a dot with a white rim that pulses — no ring round it (the user,
+    // screen 22: "remove the large rings around vertex dots; use the actual vertex dots")
     var ring = function (p, delay, col) {
-      var r = mk('circle', { cx: p.x, cy: p.y, r: 5.2, fill: 'none', stroke: col || TEACH.warm, 'stroke-width': sw, 'class': 'teach-ring' }, fx);
+      var r = mk('circle', { cx: p.x, cy: p.y, r: 3.6, fill: col || TEACH.warm, stroke: '#ffffff', 'stroke-width': 1.3, 'class': 'teach-ring' }, fx);
       r.style.animationDelay = (delay || 0) + 'ms';
-      mk('circle', { cx: p.x, cy: p.y, r: 2.4, fill: col || TEACH.warm }, fx);
       return r;
     };
     var sparkle = function (p) {
@@ -7194,11 +7237,10 @@
       show: function (what) {
         if (!copy.parentNode) return;
         if (what === 'notch' && dent >= 0) {
-          // the dent itself, tinted, and its corner ringed
+          // the corner that goes inward: its dot, and the two sides into it traced as lines
+          // (no shaded fill — the user: "use clear diagonal lines, not large shaded areas")
           var a = v[(dent + n - 1) % n], b = v[(dent + 1) % n], p = v[dent];
-          var tri = mk('path', { d: 'M' + a.x + ' ' + a.y + ' L' + p.x + ' ' + p.y + ' L' + b.x + ' ' + b.y + ' Z',
-                                 fill: TEACH.out, 'fill-opacity': 0.28, stroke: 'none', 'class': 'teach-fade' }, fx);
-          void tri;
+          grow(a, p, 0, false); grow(b, p, 120, false);
           ring(p, 0, TEACH.warm); sparkle(p); sfx('tick', { gain: 0.6 }); breathe();
         } else if (what === 'outside' && dent >= 0) {
           // the diagonal across the dent: out of the shape, violet
