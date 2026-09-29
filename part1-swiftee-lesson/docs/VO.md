@@ -10,7 +10,7 @@ Every line the game says — the story’s three voices first, then Swiftee’s 
 
 **Breaths:** record every line as ONE clip, read naturally, with a short breath at each `/` in the Breaths column. On screen each sentence is one bubble; the breaths are where the words pause inside it.
 
-## The story (7), before the lesson — in its own voices
+## The story (8), before the lesson — in its own voices
 
 Five painted scenes of Momo and Popo play between Start and Swiftee’s first screen. None of these lines is Swiftee’s; each speaker has a voice of their own:
 
@@ -23,10 +23,11 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 | 1 | 1 | narrator | `assets/vo/st1-narrator.mp3` | It was a great day, and Momo and Popo were deciding what to do. | yes |
 | 2 | 1 | momo | `assets/vo/st1-momo.mp3` | Popo, let’s go for a picnic! | yes |
 | 3 | 1 | popo | `assets/vo/st1-popo.mp3` | Great idea, Momo! | yes |
-| 4 | 2 | popo | `assets/vo/st2-popo.mp3` | I’ll go ahead and find us a nice spot. | yes |
-| 5 | 3 | narrator | `assets/vo/st3-narrator.mp3` | Momo wanted to get there quickly, so he took the shortest route— through Frozen Pass. | yes |
-| 6 | 4 | momo | `assets/vo/st4-momo.mp3` | This path looks trickier than last time! | yes |
-| 7 | 5 | narrator | `assets/vo/st5-narrator.mp3` | Momo needs your help to reach Popo. But first, you’ll need to learn a little more about polygons. | yes |
+| 4 | 2 | momo | `assets/vo/st2-momo.mp3` | I’ll bring the snacks! | yes |
+| 5 | 2 | popo | `assets/vo/st2-popo.mp3` | I’ll go ahead and find us a nice spot. | yes |
+| 6 | 3 | narrator | `assets/vo/st3-narrator.mp3` | Momo wanted to get there quickly, so he took the shortest route— through Frozen Pass. | yes |
+| 7 | 4 | momo | `assets/vo/st4-momo.mp3` | This path looks trickier than last time! | yes |
+| 8 | 5 | narrator | `assets/vo/st5-narrator.mp3` | Momo needs your help to reach Popo. But first, you’ll need to learn a little more about polygons. | yes |
 
 ## Lesson lines (55), in timeline order
 
@@ -88,7 +89,7 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 | 54 | 31 | summary | `assets/vo/p37h.mp3` | say | If the sides or angles are not all equal, the polygon is irregular. |  | screen 31 | explaining, warm and clear | yes |
 | 55 | 31 | summary | `assets/vo/p37i.mp3` | say | Amazing! You explored all these polygon ideas! |  | screen 31 | explaining, warm and clear | yes |
 
-## Answers (18), said when the child answers
+## Answers (22), said when the child answers
 
 | File | Line | When | Delivery | Recorded |
 |------|------|------|----------|----------|
@@ -108,6 +109,10 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 | `assets/vo/fb36.mp3` | Try again! The sides are not all equal. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/fb37.mp3` | Try again! The angles are not all equal. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/fb38.mp3` | Try again! The sides and the angles are not all equal. | a try that falls short, with the reason | explaining, warm and clear | yes |
+| `assets/vo/fb48.mp3` | This one is regular. Every side is equal, and every angle is equal too. | a try that falls short, with the reason | explaining, warm and clear | yes |
+| `assets/vo/fb49.mp3` | This one is irregular. Its sides are not all the same length. | a try that falls short, with the reason | explaining, warm and clear | yes |
+| `assets/vo/fb50.mp3` | This one is irregular. Its sides match, but its angles are not all equal. | a try that falls short, with the reason | explaining, warm and clear | yes |
+| `assets/vo/fb51.mp3` | This one is irregular. Its sides are not equal, and its angles are not equal either. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/fb42.mp3` | Yes! It’s convex: no corner goes inward. | a try that falls short, with the reason | a cheer, delighted | yes |
 | `assets/vo/fb43.mp3` | Yes! It’s concave: one corner goes inward. | a try that falls short, with the reason | a cheer, delighted | yes |
 

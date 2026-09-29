@@ -64,23 +64,30 @@
         },
         lines: [
           { who: 'narrator', vo: 'st1-narrator', box: { x: 110, top: 34 },
+            // each perks up as he is named — who is who, before either speaks
+            at: [{ word: 'Momo', move: 'momo', as: 'perk', after: 120 }, { word: 'Popo', move: 'popo', as: 'perk', after: 120 }],
             parts: ['It was a great day,', 'and Momo and Popo were deciding what to do.'], key: ['great', 'day,', 'Momo', 'Popo'],
             text: 'It was a great day, and Momo and Popo were deciding what to do.' },
           { who: 'momo', vo: 'st1-momo', box: { cx: 548, bottom: 196 }, tip: [648, 240],
             start: [{ move: 'momo', as: 'hop' }, { move: 'trunk', as: 'lift', after: 120 }],
+            // "picnic!" — a beat — and Popo's ears go up before he has a word to say
+            at: [{ word: 'picnic!', move: 'popo', as: 'perk', after: 320, sfx: 'pop', level: 0.18 }],
             key: ['picnic!'],
             text: 'Popo, let’s go for a picnic!' },
           { who: 'popo', vo: 'st1-popo', box: { cx: 1196, bottom: 296 }, tip: [1098, 338],
             start: [{ move: 'popo', as: 'hop' }, { move: 'paw', as: 'wave', after: 160 }],
+            // told it is a great idea, Momo swells a little — and his trunk agrees
+            at: [{ word: 'idea,', move: 'momo', as: 'proud', after: 380 }, { word: 'idea,', move: 'trunk', as: 'lift', after: 420 }],
             key: ['Great', 'idea,'],
             text: 'Great idea, Momo!' }
         ]
       },
 
-      /* SCENE 2 — POPO GOES ON AHEAD (the user's new painting, scene2-ahead: Momo and Popo on
-         the snow, Popo pointing the way). There is no basket in this picture, so Momo's snack
-         line is not in it (the user: "do not add snack dialogue"): Popo speaks, with a little
-         two-step as he sets off. */
+      /* SCENE 2 — SPLIT THE JOBS (the user's new painting, scene2-ahead: Momo and Popo on the
+         snow, each with a pack on his back, Popo pointing the way). Momo's snack line is back
+         (the user: "add the snack dialogue that I deleted"): he hops as he claims the snacks —
+         the pack on his back is where they go — then Popo speaks, with a little two-step as
+         he sets off. */
       {
         id: 2,
         regions: {
@@ -90,8 +97,17 @@
                   origin: [1120, 790], feather: 26 }
         },
         lines: [
+          { who: 'momo', vo: 'st2-momo', box: { cx: 470, bottom: 226 }, tip: [548, 268],
+            start: [{ move: 'momo', as: 'hop' }],
+            // "snacks!" — a beat — Popo does a double take at the word (the cheeky one), and
+            // Momo, who did not notice, stands a little taller for having thought of it
+            at: [{ word: 'snacks!', move: 'popo', as: 'doubletake', after: 300 }, { word: 'snacks!', move: 'momo', as: 'proud', after: 700 }],
+            key: ['snacks!'],
+            text: 'I’ll bring the snacks!' },
           { who: 'popo', vo: 'st2-popo', box: { cx: 1180, bottom: 372 }, tip: [1120, 404],
             start: [{ move: 'popo', as: 'twostep' }],
+            // and Momo nods along with the plan
+            at: [{ word: 'spot.', move: 'momo', as: 'nod', after: 260 }],
             key: ['nice', 'spot.'],
             text: 'I’ll go ahead and find us a nice spot.' }
         ]
@@ -114,7 +130,12 @@
         enter: [{ move: 'momo', as: 'bob', after: 500 }],
         lines: [
           { who: 'narrator', vo: 'st3-narrator', box: { cx: 900, top: 30 },
-            at: [{ word: 'route—', sheen: 'sign', sfx: 'creak', sfx2: 'sparkle' }],
+            // "quickly" — an overconfident little nod; the sign lights on "route—" and, a beat
+            // later, he leans in to read it; "Pass." — the smallest gulp, and he recovers
+            at: [{ word: 'quickly,', move: 'momo', as: 'eager', after: 150 },
+                 { word: 'route—', sheen: 'sign', sfx: 'creak', sfx2: 'sparkle' },
+                 { word: 'route—', move: 'momo', as: 'lean', after: 420 },
+                 { word: 'Pass.', move: 'momo', as: 'gulp', after: 380 }],
             parts: ['Momo wanted to get there quickly,', 'so he took the shortest route—', 'through Frozen Pass.'],
             key: ['quickly,', 'shortest', 'route—', 'Frozen', 'Pass.'],
             text: 'Momo wanted to get there quickly, so he took the shortest route— through Frozen Pass.' }
@@ -131,11 +152,18 @@
                   origin: [300, 822], feather: 24 }
         },
         glints: [[820, 760, 0], [1090, 720, 1500], [1200, 660, 2900], [960, 800, 900]],
-        // he pulls up short first, and speaks once he has taken it in
-        enter: [{ move: 'momo', as: 'recoil', after: 350, sfx: 'creak', level: 0.5 }, { sfx: 'chime', after: 700, level: 0.6 }, { sfx: 'air', after: 150 }],
-        enterHold: 1150,
+        // a slow push-in toward him while he takes it in (the brief: "a slight push-in on a
+        // funny reaction … smooth return" — the scene after returns to the wide view)
+        camera: { origin: [420, 640], to: 1.018, ms: 3200 },
+        // he pulls up short first — a beat — looks AGAIN (the double take, with a small boing),
+        // and speaks once he has taken it in
+        enter: [{ move: 'momo', as: 'recoil', after: 350, sfx: 'creak', level: 0.5 }, { sfx: 'chime', after: 700, level: 0.6 }, { sfx: 'air', after: 150 },
+                { move: 'momo', as: 'doubletake', after: 1400, sfx: 'boing', level: 0.22 }],
+        enterHold: 1700,
         lines: [
           { who: 'momo', vo: 'st4-momo', box: { cx: 440, bottom: 430 }, tip: [420, 466],
+            // "trickier" — he shrinks a touch; "time!" — and pulls himself together
+            at: [{ word: 'trickier', move: 'momo', as: 'gulp', after: 220 }, { word: 'time!', move: 'momo', as: 'bob', after: 320 }],
             key: ['trickier'],
             text: 'This path looks trickier than last time!' }
         ]
@@ -158,7 +186,10 @@
         enter: [{ move: 'momo', as: 'bob', after: 600 }],
         lines: [
           { who: 'narrator', vo: 'st5-narrator', box: { x: 66, top: 34, w1: 1440 },
-            at: [{ word: 'polygons.', sheen: ['block1', 'block2', 'block3'], sfx: 'sparkle', level: 0.45,
+            // "your help" — a hopeful look up at the child; nothing more until the ice answers
+            // on "polygons" (the brief: the comedy stops before the hand-over to the lesson)
+            at: [{ word: 'help', move: 'momo', as: 'perk', after: 200 },
+                 { word: 'polygons.', sheen: ['block1', 'block2', 'block3'], sfx: 'sparkle', level: 0.45,
                    twinkle: [[820, 720, 60], [1090, 700, 260], [1200, 650, 360]] }],
             parts: ['Momo needs your help to reach Popo.', 'But first, you’ll need to learn a little more about polygons.'],
             key: ['help', 'polygons.'],

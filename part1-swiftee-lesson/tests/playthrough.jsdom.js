@@ -44,7 +44,7 @@ const lerp=(a,b,n)=>{const o=[];for(let i=1;i<=n;i++)o.push({x:a.x+(b.x-a.x)*i/n
 // SFX/juice sync counters for the section-6 check
 let cues={correct:0,wrong:0}; const origPlay=w.SFX.play.bind(w.SFX); w.SFX.play=(n,o)=>{ if(n==='correct')cues.correct++; if(n==='wrong')cues.wrong++; return origPlay(n,o); };
 
-let wrongTried=0, screensSeen=new Set(), asked=[], sideTries={}, nextInLesson=false;
+let wrongTried=0, screensSeen=new Set(), asked=[], sideTries={}, nextInLesson=false, swipePutAway=null;
 
 // HANDED BACK: while he replies to an answer the stage takes nothing (game.js
 // pop(): lock, his line, unlock), and a child cannot answer again in that time
@@ -116,7 +116,7 @@ async function act(spec){
       // function. The swipe path itself is exercised in the browser suite,
       // where there is real geometry to drag across.
       const zoneOf=id=>svg().querySelector('.zone[data-zone="'+id+'"]');
-      let first=true, guard=0;
+      let first=true, second=true, guard=0;
       while(St().swipe && St().swipe.i<St().swipe.items.length && guard++<200){   // eight rounds, and the 300ms hold between them spins this loop
         // wait for the next card to be dealt (a 300ms hold follows each catch) rather than tapping into the gap and paying a full timeout for it
         await until(()=>!St().swipe || !!St().swipe.card, 2500).catch(()=>{});
@@ -129,6 +129,19 @@ async function act(spec){
         // to say why; the zones answer nothing until he is down (game.js pop())
         await until(()=>!St().swipe || w.Input.mode()!=='locked', 8000);
         if(first){ tapEl(zoneOf(wrong)); wrongTried++; first=false; await sleep(120); await until(()=>!St().swipe || w.Input.mode()!=='locked', 8000); }
+        else if(second && St().swipe.i===1){
+          // THE SAME CARD WRONG TWICE: no third try. After his explanation the card goes to
+          // its own pile by itself (stage.js classify → collect) and the next one is dealt —
+          // nothing is tapped right here
+          second=false; const name=card._name, was=St().swipe.i;
+          tapEl(zoneOf(wrong)); wrongTried++; await sleep(120); await until(()=>!St().swipe || w.Input.mode()!=='locked', 8000);
+          if(!St().swipe) break;
+          tapEl(zoneOf(wrong)); wrongTried++; await sleep(120);
+          await until(()=>!St().swipe || St().swipe.i>was, 14000).catch(()=>{});
+          const z=St().swipe && St().swipe.zones[right];
+          swipePutAway={ card:name, moved:!!(St().swipe && St().swipe.i>was), kept:!!(z && z._kept && z._kept.indexOf(name)>=0) };
+          await sleep(40); continue;
+        }
         if(!St().swipe) break;
         const before=St().swipe.i;
         tapEl(zoneOf(right));
@@ -161,6 +174,7 @@ async function act(spec){
     [1,'narrator','It was a great day, and Momo and Popo were deciding what to do.'],
     [1,'momo','Popo, let’s go for a picnic!'],
     [1,'popo','Great idea, Momo!'],
+    [2,'momo','I’ll bring the snacks!'],
     [2,'popo','I’ll go ahead and find us a nice spot.'],
     [3,'narrator','Momo wanted to get there quickly, so he took the shortest route— through Frozen Pass.'],
     [4,'momo','This path looks trickier than last time!'],
@@ -170,25 +184,24 @@ async function act(spec){
   w.Game.director.on('start',()=>{ if(w.Story&&w.Story.active) lessonDuringStory=true; if(w.Game.screen===0) screen1Starts++; });
   await until(()=>w.Story&&w.Story.active, 5000);
   const storyRan=!!(w.Story&&w.Story.active);
-  const scenesSeen=[], presses=[]; let lastScene=0, earlyNext=false, refused=0, acceptedEarly=0;
+  // NO NEXT BUTTON (the user: "remove the next buttons"): each scene goes on by itself once it
+  // has been told. The button must never show, and a tap that comes early (Story.next) does
+  // nothing — the scenes still arrive in order, on their own.
+  const scenesSeen=[]; let lastScene=0, nextShown=false, refused=0, acceptedEarly=0;
   const ts=Date.now();
   while(w.Story&&w.Story.active&&Date.now()-ts<60000){
     const s=w.Story.state;
     if(s.scene!==lastScene){ scenesSeen.push(s.scene); lastScene=s.scene; }
-    if(d.querySelector('#next.show')&&!s.canAdvance) earlyNext=true;
+    if(d.querySelector('#next.show')) nextShown=true;
     // a press while a line is still being told does nothing
     if(s.phase==='dialogue'&&!s.canAdvance){ if(w.Story.next()) acceptedEarly++; else refused++; }
-    if(s.canAdvance&&d.querySelector('#next.show')){
-      presses.push(s.scene);
-      const nb=d.getElementById('next'); nb.click(); nb.click();   // and a double tap is one press
-    }
     await sleep(10);
   }
   const told=w.Story?w.Story.state.lines.map(l=>[l.scene,l.who,l.text]):[];
   t('the story plays before the lesson: all five scenes, in order, each once', storyRan&&JSON.stringify(scenesSeen)==='[1,2,3,4,5]', JSON.stringify(scenesSeen));
   t('every line of the script, word for word, by its own speaker, in order', JSON.stringify(told)===JSON.stringify(SCRIPT), JSON.stringify(told));
-  t('Next only once a scene is told; an early press and a second tap change nothing',
-    !earlyNext&&refused>0&&acceptedEarly===0&&JSON.stringify(presses)==='[1,2,3,4,5]', JSON.stringify({earlyNext,refused,acceptedEarly,presses}));
+  t('no Next button in the story: the scenes go on by themselves, and an early press changes nothing',
+    !nextShown&&refused>0&&acceptedEarly===0, JSON.stringify({nextShown,refused,acceptedEarly}));
   await until(()=>w.Game.screen===0, 5000);
   t('then the lesson, from screen 1, once, and not while the story was up',
     !(w.Story&&w.Story.active)&&!lessonDuringStory&&w.Game.screen===0&&screen1Starts===1&&d.getElementById('story').hidden&&!d.getElementById('game').classList.contains('story-on'),
@@ -249,6 +262,7 @@ async function act(spec){
   // mistake), and the drag-a-side screen that had a wrong answer is gone
   t('a wrong answer was tried on every judged screen ('+wrongTried+' times)', wrongTried>=7, String(wrongTried));
   t('every wrong attempt produced exactly one wrong cue', cues.wrong>=wrongTried, JSON.stringify(cues));
+  t('a swipe card missed twice went to its own pile by itself, and the next was dealt', !!(swipePutAway&&swipePutAway.moved&&swipePutAway.kept), JSON.stringify(swipePutAway));
   t('correct cues fired', cues.correct>0);
   console.log('  screens: '+N+', inputs answered: '+asked.length+', elapsed '+((Date.now()-t0)/1000).toFixed(1)+'s');
   console.log(fails?'\n'+fails+' FAILED':'\nfull playthrough clean'); process.exit(fails?1:0);

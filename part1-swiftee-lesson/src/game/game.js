@@ -643,8 +643,11 @@
     }
     if (kind === 'wrong' && !o.late) { missesHere++; streak = 0; cheeredAt = 0; }
     if (kind === 'correct' && !o.late) streak++;
-    if (!buddyOn) return;   // the sound and the confetti carry the verdict
-    if (!global.Swiftee || !Swiftee.play) return;
+    // (o.after: what the stage does once this reply is over — or at once, when there is nobody
+    // to give one; called exactly once)
+    var after = function () { var f = o.after; o.after = null; if (f) f(); };
+    if (!buddyOn) { after(); return; }   // the sound and the confetti carry the verdict
+    if (!global.Swiftee || !Swiftee.play) { after(); return; }
     if (!o.late) {
       /* WHAT HE WILL SAY IS DECIDED AT THE ANSWER. If he is going to speak
          while the child could still act, the input is held from this instant
@@ -669,7 +672,7 @@
     // along it with the tape — that is the reaction, and it is protected. A
     // face and a "Nice!" after each of the five walks was the generic
     // reaction the walk exists to replace, spoken from an empty mark.
-    if (o.walked) return;
+    if (o.walked) { after(); return; }
     var reply = o.plan;
     /* HIS FACE, when the storyboard has not already given one (o.face). A
        right answer gets a cheer — a happy face and a hop — when he says so, a
@@ -700,10 +703,12 @@
         }
       } catch (e) {}
     };
-    if (!reply) { face(); return; }
-    if (reply.teach) pop(reply.lines, teachHooks(reply.teach));
-    else { reply.lines[0].face = face; pop(reply.lines); }
+    if (!reply) { face(); after(); return; }
+    var said_ = null;
+    if (reply.teach) said_ = pop(reply.lines, teachHooks(reply.teach));
+    else { reply.lines[0].face = face; said_ = pop(reply.lines); }
     replyUp = { kind: kind, teach: !!reply.teach, gen: popGen };
+    if (o.after) Promise.resolve(said_).then(after, after);
   }
 
   /* THE TEACHING MOMENT'S SHAPE (pop hooks): the card lifted to the middle
@@ -3614,7 +3619,10 @@
       if (cheer) said = PRAISE_FOR[info && info.last ? cheer.last : cheer.more] || null;
       var ro = { face: dip ? 'dip' : !(list && list.some(function (b) { return b && b.swiftee; })), walked: walked,
                  tries: info && info.tries, teach: info && info.teach, reason: info && info.reason,
-                 last: !!(info && info.last) };
+                 last: !!(info && info.last),
+                 // (the stage's own next step, once he has said this and is down again: the
+                 // swipe's second miss puts the card away after its explanation)
+                 after: info && typeof info.after === 'function' ? info.after : null };
       react(kind, said, ro);
     });
     if (global.Input) Input.mode('locked');

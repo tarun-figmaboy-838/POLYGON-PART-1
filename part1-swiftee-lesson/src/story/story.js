@@ -54,7 +54,8 @@
     sayOut: 170,       // a bubble leaving
     between: 240,      // and the breath before the next one
     voHold: 480,       // after a voiced line, before the next speaker answers
-    lastHold: 700,     // after a scene's last line, before Next (the brief's 500–800)
+    lastHold: 700,     // after a scene's last line, before the scene may go on (the brief's 500–800)
+    autoNext: 500,     // and the breath after that before it does, by itself (no Next button)
     partLead: 240,     // a line's next part takes the box this long before its first word
     partMin: 420,      // and not until the part before it has been all there this long
     partOut: 130,      // the part leaving
@@ -74,7 +75,19 @@
     lift:    { ms: 1100, f: [[0, 'none'], [0.18, 'rotate(0.8deg)'], [0.46, 'rotate(-2.4deg)'], [0.68, 'rotate(-1.8deg)'], [1, 'none']] },
     wave:    { ms: 1000, f: [[0, 'none'], [0.22, 'rotate(-4deg)'], [0.48, 'rotate(2.5deg)'], [0.72, 'rotate(-2deg)'], [1, 'none']] },
     swing:   { ms: 1200, f: [[0, 'none'], [0.25, 'rotate(-1.5deg)'], [0.58, 'rotate(1.5deg)'], [0.82, 'rotate(-0.4deg)'], [1, 'none']] },
-    recoil:  { ms: 950,  f: [[0, 'none'], [0.22, 'translateX(-3px) rotate(-0.45deg)'], [0.55, 'translateX(-2px) rotate(-0.4deg)'], [1, 'none']] }
+    recoil:  { ms: 950,  f: [[0, 'none'], [0.22, 'translateX(-3px) rotate(-0.45deg)'], [0.55, 'translateX(-2px) rotate(-0.4deg)'], [1, 'none']] },
+    /* THE COMIC BEATS (the user's brief: "a subtle, child-friendly comical feel … from
+       expressions, reaction timing, body language, small animation beats" — never a new line).
+       Each is one small thing a body does: an anticipation, the action, a hold to be read, and
+       the settle. They are cued from the words (story-data.js `at`, with `after` for the tiny
+       pause that makes a reaction a reaction: notice → 250-400 ms → react → carry on). */
+    perk:       { ms: 520,  f: [[0, 'none'], [0.3, 'translateY(-1.2px) scale(0.996, 1.012)'], [0.62, 'scale(1.003, 0.995)'], [1, 'none']] },                                // ears up: something was said
+    doubletake: { ms: 700,  f: [[0, 'none'], [0.16, 'rotate(-0.9deg)'], [0.34, 'rotate(1deg) scale(1.004, 1.004)'], [0.62, 'rotate(1deg) scale(1.004, 1.004)'], [0.84, 'rotate(-0.2deg)'], [1, 'none']] },   // look, look again, hold
+    nod:        { ms: 560,  f: [[0, 'none'], [0.32, 'rotate(1.1deg) translateY(0.8px)'], [0.64, 'rotate(-0.3deg)'], [1, 'none']] },
+    proud:      { ms: 950,  f: [[0, 'none'], [0.22, 'translateY(-1.2px) scale(1.008, 1.012)'], [0.72, 'translateY(-1px) scale(1.006, 1.009)'], [1, 'none']] },              // chest out, held a moment
+    gulp:       { ms: 760,  f: [[0, 'none'], [0.28, 'translateY(1px) scale(1.004, 0.988)'], [0.7, 'translateY(1px) scale(1.003, 0.99)'], [1, 'none']] },                     // sinks a little, and recovers
+    lean:       { ms: 820,  f: [[0, 'none'], [0.34, 'translateX(2px) rotate(0.5deg)'], [0.72, 'translateX(2px) rotate(0.5deg)'], [1, 'none']] },                              // toward the thing looked at (+x)
+    eager:      { ms: 720,  f: [[0, 'none'], [0.2, 'scale(1.004, 0.992)'], [0.4, 'scale(0.997, 1.01)'], [0.6, 'scale(1.004, 0.993)'], [0.8, 'scale(0.998, 1.006)'], [1, 'none']] }   // two quick bobs: an overconfident little nod
   };
 
   var o = {};                        // mount: { root, next(on), pace() }
@@ -227,6 +240,7 @@
       var box = [Math.floor(b[0] - pad), Math.floor(b[1] - pad), 0, 0];
       box[2] = Math.ceil(b[2] + pad) - box[0]; box[3] = Math.ceil(b[3] + pad) - box[1];
       var e = el('div', 'story-rg', parent ? parent.el : s.cam);
+      e.setAttribute('data-region', key);   // (named, so a test can see which region moved)
       var ox = parent ? box[0] - parent.box[0] : box[0], oy = parent ? box[1] - parent.box[1] : box[1];
       e.style.left = px(ox); e.style.top = px(oy); e.style.width = px(box[2]); e.style.height = px(box[3]);
       e.style.backgroundImage = 'url("' + mem(a.src) + '")';
@@ -623,9 +637,11 @@
       if (g !== gen) return;
     }
     await sleep(T.lastHold); if (g !== gen) return;
-    // the scene has been told: now, and only now, the child may go on
+    // the scene has been told: now, and only now, may the story go on — and it does, by
+    // itself, a breath later (NO NEXT BUTTON: the user, "remove the next buttons"; a tap
+    // could go on early, Story.next, and never can before the scene is told)
     st.phase = 'waiting'; st.canAdvance = true;
-    if (o.next) o.next(true);
+    later(T.autoNext, function () { if (g === gen && st.active && st.canAdvance) next(); });
   }
 
   function next() {

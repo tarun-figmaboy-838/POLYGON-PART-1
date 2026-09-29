@@ -675,15 +675,19 @@
    * cap's top surface — in front of its back edge, well above its front — so the whole of him
    * shows, sitting on the log, and his shadow lands on the snow under him.
  */
-  /* THE LOG IS THE USER'S OWN (assets/source/log-snowy.png → assets/bg/log-snowy.webp, trimmed
-     to its opaque box and brought to 720 wide): a fallen log under a cap of snow, the cut end
-     with its rings at the left, snow drifts at both feet. Placed by what touches: its lowest
-     opaque row (`foot`, the drifts) on the snow line; he sits in the middle of the cap
-     (`at`), whose top is `crest` rows down the picture. */
-  var LOG = { src: 'assets/bg/log-snowy.webp?v=d6396655', x: 38, w: 320, iw: 720, ih: 249, foot: 248, crest: 8, at: 0.5, ground: 520 };
+  /* THE PERCH IS THE USER'S OWN STONE (assets/source/stone-snowy.png → assets/bg/stone-snowy.webp,
+     trimmed to its opaque box and brought to 720 wide; the user: "add this stone for Swiftee to
+     stand on instead of the log"): a long blue boulder under a deep cap of snow, drifts at both
+     feet. Placed by what touches: its lowest opaque row (`foot`, the drifts) on the snow line;
+     he stands in the middle of the cap (`at`), whose back edge is `crest` rows down the
+     picture. The cap's top is a broad surface seen from above — its front lip is a third of
+     the way down the picture — so his feet go LOG_SINK units in from the back edge, well
+     onto the top, and he reads as standing on the snow, not behind it. (The names stay `LOG`:
+     the perch handlers, the camera's blur and the tests call it that.) */
+  var LOG = { src: 'assets/bg/stone-snowy.webp?v=16b51c48', x: 38, w: 320, iw: 720, ih: 250, foot: 249, crest: 0, at: 0.5, ground: 520 };
   LOG.h = LOG.w * LOG.ih / LOG.iw;
   LOG.y = LOG.ground - LOG.h * (LOG.foot / LOG.ih);
-  var LOG_SINK = 9;
+  var LOG_SINK = 22;
   function perchPoint() { return { x: LOG.x + LOG.w * LOG.at, y: LOG.y + LOG.h * (LOG.crest / LOG.ih) + LOG_SINK }; }
   var perchLog = null;
   // ambient element counts — see ambientLife(). Halved, and no wind streaks (the animation
@@ -1887,19 +1891,47 @@
     var crop = mk('svg', { x: -30, y: -30, width: cell, height: cell, viewBox: '0 0 256 256', overflow: 'hidden' }, bird);
     var sheet = mk('image', { href: frames.image, width: frames.cols * frames.cell, height: frames.rows * frames.cell }, crop);
     var blend = mk('image', { href: frames.image, width: frames.cols * frames.cell, height: frames.rows * frames.cell, opacity: 0 }, crop);
+    /* THE PROTRACTOR IS A THING HE HOLDS (the user: "the protractor does not look in Swiftee's
+       hand; the position and angle do not look correct"). It was a faint tinted arc dropped
+       on the corner with him hovering 34 units off — inside its own disc, the tool drawn over
+       his face — so it read as a mark on the shape, not an instrument. Now it is a piece of
+       pale plastic with a proper straight edge and a readable scale, and it is always at his
+       wing: carried edge-first as he flies (carried), then reached out from his wing to the
+       corner (POSITION_PROTRACTOR), turned so its edge lies along one side (ALIGN), held,
+       and taken back into his wing (LIFT). He stands at the outer end of the straight edge —
+       past the corner along that side, a touch to the flat side of the tool — which is
+       outside the shape at every corner of a convex polygon, with the whole of him clear of
+       it. The scale starts at 0 on the straight edge (local +x) and rises through 90 at the
+       top (local -y) to 180, so the other side of the corner crosses it at the reading. */
+    var HAND = { x: 21, y: 5 }, PR = 46;              // his wing tip in his own 60-unit cell; the tool's radius
     var instrument = mk('g', { 'class': 'angle-protractor' }, g);
-    mk('path', { d: 'M-42 0 A42 42 0 0 1 42 0 Z', fill: '#d9f6ff', 'fill-opacity': 0.32, stroke: '#fff2ba', 'stroke-width': 1.5 }, instrument);
-    mk('path', { d: 'M-29 0 A29 29 0 0 1 29 0', fill: 'none', stroke: '#b9e4ef', 'stroke-width': 0.8 }, instrument);
+    mk('path', { d: 'M-' + PR + ' 0 A' + PR + ' ' + PR + ' 0 0 1 ' + PR + ' 0 Z', fill: '#f5fcff', 'fill-opacity': 0.74, stroke: '#4a7d99', 'stroke-width': 1.5, 'stroke-linejoin': 'round' }, instrument);
+    mk('line', { x1: -PR, y1: 0, x2: PR, y2: 0, stroke: '#4a7d99', 'stroke-width': 2.4, 'stroke-linecap': 'round' }, instrument);   // the straight edge
+    mk('path', { d: 'M-30 0 A30 30 0 0 1 30 0', fill: 'none', stroke: '#a9cfdf', 'stroke-width': 0.9 }, instrument);
+    /* TURNED OVER WHEN THAT SUITS THE CORNER (mirror): the disc on the other side of its
+       edge and the scale running the other way round — the second scale a real protractor
+       carries. THE NUMBERS STAY UPRIGHT whichever way the tool lies (paint: each sits in its
+       own seat, turned back by the tool's rotation and flip), so a child can read the scale
+       at any corner — on a real one they turn with it, and "108" upside down is nothing. */
+    var seats = [];
     for (var degree = 0; degree <= 180; degree += 10) {
-      var rad = -degree * Math.PI / 180, inner = degree % 30 === 0 ? 34 : 38;
-      mk('line', { x1: Math.cos(rad) * inner, y1: Math.sin(rad) * inner, x2: Math.cos(rad) * 42, y2: Math.sin(rad) * 42, stroke: '#325b70', 'stroke-width': 1 }, instrument);
+      var rad = -degree * Math.PI / 180, inner = degree % 30 === 0 ? PR - 9 : PR - 5;
+      mk('line', { x1: Math.cos(rad) * inner, y1: Math.sin(rad) * inner, x2: Math.cos(rad) * PR, y2: Math.sin(rad) * PR, stroke: '#2f5a72', 'stroke-width': degree % 30 === 0 ? 1.3 : 0.9 }, instrument);
       if (degree % 30 === 0) {
-        var label = mk('text', { x: Math.cos(rad) * 25, y: Math.sin(rad) * 25 + 2, 'text-anchor': 'middle', 'font-size': 5, fill: '#23485f', 'font-weight': 700 }, instrument);
+        var seat = mk('g', {}, instrument);
+        seat._at = { x: Math.cos(rad) * 27, y: Math.sin(rad) * 27 };
+        var label = mk('text', { x: 0, y: 2.4, 'text-anchor': 'middle', 'font-size': 6.5, fill: '#1f4860', 'font-weight': 700 }, seat);
         label.textContent = degree;
+        seats.push(seat);
       }
     }
-    mk('circle', { r: 2, fill: '#fff4c9', stroke: '#325b70', 'stroke-width': 0.8 }, instrument);
-    var stopped = false, raf = null, pose = null, approaching = true, facing = 1;
+    mk('circle', { r: 2.4, fill: 'none', stroke: '#2f5a72', 'stroke-width': 1 }, instrument);   // the centre mark, over the corner
+    mk('line', { x1: 0, y1: -5, x2: 0, y2: 5, stroke: '#2f5a72', 'stroke-width': 0.9 }, instrument);
+    var stopped = false, raf = null, pose = null, approaching = true, facing = 1, mirror = 1;
+    /* The tool in his wing: its straight edge held upright at his wing tip, the disc ahead
+       of him (rotate(±90) turns local -y, where the disc is, to the side he faces — the other
+       way about when the tool is turned over). */
+    function carried(x, y) { return { px: x + facing * (HAND.x + 4), py: y + HAND.y + 6, rotation: facing * 90 * mirror }; }
     function home() {
       var bounds = companion && global.Swiftee.bounds && Swiftee.bounds();
       var matrix = g.getScreenCTM && g.getScreenCTM();
@@ -1911,7 +1943,7 @@
       return { x: st.verts[0].x - 70, y: st.verts[0].y + 50 };
     }
     var origin = home();
-    pose = { x: origin.x, y: origin.y, px: origin.x + 22, py: origin.y + 10, rotation: 0, lean: 0 };
+    pose = Object.assign({ x: origin.x, y: origin.y, lean: 0 }, carried(origin.x, origin.y));
     if (global.Swiftee && Swiftee.lock) Swiftee.lock('angle-measuring');
     g.style.opacity = '0';
     function stop() {
@@ -1923,7 +1955,9 @@
     cleanup.push(stop);
     function paint(time) {
       bird.setAttribute('transform', 'translate(' + pose.x + ',' + pose.y + ') rotate(' + pose.lean + ') scale(' + facing + ',1)');
-      instrument.setAttribute('transform', 'translate(' + pose.px + ',' + pose.py + ') rotate(' + pose.rotation + ')');
+      instrument.setAttribute('transform', 'translate(' + pose.px + ',' + pose.py + ') rotate(' + pose.rotation + ') scale(1,' + mirror + ')');
+      var unturn = ' scale(1,' + mirror + ') rotate(' + (-pose.rotation) + ')';
+      seats.forEach(function (s) { s.setAttribute('transform', 'translate(' + s._at.x.toFixed(2) + ',' + s._at.y.toFixed(2) + ')' + unturn); });
       var at = Math.min(phaseFrames.length - 1, framePosition), low = Math.floor(at), mix = at - low;
       var frame = phaseFrames[low], nextFrame = phaseFrames[Math.min(low + 1, phaseFrames.length - 1)];
       sheet.setAttribute('x', -(frame % frames.cols) * frames.cell);
@@ -1960,28 +1994,44 @@
       var a = Math.atan2(prev.y - p.y, prev.x - p.x), b = Math.atan2(next.y - p.y, next.x - p.x);
       var sweep = ((b - a) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
       if (!Poly.contains(v, { x: p.x + Math.cos(a + sweep / 2) * 2, y: p.y + Math.sin(a + sweep / 2) * 2 })) sweep -= 2 * Math.PI;
-      // The semicircle extends above its baseline. Choose the baseline ray
-      // that makes that half-plane contain the interior angle.
-      var rotation = (sweep < 0 ? a : b) * 180 / Math.PI;
-      var outward = a + sweep / 2 + Math.PI;
-      var bx = p.x + Math.cos(outward) * 34, by = p.y + Math.sin(outward) * 34;
-      var carry = { x: bx, y: by, px: bx + (p.x - bx) * 0.48, py: by + (p.y - by) * 0.48, lean: 0 };
+      // The scale rises from the straight edge: the edge goes along whichever side leaves the
+      // corner's other side under the scale — that is where it is read.
+      /* WHICH SIDE THE EDGE LIES ALONG. Either side of the corner will do once the tool may be
+         turned over (mirror, above), so the side is chosen for him: the one whose extension
+         past the corner runs nearest to level, so that he stands beside the tool with his wing
+         on its edge — not under it with the tool over his face, which a steep side gave. */
+      var plain = sweep < 0 ? a : b, turned = sweep < 0 ? b : a;
+      var useTurned = Math.abs(Math.cos(turned)) > Math.abs(Math.cos(plain)) + 0.08;
+      var base = useTurned ? turned : plain, rotation = base * 180 / Math.PI, side = useTurned ? -1 : 1;
+      // where he stands to hold it (see the note above the tool): at the outer end of the
+      // straight edge, a touch to the flat side, his body away from the corner
+      var ex = Math.cos(base + Math.PI), ey = Math.sin(base + Math.PI);
+      var fx = Math.cos(base + Math.PI / 2) * side, fy = Math.sin(base + Math.PI / 2) * side;
+      var wing = { x: p.x + ex * (PR - 6) + fx * 4, y: p.y + ey * (PR - 6) + fy * 4 };
+      var face = p.x < wing.x ? -1 : 1;
+      var stand = { x: wing.x - face * HAND.x, y: wing.y - HAND.y };
       g.setAttribute('data-angle', index);
       highlight.replaceChildren();
       var firstApproach = approaching; approaching = false;
-      tween('MOVE_TO_VERTEX', carry, 600, function () {
-        facing = p.x < bx ? -1 : 1;
-        tween('POSITION_PROTRACTOR', { px: p.x, py: p.y, lean: (p.x > bx ? 1 : -1) * 5 }, 380, function () {
+      // he flies the way he is going, tool in wing, and turns to the corner on landing
+      if (Math.abs(stand.x - pose.x) > 4) facing = stand.x < pose.x ? -1 : 1;
+      tween('MOVE_TO_VERTEX', Object.assign({ x: stand.x, y: stand.y, lean: 0 }, carried(stand.x, stand.y)), 600, function () {
+        // turned to the corner, and the tool turned over if this corner wants it — in the
+        // wing, where the disc stays ahead of him either way (carried), so nothing jumps
+        if (facing !== face || mirror !== side) { facing = face; mirror = side; Object.assign(pose, carried(pose.x, pose.y)); paint(0); }
+        tween('POSITION_PROTRACTOR', { px: p.x, py: p.y, lean: face * 4 }, 380, function () {
           tween('ALIGN', { rotation: rotation }, 420, function () {
             drawArc(highlight, index, null, 1);
             highlight.style.opacity = '0';
             tween('MEASURE', {}, 300, function () {
               tween('HOLD', {}, 850, function () {
-                tween('LIFT', { px: carry.px, py: carry.py, lean: 0 }, 320, function () {
+                var back = carried(pose.x, pose.y);
+                tween('LIFT', { px: back.px, py: back.py, rotation: back.rotation, lean: 0 }, 320, function () {
                   highlight.replaceChildren();
                   if (!last) { done(); return; }
                   var h = home();
-                  tween('RETURN', { x: h.x, y: h.y, px: h.x + 22, py: h.y + 10 }, 650, function () {
+                  if (Math.abs(h.x - pose.x) > 4) facing = h.x < pose.x ? -1 : 1;
+                  tween('RETURN', Object.assign({ x: h.x, y: h.y }, carried(h.x, h.y)), 650, function () {
                     tween('COMPLETE', {}, 250, function () { stop(); done(); }, function (t) {
                       g.style.opacity = 1 - t;
                       if (companion) companion.style.opacity = String(t * Number(opacity || 1));
@@ -2598,7 +2648,12 @@
         var seat = mk('g', { transform: 'translate(' + x + ',' + y + ')' }, g);
         g._card = optionCard(seat, HALF, o.shape);
         g._opt = o;
-        if (spec.enter === 'stagger' && !reduced()) { g.style.opacity = 0; later(i * 110, function () { g.style.opacity = 1; enter(g, 'pop'); }); }
+        /* NO POP (the user: "remove the pop animation of the cards when Level 1 starts"): the
+           four cards are simply there, each fading up a moment after the one before — never
+           parked at opacity 0 (fill: backwards from a visible rest), never scaled. */
+        if (spec.enter === 'stagger' && !reduced() && g.animate) {
+          try { g.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, delay: i * 70, easing: 'ease-out', fill: 'backwards' }); } catch (e) {}
+        }
         return g;
       });
     },
@@ -3413,10 +3468,12 @@
     var v = card._verts, n = v.length, A = Poly.interiorAngles(v), ar = face.fit.area;
     var g = mk('g', { 'class': 'units', 'pointer-events': 'none' }, card);
     var space = labelSpace(v, { cx: (ar.l + ar.r) / 2, cy: (ar.t + ar.b) / 2, w: ar.r - ar.l + 12, h: ar.b - ar.t + 12 }, SWF.arc);
-    var txt = function (x, y, s, size) {
+    // (each mark says which of the two it is about — u-side, u-angle — so that an explanation
+    // can light just the sides, or just the corners: the swipe's second miss)
+    var txt = function (x, y, s, size, cls) {
       mk('text', { x: x.toFixed(1), y: (y + size * 0.36).toFixed(1), 'text-anchor': 'middle', 'font-size': size,
                    'font-weight': 800, fill: ink, stroke: '#ffffff', 'stroke-width': 3, 'paint-order': 'stroke',
-                   'stroke-linejoin': 'round', text: s }, g);
+                   'stroke-linejoin': 'round', 'class': cls, text: s }, g);
     };
     sideLabelBoxes(v, face.texts, SWF.side).forEach(function (q) {
       var cands = [];
@@ -3426,7 +3483,7 @@
         });
       });
       var at = space.fit(cands, q.w, q.h) || cands[0];
-      txt(at.x, at.y, face.texts[q.i], SWF.side);
+      txt(at.x, at.y, face.texts[q.i], SWF.side, 'u-side');
     });
     for (var j = 0; j < n; j++) {
       var p = v[j], q0 = v[(j + n - 1) % n], q1 = v[(j + 1) % n];
@@ -3441,8 +3498,8 @@
       // THE MARK STANDS OFF THE SHAPE (the user: "the angle colour is the same, the arc or
       // square can't be seen"): white, on a dark rim of the shape's ink, over a pale wash
       var markOn = function (d, closed) {
-        mk('path', { d: d, fill: closed ? '#ffffff' : 'none', 'fill-opacity': 0.42, stroke: ink, 'stroke-opacity': 0.95, 'stroke-width': 5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, g);
-        mk('path', { d: d, fill: 'none', stroke: '#ffffff', 'stroke-width': 2.4, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, g);
+        mk('path', { d: d, fill: closed ? '#ffffff' : 'none', 'fill-opacity': 0.42, stroke: ink, 'stroke-opacity': 0.95, 'stroke-width': 5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', 'class': 'u-angle' }, g);
+        mk('path', { d: d, fill: 'none', stroke: '#ffffff', 'stroke-width': 2.4, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', 'class': 'u-angle' }, g);
       };
       if (right) {
         markOn('M' + (p.x + u0.x * s) + ' ' + (p.y + u0.y * s) +
@@ -3463,7 +3520,7 @@
       var base = (right ? s * 1.42 : R) + 4 + Math.max(dw, dh) / 2, dc = [];
       [0, 5, 10, 16, 24, 34].forEach(function (e) { dc.push({ x: p.x + bx * (base + e), y: p.y + by * (base + e) }); });
       var da = space.fit(dc, dw, dh) || dc[0];
-      txt(da.x, da.y, dt, SWF.angle);
+      txt(da.x, da.y, dt, SWF.angle, 'u-angle');
     }
     if (g.animate && !reduced()) g.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, fill: 'backwards' });
     return g;
@@ -6059,6 +6116,22 @@
   var DENT_MIN = 0.18, DENT_REFLEX = 198, STRAIGHT_BAND = 12;
   function dentAngleOk(v, i) { var A = Poly.interiorAngles(v); return A[i] >= DENT_REFLEX; }
   function isDented(v, i) { return Poly.classify(v).concave && dentDepth(v, i) >= DENT_MIN && dentAngleOk(v, i); }
+  var DENT_SNAP = 0.22, CONVEX_KEEP = 0.2;    // the smallest dent the drag lands on; how far outside the line a corner stays (a corner of ~156°, never a flat one)
+  function offTheLine(i, p) {
+    var v = st.verts.slice(); v[i] = p;
+    var n = v.length, a = v[(i + n - 1) % n], b = v[(i + 1) % n];
+    var dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
+    var c = Poly.centroid(v);
+    var nx = -dy / len, ny = dx / len;                                   // a normal to the line
+    if (nx * (c.x - a.x) + ny * (c.y - a.y) < 0) { nx = -nx; ny = -ny; }  // ...pointing into the shape
+    var R = 0; for (var k = 0; k < n; k++) R += Math.hypot(v[k].x - c.x, v[k].y - c.y); R = (R / n) || 1;
+    var d = ((p.x - a.x) * nx + (p.y - a.y) * ny) / R;                   // depth past the line, in radii (+ = inward)
+    var want = null;
+    if (d > 0 && d < DENT_SNAP) want = DENT_SNAP;                        // crossed the line: straight to a real dent
+    else if (d <= 0 && d > -CONVEX_KEEP) want = -CONVEX_KEEP;            // near the line from outside: still a corner
+    if (want == null) return p;
+    return { x: p.x + nx * (want - d) * R, y: p.y + ny * (want - d) * R };
+  }
   /* A corner sprung back to `to` over a third of a second, the shape following (screens 14/21). */
   function springBack(i, to) {
     if (!st.verts || !st.verts[i]) return;
@@ -6237,6 +6310,14 @@
               st.verts[i] = was;
               if (flat) np = was;
             }
+            /* NEVER A FLAT CORNER (the user, the dent drags: "the user can drag to make a
+               quadrilateral, and the purple line shows outside"). A corner near the line between
+               its neighbours — a hair outside it, or inside it but short of a real dent — makes
+               the shape look like it has lost a corner, and lights a diagonal that has barely
+               left it. So that band is skipped: on the way in the corner stays a clear corner
+               until the finger has crossed the line, and then it goes straight to the smallest
+               real dent (DENT_SNAP); the shape is always either convex or plainly concave. */
+            if (spec.until === 'concave') np = offTheLine(i, np);
             st.verts[i] = np;
             updatePoly();
             if (liveBadge && st.liveBadge) {
@@ -6389,6 +6470,19 @@
         // drag and in the flight that follows it
         function tiltOf(x) { return Math.max(-1, Math.min(1, x / (THRESHOLD * 2.2))) * 6; }
 
+        /* the pile lights as a card LANDS in it (never before it has left) */
+        function zoneLit(zone) {
+          if (zone && zone.classList) {
+            zone.classList.remove('landed'); void zone.getBBox && zone.getBBox();
+            zone.classList.add('landed');
+            later(700, function () { zone.classList.remove('landed'); });
+          }
+          if (zone && !reduced() && zone.animate) {
+            zone.animate([{ scale: '1' }, { scale: '1.07' }, { scale: '1' }],
+                         { duration: 320, easing: 'cubic-bezier(.3,1.3,.5,1)' });
+          }
+        }
+
         /* ---- the one submission path ---- */
         function classify(answer) {
           if (resolving || !answer || !sw.card) return;
@@ -6410,17 +6504,7 @@
                later, flies into its pile, its readings fading on the way; the zone lights up as
                it LANDS rather than before it has left. */
             if (card._cardEl && card._cardEl._mark) card._cardEl._mark('correct');
-            var landIn = function () {
-              if (zone && zone.classList) {
-                zone.classList.remove('landed'); void zone.getBBox && zone.getBBox();
-                zone.classList.add('landed');
-                later(700, function () { zone.classList.remove('landed'); });
-              }
-              if (zone && !reduced() && zone.animate) {
-                zone.animate([{ scale: '1' }, { scale: '1.07' }, { scale: '1' }],
-                             { duration: 320, easing: 'cubic-bezier(.3,1.3,.5,1)' });
-              }
-            };
+            var landIn = function () { zoneLit(zone); };
             // THE SHAPE IS COLLECTED, NOT DISCARDED.
             //
             // It used to shrink and fade out, which is tidy and tells the
@@ -6449,38 +6533,13 @@
                own middle: from exactly where the child let go, along a low
                arc, straight into the seat on the shelf it keeps, at exactly
                the size of the card that is left there. Nothing bounces. */
-            var pulled = dx, tilt = tiltOf(dx);
-            var seat = zone ? shelfSeats(zone, zone._kept.length + 1)[zone._kept.length] : null;
-            var tx = seat ? seat.x : SWIPE_HOME.x, ty = seat ? seat.y : SWIPE_HOME.y;
-            var k = seat ? seat.half / SWIPE_HALF : 0.4;
-            var after = function () {
-              card.style.pointerEvents = 'none';
-              if (card.parentNode) card.parentNode.removeChild(card);
-              keepInZone(zone, card._name);
-              landIn();
-              sw.card = null;
-              sw.i++;
-              if (sw.i >= sw.items.length) { hold(260).then(function () { done(); }); return; }
-              // a beat to understand what happened, then the next question
-              hold(300).then(function () {
-                if (!st.swipe) return;
-                dealCard();
-                arm();
-                resolving = false;
-                // the next card is on the table: game.js brings him up behind
-                // it to ask about it, and down again before it can be taken
-                later(420, function () { if (st.swipe && sw.card && !dragging) evt('swipe:home', { i: sw.i, dealt: true }); });
-              });
-            };
             // (a short beat — the green seen — then away: the second-long hold that let the old
             // verdict tag be read left the card looking stuck — the user)
-            later(reduced() ? 0 : 200, function () {
-              fadeFace(card, 380);
-              flyCard(card, { x: SWIPE_HOME.x + pulled, y: SWIPE_HOME.y, rot: tilt, s: 1 }, { x: tx, y: ty, rot: 0, s: k }, 560, 46, after);
-            });
+            later(reduced() ? 0 : 200, function () { collect(card, zone, dx, tiltOf(dx), landIn); });
           } else {
             sfx('wrong');
             juice('refuse', card);
+            card._misses = (card._misses || 0) + 1;
             // WRONG, AND WHAT TO LOOK AT: a red glow for as long as it can be seen, and the tag
             // under the card saying which of the two does not hold
             if (card._cardEl && card._cardEl._mark) {
@@ -6489,30 +6548,104 @@
             }
             // the marks go on the card and he names what they show
             var why = whyShape(card);
-            onTap('wrong',
-              // (never the answer itself: "regular" is the child's to say)
-              // "Try again!" and the one thing the card's measurements show (asked for: only
-              // "Try again", never "Look —")
-              why === 'regular' ? { t: 'Try again! Every side and every angle is equal.', vo: 'fb35' } :
-              why === 'sides'   ? { t: 'Try again! The sides are not all equal.', vo: 'fb36' } :
-              why === 'angles'  ? { t: 'Try again! The angles are not all equal.', vo: 'fb37' } :
-              why === 'both'    ? { t: 'Try again! The sides and the angles are not all equal.', vo: 'fb38' } : null);
             var z = sw.zones[answer];
             if (z && !reduced() && z.animate) {
               z.animate([{ translate: '0 0' }, { translate: '-6px 0' }, { translate: '6px 0' }, { translate: '0 0' }],
                         { duration: 260, easing: 'ease-in-out' });
             }
-            // NOT A SWING AND A SPRING: it glides back to the middle, where the
-            // marks on it say why (whyShape), and waits for another try
             var pulledBack = dx, tiltBack = tiltOf(dx);
-            var reset2 = function () {
+            if (card._misses < 2) {
+              onTap('wrong',
+                // (never the answer itself on a first miss: "regular" is the child's to say)
+                // "Try again!" and the one thing the card's measurements show (asked for: only
+                // "Try again", never "Look —")
+                why === 'regular' ? { t: 'Try again! Every side and every angle is equal.', vo: 'fb35' } :
+                why === 'sides'   ? { t: 'Try again! The sides are not all equal.', vo: 'fb36' } :
+                why === 'angles'  ? { t: 'Try again! The angles are not all equal.', vo: 'fb37' } :
+                why === 'both'    ? { t: 'Try again! The sides and the angles are not all equal.', vo: 'fb38' } : null,
+                { tries: 1 });
+              // NOT A SWING AND A SPRING: it glides back to the middle, where the
+              // marks on it say why (whyShape), and waits for another try
+              var reset2 = function () {
+                dx = 0; place(card, 0, 0);
+                leanZone(null, false);
+                resolving = false;
+                evt('swipe:home', { i: sw.i, back: true });
+              };
+              flyCard(card, { x: SWIPE_HOME.x + pulledBack, y: SWIPE_HOME.y, rot: tiltBack, s: 1 }, { x: SWIPE_HOME.x, y: SWIPE_HOME.y, rot: 0, s: 1 }, 260, 0, reset2);
+              return;
+            }
+            /* THE SAME CARD WRONG TWICE: NO THIRD TRY (the user's swipe brief). The card stays
+               locked in the middle while he says, in one line, which pile it belongs in and
+               why — naming the answer this time, since the child has had two goes at it —
+               with the marks that show the reason lit on the card as he speaks (the sides'
+               lengths, the corners' arcs, or both); then, once he is down again, it glides
+               into the pile it belongs in, is kept there like any other, and the next card
+               is dealt. Nothing more is said: the pile filling is the point. */
+            var rightZone = sw.zones[right];
+            var putAway = function () {
+              if (!st.swipe || sw.card !== card) return;
+              leanZone(right, true);
+              later(260, function () {
+                if (!st.swipe || sw.card !== card) return;
+                collect(card, rightZone, 0, 0, function () {
+                  leanZone(null, false);
+                  zoneLit(rightZone);
+                });
+              });
+            };
+            var explained = false, explain = function () { if (explained) return; explained = true; putAway(); };
+            var settle = function () {
               dx = 0; place(card, 0, 0);
               leanZone(null, false);
-              resolving = false;
-              evt('swipe:home', { i: sw.i, back: true });
+              // (still resolving: the card is locked)
+              evt('swipe:home', { i: sw.i, back: true, locked: true });
+              // the reason, lit on the card as he names it
+              var lit = card.querySelectorAll(why === 'sides' ? '.u-side' : why === 'angles' ? '.u-angle' : '.u-side, .u-angle');
+              later(350, function () { if (st.swipe && sw.card === card) pulseHint(Array.prototype.slice.call(lit), { strong: true }); });
+              onTap('wrong',
+                why === 'regular' ? { t: 'This one is regular. Every side is equal, and every angle is equal too.', vo: 'fb48' } :
+                why === 'sides'   ? { t: 'This one is irregular. Its sides are not all the same length.', vo: 'fb49' } :
+                why === 'angles'  ? { t: 'This one is irregular. Its sides match, but its angles are not all equal.', vo: 'fb50' } :
+                                    { t: 'This one is irregular. Its sides are not equal, and its angles are not equal either.', vo: 'fb51' },
+                { tries: 2, after: function () { later(reduced() ? 0 : 320, explain); } });
+              // never stuck: with nobody to say it (reduced motion, a review jump) the card
+              // goes to its pile once the reason has been seen
+              later(9000, explain);
             };
-            flyCard(card, { x: SWIPE_HOME.x + pulledBack, y: SWIPE_HOME.y, rot: tiltBack, s: 1 }, { x: SWIPE_HOME.x, y: SWIPE_HOME.y, rot: 0, s: 1 }, 260, 0, reset2);
+            flyCard(card, { x: SWIPE_HOME.x + pulledBack, y: SWIPE_HOME.y, rot: tiltBack, s: 1 }, { x: SWIPE_HOME.x, y: SWIPE_HOME.y, rot: 0, s: 1 }, 260, 0, settle);
           }
+        }
+
+        /* THE CARD INTO ITS PILE, from where it is (`pulled` off the middle, at `tilt`), in a
+           low arc to the seat it keeps there, shrinking to the pile's size on the way — and
+           the next card, or the end. One flight for a right answer and for a card put away
+           after its second miss, so both land the same way. */
+        function collect(card, zone, pulled, tilt, landed) {
+          var seat = zone ? shelfSeats(zone, zone._kept.length + 1)[zone._kept.length] : null;
+          var tx = seat ? seat.x : SWIPE_HOME.x, ty = seat ? seat.y : SWIPE_HOME.y;
+          var k = seat ? seat.half / SWIPE_HALF : 0.4;
+          var after = function () {
+            card.style.pointerEvents = 'none';
+            if (card.parentNode) card.parentNode.removeChild(card);
+            keepInZone(zone, card._name);
+            if (landed) landed();
+            sw.card = null;
+            sw.i++;
+            if (sw.i >= sw.items.length) { hold(260).then(function () { done(); }); return; }
+            // a beat to understand what happened, then the next question
+            hold(300).then(function () {
+              if (!st.swipe) return;
+              dealCard();
+              arm();
+              resolving = false;
+              // the next card is on the table: game.js brings him up behind
+              // it to ask about it, and down again before it can be taken
+              later(420, function () { if (st.swipe && sw.card && !dragging) evt('swipe:home', { i: sw.i, dealt: true }); });
+            });
+          };
+          fadeFace(card, 380);
+          flyCard(card, { x: SWIPE_HOME.x + pulled, y: SWIPE_HOME.y, rot: tilt, s: 1 }, { x: tx, y: ty, rot: 0, s: k }, 560, 46, after);
         }
 
         /* ---- the demonstration: the hint ladder's top rung ---- */

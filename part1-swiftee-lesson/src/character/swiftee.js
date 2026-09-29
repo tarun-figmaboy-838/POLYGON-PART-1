@@ -1739,10 +1739,14 @@
     // standing on the ice rather than floating above it. It squashes and
     // fades with him, which is most of what sells a hop as a hop.
     shadowEl = document.createElement('div');
+    /* SOFT, WIDE AND LIGHT (the user: "the shadow on Swiftee when he stands on the stone does
+       not look natural"): snow is the brightest ground there is and throws light back up, so
+       the shadow under a bird on it is a pale, wide, soft pool right at his feet — not the
+       small dark disc this was, which sat on the stone's white cap like a stain. */
     shadowEl.style.cssText =
       'position:absolute;left:50%;top:' + (F.baselineY * 100).toFixed(1) + '%;' +
-      'width:50%;height:8%;transform:translate(-50%,-35%);border-radius:50%;transition:opacity 320ms ease;' +
-      'background:radial-gradient(closest-side, rgba(24,52,96,.42), rgba(24,52,96,.14) 62%, rgba(24,52,96,0));';
+      'width:58%;height:9%;transform:translate(-50%,-40%);border-radius:50%;transition:opacity 320ms ease;' +
+      'background:radial-gradient(closest-side, rgba(30,60,110,.26), rgba(30,60,110,.10) 55%, rgba(30,60,110,0));';
 
     cellEl = document.createElement('div');
     // A SHADOW, NOT A GLOW. He used to carry a white rim — two white
@@ -1753,9 +1757,11 @@
     // does the separating on its own: it follows the sprite's alpha, so it
     // traces the bird rather than boxing the cell, and it reads as weight
     // rather than as an effect.
+    // (close under him and faint: the 7px drop it had put a second, dark shadow of each wing
+    // on the snow beside his feet — two shadows from two suns)
     cellEl.style.cssText =
       'position:absolute;inset:0;background-repeat:no-repeat;image-rendering:auto;' +
-      'filter: drop-shadow(0 7px 11px rgba(24,52,96,.30));';
+      'filter: drop-shadow(0 3px 5px rgba(24,52,96,.20));';
 
     flightEl = document.createElement('div');
     flightEl.style.cssText =
