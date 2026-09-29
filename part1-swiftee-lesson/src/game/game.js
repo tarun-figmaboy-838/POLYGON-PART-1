@@ -360,41 +360,10 @@
    * into the frame of the card: behind it, as far as the eye can tell.
    */
   var rimEl = null;
-  /* HE SITS IN THE SNOW ON THE LOG (the user: "sit on the log, not floating or disconnected").
-   * The log is in the stage, under him; drawn on top of it he could only ever stand on its
-   * outline. So, as the rim of a card is laid over him when he peeks, a copy of the log is laid
-   * over him while he is perched — only round his feet, a soft oval of it — and his mark is a
-   * little down into the snow (Stage LOG_SINK): the snow's front edge covers his feet, and he
-   * is settled on the log. Off while he flies (logFlying), on at the moment he touches down. */
-  var logFrontEl = null, logFlying = false;
-  function syncLogFront() {
-    var L = global.Stage && Stage.perchLog && Stage.perchLog();
-    var m = L && Stage.svg && Stage.svg.getScreenCTM && Stage.svg.getScreenCTM();
-    var want = !!(m && global.Swiftee && Swiftee.el && Swiftee.pos === 'log' && present && !entering && !leaving && !logFlying);
-    if (!want) { if (logFrontEl) logFrontEl.style.display = 'none'; return; }
-    if (!logFrontEl) {
-      logFrontEl = document.createElement('img');
-      logFrontEl.className = 'log-front';
-      logFrontEl.alt = '';
-      logFrontEl.setAttribute('aria-hidden', 'true');
-      logFrontEl.style.cssText = 'position:absolute;z-index:4;pointer-events:none;';
-      var host = Swiftee.el.parentNode || document.body;
-      if (Swiftee.el.nextSibling) host.insertBefore(logFrontEl, Swiftee.el.nextSibling); else host.appendChild(logFrontEl);
-    }
-    if (logFrontEl.getAttribute('src') !== L.src) logFrontEl.src = L.src;
-    var hostBox = logFrontEl.parentNode.getBoundingClientRect();
-    logFrontEl.style.display = '';
-    logFrontEl.style.left = (m.a * L.x + m.e - hostBox.left) + 'px';
-    logFrontEl.style.top = (m.d * L.y + m.f - hostBox.top) + 'px';
-    logFrontEl.style.width = (m.a * L.w) + 'px';
-    logFrontEl.style.height = (m.d * L.h) + 'px';
-    // only round his feet: where it matches the log under it exactly, and nowhere it could
-    // hide the snow that falls in front of the rest of the log
-    var mask = 'radial-gradient(ellipse 26% 32% at ' + (L.fx * 100).toFixed(1) + '% ' + (L.fy * 100).toFixed(1) + '%, #000 72%, transparent 100%)';
-    logFrontEl.style.webkitMaskImage = mask; logFrontEl.style.maskImage = mask;
-  }
+  /* (No copy of the log is laid over him any more: sunk into its snow under one, he read as
+     standing BEHIND the log — the user. He sits on its top now, the whole of him showing:
+     Stage LOG_SINK.) */
   function syncPeekRim() {
-    syncLogFront();
     var want = !riseWait && global.Swiftee && Swiftee.pos === 'peek' && (present || entering || leaving) &&
                global.Stage && Stage.peekAnchor && Stage.peekAnchor({ home: true }) &&
                global.CardFrame && CardFrame.panel && Stage.svg && Stage.svg.getScreenCTM;
@@ -527,38 +496,25 @@
     return { pos: pos, size: size };
   }
 
-  /* What he says when the child gets it, and when they do not. Short, so
-     they fit in one bubble beside his head, and varied, so the tenth right
-     answer is not met with the same word as the first. */
-  // Each carries the id of its voice clip (assets/vo/<id>.mp3), listed in
-  // docs/VO.md with everything else he says.
-  // A CHEER THAT SAYS SO (the user's QA spec): warm and clear, and never the
-  // same one twice running. "Yes!" and "That's it!" were half of these and
-  // told a child little; they are gone from the round.
-  var PRAISE = [
-    { t: 'Great job!', vo: 'fb03' }, { t: 'Nice!', vo: 'fb01' }, { t: 'Well done!', vo: 'fb06' },
-    { t: 'You got it!', vo: 'fb04' }, { t: 'Perfect!', vo: 'fb17' }, { t: 'Yay!', vo: 'fb18' },
-    { t: 'That\u2019s right!', vo: 'fb19' }, { t: 'Awesome!', vo: 'fb20' }, { t: 'Great thinking!', vo: 'fb21' },
-    { t: 'Exactly!', vo: 'fb22' }
-  ];
-  // ...and where what was done has words of its own, those (replyFor)
+  /* What he says when the child gets it. Each carries the id of its voice clip
+     (assets/vo/<id>.mp3), listed in docs/VO.md with everything else he says.
+     TWO CHEERS, EACH WITH ITS OWN JOB (the user's feedback rules — praiseFor): "Keep going!"
+     for a right answer on the way, "Great job!" for the one that completes a level. The round
+     of ten ("Nice!", "You got it!", "Perfect!", "Well done!"…) mixed its phrases at random from
+     level to level, and is gone. */
   var PRAISE_FOR = {
-    sorted:   { t: 'Great! That belongs here.', vo: 'fb23' },
-    diagonal: { t: 'Nice! That\u2019s a diagonal.', vo: 'fb24' },
-    allFound: { t: 'Great job! You found them all.', vo: 'fb25' },
-    measured: { t: 'Well done!', vo: 'fb06' },
-    fixed:    { t: 'Yes! You got it!', vo: 'fb26' }
+    keepGoing: { t: 'Keep going!', vo: 'fb46' },
+    levelDone: { t: 'Great job!', vo: 'fb03' }
   };
   /* HIS FACE GOES WITH THE WORD — each cheer its own drawing from the rig:
      a hop with happy eyes, the wings up, a proud little nod, a point at the
      answer, relief after a miss. */
-  var EMOTE = { fb03: 'nice', fb01: 'happy', fb06: 'chuffed', fb04: 'point', fb17: 'celebrate', fb18: 'celebrate',
-                fb19: 'nod', fb20: 'wink', fb21: 'chuffed', fb22: 'nod', fb23: 'nice', fb24: 'happy', fb25: 'celebrate',
-                fb26: 'phew' };
-  // A MISS IS MET GENTLY, and says to try again rather than only "no" — and ONLY "Try
-  // again!" (asked for, twice): not "Almost!", "Hmm, look again.", "Try once more.", "Take
-  // another look." or "Not quite.". Where the miss has a reason, the reason follows it in the
-  // same breath (CLUES, the stage's reasons, the screen's reminder).
+  var EMOTE = { fb03: 'celebrate', fb46: 'nice' };
+  // A MISS IS MET GENTLY, and says to try again rather than only "no" — "Try again!" (asked
+  // for, twice): not "Almost!", "Hmm, look again.", "Try once more." or "Take another look.".
+  // Where the miss has a reason, the reason follows it in the same breath (CLUES, the stage's
+  // reasons, the screen's reminder). The one exception is Level 1's own (CLUES curved/open):
+  // "Not quite." and the reason, as its bug list asks.
   var NUDGE = [
     { t: 'Try again!', vo: 'fb32' }
   ];
@@ -567,12 +523,16 @@
      never by a bare "no". Keyed by name: a card or a question in screens.js says which clue is
      its own (`reason`), and the stage passes it on with the miss. */
   var CLUES = {
-    curved:   { t: 'Try again! A polygon has only straight sides.', vo: 'fb33' },
-    open:     { t: 'Try again! A polygon must be closed.', vo: 'fb34' },
+    /* LEVEL 1: THE LESSON IN THE FIRST MISS (the user: "do not make the student fail twice
+       before receiving the useful explanation"). "Not quite." and then what is true of the
+       shape that was chosen — the circle is curved, the open path is open — in the words of
+       the definition the intro gave. The card is put out after it (screens.js outAfter). */
+    curved:   { t: 'Not quite. A circle is curved. A polygon has only straight sides.', vo: 'fb44' },
+    open:     { t: 'Not quite. This shape is open. A polygon must be closed.', vo: 'fb45' },
     inside:   { t: 'Try again! Follow each diagonal from corner to corner.', vo: 'fb39' },
     compare:  { t: 'Try again! Compare the sides and angles now.', vo: 'fb41' }
   };
-  var praiseN = 0, nudgeN = 0, feedbackScreen = -1;
+  var nudgeN = 0, feedbackScreen = -1;
   /* NOW A FEELING, NOT A LIST OF FACES. The faces rotated by a counter, so
      the same screen got a different one on a replay, and 'puzzled' was a HELD
      pose that left him frowning after a miss until something else happened.
@@ -672,6 +632,13 @@
   var replyUp = null;   // the reply react() last started: { kind, teach, gen } (gen: its pop)
   function react(kind, said, o) {
     o = o || {};
+    /* THE LEVEL'S CHEER WAITS ITS TURN. The answer that completes a level, given while he is
+       still saying "Keep going!" for the one before, must not cut that line off: "Great job!"
+       is owed, and said the moment the line before it ends (pop's finish) — the lesson waits. */
+    if (kind === 'correct' && !o.late && !o.owed && (o.last || (o.final && levelEnd())) && replying()) {
+      oweCheer([kind, said, Object.assign({}, o, { owed: true })]);
+      return;
+    }
     if (kind === 'wrong' && !o.late) { missesHere++; streak = 0; cheeredAt = 0; }
     if (kind === 'correct' && !o.late) streak++;
     if (!buddyOn) return;   // the sound and the confetti carry the verdict
@@ -724,8 +691,8 @@
             var at = global.Stage && Stage.element && (Stage.element('answer') || Stage.element('polygon'));
             Swiftee.play('point', direction(at ? { at: at } : null));
           } else Swiftee.play(emote || (reply ? 'happySmall' : 'nod'), direction());
-          // "Perfect!" — and a glint on it
-          if (reply && reply.lines[0] && reply.lines[0].vo === 'fb17' && global.Juice && Juice.sparkle && Stage.element) {
+          // "Great job!" — the level's cheer — and a glint on the answer
+          if (reply && reply.lines[0] && reply.lines[0].vo === 'fb03' && global.Juice && Juice.sparkle && Stage.element) {
             try { Juice.sparkle(Stage.element('answer') || Stage.element('polygon')); } catch (e) {}
           }
         }
@@ -810,27 +777,17 @@
   // reminder — what a polygon is — follows it)
   var NUDGE_STRONG = { t: 'Try again!', vo: 'fb32' };
   var wrongSinceRight = false;        // a miss on this screen since the last right answer
-  /* the next cheer in the round, never the one just said */
-  var lastPraise = null;
-  function nextPraise() {
-    var p = PRAISE[praiseN++ % PRAISE.length];
-    if (lastPraise && p.vo === lastPraise) p = PRAISE[praiseN++ % PRAISE.length];
-    lastPraise = p.vo;
-    return p;
-  }
-  /* the cheer for THIS right answer: its own words where the action has
-     them, else the round */
+  /* ONE CHEER FOR PROGRESS, ONE FOR THE LEVEL (the user's feedback rules: "all full level
+     completions use 'Great job!'", "'Keep going!' only for intermediate progress", "do not
+     randomly mix different success phrases"). A right answer that completes a level — the last
+     answer on the last screen of a chapter (quest.js) — is "Great job!"; any other right answer
+     that is answered in words is "Keep going!". The round of ten cheers ("Nice!", "You got
+     it!", "Perfect!"…) is gone; so is "Yes! You got it!" after a miss. A screen's own words
+     for a right answer — the sort's "It's convex: no corner goes inward." — still come first. */
+  var lastPraise = null, levelCheered = -1;
+  function levelEnd() { return ((global.Quest && Quest.chapters) || []).some(function (c) { return c.end === current; }); }
   function praiseFor(o) {
-    var type = o.type || (inputSpec && inputSpec.type);
-    var pick = wrongSinceRight ? PRAISE_FOR.fixed
-             : (!o.final && type === 'sort') ? PRAISE_FOR.sorted
-             : (/^draw-diagonals?$/.test(type || '')) && !o.final ? PRAISE_FOR.diagonal
-             : (type === 'draw-diagonal' && o.final) ? PRAISE_FOR.diagonal
-             : (o.final && type === 'multi-select') ? PRAISE_FOR.allFound
-             : (o.final && type === 'tap-each') ? PRAISE_FOR.measured
-             : null;
-    if (pick && pick.vo === lastPraise) pick = null;
-    if (!pick) return nextPraise();
+    var pick = (levelEnd() && (o.final || o.last)) ? PRAISE_FOR.levelDone : PRAISE_FOR.keepGoing;
     lastPraise = pick.vo;
     return pick;
   }
@@ -841,13 +798,16 @@
     if (kind === 'correct') {
       if (o.quiet || o.face === 'dip') { if (o.final) wrongSinceRight = false; return null; }
       if (!o.final && inputSpec && inputSpec.praise === false) return null;
-      var due = o.final ? now - lastPraiseAt > 1500 : praisedInput !== inputSeq;
+      // (the answer that completes a level is always met, once: it is the level's own cheer)
+      var ends = levelEnd() && (o.final || o.last);
+      var due = ends ? levelCheered !== current : o.final ? now - lastPraiseAt > 1500 : praisedInput !== inputSeq;
       if (!due) return null;
       praisedInput = inputSeq; lastPraiseAt = now;
       // a right answer that has words of its own says them (the sort's "Yes! It's convex: no
       // corner goes inward." — the short learning confirmation); anything else is cheered
-      if (said && said.t) { pick = said; lastPraise = said.vo; }
+      if (said && said.t && !ends) { pick = said; lastPraise = said.vo; }
       else pick = praiseFor(o);
+      if (pick === PRAISE_FOR.levelDone) levelCheered = current;
       wrongSinceRight = false;
       lines.push({ t: pick.t, vo: pick.vo, mood: 'win', emote: EMOTE[pick.vo] });
     } else if (kind === 'wrong') {
@@ -943,7 +903,7 @@
   var CAM_CLOSE = 1.25;                  // the close shot: everything a quarter larger
   var CAM_BLUR = 0.0036;                 // ...and the painting this far out of focus (of the board's height)
   var CAM_AT = { x: 0.5, y: 0.93 };      // the point held still: his feet on the centre mark
-  var cam = { k: 1, blur: 0 }, camGen = 0;
+  var cam = { k: 1, blur: 0 }, camGen = 0, camAim = null;   // camAim: where a running move is going
   function applyCam() {
     var f = frame(), on = cam.k !== 1;
     var ox = f.x + CAM_AT.x * f.w, oy = f.y + CAM_AT.y * f.h;
@@ -955,37 +915,48 @@
       n.style.willChange = on ? 'transform' : '';
     });
     if (bd) bd.style.filter = cam.blur > 0.0001 ? 'blur(' + (cam.blur * f.h).toFixed(2) + 'px)' : '';
+    // and the log with it: the same softness, in the board's own units (the board is 562 tall)
+    if (global.Stage && Stage.blurLog) Stage.blurLog(cam.blur * 562);
   }
-  /* Close or wide at once, as a screen starts (screens.js `camera: 'close'`) — so a restart,
-     or a jump into the intro, opens on the close shot, and any other screen is wide. Never
-     in portrait (the board is a band there, and he stands under it) or with reduced motion. */
+  /* The shot a screen asks for (screens.js `camera: 'close'`), or wide. Never in portrait (the
+     board is a band there, and he stands under it) or with reduced motion. */
+  function camFor(close) { return (close && !frame().portrait && !(global.Juice && Juice.reducedMotion)) ? CAM_CLOSE : 1; }
+  /* Close or wide at once, as a screen starts — so a jump into the intro opens on the close
+     shot, and any other screen is wide. Set BEFORE the lesson is seen (boot), so the opening
+     is already the close shot when the title or the story lifts off it: the camera never
+     jumps into it on screen. A move already on its way to the same shot (Restart's) is left
+     to arrive rather than cut short. */
   function setCam(close) {
-    camGen++;
-    var k = (close && !frame().portrait && !(global.Juice && Juice.reducedMotion)) ? CAM_CLOSE : 1;
+    var k = camFor(close);
+    if (camAim === k) return;
+    camGen++; camAim = null;
     if (cam.k === k && cam.blur === (k !== 1 ? CAM_BLUR : 0)) return;
     cam.k = k; cam.blur = k !== 1 ? CAM_BLUR : 0;
     applyCam();
   }
-  /* The camera drawing back to the wide shot (the stage beat `{ camera: 'wide' }`), eased in
-     and out over `ms`: every frame the world and he are redrawn together, and the painting
-     comes into focus as it goes. Anything that takes the screen away ends it on the wide
-     shot — never a lesson left half zoomed. */
-  function cameraTo(ms, ctx) {
-    var gen = ++camGen, k0 = cam.k, b0 = cam.blur;
+  /* The camera moving to shot `k` — back to the wide shot at the end of the intro (the stage
+     beat `{ camera: 'wide' }`), or in to the close one on Restart — eased in and out over `ms`
+     as ONE continuous move: every frame the world and he are redrawn together, the painting
+     going out of focus or into it with the zoom, so nothing on the screen is ever at a scale
+     of its own. Anything that takes the screen away ends it on the shot it was going to —
+     never a lesson left half zoomed. */
+  function cameraTo(k, ms, ctx) {
+    var gen = ++camGen, k0 = cam.k, b0 = cam.blur, b1 = k !== 1 ? CAM_BLUR : 0;
     var dur = Math.max(0, (ms || 0) * paceScale());
     var raf = global.requestAnimationFrame ? function (f) { global.requestAnimationFrame(f); }
                                             : function (f) { setTimeout(function () { f(Date.now()); }, 16); };
+    camAim = k;
     return new Promise(function (resolve) {
       var t0 = null;
-      var settle = function () { cam.k = 1; cam.blur = 0; applyCam(); relayout(); resolve(); };
+      var settle = function () { if (camAim === k) camAim = null; cam.k = k; cam.blur = b1; applyCam(); relayout(); resolve(); };
       if (ctx && ctx.onCancel) ctx.onCancel(function () { if (gen === camGen) { camGen++; settle(); } else resolve(); });
-      if (k0 === 1 || dur < 17) { settle(); return; }
+      if (k0 === k || dur < 17) { settle(); return; }
       var step = function (t) {
         if (gen !== camGen) return;
         if (t0 == null) t0 = t;
         var u = Math.min(1, (t - t0) / dur);
         var e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
-        cam.k = k0 + (1 - k0) * e; cam.blur = b0 * (1 - e);
+        cam.k = k0 + (k - k0) * e; cam.blur = b0 + (b1 - b0) * e;
         applyCam();
         if (global.Swiftee && Swiftee.relayout) Swiftee.relayout();
         if (u < 1) raf(step); else { camGen++; settle(); }
@@ -1047,7 +1018,10 @@
   function wantsBand(scr) {
     var beats = (scr.beats || []).concat(
       Object.keys(scr.perTap || {}).reduce(function (a, k) { return a.concat(scr.perTap[k] || []); }, []));
-    var has = function (o) { return !!(o && (o.label || o.badge || (o.choices && o.choices.length))); };
+    // (a tag that points at a line on the figure, or hangs on the card's top edge, is not under
+    // the card, and takes no room there: the card is built — and stays — its full size)
+    var under = function (lb) { return !!lb && !/^(segment|diagonal|top)$/.test(lb.at || ''); };
+    var has = function (o) { return !!(o && (under(o.label) || o.badge || (o.choices && o.choices.length))); };
     if (has(scr.stage)) return true;
     return beats.some(function (b) {
       return has(b.stage) ||
@@ -2759,12 +2733,13 @@
     H = {
       stage: function (spec, ctx) {
         /* THE CAMERA DRAWS BACK (the end of the intro — MASTER brief §2): the third line is
-           said and its bubble goes, then the close shot eases out to the whole scene, and the
-           log comes up on the ground at his left as it does, for the flight that follows. */
+           said and its bubble goes, then the close shot eases out to the whole scene in one
+           move. The log has been on the ground at his left all along, just outside the close
+           shot: it comes into view because the camera shows it, not because it appears (the
+           user: "the log arc is already part of the scene"). */
         if (spec && spec.camera === 'wide') {
           standing = null; say(null);
-          if (spec.log && Stage.perch) Stage.perch(true, Math.round((spec.ms || 900) * 0.8 * paceScale()));
-          return cameraTo(spec.ms || 900, ctx);
+          return cameraTo(1, spec.ms || 1000, ctx);
         }
         // AFTER THE SNOW. A beat marked afterReveal waits for the veil to
         // melt before it draws, so what it draws — diagonals arriving one
@@ -2849,17 +2824,15 @@
         // IN BY AIR, looking the shape over on the way (flyIn)
         if (state === 'enter' && opts && opts.from === 'air') return flyIn();
         /* ONTO THE LOG (the end of the intro — the user's "fly to the log arc"): his line is said
-           and its bubble comes down with it, then a short curved flight from wherever he is to
-           the log at the left of the ground, the landing squash, and he is perched there. */
+           and its bubble comes down with it, then a real flight from wherever he is to the log —
+           wings going, up and over on one curve, easing down onto it — the landing squash, and
+           he is perched there (swiftee.js MOVES.perch). */
         if (state === 'perch' && present && global.Swiftee && Swiftee.play) {
           standing = null; say(null);
           var fr = frame();
-          logFlying = true; syncLogFront();
-          var landed = function () { logFlying = false; syncLogFront(); };
           return Promise.resolve(Swiftee.play('perch', { size: (opts && opts.size) || Swiftee.size,
-                                                         // the bow in screen pixels (swiftee.js move): a sixth of the board
-                                                         arc: Math.round(fr.h * 0.16), ms: 900, onLand: landed }))
-            .then(function () { landed(); placeBubble(); }, function () { landed(); });
+                                                         bow: Math.round(fr.h * 0.2), ms: (opts && opts.ms) || 1300 }))
+            .then(function () { placeBubble(); }, function () {});
         }
         if (state === 'enter' && opts && opts.from === 'below' && !opts.to) {
           return entrance({ quick: !!opts.quick, ms: opts.ms }).then(function () { placeBubble(); });
@@ -3412,7 +3385,7 @@
   // stretch, and the sort's two confirmations — stage.js)
   var REASONS = ['fb11', 'fb15', 'fb35', 'fb36', 'fb37', 'fb38', 'fb40', 'fb42', 'fb43'];
   function replyClips() {
-    var out = PRAISE.concat(NUDGE, [NUDGE_STRONG]).map(function (p) { return p.vo; });
+    var out = NUDGE.concat([NUDGE_STRONG]).map(function (p) { return p.vo; });
     Object.keys(CLUES).forEach(function (k) { out.push(CLUES[k].vo); });
     Object.keys(PRAISE_FOR).forEach(function (k) { out.push(PRAISE_FOR[k].vo); });
     return out.concat(REASONS).filter(function (id, n, all) { return id && all.indexOf(id) === n; });
@@ -3494,7 +3467,7 @@
     missesHere = 0; hintedHere = false; inputSpec = null; wrongSinceRight = false;
     // whatever he was still saying back on the screen before is over, and
     // nothing of it holds the new screen's input
-    popGen++; popping = false; clearTimeout(popDue); popDue = null; riseWait = false; cheerUntil = 0; holdForReply = false;
+    popGen++; popping = false; clearTimeout(popDue); popDue = null; riseWait = false; cheerUntil = 0; holdForReply = false; owedCheer = null;
     if (Stage.hold) Stage.hold(false);
     // THE CARD IS CLEARED, NOT INHERITED.
     //
@@ -3532,8 +3505,11 @@
     // ONLY A PURPOSE PUTS HIM ON SCREEN. Every screen has a position for him;
     // eleven have a reason. The rest get the plank.
     // (Through the camera: the intro's close shot, screens.js `camera`, and every other screen
-    // wide — set first, so he is laid out through it wherever this screen puts him.)
+    // wide — set first, so he is laid out through it wherever this screen puts him. And the log
+    // where this screen has it, for the same reason: his 'log' mark is read off it. On the
+    // intro it is simply there — no fade.)
     setCam(s.camera === 'close');
+    if (Stage.perch) Stage.perch(!!s.log, s.camera === 'close' ? 0 : undefined);
     buddyOn = wantsBuddy(i);
 
     // THE PLANK IS NOT BLANK WHILE THE CHILD IS ASKED TO ACT.
@@ -3600,9 +3576,8 @@
     }
 
     current = i; setProgress(i);
-    // the log arc stands on the screens that sit him on it (screens.js `log`); off, it fades —
-    // under the snow, when the screen after them is built behind the cover
-    if (Stage.perch) Stage.perch(!!s.log);
+    // (the log arc stands on the screens that sit him on it — screens.js `log`, set above; off,
+    // it fades, under the snow when the screen after them is built behind the cover)
     // A carried card rides up when this screen has no plank, and eases back
     // under the band when it has; a scene built by this screen's beats is
     // seated as it is built.
@@ -3621,8 +3596,14 @@
       // itself is the answer to every tap (it is protected: swiftee.js lock).
       var walked = !!(inputSpec && inputSpec.type === 'tap-each' && inputSpec.targets === 'sides');
       var dip = !!(inputSpec && inputSpec.type === 'tap-each');
-      react(kind, said, { face: dip ? 'dip' : !(list && list.some(function (b) { return b && b.swiftee; })), walked: walked,
-                          tries: info && info.tries, teach: info && info.teach, reason: info && info.reason });
+      // a question with a cheer of its own (screens.js `cheer`): one for a right answer that
+      // leaves more to find, another for the one that completes it
+      var cheer = kind === 'correct' && !said && inputSpec && inputSpec.cheer;
+      if (cheer) said = PRAISE_FOR[info && info.last ? cheer.last : cheer.more] || null;
+      var ro = { face: dip ? 'dip' : !(list && list.some(function (b) { return b && b.swiftee; })), walked: walked,
+                 tries: info && info.tries, teach: info && info.teach, reason: info && info.reason,
+                 last: !!(info && info.last) };
+      react(kind, said, ro);
     });
     if (global.Input) Input.mode('locked');
     // WRITTEN DOWN AS IT BEGINS: the scene exactly as the child found it on
@@ -3804,13 +3785,13 @@
      PRAISE → POP DOWN → CONTINUE). A card that came back (a wrong answer,
      answered by its own pop in react(); a pull let go short of a zone)
      brings nobody up. */
+  /* NOT ANY MORE (the user, screen 30: "Swiftee should not interrupt every correct swipe"): a
+     right card is answered by the card itself — its green, the chime, the flight into its zone —
+     and the next one comes; he speaks for a wrong one, and says "Great job!" when the last one
+     is in (the swipe's own answer, react). */
   function swipeHome(p) {
-    if (!p || !p.dealt || !popsHere()) return;
-    var pick = wrongSinceRight ? PRAISE_FOR.fixed : nextPraise();
+    if (!p || !p.dealt) return;
     wrongSinceRight = false;
-    lastPraiseAt = Date.now();
-    // (a head over the card: his small happy face, not a whole-body move)
-    pop([{ t: pick.t, vo: pick.vo, mood: 'win', face: pick.vo === 'fb26' ? 'phew' : 'happySmall' }]);
   }
 
   /* HIS REPLY — every word he says back to an answer (react(), swipeHome).
@@ -3972,6 +3953,7 @@
         // (and the hint waits for 3 s of stillness from here: holdInput)
         holdInput(false);
       }
+      if (owedCheer) payCheer();
     };
     return (present ? Promise.resolve(true) : entrance(behind ? undefined : true)).then(function () {
       if (!alive() || !present) return;
@@ -4001,7 +3983,17 @@
   }
   /* Is he still saying something back? The lesson's next line, and the next
      screen, wait for it: one voice at a time, and a reply is never cut off. */
-  function replying() { return popping || cheerUntil > Date.now(); }
+  function replying() { return popping || !!owedCheer || cheerUntil > Date.now(); }
+  var owedCheer = null;
+  function oweCheer(args) {
+    var o = owedCheer = { screen: current, args: args };
+    // (and if the line before it is taken away rather than finished, it is said anyway)
+    setTimeout(function () { if (owedCheer === o) payCheer(); }, 4000);
+  }
+  function payCheer() {
+    var o = owedCheer; owedCheer = null;
+    if (o && o.screen === current) react.apply(null, o.args);
+  }
   function untilReplied(ctx) {
     var until = Date.now() + 9000;
     return new Promise(function (res) {
@@ -4209,7 +4201,7 @@
     // THE OLD RUN ENDS NOW, not when the new one starts 200 ms later: a
     // restart pressed during the snow let the old loop's next screen, and
     // its voice, play over the new opening
-    playGen++; popGen++; popping = false; cheerUntil = 0; holdForReply = false;
+    playGen++; popGen++; popping = false; cheerUntil = 0; holdForReply = false; owedCheer = null;
     if (Stage.hold) Stage.hold(false);
     // and the second run's music is the lesson's, not the finale's louder tune
     if (global.Music && Music.mood) Music.mood('play');
@@ -4226,6 +4218,9 @@
     if (continueBtn) continueBtn.classList.remove('show');
     leaveReady();   // (playGen has moved on, so a snow already falling stays here too)
     Stage.apply({ kind: 'vista' });
+    // back in to the opening's close shot, eased — screen 1 lets the move finish (setCam)
+    var first0 = Screens.list[0] || {};
+    if (camFor(first0.camera === 'close') !== cam.k) cameraTo(camFor(first0.camera === 'close'), 700);
     Swiftee.place('left', 'large');
   }
 
@@ -4247,6 +4242,12 @@
 
     Stage.mount(stageEl);
     Swiftee.mount(root, { layout: layout });
+    // THE OPENING SHOT BEFORE ANYTHING IS SEEN: the intro's close shot, and its log, are set
+    // behind the title and the story, so the lesson is revealed already framed — the camera
+    // does not jump into the close-up when the curtain goes
+    var first = Screens.list[0] || {};
+    setCam(first.camera === 'close');
+    if (Stage.perch) Stage.perch(!!first.log, 0);
     Swiftee.place('left', 'large'); Swiftee.visible(false);   // he flies in on screen 1
 
     if (global.Juice) Juice.stage(stageEl);
@@ -4577,7 +4578,7 @@
     if (!(n >= 0 && n < Screens.list.length)) return;
     // a jump from inside the story ends it here: no Scene 5 hand-over after it
     if (global.Story && Story.active) Story.stop();
-    playGen++; popGen++; popping = false; cheerUntil = 0; holdForReply = false;
+    playGen++; popGen++; popping = false; cheerUntil = 0; holdForReply = false; owedCheer = null;
     if (Stage.hold) Stage.hold(false);
     flightGen++; entering = null;
     director.abort();

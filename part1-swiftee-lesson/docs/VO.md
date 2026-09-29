@@ -84,27 +84,15 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 | 49 | 31 | summary | `assets/vo/p37h.mp3` | say | If the sides or angles are not all equal, the polygon is irregular. |  | screen 31 | explaining, warm and clear | yes |
 | 50 | 31 | summary | `assets/vo/p37i.mp3` | say | Amazing! You explored all these polygon ideas! |  | screen 31 | explaining, warm and clear | yes |
 
-## Answers (31), said when the child answers
+## Answers (19), said when the child answers
 
 | File | Line | When | Delivery | Recorded |
 |------|------|------|----------|----------|
+| `assets/vo/fb46.mp3` | Keep going! | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/fb03.mp3` | Great job! | the first right answer on a screen (rotates) | a cheer, delighted | yes |
-| `assets/vo/fb01.mp3` | Nice! | the first right answer on a screen (rotates) | a cheer, delighted | yes |
-| `assets/vo/fb06.mp3` | Well done! | the first right answer on a screen (rotates) | a cheer, delighted | yes |
-| `assets/vo/fb04.mp3` | You got it! | the first right answer on a screen (rotates) | a cheer, delighted | yes |
-| `assets/vo/fb17.mp3` | Perfect! | a try that falls short, with the reason | gentle and encouraging, never disappointed | yes |
-| `assets/vo/fb18.mp3` | Yay! | a try that falls short, with the reason | gentle and encouraging, never disappointed | yes |
-| `assets/vo/fb19.mp3` | That’s right! | a try that falls short, with the reason | gentle and encouraging, never disappointed | yes |
-| `assets/vo/fb20.mp3` | Awesome! | a try that falls short, with the reason | explaining, warm and clear | yes |
-| `assets/vo/fb21.mp3` | Great thinking! | a try that falls short, with the reason | a cheer, delighted | yes |
-| `assets/vo/fb22.mp3` | Exactly! | a try that falls short, with the reason | explaining, warm and clear | yes |
-| `assets/vo/fb23.mp3` | Great! That belongs here. | a try that falls short, with the reason | a cheer, delighted | yes |
-| `assets/vo/fb24.mp3` | Nice! That’s a diagonal. | a try that falls short, with the reason | a cheer, delighted | yes |
-| `assets/vo/fb25.mp3` | Great job! You found them all. | a try that falls short, with the reason | a cheer, delighted | yes |
-| `assets/vo/fb26.mp3` | Yes! You got it! | a try that falls short, with the reason | a cheer, delighted | yes |
 | `assets/vo/fb32.mp3` | Try again! | a try that falls short, with the reason | explaining, warm and clear | yes |
-| `assets/vo/fb33.mp3` | Try again! A polygon has only straight sides. | a try that falls short, with the reason | explaining, warm and clear | yes |
-| `assets/vo/fb34.mp3` | Try again! A polygon must be closed. | a try that falls short, with the reason | explaining, warm and clear | yes |
+| `assets/vo/fb44.mp3` | Not quite. A circle is curved. A polygon has only straight sides. | a try that falls short, with the reason | explaining, warm and clear | yes |
+| `assets/vo/fb45.mp3` | Not quite. This shape is open. A polygon must be closed. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/fb39.mp3` | Try again! Follow each diagonal from corner to corner. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/fb41.mp3` | Try again! Compare the sides and angles now. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/p38a.mp3` | Honk-tastic! | a try that falls short, with the reason | explaining, warm and clear | yes |

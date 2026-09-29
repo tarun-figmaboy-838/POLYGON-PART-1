@@ -42,6 +42,15 @@
     { swiftee: 'oops' },
     { wait: 400 }
   ];
+  // A WRONG CARD BUZZES (Level 1 — the user: "brief red glow, short buzz/shake"): a quick small
+  // shiver of the card itself, clearer than the nudge but never a telling-off, under its red
+  // glow, with the miss sound — and then the explanation (game.js CLUES)
+  var BUZZ = [
+    { juice: 'buzz', target: 'answer' },
+    { sfx: 'wrong' },
+    { swiftee: 'oops' },
+    { wait: 400 }
+  ];
 
   // What a diagonal is, said after "Try again!" on EVERY wrong line where the
   // child draws them (`after`: the miss it starts on — the first, since the
@@ -151,8 +160,11 @@
     {
       id: 'intro-hi', page: 1,
       // THE CLOSE SHOT (the MASTER brief §1): the opening lines are filmed close on him, the
-      // painting soft behind him (game.js setCam); the log is not in the picture yet
+      // painting soft behind him (game.js setCam). The log is already on the ground at his left
+      // (the user: "it should already exist naturally") — mostly outside the close shot, until
+      // the camera draws back to it
       camera: 'close',
+      log: true,
       swiftee: { pos: 'left', size: 'large', purpose: 'introduce'},
       say: 'Hi! I am Swiftee.',
       stage: { kind: 'vista' },
@@ -170,8 +182,11 @@
     {
       id: 'intro-remember', page: 2,
       // THE CLOSE SHOT (the MASTER brief §1): the opening lines are filmed close on him, the
-      // painting soft behind him (game.js setCam); the log is not in the picture yet
+      // painting soft behind him (game.js setCam). The log is already on the ground at his left
+      // (the user: "it should already exist naturally") — mostly outside the close shot, until
+      // the camera draws back to it
       camera: 'close',
+      log: true,
       swiftee: { pos: 'left', size: 'large', purpose: 'introduce'},
       say: 'Remember we learned about polygons before.',
       beats: [
@@ -186,6 +201,7 @@
     {
       id: 'intro-define', page: 3,
       camera: 'close',   // still close; it draws back at the end of this screen (below)
+      log: true,
       swiftee: { pos: 'left', size: 'large', purpose: 'concept'},
       say: 'Polygons are closed shapes made from straight lines.',
       beats: [
@@ -193,11 +209,13 @@
         { swiftee: 'present' },
         { say: 'Polygons are closed shapes made from straight lines.', parts: ['Polygons are closed shapes', 'made from straight lines.'], vo: 'p03' },
         // ONTO THE LOG (the user's spec, and the MASTER brief §2): the third line said to its
-        // end, a breath, then the camera draws back to the whole scene and the log arc comes up
-        // on the ground at his left; a short curved flight onto its crest, a small squash, and
-        // a moment perched there before the first question comes
+        // end, a breath, then the camera draws back to the whole scene in one move — the log
+        // coming into view on the ground at his left, where it has been all along — a beat to
+        // see it, then a real flight onto it (wings going, one curve, easing down), a small
+        // squash, and a moment perched there before the first question comes
         { wait: 600 },
-        { stage: { camera: 'wide', ms: 900, log: true } },
+        { stage: { camera: 'wide', ms: 1000 } },
+        { wait: 250 },
         { swiftee: 'perch' },
         { input: { type: 'tap-anywhere', pause: 650 } }
       ]
@@ -215,12 +233,11 @@
       // simply appear on his right and he asks about them from his perch.
       swiftee: { pos: 'log', size: 'large', purpose: 'ask' },
       say: 'Which of these are polygons?',
-      // A MISS IS ANSWERED CARD BY CARD (the user's spec). The first miss on
-      // a card is a gentle nudge; the second on that SAME card is the
-      // stronger "Not that one." and then what a polygon is — the line from
-      // the screen before, in its own voice, not new words — and that card is
-      // put out (stage.js multi-select). Then the question comes back.
-      remind: { say: 'Polygons are closed shapes made from straight lines.', vo: 'p03', perCard: true, after: 2 },
+      // A MISS IS ANSWERED WITH THE LESSON, THE FIRST TIME (the user's bug list: "do not make
+      // the student fail twice before receiving the useful explanation"). The card glows red
+      // and buzzes, and he says "Not quite." and what is true of THAT shape — the circle is
+      // curved, the path is open (game.js CLUES, by the card's `reason`) — and the card is
+      // put out, dimmed and still readable, for the rest of the question (outAfter: 1).
       stage: {
         kind: 'choice-grid',
         options: [
@@ -240,7 +257,9 @@
         { swiftee: 'observe', at: 'grid' },
         // Multi-select: each tap is judged on its own so a child learns per
         // shape, and the screen completes when both polygons are selected.
-        { input: { type: 'multi-select', until: 'all-correct-selected' } },
+        // "Keep going!" for the first polygon found, "Great job!" for the one that completes
+        // the level (game.js PRAISE_FOR) — not a "Great job!" for every card
+        { input: { type: 'multi-select', until: 'all-correct-selected', outAfter: 1, cheer: { more: 'keepGoing', last: 'levelDone' } } },
         // no second burst when the last polygon is found: its own press already threw one
         { feedback: correct([], null, { burst: false }) }
       ],
@@ -250,7 +269,7 @@
          red and shrinks back. */
       perTap: { correct: [{ juice: 'pop', target: 'option' }, { sfx: 'correct' },
                           { juice: 'confetti', target: 'option', count: 18, fromEdge: true }],
-                wrong:   WRONG }
+                wrong:   BUZZ }
     },
 
     /* ================================================================ *
@@ -259,9 +278,13 @@
 
     {
       id: 'lets-play', page: 5,
-      log: true,   // on the log arc at the left of the ground, as since the intro (the user: "after level-1, the log sit too")
+      // LEVEL 2 LAYOUT (the user): he stays on the log at the left, with his line; the card is
+      // on the right, and stays there, the same size, for the whole level
+      log: true,
       swiftee: { pos: 'log', size: 'medium' },
       say: 'Let\u2019s play with this one.',
+      // ONE PLACE FOR THE CARD FOR THE WHOLE LEVEL (the user: "keep the card at the same scale
+      // and the same X/Y"): the right-hand slab, built here and never moved or resized after it
       stage: { kind: 'polygon', sides: 5, panel: 'right' },
       beats: [
         { stage: { kind: 'polygon', sides: 5, panel: 'right', enter: 'pop' } },
@@ -278,13 +301,16 @@
 
     {
       id: 'pick-vertex', page: 6,
-      log: true,   // on the log arc at the left of the ground, as since the intro (the user: "after level-1, the log sit too")
+      // LEVEL 2 LAYOUT (the user): he stays on the log at the left, with his line; the card is
+      // on the right, and stays there, the same size, for the whole level
+      log: true,
       swiftee: { pos: 'log', size: 'medium' },
       say: 'Select any vertex.',
       beats: [
         { say: 'Select any vertex.', vo: 'p06' },
         { swiftee: 'point', at: 'polygon' },
-        { focus: 'polygon.vertices', style: 'pulse' },
+        // (the corners appear with the input, after the line, and ONE of them breathes —
+        // stage.js vertex-pick; not every corner pulsing at once)
         // any corner is right, so it is not praised as an answer: the pop,
         // the nod, and straight on to "Let’s connect it to another vertex."
         { input: { type: 'vertex-pick', praise: false } },
@@ -325,7 +351,9 @@
        * refuses a line outside READY_TO_CONNECT. until: 'correct' keeps asking
        * until the diagonal is made. */
       id: 'connect', page: 7,
-      log: true,   // on the log arc at the left of the ground, as since the intro (the user: "after level-1, the log sit too")
+      // LEVEL 2 LAYOUT (the user): he stays on the log at the left, with his line; the card is
+      // on the right, and stays there, the same size, for the whole level
+      log: true,
       swiftee: { pos: 'log', size: 'medium' },
       instruction: 'Let’s connect it to another vertex.',
       lines: ['This is a side of the polygon.', 'Yay! You made a diagonal!'],
@@ -358,8 +386,10 @@
               { sfx: 'correct' },
               { juice: 'collect', target: 'answer' },
               { instruction: null },
-              // on the word "diagonal", the tag that names it
-              { stage: { label: { text: 'Diagonal', at: 'below-polygon', inside: true, enter: 'pop', cue: 'diagonal' } } },
+              // on the word "diagonal", the tag that names it: beside the diagonal on the
+              // figure, an arrow to it (the user: "label → arrow → the actual diagonal") — not a
+              // tag under the card, which also made the card shrink to fit it
+              { stage: { label: { text: 'Diagonal', at: 'diagonal', arrow: true, enter: 'pop', cue: 'diagonal' } } },
               { swiftee: 'celebrate' },
               { say: 'Yay! You made a diagonal!', vo: 'p12' }
             ]
@@ -377,7 +407,8 @@
 
     {
       id: 'define-diagonal', page: 13,
-      // (on the log, like the screens either side: this card has no rim to peek over)
+      // LEVEL 2 LAYOUT (the user): he stays on the log at the left, with his line; the card is
+      // on the right, and stays there, the same size, for the whole level
       log: true,
       swiftee: { pos: 'log', size: 'medium', purpose: 'concept' },
       instruction: null,
@@ -407,7 +438,9 @@
 
     {
       id: 'another-diagonal', page: 14,
-      log: true,   // on the log arc at the left of the ground, as since the intro (the user: "after level-1, the log sit too")
+      // LEVEL 2 LAYOUT (the user): he stays on the log at the left, with his line; the card is
+      // on the right, and stays there, the same size, for the whole level
+      log: true,
       swiftee: { pos: 'log', size: 'medium' },
       instruction: 'Let’s draw another diagonal from the same vertex.',
       // THE SAME CORNER, A SECOND DIAGONAL, AND WHAT THEY SHOW.
@@ -434,6 +467,9 @@
         // they draw are what to do, not a question with half of it gone.
         // SAID ONCE: the line that echoed the instruction ("Can you draw another diagonal from here?") went —
         // the same request twice in a row read as a stutter, not a lesson.
+        // (the first diagonal's name has been said and shown twice; it comes down before the
+        // second is drawn, which could otherwise run across it)
+        { stage: { label: null } },
         { instruction: 'Let’s draw another diagonal from the same vertex.', vo: 'p14i' },
         { swiftee: 'point', at: 'picked' },
         { input: { type: 'draw-diagonal', from: 'picked' } },
@@ -454,7 +490,9 @@
 
     {
       id: 'hexagon-your-turn', page: 15,
-      log: true,   // on the log arc at the left of the ground, as since the intro (the user: "after level-1, the log sit too")
+      // LEVEL 2 LAYOUT (the user): he stays on the log at the left, with his line; the card is
+      // on the right, and stays there, the same size, for the whole level
+      log: true,
       swiftee: { pos: 'log', size: 'medium' },
       instruction: 'Let’s draw all the diagonals from this vertex.',
       say: 'Your turn! Let’s draw all the diagonals from this vertex.',
@@ -468,9 +506,11 @@
       //      ghosts on the "your turn" screen, so the exercise can be done
       //      by tracing. Section 2 of the brief forbids exactly this. The
       //      ghosts are removed here; the label "Hexagon" stays.
-      stage: { kind: 'polygon', sides: 6, label: { text: 'Hexagon', at: 'below-polygon' }, ghost: null },
+      // (the same slab, in the same place, at the same size as the pentagon's: its name hangs
+      // on the card's top edge rather than under it, which would have had the card built short)
+      stage: { kind: 'polygon', sides: 6, panel: 'right', label: { text: 'Hexagon', at: 'top' }, ghost: null },
       beats: [
-        { stage: { kind: 'polygon', sides: 6, enter: 'morph', label: { text: 'Hexagon', at: 'below-polygon' } } },
+        { stage: { kind: 'polygon', sides: 6, panel: 'right', enter: 'morph', label: { text: 'Hexagon', at: 'top' } } },
         { sfx: 'pop' },
         { wait: 400 },
         { swiftee: 'encourage' },

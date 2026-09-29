@@ -15,7 +15,7 @@
  *
  *   Juice.stage(container)                  // one-time: where confetti lands
  *   Juice.pop(el, { scale })
- *   Juice.wobble(el) / refuse(el)           // "not that one"
+ *   Juice.wobble(el) / refuse(el) / buzz(el) // "not that one"
  *   Juice.collect(el) / celebrate(el)       // "yes"
  *   Juice.flash(el)
  *   Juice.confetti(near, { count, offsetX })   // a burst, from a place
@@ -187,6 +187,22 @@
         { transform: 'translateX(' + -d * 0.5 + 'px) rotate(-.5deg)', offset: 0.66 },
         { transform: 'translateX(0) rotate(0deg)' }
       ], { duration: o.duration || 380, easing: 'ease-in-out' }).finished;
+    },
+
+    /** A buzz: a quick small shiver, side to side — "not that one" felt, like a phone's
+        buzz, not a telling-off. Clearer than the wobble, over in a third of a second. */
+    buzz: function (el, o) {
+      o = o || {};
+      var d = o.distance == null ? 6 : o.distance;
+      return run(el, [
+        { transform: 'translateX(0)' },
+        { transform: 'translateX(' + -d + 'px)', offset: 0.14 },
+        { transform: 'translateX(' + d + 'px)', offset: 0.32 },
+        { transform: 'translateX(' + (-d * 0.7) + 'px)', offset: 0.5 },
+        { transform: 'translateX(' + (d * 0.45) + 'px)', offset: 0.68 },
+        { transform: 'translateX(' + (-d * 0.2) + 'px)', offset: 0.84 },
+        { transform: 'translateX(0)' }
+      ], { duration: o.duration || 340, easing: 'linear' }).finished;
     },
 
     /** A refused drop: wobble plus a small recoil. */

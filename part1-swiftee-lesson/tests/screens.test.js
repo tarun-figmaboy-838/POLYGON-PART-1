@@ -224,12 +224,23 @@ t('no wrong path ever contains words — the deck has no wrong-answer copy and t
     if (!earlier && !own) bad.push(s.id);
   });
   t('a reminder is a line already taught in its own voice, or its own line in the VO script', bad.length === 0, bad);
-  // (the user's per-card rule: the first miss on a card is its own clue — "Try again!" and
-  // why that card is not a polygon; the second on the SAME card is "Try again!" and what a
-  // polygon is, and the card is put out)
-  t('the first question reminds the child what a polygon is, on the second miss of the same card',
-    !!Screens.byId['which-polygons'].remind && /closed shapes made from straight lines/.test(Screens.byId['which-polygons'].remind.say) &&
-    Screens.byId['which-polygons'].remind.perCard === true && Screens.byId['which-polygons'].remind.after === 2);
+  // (the user's Level 1 bug list: the FIRST miss on a card is met at once with "Not quite." and
+  // what is true of that shape — game.js CLUES, by the card's `reason` — and the card is put
+  // out after it; the child is not made to miss twice before the explanation comes)
+  {
+    const wp = Screens.byId['which-polygons'];
+    const input = allBeats(wp).map((b) => b.input).filter((x) => x && x.type === 'multi-select')[0] || {};
+    const wrongs = wp.stage.options.filter((o) => !o.correct);
+    const gameSrc = require('fs').readFileSync(require('path').join(__dirname, '..', 'src', 'game', 'game.js'), 'utf8');
+    const clueOf = (r) => (new RegExp(r + ":\\s*\\{ t: '([^']+)'")).exec(gameSrc);
+    t('Level 1 explains a miss at once: "Not quite." and why that shape is not a polygon, then the card is out',
+      !wp.remind && input.outAfter === 1 && wrongs.length > 0 &&
+      wrongs.every((o) => o.reason && clueOf(o.reason) && /^Not quite\. /.test(clueOf(o.reason)[1])),
+      wrongs.map((o) => o.reason + ': ' + ((clueOf(o.reason) || [])[1])));
+    t('Level 1 cheers "Keep going!" on the way and "Great job!" only when the level is complete',
+      !!input.cheer && input.cheer.more === 'keepGoing' && input.cheer.last === 'levelDone' &&
+      /keepGoing:\s*\{ t: 'Keep going!'/.test(gameSrc) && /levelDone:\s*\{ t: 'Great job!'/.test(gameSrc));
+  }
   const diag = ['another-diagonal', 'hexagon-your-turn'].map((id) => Screens.byId[id].remind || {});
   t('both screens where the child draws diagonals say what a diagonal is, from the first miss',
     diag.every((r) => r.say === 'A diagonal connects non-adjacent vertices.' && r.after === 1 && r.vo === 'p14r'), diag);
@@ -302,7 +313,7 @@ const INPUTS = ['tap-anywhere', 'vertex-pick', 'draw-diagonal', 'draw-diagonals'
 const KINDS = ['vista', 'polygon', 'choice-grid', 'compare', 'sort', 'swipe-sort', 'summary'];
 const SFX = ['boing', 'correct', 'honk', 'levelUp', 'menuWhoosh', 'pop', 'select', 'slice',
              'slideWhistle', 'sparkle', 'tick', 'wrong', 'zip', 'drumroll'];
-const JUICE = ['celebrate', 'collect', 'confetti', 'pop', 'refuse', 'wobble', 'flash', 'squash', 'tada'];
+const JUICE = ['celebrate', 'collect', 'confetti', 'pop', 'refuse', 'wobble', 'buzz', 'flash', 'squash', 'tada'];
 
 const used = { swiftee: new Set(), input: new Set(), kind: new Set(), sfx: new Set(), juice: new Set() };
 S.forEach((s) => {
@@ -648,8 +659,11 @@ const levelOf = (st) => { const d = RIG[st]; return d ? (d.level || 1) : 0; };
   const unmapped = nouns.filter((n) => src.indexOf("case '" + n + "'") < 0);
   t('every vocabulary noun has a reaction on the board', unmapped.length === 0, unmapped);
   t('the bubble letters every one of those nouns', nouns.every((n) => /dc-term/.test(DC.markup('the ' + n + ' here'))), nouns.filter((n) => !/dc-term/.test(DC.markup('the ' + n + ' here'))));
-  t('the grid lights every card for "polygons", never the right ones',
-    /case 'polygon':[\s\S]{0,200}kind === 'grid'\) return warmPulse\(st\.cards, \{ together: true/.test(src));
+  // (the user: "remove the pulse animation from the answer cards — they remain stable until
+  // the user interacts": the word lights nothing on the grid, and no idle hint swells them)
+  t('the answer cards do not pulse — not for the word "polygons", not while the child decides',
+    /case 'polygon':[\s\S]{0,300}kind === 'grid'\) return 0;/.test(src) &&
+    !/'multi-select'[\s\S]{0,1200}hintLadder\(/.test(src));
 }
 
 /* THE VOICE SCRIPT IS THE STORYBOARD. docs/VO.md is generated from the

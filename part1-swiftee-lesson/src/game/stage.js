@@ -336,7 +336,21 @@
     if (reduced() || !svg) return function () {};
     var g = mk('g', { 'class': 'gesture-ghost', 'pointer-events': 'none' }, layers.fx);
     var mover;
-    if (opts.clone) {
+    /* A LINE DRAWN, NOT A CORNER DRAGGED (opts.line — the draw-diagonal hint; the user: "the
+       ghost looks like the vertex itself is being stretched"). A copy of the corner's knob used
+       to slide away from the corner with a trail behind it, which read as the corner being
+       pulled out of the shape. Now nothing leaves the corner: it stays exactly where it is,
+       and a faint line grows out of it, its end travelling to the corner it joins — the hand's
+       fingertip on that end — reaches it, holds a moment, and fades. */
+    var drawn = null;
+    if (opts.line) {
+      var glen0 = Math.hypot(to.x - from.x, to.y - from.y) || 1;
+      drawn = litLine(g, { x1: from.x, y1: from.y, x2: to.x, y2: to.y, 'stroke-width': 5, 'stroke-linecap': 'round' });
+      drawn[0].setAttribute('opacity', 0.35); drawn[1].setAttribute('opacity', 0.62);
+      drawn.forEach(function (ln) { ln.style.strokeDasharray = glen0 + ' ' + glen0; ln.style.strokeDashoffset = glen0 + 'px'; });
+      drawn.len = glen0;
+      mover = null;
+    } else if (opts.clone) {
       mover = opts.clone.cloneNode(true);
       mover.removeAttribute('class'); mover.setAttribute('class', 'gesture-ghost-copy');
       // inert to every selector: no data attributes, no classes on what it copied
@@ -349,7 +363,7 @@
       mover = mk('circle', { cx: from.x, cy: from.y, r: opts.r || 11, fill: HI.knob, stroke: HI.edge, 'stroke-width': 2.5 }, g);
     }
     var trail = null;
-    if (opts.trail !== false) {
+    if (opts.trail !== false && !opts.line) {
       var tp = litLine(g, { x1: from.x, y1: from.y, x2: to.x, y2: to.y, 'stroke-width': 4, 'stroke-linecap': 'round', 'stroke-dasharray': '8 10', opacity: 0 });
       trail = mk('g', {}, g); trail.appendChild(tp[0]); trail.appendChild(tp[1]);
       g.insertBefore(trail, mover);
@@ -394,7 +408,26 @@
     // ONCE PER RUNG of the hint ladder, not on a loop: the move is shown, and
     // then the child has the screen to themselves again.
     var times = opts.times || 1, delay = opts.delay == null ? 120 : opts.delay;
-    if (mover.animate) anims.push(mover.animate(frames, { duration: ms, iterations: times, delay: delay }));
+    if (drawn && drawn[0].animate) {
+      // grows with the hand — out of the corner as it presses, to the other as it arrives
+      var L0 = drawn.len + 'px';
+      drawn.forEach(function (ln) {
+        try {
+          anims.push(ln.animate([
+            { strokeDashoffset: L0, opacity: 1, offset: 0 },
+            { strokeDashoffset: L0, opacity: 1, offset: 0.16 },
+            { strokeDashoffset: '0px', opacity: 1, offset: 0.66, easing: 'cubic-bezier(.35,.6,.3,1)' },
+            { strokeDashoffset: '0px', opacity: 1, offset: 0.8 },
+            { strokeDashoffset: '0px', opacity: 0, offset: 0.94 },
+            { strokeDashoffset: '0px', opacity: 0, offset: 1 }
+          ], { duration: ms, iterations: times, delay: delay, fill: 'both' }));
+        } catch (e) {}
+      });
+    } else if (drawn) {
+      // no motion: the line alone, dashed, so the hint is still there
+      drawn.forEach(function (ln) { ln.style.strokeDasharray = '14 12'; ln.style.strokeDashoffset = '0px'; });
+    }
+    if (mover && mover.animate) anims.push(mover.animate(frames, { duration: ms, iterations: times, delay: delay }));
     /* AND A HAND DOES IT. The glove comes down onto the start, presses, and
        carries the ghost along the move with its fingertip on it; at the end it
        lifts off and away, leaving the mark where the move finishes. */
@@ -612,17 +645,17 @@
    * his feet on the log's crest — 45% across, where the snow is highest between the two branch
    * stubs (row 83).
    *
-   * SITTING IN THE SNOW, NOT STANDING ON THE AIR OVER IT (asked for: "not floating or
-   * disconnected"). His feet were ON the top line of the snow, and the drawing's feet stop a
-   * little above the sheet's baseline: a sliver of sky showed under him — and with his feet
-   * only just in, his legs still showed, standing. He sits 22 units down into the snow now, a
-   * leg's length, and game.js lays a copy of the log over him (syncLogFront), so the snow's
-   * front edge runs across his belly: a bird sitting on a snowy log. */
+   * ON TOP OF THE SNOW, NOT IN IT (the user: "Swiftee looks behind the log"). He was sunk
+   * 22 units into the cap with a copy of the log laid over his feet, and that read as a bird
+   * standing behind the log. Nothing is drawn over him now: his feet are a few units into the
+   * cap's top surface — in front of its back edge, well above its front — so the whole of him
+   * shows, sitting on the log, and his shadow lands on the snow under him.
+ */
   var LOG = { src: 'assets/bg/log-arch.webp?v=55947ce2', x: 38, w: 236, iw: 684, ih: 411, foot: 409, ground: 520 };
   LOG.h = LOG.w * LOG.ih / LOG.iw;
   LOG.y = LOG.ground - LOG.h * (LOG.foot / LOG.ih);
-  var LOG_SINK = 22;
-  var LOG_PERCH = { x: LOG.x + LOG.w * 0.45, y: LOG.y + LOG.h * (83 / LOG.ih) + LOG_SINK };
+  var LOG_SINK = 9;
+  function perchPoint() { return { x: LOG.x + LOG.w * 0.45, y: LOG.y + LOG.h * (83 / LOG.ih) + LOG_SINK }; }
   var perchLog = null;
   var SNOW = 26, GUST = 16, GLINTS = 10;  // ambient element counts — see ambientLife()
   var ambient = [];           // running WAAPI animations, so they can be stopped
@@ -640,7 +673,9 @@
       '<radialGradient id="vignette" cx=".5" cy=".45" r=".75"><stop offset=".6" stop-color="#0a2a4a" stop-opacity="0"/><stop offset="1" stop-color="#0a2a4a" stop-opacity=".16"/></radialGradient>' +
       // the panel: a slab of ice, lit from above
       '<linearGradient id="panelFace" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".93"/><stop offset=".55" stop-color="#f2fbff" stop-opacity=".88"/><stop offset="1" stop-color="#d9eefb" stop-opacity=".9"/></linearGradient>' +
-      '<linearGradient id="panelSheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".85"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient>';
+      '<linearGradient id="panelSheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".85"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient>' +
+      // the camera's softness on the log (Stage.blurLog): scenery on the intro's close shot
+      '<filter id="logSoft" x="-8%" y="-8%" width="116%" height="116%"><feGaussianBlur stdDeviation="0"/></filter>';
 
     /* THE PAINTING IS ONE LAYER, AND IT IS NOT THIS ONE.
      *
@@ -920,7 +955,10 @@
     // and the card and 190px of empty ice to its right — the card crowded the
     // bird and left the far side to nobody. Seated, the card's foot ends
     // above Next's top (applySeat keeps it there), so it can use that room.
-    right:  { x: 452, y: 108, w: 456, h: 430 },
+    // 440 × 100, 480 × 440 (the user's layout rule: "Swiftee on the left, the card on the
+    // right, large enough for clear interaction"): the right-hand side used, its right edge 920
+    // still short of the HUD's corner, its left edge clear of the column his line takes
+    right:  { x: 440, y: 100, w: 480, h: 440 },
     // WITHOUT HIM, THE LESSON TAKES THE MIDDLE. The right-hand slab exists
     // to leave the bottom-left to Swiftee. On the twenty-eight screens he is
     // not on, it left half the screen to nobody; this is what a 'right'
@@ -1009,7 +1047,9 @@
     // The right-hand slab is for a bird standing bottom-left, so his bubble
     // has the left half to open in. Off, or up in the top-left corner where
     // his bubble opens along the top band, the lesson takes the middle.
-    var standsLeft = global.Swiftee && /^left/.test(Swiftee.pos || '');
+    // (on the log at the left of the ground, too: the card takes the right — the user: "if
+    // Swiftee is on the left, the main learning card is on the right", never centred)
+    var standsLeft = global.Swiftee && /^(left|log$)/.test(Swiftee.pos || '');
     if (p === PANELS.right && !standsLeft) {
       p = (spec && spec.room === 'measure' && global.CardFrame && CardFrame.measure) ? PANELS.measure : PANELS.solo;
     }
@@ -1437,18 +1477,18 @@
 
     // THE GHOST SHOWS THE MOVE, IT DOES NOT DRAW THE ANSWER. A dashed line
     // from the picked vertex to the right one was the answer, printed on
-    // the shape; what the child needs is to see the gesture. So a ghost
-    // knob leaves the picked vertex and slides to the other, drawing a
-    // faint trail behind it as it goes, then both fade and it goes again —
-    // until the child does it, when st.ghost is cleared.
+    // the shape; what the child needs is to see the gesture. So a faint line
+    // grows out of the picked vertex to the other, holds, fades and goes
+    // again — until the child does it, when st.ghost is cleared. (No knob
+    // slides along it any more: a copy of the corner leaving the corner read
+    // as the vertex being stretched — the user.)
     if (st.ghost) {
       var ga = v[st.ghost.from], gb = v[st.ghost.to];
       var gg = mk('g', { 'class': 'ghost-demo', 'pointer-events': 'none' }, g);
       var glen = Math.hypot(gb.x - ga.x, gb.y - ga.y) || 1;
       var trailPair = litLine(gg, { x1: ga.x, y1: ga.y, x2: gb.x, y2: gb.y, 'stroke-width': 4, 'stroke-linecap': 'round' });
       var trail = trailPair[1]; trailPair[0].setAttribute('opacity', .3); trail.setAttribute('opacity', .55);
-      var gk = mk('circle', { cx: ga.x, cy: ga.y, r: 9, fill: HI.knob, stroke: HI.edge, 'stroke-width': 2.5, opacity: .6 }, gg);
-      if (reduced() || !gk.animate) {
+      if (reduced() || !trail.animate) {
         // no motion: the trail alone, dashed, so the hint is still there
         trail.setAttribute('stroke-dasharray', '14 12');
       } else {
@@ -1458,12 +1498,6 @@
           { strokeDashoffset: '0px', opacity: 0.45, offset: 0.62, easing: 'cubic-bezier(.3,.7,.3,1)' },
           { strokeDashoffset: '0px', opacity: 0.45, offset: 0.78 },
           { strokeDashoffset: '0px', opacity: 0, offset: 1 }
-        ], { duration: 3400, iterations: Infinity });
-        gk.animate([
-          { translate: '0 0', opacity: 0.6, offset: 0 },
-          { translate: (gb.x - ga.x) + 'px ' + (gb.y - ga.y) + 'px', opacity: 0.6, offset: 0.62, easing: 'cubic-bezier(.3,.7,.3,1)' },
-          { translate: (gb.x - ga.x) + 'px ' + (gb.y - ga.y) + 'px', opacity: 0.6, offset: 0.78 },
-          { translate: (gb.x - ga.x) + 'px ' + (gb.y - ga.y) + 'px', opacity: 0, offset: 1 }
         ], { duration: 3400, iterations: Infinity });
       }
     }
@@ -2352,7 +2386,9 @@
       var OF = global.CardFrame && CardFrame.option;
       var cardH = 2 * HALF * (OF ? OF.h / OF.w : 1);
       var PITCH_X = standsLeft ? 2 * HALF + GAP : 400;
-      var gx = standsLeft ? 638 : W / 2;
+      // (664, not 638: the block sat with unused ice to its right — the user: "shift the cards
+      // slightly right" — and its top-right card still stops short of the HUD's corner)
+      var gx = standsLeft ? 664 : W / 2;
       var cells;
       if (standsLeft) {
         var y0 = (H - (2 * cardH + GAP)) / 2 + cardH / 2;
@@ -4481,7 +4517,7 @@
      on the shape's own face, and the arrow points out at the side. Returns
      the text baseline, or null. The plate is tw × 2hy, centred `lift` above
      the baseline. */
-  function besideSide(a, b, tw, hy, lift) {
+  function besideSide(a, b, tw, hy, lift, faceFirst) {
     hy = hy || 20; lift = lift == null ? 7 : lift;
     var m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
     var sl = Math.hypot(b.x - a.x, b.y - a.y) || 1, ux = (b.x - a.x) / sl, uy = (b.y - a.y) / sl;
@@ -4500,6 +4536,7 @@
       }
       return null;
     };
+    if (faceFirst) return find(-1, tagInside) || find(1, tagInside) || find(1, tagClear) || find(-1, tagClear);
     return find(1, tagClear) || find(-1, tagInside);
   }
 
@@ -4651,8 +4688,24 @@
     label: function (l) {
       st.labelSpec = specOf(l);
       if (st.labelEl) st.labelEl.remove();
+      /* A NAME ON THE CARD'S TOP EDGE (l.at 'top'): a tab hung on the rim, the compare pair's
+         kind — the shape's name without a tag under the card, so the card keeps its size and
+         its place (the user: "no tag below the card", "do not resize it"). */
+      if (l.at === 'top' && st.panel) {
+        var tg = nameTag(layers.ui, st.panel.x + st.panel.w / 2, st.panel.y + 1, l.text, null, { h: 32, size: 17, pad: 30, rim: 2.5 });
+        tg.setAttribute('class', 'label name-tab');
+        st.labelEl = tg;
+        if (l.cue && holdForWord(tg, l.cue)) return;
+        if (l.enter && !reduced()) enter(tg, 'ui');
+        return;
+      }
+      /* THE LINE A POINTED TAG NAMES: the side just made (st.segment), or — l.at 'diagonal' —
+         the diagonal just drawn: its name beside it on the figure, with an arrow to it, not
+         printed under the card (the user: "label → arrow → the actual diagonal"). */
+      var lastDiag = st.diagonals && st.diagonals.length ? st.diagonals[st.diagonals.length - 1] : null;
+      var seg = l.at === 'diagonal' ? (lastDiag ? [lastDiag[0], lastDiag[1]] : null) : st.segment;
       var x, y, m = null;
-      if (l.at === 'below-polygon' || !st.segment) {
+      if (l.at === 'below-polygon' || !seg) {
         // Below the SHAPE, not at the bottom of the panel. Pinned to the
         // panel it sat at a fixed height whatever the shape did, and a
         // hexagon — which has a vertex at the very bottom, where a pentagon
@@ -4693,9 +4746,11 @@
                              : Math.min(floorY, lowest + 52);
         }
       } else {
-        var a = st.verts[st.segment[0]], b = st.verts[st.segment[1]];
+        var a = st.verts[seg[0]], b = st.verts[seg[1]];
         m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-        var beside = besideSide(a, b, String(l.text).length * 13 + 28, 17, 6);
+        // (a diagonal's name goes on the shape's face beside it first: an arrow from outside
+        // would cross a side on its way in, and seem to point at that)
+        var beside = besideSide(a, b, String(l.text).length * 13 + 28, 17, 6, l.at === 'diagonal');
         if (beside) { x = beside.x; y = beside.y; }
         else {
         // (no clear place beside it on this card: the older search, which
@@ -5262,7 +5317,7 @@
       });
       return;
     }
-    els.forEach(function (e) {
+    els.forEach(function (e, i) {
       if (!e) return;
       if (e.classList && e.classList.contains('vertex')) { e.setAttribute('opacity', 1); e.setAttribute('r', 15); }
       if (reduced() || !e.animate) return;
@@ -5270,8 +5325,10 @@
       // thing on the screen at the very moment the child was being told what
       // to do; the thing named gives one small breath and settles, and the
       // hint ladder takes over if they need more.
+      // ONE AT A TIME (the user: "do not pulse multiple vertices at the same time"): two
+      // things named together — a diagonal's two ends — breathe one after the other.
       e.style.transformBox = 'fill-box'; e.style.transformOrigin = 'center';
-      e.animate([{ scale: '1' }, { scale: '1.14' }, { scale: '1' }], { duration: 700, iterations: 1, easing: 'ease-in-out' });
+      e.animate([{ scale: '1' }, { scale: '1.14' }, { scale: '1' }], { duration: 700, delay: i * 700, iterations: 1, easing: 'ease-in-out' });
     });
   }
 
@@ -5411,7 +5468,9 @@
     if (kind === 'summary') return summaryWord(term, line);
     switch (term) {
       case 'polygon':
-        if (kind === 'grid') return warmPulse(st.cards, { together: true, peak: '1.03' });   // every card, never the right ones
+        // (not the answer cards: every card swelling at once on the word was the pulse the user
+        // asked to have gone — "cards should remain stable until the user interacts")
+        if (kind === 'grid') return 0;
         // "this one" is the card in focus; "both" and no focus, the pair
         if (kind === 'compare') return warmPulse(Object.keys(st.compare || {}).filter(function (k) { return !st.compareFocus || /both/.test(line) || k === st.compareFocus; })
                                                    .map(function (k) { return st.compare[k].pg; }), { together: true });
@@ -5581,13 +5640,15 @@
    * Interactions
    * ------------------------------------------------------------------ */
 
-  function nearestVertex(p, exclude) {
+  function nearestVertex(p, exclude, within) {
     var best = -1, bd = Infinity;
     st.verts.forEach(function (v, i) { if (i === exclude) return; var d = Math.hypot(v.x - p.x, v.y - p.y); if (d < bd) { bd = d; best = i; } });
     // 76, not 60: a seven-year-old's finger covers the corner it is aiming
     // at, and the difference between "nearly there" and "nothing happened"
     // was sixteen pixels on a shape whose corners are a hundred apart.
-    return bd < 76 ? best : -1;
+    // (`within`: a drawn line asks for less — the corner itself — because a line let go near a
+    // corner but not on it must not lock there; drawDiagonals)
+    return bd < (within || 76) ? best : -1;
   }
 
   /**
@@ -5599,12 +5660,12 @@
    * a lesson may never give. The corners that would have taken the line
    * breathe for a moment, and he says where it goes.
    */
-  function missedCorner(targets, said) {
-    var els = (targets || []).map(function (i) { return knobOf(i); }).filter(Boolean);
-    els.forEach(function (e) { e.setAttribute('opacity', 1); });
-    var stop = pulseHint(els);
-    later(1800, stop);
-    juice('refuse', st.polyG);
+  function missedCorner(targets, said, busy) {
+    // the corners it may go to light up for a moment — lit and still, not breathing: one pulse
+    // on the screen at a time (the user), the corner the line starts from; and the card does
+    // not shake — it stays exactly where it is (`busy`: a new drag already under way keeps them)
+    showTargets(targets || [], true);
+    later(1400, function () { if (!(busy && busy())) showTargets([], false); });
     onTap('wrong', said || { t: 'Drop it on a corner!', vo: 'fb15' });
   }
 
@@ -5711,22 +5772,25 @@
     'vertex-pick': function (spec, ctx) {
       return new Promise(function (resolve) {
         if (global.Input) Input.mode('polygon');
-        // THE CORNERS BREATHE while the child is choosing — every one, softly,
-        // a beat apart, because every one is a right answer and each is the
-        // thing to touch (the user: "pulse the points"). They stop on the pick.
-        st.showVerts = true; st.touchVerts = true; st.breathe = true; renderPoly();
-        cleanup.push(function () { if (st.breathe) { st.breathe = false; if (st.polyG) renderPoly(); } });
+        /* THE POINTS COME WITH THE INSTRUCTION, AND ONE BREATHES (the user: "the vertex point
+           should appear only after the instruction", "pulse only the currently interactive
+           point"). This input is armed once "Select any vertex." has been said, and that is
+           when the corners appear — together, softly. Every one is a right answer and every
+           one can be tapped, but only ONE breathes, so the eye has one place to go: the lowest
+           on the right, where the hand taps when it shows the move (the glove lies outside the
+           shape there rather than over it). They stop on the pick. */
+        var v0 = st.verts || [], sug = 0;
+        v0.forEach(function (p, j) { if (p.x + p.y > v0[sug].x + v0[sug].y) sug = j; });
+        st.showVerts = true; st.touchVerts = true; st.breathe = false; st.breatheAt = {}; st.breatheAt[sug] = true; renderPoly();
+        if (!reduced()) (st.knobEls || []).forEach(function (k) {
+          try { k.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, easing: 'ease-out' }); } catch (e) {}
+        });
+        cleanup.push(function () { if (st.breatheAt) { st.breatheAt = null; if (st.polyG) renderPoly(); } });
         setConnect('SELECT_VERTEX');
-        // all of them: any corner is a vertex, and breathing one would have
-        // been an answer rather than an invitation
-        // every corner is right, so the hand may tap one: the lowest on the
-        // right, where the glove lies outside the shape rather than over it.
-        // ON THE FIRST IDLE HINT, not the last: tapping is the move, and a
-        // child who has not tapped yet is shown it.
+        // ON THE FIRST IDLE HINT, not the last: tapping is the move, and a child who has not
+        // tapped yet is shown it — on the corner that is breathing, and that one only
         var pickHand = function (strong) {
-          var v = st.verts || [], best = null;
-          v.forEach(function (p) { if (!best || p.x + p.y > best.x + best.y) best = p; });
-          return both(pulseHint((st.knobEls || []).slice(), strong ? { strong: true } : null), tapHand(best));
+          return both(pulseHint([knobOf(sug)].filter(Boolean), strong ? { strong: true } : null), tapHand(v0[sug]));
         };
         // (and the ghost hand shows the tap after a second and a half of
         // stillness, not two and a half: it is the first thing asked of them)
@@ -5739,7 +5803,7 @@
           on(c, 'pointerdown', function (e) {
             e.preventDefault();
             evt('vertex:selected', { vertex: i });
-            st.picked = i; st.lastEl = knobOf(i) || c; st.vcolor = {}; st.vcolor[i] = HI.picked; st.showVerts = false; st.breathe = false; renderPoly();
+            st.picked = i; st.lastEl = knobOf(i) || c; st.vcolor = {}; st.vcolor[i] = HI.picked; st.showVerts = false; st.breathe = false; st.breatheAt = null; renderPoly();
             setConnect('VERTEX_SELECTED', { from: i });
             endInteraction(); resolve({ result: 'correct', vertex: i });
           });
@@ -6244,14 +6308,10 @@
       return new Promise(function (resolve) {
         if (global.Input) Input.mode('polygon');
         var need = st.cards.filter(function (c) { return c._opt.correct; }).length, got = 0;
-        // EVERY card still in play, not the correct ones. The hint used to
-        // pick the first unfound answer and pulse that, which is the whole
-        // exercise given away to anyone who waited six seconds.
-        var inPlay = function () { return st.cards.filter(function (c) { return !c._done && !c._off; }); };
-        hintLadder({
-          pulse: function () { return pulseHint(inPlay()); },
-          demo: function () { return pulseHint(inPlay(), { strong: true }); }
-        });
+        // NO PULSE ON THE CARDS (the user: "remove the continuous pulse animation from the
+        // answer cards … cards should remain stable until the user interacts with them"). The
+        // idle hint swelled every card in play every few seconds while the child was deciding;
+        // they stand still now, and answer a press — the glow, the pop, a burst or a buzz.
         // every card answers its own press, even while he is still speaking (see the hold, mount)
         st.tapThrough = st.cards.slice();
         cleanup.push(function () { st.tapThrough = null; });
@@ -6266,7 +6326,8 @@
             if (c._opt.correct) {
               c._done = true; got++; c.style.cursor = '';
               if (c._card) c._card._mark('correct');
-              onTap('correct');
+              // (`last`: the one that completes the question — game.js cheers the level, not the card)
+              onTap('correct', null, { last: got >= need });
               if (got >= need) { endInteraction(); resolve({ result: 'correct' }); }
             } else {
               /* EACH WRONG CARD KEEPS ITS OWN COUNT (the user's spec). The
@@ -6277,7 +6338,9 @@
                  wrong one are never touched by it, and nothing is revealed.
                  A new question builds new cards, so nothing carries over. */
               c._misses = (c._misses || 0) + 1;
-              var out = c._misses >= 2;
+              // (spec.outAfter: on Level 1 the explanation comes with the FIRST miss — the user:
+              // "do not make the student fail twice" — so the card goes out after it)
+              var out = c._misses >= (spec.outAfter || 2);
               if (c._card) c._card._mark('wrong');
               if (out) { c._off = true; c.style.cursor = ''; c.style.pointerEvents = 'none'; }
               // the red stays up long enough to be seen (it was half a second)
@@ -6738,21 +6801,41 @@
       hintLadder({
         // connecting, the one that breathes first is their own corner, where
         // the line starts (any of the others is somewhere it may go)
-        pulse: function () { return pulseHint(sides ? [knobOf(from)].filter(Boolean) : targets().map(knobOf)); },
+        // ONLY THE CORNER THE LINE STARTS FROM (the user: "pulse only the currently interactive
+        // point"): it is the one thing to press; the corners a line may go to stay still
+        pulse: function () { return pulseHint([knobOf(from)].filter(Boolean)); },
         demo: function () {
           // connecting for the first time, the ghost shows JOINING TWO CORNERS
           // (to a neighbour: the side is the lesson's first answer); after a
           // side has been made, it shows a line that is not one
+          // (a LINE drawn out of the corner, which stays where it is — gestureGhost `line`)
           var t = (sides && !spec.retry) ? (from + 1) % st.n : valid()[0];
-          return t == null ? null : gestureGhost(st.verts[from], st.verts[t], { r: 11, endDot: false });
+          return t == null ? null : gestureGhost(st.verts[from], st.verts[t], { line: true });
         }
       });
+      /* THE LINE STAYS ON THE CARD (the user: "the dragged line must never extend outside the
+         card"). Wherever the finger goes, the free end stops at the edge of the glass. */
+      var face = st.panel ? panelFace(st.panel) : null;
+      var inCard = function (p) {
+        if (!face) return p;
+        return { x: Math.max(face.x + 10, Math.min(face.x + face.w - 10, p.x)),
+                 y: Math.max(face.y + 10, Math.min(face.y + face.h - 10, p.y)) };
+      };
+      /* ONE FINGER, HEARD WHEREVER IT GOES. The drag is the pointer that took the corner. Its
+         moves and its release are listened for on the window, not only on the stage — a line
+         let go over the HUD, off the stage or outside the window was never released, and was
+         left standing wherever the finger had been — and a mouse that comes back with no
+         button down has let go somewhere we did not hear: that drag is over, and the line goes
+         home. */
+      var pid = null;
+      var win = (svg.ownerDocument && svg.ownerDocument.defaultView) || global;
       // Delegated: the source vertex element is rebuilt after each diagonal.
       on(st.polyG, 'pointerdown', function (e) {
         var t = e.target; if (!t || !t.classList || !t.classList.contains('vertex') || +t.getAttribute('data-i') !== from) return;
         if (global.Input && Input.guarded) return;
         if (sides && st.connect !== 'READY_TO_CONNECT') return;
-        active = true; e.preventDefault();
+        if (active) return;
+        active = true; pid = e.pointerId; e.preventDefault();
         try { svg.setPointerCapture && svg.setPointerCapture(e.pointerId); } catch (x) {}
         // connecting, nothing lights up front; the corner the line finds does
         if (sides) { showTargets([], false); setConnect('DRAWING', { from: from }); }
@@ -6760,10 +6843,12 @@
         svg.style.cursor = 'grabbing';
         evt('diagonal:start', { from: from });
       });
-      on(svg, 'pointermove', function (e) {
-        if (!active) return;
+      var mine = function (e) { return active && (pid == null || e.pointerId == null || e.pointerId === pid); };
+      on(win, 'pointermove', function (e) {
+        if (!mine(e)) return;
+        if (e.pointerType === 'mouse' && e.buttons === 0) { cancel(); return; }
         var was = hot;
-        hot = followFinger(line, from, pt(e), targets(), hot);
+        hot = followFinger(line, from, inCard(pt(e)), targets(), hot);
         if (sides && hot !== was) {
           // only the corner it has snapped to shows, for as long as it is there
           showTargets(hot >= 0 ? [hot] : [], true);
@@ -6771,9 +6856,14 @@
         }
       });
       var release = function (e) {
-        if (!active) return; active = false;
+        if (!active) return; active = false; pid = null;
         svg.style.cursor = '';
-        var j = hot >= 0 ? hot : nearestVertex(pt(e), from);
+        /* IT LOCKS ONLY ON A CORNER (the user: "the line should become fixed only when it
+           reaches a valid target vertex"). The corner it snapped to while moving, or one the
+           finger was let go on (a fingertip's reach of it) — never the nearest corner
+           to a line let go along a side, in the open glass or on the card's frame: that line
+           goes home, and the corners stay ready to try again. */
+        var j = hot >= 0 ? hot : nearestVertex(inCard(pt(e)), from, 44);
         hot = -1;
         showTargets([], false);
         if (j < 0) {
@@ -6788,7 +6878,7 @@
             later(1400, function () { if (!active) showTargets([], false); });
             return;
           }
-          missedCorner(valid());
+          missedCorner(valid(), null, function () { return active; });
           return;
         }
         var ok = !Poly.isAdjacent(from, j, st.n) && !diagonalUsed(from, j);
@@ -6824,7 +6914,7 @@
           shimmer(st.diagonals.length - 1, sides);
           if (sides) setConnect('DIAGONAL_SUCCESS', { from: from, to: j });
           evt('diagonal:complete', { from: from, to: j });
-          if (count > 1) onTap('correct');
+          if (count > 1) onTap('correct', null, { last: made >= count });
           if (made >= count) { line.remove(); endInteraction(); resolve({ result: 'correct' }); }
         } else if (count > 1) {
           retract(line, from, function () { line = previewLine(from); });
@@ -6834,12 +6924,14 @@
           retract(line, from, function () { resolve({ result: 'wrong' }); });
         }
       };
-      on(svg, 'pointerup', release);
-      on(svg, 'pointercancel', function () {
-        if (!active) return; active = false; hot = -1; showTargets([], false);
+      var cancel = function () {
+        if (!active) return; active = false; pid = null; hot = -1; showTargets([], false);
+        svg.style.cursor = '';
         if (sides) setConnect('READY_TO_CONNECT', { from: from });
         retract(line, from, function () { line = previewLine(from); });
-      });
+      };
+      on(win, 'pointerup', function (e) { if (mine(e)) release(e); });
+      on(win, 'pointercancel', function (e) { if (mine(e)) cancel(); });
       if (ctx && ctx.onCancel) ctx.onCancel(function () { if (line) line.remove(); endInteraction(); });
     });
   }
@@ -7373,25 +7465,25 @@
     /** game.js: hold the stage's input while he speaks (see holdOn) */
     hold: function (on) { holdOn = !!on; },
     /** game.js: the log arc on the left of the ground — shown on the screens that sit him on
-        it (screens.js `log`), fading in or out; perchAt: where his feet go on it, as fractions
-        of the board, for his 'log' mark */
+        it (screens.js `log`), fading in or out (`ms` 0: simply there, as the intro opens);
+        perchAt: where his feet go on it, as fractions of the board, for his 'log' mark */
     perch: function (on, ms) {
       if (!perchLog) return;
       var want = on ? '1' : '0';
       if (perchLog.style.opacity === want) return;
-      // (slower as the intro's camera draws back and brings it into view: game.js cameraTo)
-      perchLog.style.transition = reduced() ? '' : 'opacity ' + (ms || 320) + 'ms ease';
+      perchLog.style.transition = (reduced() || ms === 0) ? '' : 'opacity ' + (ms || 320) + 'ms ease';
       perchLog.style.opacity = want;
     },
-    perchAt: function () { return { x: LOG_PERCH.x / W, y: LOG_PERCH.y / H }; },
-    /** the log as drawn (board units) and where on its picture his feet are (fractions), for
-        the copy of it game.js lays over his feet; null while it is not up */
-    perchLog: function () {
-      if (!perchLog || perchLog.style.opacity !== '1') return null;
-      // (fy: half way from the crest, where the snow's front edge crosses him, down to his
-      // feet — the copy is centred there, so both are well inside its solid middle)
-      return { src: LOG.src, x: LOG.x, y: LOG.y, w: LOG.w, h: LOG.h,
-               fx: (LOG_PERCH.x - LOG.x) / LOG.w, fy: 83 / LOG.ih + (LOG_SINK / 2) / LOG.h };
+    perchAt: function () { var p = perchPoint(); return { x: p.x / W, y: p.y / H }; },
+    /** game.js: the log out of focus with the painting behind it (the user: "the log must also
+        be blurred" on the intro's close shot) — `sd` in board units, set every frame of the
+        camera's move so it comes into focus with the rest of the scene, never all at once */
+    blurLog: function (sd) {
+      if (!perchLog || !svg) return;
+      var f = svg.querySelector('#logSoft feGaussianBlur');
+      if (!f) return;
+      if (sd > 0.05) { f.setAttribute('stdDeviation', sd.toFixed(2)); perchLog.setAttribute('filter', 'url(#logSoft)'); }
+      else perchLog.removeAttribute('filter');
     },
     /** game.js: while a card is being taught, IT is the content the bubble
         keeps clear of — everything else is dimmed scenery under the sheet */

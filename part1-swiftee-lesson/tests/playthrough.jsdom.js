@@ -32,7 +32,9 @@ SCRIPTS.forEach(f=>{try{w.eval(fs.readFileSync(path.join(ROOT,f),'utf8'));}catch
 
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const until=async(pred,ms)=>{const t0=Date.now();while(!pred()){if(Date.now()-t0>(ms||8000))return false;await sleep(20);}return true;};
-const ev=(el,type,x,y)=>el.dispatchEvent(new w.MouseEvent(type,{bubbles:true,clientX:x,clientY:y,pointerId:1}));
+// (x, y are in the stage's seated layers — where the corners and cards are drawn — so the
+// event goes where they are on the screen: the seat's lift added back, as the real page's CTM does)
+const ev=(el,type,x,y)=>el.dispatchEvent(new w.MouseEvent(type,{bubbles:true,clientX:x,clientY:y+((w.Stage&&w.Stage.seatY)||0),pointerId:1}));
 const stage=d.getElementById('stage'); const svg=()=>stage.querySelector('svg');
 const St=()=>w.Stage.state;
 const tapEl=el=>ev(el,'pointerdown',500,300);

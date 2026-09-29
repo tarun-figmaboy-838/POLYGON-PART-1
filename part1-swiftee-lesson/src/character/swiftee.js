@@ -728,7 +728,7 @@
   }
   function flyAround(o, g) {
     place(pos, size);
-    stateName = 'enter';
+    stateName = o.state || 'enter';
     var stops = (o.tour || []).filter(function (p) { return p && isFinite(p.x) && isFinite(p.y); });
     if (reduced || !el.animate || !stops.length) { el.style.opacity = '1'; return rest(); }
     cancelAll();
@@ -757,7 +757,8 @@
     // (o.from is the word 'air'; the start is off the upper left unless a point is given)
     var start = (o.start && isFinite(o.start.x)) ? o.start : { x: -Math.max(160, b.width), y: Math.max(40, b.height * 0.5), scale: 0.6, tilt: 10 };
     var land = { x: home.x, y: home.y, scale: 1, tilt: 0 };
-    var approach = { x: home.x - 10, y: home.y - 34, scale: 0.97, tilt: 0 };
+    // (down onto his mark from the side he is flying in from)
+    var approach = { x: home.x + (start.x > home.x ? 10 : -10), y: home.y - 34, scale: 0.97, tilt: 0 };
     var P = [start].concat(stops).concat([approach, land]);
     var cr = function (p0, p1, p2, p3, u) {
       var u2 = u * u, u3 = u2 * u;
@@ -789,7 +790,9 @@
         v -= dip * Math.exp(-d * d);
       }
       v = Math.max(0.12, v);
-      v *= 0.55 + 0.45 * smooth(sAt / 120);                        // already flying as he comes on
+      // already flying as he comes on — or, taking off from where he stood (o.fromRest), from
+      // a standstill: the first stretch gathers speed rather than starting at it
+      v *= o.fromRest ? Math.max(0.15, smooth(sAt / 110)) : 0.55 + 0.45 * smooth(sAt / 120);
       v *= Math.max(0.05, smooth((pathLen - sAt) / 150));             // and down to nothing at his mark
       return v;
     };
@@ -842,7 +845,8 @@
       var tilt = (bank * 0.8 + look * 0.6) * (1 - landing);
       keys.push(frame({ x: x, y: y + bob, scale: sc, tilt: +tilt.toFixed(2) }, { offset: +(fN / FRAMES).toFixed(4) }));
     }
-    keys[0].opacity = 0; keys[1].opacity = 1;
+    // (in from off the stage he fades in; taking off from where he stood, he is there already)
+    if (!o.fromRest) { keys[0].opacity = 0; keys[1].opacity = 1; }
     // a flight that cannot be computed is not played as a bird standing still
     if (!isFinite(dur) || keys.some(function (k) { return /NaN/.test(k.transform); })) throw new Error('flight');
     keys[keys.length - 1] = frame(land, { offset: 1 });
@@ -851,6 +855,16 @@
     if (shadowEl) shadowEl.style.opacity = '0';
     clip('flapping', Infinity);
     startFlightArt(o.look || { x: stops[0].x, y: stops[0].y });
+    /* TAKING OFF, THE DRAWING CHANGES WITH THE MOVE: from the standing bird to the flying one
+       over a sixth of a second, as he lifts — not a cut between two pictures of him. */
+    if (o.fromRest && cellEl && flightEl && flightArt) {
+      cellEl.style.visibility = 'visible'; cellEl.style.opacity = '1'; flightEl.style.opacity = '0';
+      cellEl.style.transition = 'opacity 170ms ease'; flightEl.style.transition = 'opacity 170ms ease';
+      (global.requestAnimationFrame || setTimeout)(function () {
+        if (!flightArt || stale(g)) return;
+        cellEl.style.opacity = '0'; flightEl.style.opacity = '1';
+      }, 16);
+    }
     setTimeout(function () {
       if (stale(g) || !flightArt || !cellEl || !flightEl) return;
       cellEl.style.visibility = 'visible';
@@ -872,7 +886,10 @@
     var total = dur;
     var a = anim(keys, { duration: total, easing: 'linear', composite: 'replace' });
     // (the shadow has already come back under his feet, above)
-    var touchDown = function () { airborne = false; if (shadowEl) shadowEl.style.opacity = ''; stopFlightArt(); };
+    var touchDown = function () {
+      airborne = false; if (shadowEl) shadowEl.style.opacity = ''; stopFlightArt();
+      if (typeof o.onLand === 'function') { try { o.onLand(); } catch (e) {} }
+    };
     return a.finished.then(function () {
       touchDown();
       if (stale(g)) return null;
@@ -1362,8 +1379,33 @@
      * the truth and the bubble can be placed against it the moment this
      * resolves.
      */
-    /** Onto the log arc (the 'log' mark): the move, as a flight — o.arc, o.ms, o.size. */
-    perch: function (o) { return MOVES.move(Object.assign({}, o || {}, { to: 'log' })); },
+    /** ONTO THE LOG ARC (the 'log' mark), FLYING (the user: "a proper flying transition").
+        The same flight his arrival by air is (flyAround): the flying drawing, wings going and a
+        wingbeat's lift the whole way, banking into the turn, up and over on one smooth curve
+        from where he stands — gathering speed off the ground — easing down onto the log from
+        the side he comes from, the landing squash, and settled. o.size, o.ms, o.bow (how far
+        the curve rises over the higher of its two ends, px). A move with nowhere to fly from,
+        or with reduced motion, is the plain move. */
+    perch: function (o) {
+      o = o || {};
+      var b0 = el && api.bounds();
+      if (!layout || !b0 || reduced || !el.animate) return MOVES.move(Object.assign({}, o, { to: 'log' }));
+      var from = { x: (b0.left + b0.right) / 2, y: (b0.top + b0.bottom) / 2 };
+      var g = fresh();
+      pos = 'log'; size = o.size || size;
+      place(pos, size);
+      var b1 = api.bounds();
+      var to = { x: (b1.left + b1.right) / 2, y: (b1.top + b1.bottom) / 2 };
+      var bow = Math.max(40, +o.bow || 110);
+      var dir = to.x < from.x ? -1 : 1;
+      try {
+        return flyAround({ start: { x: from.x, y: from.y, scale: 1, tilt: 0 },
+                           tour: [{ x: from.x + (to.x - from.x) * 0.5, y: Math.min(from.y, to.y) - bow, hold: 0 }],
+                           ms: o.ms || 1300, fromRest: true, state: 'perch', onLand: o.onLand,
+                           // he faces the way he is going, the whole way
+                           look: { x: to.x + dir * 480, y: to.y } }, g);
+      } catch (e) { place(pos, size); return rest(); }
+    },
 
     move: function (o) {
       if (!layout) return Promise.resolve();
