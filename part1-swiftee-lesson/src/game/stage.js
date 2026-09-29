@@ -1695,7 +1695,24 @@
 
   // Actual measuring frames, kept upright and entirely outside the edge.
   // Both the tape and the character use SVG coordinates, including on resize.
-  function measureSide(index, done) {
+  /* THE ORDER THE WALK GOES ROUND THE SHAPE — each side with the corner it starts at and the
+     corner it ends at, so one side's end is the next side's start and the walker never has to
+     go back (the user, screen 24: "one continuous demonstration — do not reset him after every
+     side"). Clockwise rings walk the sides in order; the other way round, in reverse. */
+  function walkOrder() {
+    var V = st.verts || [], n = V.length, shoe = 0, out = [];
+    for (var i = 0; i < n; i++) { var P1 = V[i], P2 = V[(i + 1) % n]; shoe += P1.x * P2.y - P2.x * P1.y; }
+    if (shoe >= 0) for (var k = 0; k < n; k++) out.push({ side: k, start: k, end: (k + 1) % n });
+    else for (var q = n - 1; q >= 0; q--) out.push({ side: q, start: (q + 1) % n, end: q });
+    return out;
+  }
+  /* opts (the continuous walk): `first` — he flies out to this side's start (else he is already
+     there, from the side before); `last` — he flies home from its end (else he stays out, and
+     the next side's walker takes over where this one stops); `angle` — the walk without the
+     tape, to reach a corner; `homeOpacity` — what he was before the walk began. */
+  function measureSide(index, done, opts) {
+    opts = opts || {};
+    var first = opts.first !== false, last = opts.last !== false;
     var frames = global.MeasuringFrames;
     if (reduced() || !frames || !global.requestAnimationFrame) { done(); return; }
     var a = st.verts[index], b = st.verts[(index + 1) % st.verts.length];
@@ -1744,7 +1761,8 @@
       viewBox: '0 0 ' + frames.cell + ' ' + frames.cell, overflow: 'hidden' }, walker);
     var sheet = mk('image', { href: frames.image, width: frames.cols * frames.cell, height: frames.rows * frames.cell }, crop);
     var companion = global.Swiftee && Swiftee.el;
-    var opacity = companion && companion.style.opacity;
+    var opacity = opts.homeOpacity != null ? opts.homeOpacity : (companion && companion.style.opacity);
+    if (opts.angle) tapeG.style.display = 'none';           // to a corner: no tape is laid
     var raf = null, started = null, stopped = false;
     var duration = Math.max(1600, Math.min(2600, length * 10));   // a walk the child can watch
 
@@ -1779,7 +1797,8 @@
     };
     cleanup.push(release);   // a screen change mid-walk lets go of him too
     var finished = done;
-    done = function () { release(); finished(); };
+    // (a walk that goes on to the next side keeps its hold on him; the last lets go)
+    done = function () { if (last) release(); finished(); };
     var here = null, hb = flies && Swiftee.bounds();
     if (hb && hb.width) here = { x: (hb.left + hb.right) / 2, y: hb.bottom }; else flies = false;
     var startAt = page(a.x + nx * ON_LINE, a.y + ny * ON_LINE);
@@ -1797,19 +1816,23 @@
       });
     }
 
-    function stop() {
+    function stop(restore) {
       if (stopped) return;
       stopped = true;
       if (raf !== null) global.cancelAnimationFrame(raf);
       g.remove();
-      if (companion) companion.style.opacity = opacity;
-      var at = cleanup.indexOf(stop); if (at >= 0) cleanup.splice(at, 1);
+      // (between two sides of one walk he stays out of sight on his mark: the next walker is him)
+      if (companion && restore !== false) companion.style.opacity = opacity;
+      var at = cleanup.indexOf(stopper); if (at >= 0) cleanup.splice(at, 1);
     }
-    cleanup.push(stop);
-    // The walk ends: the tape is laid. He comes home before the next side.
+    var stopper = function () { stop(true); };
+    cleanup.push(stopper);
+    // The walk ends: the tape is laid. On the last side he comes home; otherwise the next side
+    // begins where this one stopped.
     function finish() {
       if (stopped) return;
-      stop();
+      if (!last) { stop(false); done(); return; }
+      stop(true);
       if (flies && endAt) {
         fly({ x: endAt.x - here.x, y: endAt.y - here.y }, { x: 0, y: 0 }, true).then(done);
       } else done();
@@ -1843,7 +1866,7 @@
       if (companion) companion.style.opacity = '0';
       raf = global.requestAnimationFrame(tick);
     };
-    if (flies && startAt) fly({ x: 0, y: 0 }, { x: startAt.x - here.x, y: startAt.y - here.y }, false).then(begin);
+    if (first && flies && startAt) fly({ x: 0, y: 0 }, { x: startAt.x - here.x, y: startAt.y - here.y }, false).then(begin);
     else begin();
   }
 
@@ -6593,10 +6616,18 @@
           pulse: function () { var t = todo(); return both(pulseHint(t), tapHand(centreOf(t[0]))); },
           demo: function () { var t = todo(); return both(pulseHint(t, { strong: true }), tapHand(centreOf(t[0]))); }
         });
+        /* HE MEASURES THEM HIMSELF, IN ONE WALK (spec.auto — the user, screens 24 and 26): out to
+           the first corner, round the shape side after side — the tape laid along each, or, for
+           the angles, an arc filled at each corner he reaches — and home from the last. The
+           queue is the sides in the order the walk goes round (walkOrder), so no side sends him
+           back to where he started. */
+        var order = auto ? walkOrder() : null, walkOf = {};
+        if (order) order.forEach(function (w) { walkOf[w.side] = w; });
+        var homeOpacity = auto && global.Swiftee && Swiftee.el ? Swiftee.el.style.opacity : null;
         if (auto) {
           if (global.Input) Input.mode('locked');
           later(Math.round((spec.lead == null ? 650 : spec.lead)), function () {
-            for (var k = 0; k < need && k < st.n; k++) { if (!seen[k]) { seen[k] = true; queue.push(k); } }
+            order.forEach(function (w) { if (queue.length < need && !seen[w.side]) { seen[w.side] = true; queue.push(w.side); } });
             next();
           });
         }
@@ -6616,21 +6647,23 @@
         function next() {
           if (cancelled || measuring || !queue.length) return;
           var i = queue.shift(); measuring = true;
+          // (walking, the angle he reveals is the one at the corner this side ENDS at)
+          var w = auto ? walkOf[i] : null, at = (auto && !isSides && w) ? w.end : i;
           if (auto) {
             // what a tap did, done as each side is begun
-            evt('measurement:start', { what: isSides ? 'side' : 'angle', index: i });
+            evt('measurement:start', { what: isSides ? 'side' : 'angle', index: at });
             if (isSides && st.sideTodo) { st.sideTodo = st.sideTodo.filter(function (k) { return k !== i; }); renderPoly(); }
           }
           function reveal() {
             if (cancelled) return;
             count++;
-            st.measure[isSides ? 'sides' : 'angles'].push(i); renderPoly();
+            st.measure[isSides ? 'sides' : 'angles'].push(at); renderPoly();
             // the new reading pops in; the ones already there stay put
-            var fresh = st.measG && st.measG.querySelector(isSides ? '.meas[data-side="' + i + '"]' : '[data-angle="' + i + '"]');
+            var fresh = st.measG && st.measG.querySelector(isSides ? '.meas[data-side="' + i + '"]' : '[data-angle="' + at + '"]');
             if (fresh) enter(fresh, 'pop');
-            st.lastEl = isSides ? st.edgeEls[i] : (knobOf(i) || st.vertEls[i]);
+            st.lastEl = isSides ? st.edgeEls[i] : (knobOf(at) || st.vertEls[at]);
             hint();
-            evt('measurement:complete', { what: isSides ? 'side' : 'angle', index: i });
+            evt('measurement:complete', { what: isSides ? 'side' : 'angle', index: at });
             onTap('correct'); measuring = false;
             if (count >= need) {
               st.sideTodo = null; st.angleTodo = false; renderPoly();
@@ -6654,7 +6687,8 @@
             }
             else next();
           }
-          if (isSides) measureSide(i, reveal);
+          if (auto && w) measureSide(i, reveal, { first: w === order[0], last: queue.length === 0 || count + 1 >= need, angle: !isSides, homeOpacity: homeOpacity });
+          else if (isSides) measureSide(i, reveal);
           else reveal();
         }
         if (ctx && ctx.onCancel) ctx.onCancel(endInteraction);

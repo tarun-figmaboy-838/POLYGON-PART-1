@@ -1024,7 +1024,7 @@
       // its length arriving as he reaches its end; the equal-side ticks are dealt once all
       // five are in, and the screen after says what they show.
       instruction: null,
-      say: 'Let\u2019s measure.',
+      say: 'Let\u2019s measure the sides.',
       // The same pentagon as the screen before, built again under the
       // wipe: he waits inside this card, so it sits in the middle, where
       // the one he stood beside sat to the right.
@@ -1033,7 +1033,7 @@
         { stage: { kind: 'polygon' } },
         { instruction: null },
         { swiftee: 'inspect' },
-        { say: 'Let\u2019s measure.', vo: 'p29m' },
+        { say: 'Let\u2019s measure the sides.', vo: 'p29s' },
         // Each side in turn, lengths from Poly.sideLengths on the live geometry; no taps are
         // taken (auto), and the measuring is his, so there is no cheer at the end (praise).
         { input: { type: 'tap-each', targets: 'sides', reveal: 'length', count: 5, auto: true, praise: false } },
@@ -1066,20 +1066,18 @@
     {
       id: 'measure-angles', page: 31,
       swiftee: { pos: 'corner', size: 'tiny', purpose: 'celebrate' },
+      instruction: null,
       say: 'The angles match too!',
+      lines: ['Let\u2019s measure the angles.'],
       beats: [
-        // THE INSTRUCTION BELONGS TO THE SCREEN THAT TAKES IT. It was on the
-        // screen before, which only offers a Next button: the child was told
-        // to tap the angles on a screen where tapping an angle does nothing.
-        { instruction: 'Tap the angles to measure them.', vo: 'p31i' },
-        { focus: 'polygon.vertices', style: 'pulse' },
-        // NOT the side-measuring walk (that is the sides' own, and protected):
-        // for the angles he takes out the magnifying glass and examines them
-        // with the child, and holds it while they tap
+        // HE MEASURES THE ANGLES HIMSELF (the user, screen 26): "Let's measure the angles.", and
+        // the same walk as the sides' — round the shape corner to corner, each angle's arc
+        // filled as he reaches it, no taps, and home from the last (stage.js tap-each, auto)
+        { instruction: null },
+        // (out comes the magnifying glass — the rig's 'learning' — before he sets off)
         { swiftee: 'examine' },
-        // Each tap fills a green arc at that corner (as page 31 shows) and
-        // reveals the angle from Poly.interiorAngles. Completes on five.
-        { input: { type: 'tap-each', targets: 'angles', reveal: 'arc', count: 5 } },
+        { say: 'Let\u2019s measure the angles.', vo: 'p31m' },
+        { input: { type: 'tap-each', targets: 'angles', reveal: 'arc', count: 5, auto: true, praise: false } },
         // the measuring is done and it all matches: heart eyes
         { swiftee: 'delight' },
         { say: 'The angles match too!', vo: 'p31' },

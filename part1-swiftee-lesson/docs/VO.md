@@ -62,16 +62,16 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 | 27 | 19 | convex | `assets/vo/p24.mp3` | say | All diagonals inside means convex polygon. |  | screen 19 | explaining, warm and clear | yes |
 | 28 | 20 | concave | `assets/vo/p25.mp3` | say | Atleast one diagonal outside means concave polygon. | Atleast one diagonal outside / means concave polygon. | screen 20 | explaining, warm and clear | yes |
 | 29 | 21 | make-concave | `assets/vo/p26i.mp3` | instruction | Drag any vertex to make this polygon concave. |  | screen 21, the instruction | an instruction: plain, steady, every word clear | yes |
-| 30 | 21 | make-concave | `assets/vo/fb03.mp3` | say | Great job! |  | screen 21, after the right answer | a cheer, delighted | yes |
-| 31 | 21 | make-concave | `assets/vo/p26r1.mp3` | say | The diagonals are still inside the shape, so it is still convex. |  | screen 21, after a wrong answer | explaining, warm and clear | yes |
-| 32 | 21 | make-concave | `assets/vo/p26r2.mp3` | say | Now one diagonal goes outside, so the polygon is concave. |  | screen 21, after a wrong answer | explaining, warm and clear | yes |
+| 30 | 21 | make-concave | `assets/vo/p26r1.mp3` | say | The diagonals are still inside the shape, so it is still convex. |  | screen 21, after a wrong answer | explaining, warm and clear | yes |
+| 31 | 21 | make-concave | `assets/vo/p26r2.mp3` | say | Now one diagonal goes outside, so the polygon is concave. |  | screen 21, after a wrong answer | explaining, warm and clear | yes |
+| 32 | 21 | make-concave | `assets/vo/fb03.mp3` | say | Great job! |  | screen 21, after the right answer | a cheer, delighted | yes |
 | 33 | 22 | sort-convex-concave | `assets/vo/p27.mp3` | say | Can you sort these polygons as convex or concave? |  | screen 22 | playful, inviting | yes |
 | 34 |  |  | `assets/vo/p27c.mp3` | say | Look! This corner goes inward. |  | screen undefined | explaining, warm and clear | yes |
 | 35 |  |  | `assets/vo/p27v.mp3` | say | Look! No corner goes inward. |  | screen undefined | explaining, warm and clear | yes |
 | 36 | 23 | suspicious | `assets/vo/p28.mp3` | say | Hmm… The sides look suspiciously alike. | Hmm… / The sides look suspiciously alike. | screen 23 | wondering aloud, a little slower | yes |
-| 37 | 24 | measure-sides | `assets/vo/p29m.mp3` | say | Let’s measure. |  | screen 24 | playful, inviting | yes |
+| 37 | 24 | measure-sides | `assets/vo/p29s.mp3` | say | Let’s measure the sides. |  | screen 24 | playful, inviting | yes |
 | 38 | 25 | sides-equal | `assets/vo/p30.mp3` | say | Every side is equal. But what about the angles? | Every side is equal. / But what about the angles? | screen 25 | asking: curious, open | yes |
-| 39 | 26 | measure-angles | `assets/vo/p31i.mp3` | instruction | Tap the angles to measure them. |  | screen 26, the instruction | an instruction: plain, steady, every word clear | yes |
+| 39 | 26 | measure-angles | `assets/vo/p31m.mp3` | say | Let’s measure the angles. |  | screen 26 | playful, inviting | yes |
 | 40 | 26 | measure-angles | `assets/vo/p31.mp3` | say | The angles match too! |  | screen 26 | explaining, warm and clear | yes |
 | 41 | 27 | distort | `assets/vo/p32a.mp3` | say | Help me stretch this corner. Let’s see what happens to the sides and angles. | Help me stretch this corner. / Let’s see what happens / to the sides and angles. | screen 27 | playful, inviting | yes |
 | 42 | 27 | distort | `assets/vo/p32ai.mp3` | instruction | Drag the highlighted vertex. |  | screen 27, the instruction | an instruction: plain, steady, every word clear | yes |

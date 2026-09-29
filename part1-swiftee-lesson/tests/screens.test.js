@@ -573,7 +573,7 @@ const levelOf = (st) => { const d = RIG[st]; return d ? (d.level || 1) : 0; };
     { stage: { kind: 'polygon' } },
     { instruction: null },
     { swiftee: 'inspect' },
-    { say: 'Let\u2019s measure.', vo: 'p29m' },
+    { say: 'Let\u2019s measure the sides.', vo: 'p29s' },
     { input: { type: 'tap-each', targets: 'sides', reveal: 'length', count: 5, auto: true, praise: false } },
     { feedback: [{ sfx: 'correct' }, { swiftee: 'proud' }] }
   ]), m && m.beats);
