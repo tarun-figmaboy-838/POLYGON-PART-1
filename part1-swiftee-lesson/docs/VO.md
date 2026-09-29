@@ -89,7 +89,7 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 | 55 | 31 | summary | `assets/vo/p37h.mp3` | say | If the sides or angles are not all equal, the polygon is irregular. |  | screen 31 | explaining, warm and clear | yes |
 | 56 | 31 | summary | `assets/vo/p37i.mp3` | say | Amazing! You explored all these polygon ideas! |  | screen 31 | explaining, warm and clear | yes |
 
-## Answers (19), said when the child answers
+## Answers (18), said when the child answers
 
 | File | Line | When | Delivery | Recorded |
 |------|------|------|----------|----------|
@@ -100,7 +100,6 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 | `assets/vo/fb45.mp3` | Not quite. This shape is open. A polygon must be closed. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/fb39.mp3` | Try again! Follow each diagonal from corner to corner. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/fb41.mp3` | Try again! Compare the sides and angles now. | a try that falls short, with the reason | explaining, warm and clear | yes |
-| `assets/vo/p38a.mp3` | Honk-tastic! | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/p38b.mp3` | You are a polygon adventurer! | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/p39.mp3` | You’re ready! Now let’s help Momo. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/fb15.mp3` | Drop it on a corner! | a try that falls short, with the reason | gentle and encouraging, never disappointed | yes |

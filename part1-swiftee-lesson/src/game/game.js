@@ -770,7 +770,8 @@
      adventurer!" are the recorded take's last two lines. Between them the
      child's own score is shown, not said — the take has no numbers in it,
      and a score is whatever this run earned. */
-  var FINALE = [{ t: 'Honk-tastic!', vo: 'p38a' }, { t: 'You are a polygon adventurer!', vo: 'p38b' }];
+  // ("Honk-tastic!" is gone from the front of it — the user: "it looks extra, nonsense")
+  var FINALE = [{ t: 'You are a polygon adventurer!', vo: 'p38b' }];
   // the hand-over screen's one line (readyScene). Not in the recorded take, so it is
   // voiced by tools/make-vo.js in the voice matched to it, as the cheers are.
   var READY = { t: 'You’re ready! Now let’s help Momo.', vo: 'p39' };
@@ -4042,8 +4043,7 @@
     // so calls it off.
     var gen = playGen;
     finaleOn = true;
-    pop([{ t: FINALE[0].t, vo: FINALE[0].vo, mood: 'win' },
-         { t: FINALE[1].t, vo: FINALE[1].vo, mood: 'win' }], { keep: true }).then(function () {
+    pop(FINALE.map(function (f) { return { t: f.t, vo: f.vo, mood: 'win' }; }), { keep: true }).then(function () {
       if (gen !== playGen) return;
       if (!finaleOn || readyOn) return;
       setTimeout(function () {
