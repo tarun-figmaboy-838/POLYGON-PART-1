@@ -634,17 +634,18 @@
             { branch: true,
               on: { correct: correct() },
               /* THE SECOND MISS IS TAUGHT, AND THE ANSWER BECOMES THE WAY ON (the user's 2-wrong
-                 brief): the answers are locked (the input is over — game.js), a short beat, the
-                 diagonals light one after another and stay lit, still dashed, still inside the
-                 shape; "The diagonals are inside."; a moment to look; the two buttons slide
+                 brief): the answers are locked (the input is over — game.js), a short beat;
+                 "The diagonals are inside." — the diagonals light gold on "diagonals" and stay
+                 lit, still dashed, still inside the shape; a moment to look; the two buttons slide
                  together into ONE centred green "Inside" (stage `merge`), and a tap on it goes
                  on — a continue, not a third attempt (`continue`). No "Try again!" here. */
               otherwise: [
                 { sfx: 'wrong' },
                 { wait: 500 },
                 { swiftee: 'explain', at: 'polygon' },
-                { stage: { lit: 'diagonals' } },
-                { wait: 1000 },
+                // (ON THE WORD — the user: "not sync with vo?": the diagonals light gold as he says
+                // "diagonals", a quick sweep; the inside of the shape glows on "inside" — dual coding)
+                { stage: { onWord: [{ word: 'diagonals', lit: 'diagonals', each: 90 }] } },
                 { say: 'The diagonals are inside.', vo: 'fb54' },
                 { wait: 800 },
                 { stage: { merge: 'Inside' } },

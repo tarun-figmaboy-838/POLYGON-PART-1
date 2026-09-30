@@ -532,14 +532,17 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const ok = lines.some((t) => /^Try again/.test(t)) && !lines.some((t) => /The diagonals are inside/.test(t)) && JSON.stringify(seen) === '["Inside","Outside"]' && (await ev((i) => window.Game.screen === i, i));
     return { ok, extra: { lines, seen } };
   });
-  await step(20, 'inside-or-outside second wrong: locked, diagonals lit, "The diagonals are inside.", then ONE centred Inside after the voice; a tap goes on', async () => {
+  await step(20, 'inside-or-outside second wrong: locked, the diagonals lit ON "diagonals", "The diagonals are inside.", then ONE centred Inside after the voice; a tap goes on', async () => {
     const i = await ev(() => window.Game.screen);
     const before = (await said()).length, c0 = await cues();
-    await ev(() => { window.__io = { lockedAt: null, litAt: null, voAt: null, voEnd: null, oneAt: null, liveAt: null, both: false }; const T0 = performance.now();
+    await ev(() => { window.__io = { lockedAt: null, litAt: null, voAt: null, voEnd: null, oneAt: null, liveAt: null, both: false, wordAt: null }; const T0 = performance.now();
       const tick = () => { const n = performance.now() - T0, o = window.__io;
         if (o.lockedAt == null && window.Input.mode() === 'locked') o.lockedAt = n;
-        if (o.litAt == null && document.querySelector('#stage .polygon g[style*="brightness"]')) o.litAt = n;
+        if (o.litAt == null && document.querySelector('#stage .polygon g[data-lit]')) o.litAt = n;
         if (o.voAt == null && window.VO.id === 'fb54') o.voAt = n;
+        // (the word itself, in THIS line's bubble: "The diagonals are inside.")
+        if (o.voAt != null && o.wordAt == null && /The diagonals are inside/.test(document.getElementById('bubble').textContent) &&
+            [...document.querySelectorAll('#bubble .in')].some((w) => /^diagonals/i.test(w.textContent))) o.wordAt = n;
         if (o.voAt != null && o.voEnd == null && window.VO.id !== 'fb54') o.voEnd = n;
         const vis = [...document.querySelectorAll('#stage .choice')].filter((c) => +getComputedStyle(c).opacity > 0.05).map((c) => c.getAttribute('data-label'));
         if (o.voAt != null && o.oneAt == null && vis.length === 1 && vis[0] === 'Inside' && document.querySelectorAll('#stage .choice').length === 1) o.oneAt = n;
@@ -556,7 +559,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await waitFn((i) => window.Game.screen > i, i, 20000).catch(() => {});
     const lines = (await said()).slice(before), c1 = await cues();
     const advanced = await ev((i) => window.Game.screen > i, i);
-    const ok = io.lockedAt != null && io.litAt != null && io.voAt != null && io.litAt <= io.voAt && io.voEnd != null && io.oneAt != null && io.oneAt >= io.voEnd && io.liveAt >= io.voEnd &&
+    // (the diagonals light ON the word "diagonals" — within 300 ms of it, not before the line)
+    const ok = io.lockedAt != null && io.litAt != null && io.voAt != null && io.wordAt != null && io.litAt >= io.voAt && Math.abs(io.litAt - io.wordAt) <= 300 && io.voEnd != null && io.oneAt != null && io.oneAt >= io.voEnd && io.liveAt >= io.voEnd &&
       mid != null && Math.abs(mid) <= 3 && !io.both && lines.some((t) => /The diagonals are inside/.test(t)) && !lines.some((t) => /^Try again/.test(t)) &&
       advanced && c1.correct === c0.correct;
     return { ok, extra: { io, mid, lines, advanced, correctCues: c1.correct - c0.correct } };

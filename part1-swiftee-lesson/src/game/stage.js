@@ -5385,7 +5385,7 @@
           // side ticks or angle arcs, drawn as the word is said (compareEvidence)
           if (w.evidence && st.compare) compareEvidence(w.evidence.card, w.evidence.what);
           // a lighting on its word (the inside screen: the diagonals light as he says "inside")
-          if (w.lit) apply({ lit: w.lit });
+          if (w.lit) apply({ lit: w.lit, litEach: w.each });
           // A CORNER THAT COMES UP ON ITS WORD (drag-inward — the user: "when VO says pull this
           // vertex the vertex point not appear and sync?"): the point was hidden until the drag
           // armed, two seconds after "vertex"; now it pops in as the word is said
@@ -5732,17 +5732,24 @@
        about are the brightest thing on the card — not a flash that has gone by the time he
        says why. A scene rebuilt after it draws them plain again. */
     if (spec.lit === 'diagonals' && st.diagG) {
+      /* LIT ON ITS WORD, AND PLAINLY (the user, the inside / outside explanation: "not sync with
+         vo?"): brightening white dashes by a quarter showed nothing, and it ran before the line.
+         Now each diagonal turns a thin GOLD dash — the lesson's colour for "look here" — one
+         quickly after another (`litEach`, ms apart), and stays gold while he explains. Still
+         dashed, the same fine width: a diagonal, lit, never a side. */
+      var each = spec.litEach != null ? spec.litEach : 260;
       [].slice.call(st.diagG.childNodes).filter(function (g) { return g.style && g.style.display !== 'none'; }).forEach(function (g, k) {
-        later(reduced() ? 0 : k * 260, function () {
-          // STILL DASHED, JUST BRIGHTER (the convex / concave clarity brief: "solid line = side,
-          // dashed line = diagonal", everywhere): the glow is the highlight; turning the dashes
-          // solid made the lit diagonals look like more sides of the shape
-          g.style.transition = reduced() ? '' : 'filter 320ms ease';
-          g.style.filter = 'brightness(1.25) drop-shadow(0 0 6px rgba(75, 224, 255, .95))';
-          if (g.animate && !reduced()) { try { g.animate([{ opacity: 0.5 }, { opacity: 1 }], { duration: 300, easing: 'ease-out' }); } catch (e) {} }
+        later(reduced() ? 0 : k * each, function () {
+          [].slice.call(g.querySelectorAll('line')).forEach(function (ln) {
+            ln.setAttribute('stroke', '#ffd54a');
+            ln.style.filter = 'drop-shadow(0 0 2.5px rgba(255, 176, 32, 0.95))';
+          });
+          g.setAttribute('data-lit', '1');
+          if (g.animate && !reduced()) { try { g.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration: 240, easing: 'ease-out' }); } catch (e) {} }
         });
       });
     }
+
     // the compare sequence: words that answer, diagonals that grow (a beat
     // that lasts until they have), and the small marks
     if (spec.onWord) op.onWord(spec.onWord);

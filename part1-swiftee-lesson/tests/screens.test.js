@@ -691,7 +691,8 @@ const levelOf = (st) => { const d = RIG[st]; return d ? (d.level || 1) : 0; };
     const last = JSON.stringify(s.beats);
     const arm = (function find(list) { for (const b of list || []) { if (b && b.branch && b.otherwise && b.otherwise.some((x) => x && x.stage && x.stage.merge)) return b.otherwise; const r = b && (find(b.otherwise) || (b.on && find(b.on.correct))); if (r) return r; } return null; })(s.beats);
     const iLine = arm ? arm.findIndex((x) => x.say === 'The diagonals are inside.') : -1;
-    const iLit = arm ? arm.findIndex((x) => x.stage && x.stage.lit === 'diagonals') : -1;
+    // (lit ON its word: an onWord cue set before the line)
+    const iLit = arm ? arm.findIndex((x) => x.stage && [].concat(x.stage.onWord || []).some((w) => w.word === 'diagonals' && w.lit === 'diagonals')) : -1;
     const iMerge = arm ? arm.findIndex((x) => x.stage && x.stage.merge === 'Inside') : -1;
     const iTap = arm ? arm.findIndex((x) => x.input && x.input['continue']) : -1;
     t('inside-or-outside second miss: diagonals lit, "The diagonals are inside.", then ONE merged Inside, then a continue tap',
