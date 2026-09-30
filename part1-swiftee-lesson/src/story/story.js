@@ -529,6 +529,7 @@
   function reveal(line, L, cues, audio) {
     return new Promise(function (resolve) {
       var g = gen, i = 0, n = L.words.length, p = 0, doneAt = null, swapUntil = 0;
+      var heard = unboxed(line);   // (the narrator: heard, not shown — see speak)
       var P = pace(), lead = T.partLead * P, least = T.partMin * P, out = T.partOut * P;
       var hooks = (line.at || []).map(function (h) { return { i: wordIndex(line.text, h.word), c: h }; });
       var onVoice = !!audio, started = false, t0 = now(), ceiling = now() + (cues[n - 1] || 0) + 6000;
@@ -552,7 +553,7 @@
           if (now() < swapUntil) { raf = rq(tick); return; }
           swapUntil = 0; p++; doneAt = null;
           layoutSay(line, L.words, L.parts[p]);
-          showSay(true);
+          if (!heard) showSay(true);
         }
         var part = L.parts[p];
         while (i < part.to && cues[i] <= t) {
@@ -563,7 +564,9 @@
         if (i >= n) { resolve(); return; }
         if (i >= part.to && p + 1 < L.parts.length) {
           if (doneAt == null) doneAt = t;
-          if (t >= Math.max(cues[L.parts[p + 1].from] - lead, doneAt + least)) { hideSay(); swapUntil = now() + out; }
+          if (t >= Math.max(cues[L.parts[p + 1].from] - lead, doneAt + least)) {
+            if (!heard) { hideSay(); swapUntil = now() + out; } else swapUntil = now();
+          }
         }
         raf = rq(tick);
       };
@@ -576,13 +579,21 @@
     try { return VO.play(line.vo); } catch (e) { return null; }
   }
 
+  /* THE NARRATOR IS A VOICE, NOT A BOX (the user: "in the story use VO only in the background
+     for narration, do not add a box for it"). Its lines are spoken over the paintings and run
+     exactly as before — the words keep their times, so the comic beats cued on them (a perk on
+     "day", a hop on "picnic") still land — but the storybook panel is never shown. The words
+     are still laid out, unseen, in the live region, so a screen reader still hears them. Momo
+     and Popo keep their speech bubbles. */
+  function unboxed(line) { return line && line.who === 'narrator'; }
+
   async function speak(line, idx, sc) {
     var g = gen;
     st.isDialoguePlaying = true; st.phase = 'dialogue';
     if (hideSay()) { await sleep(T.sayOut + T.between); if (g !== gen) return; }
     var L = partsOf(line);
     layoutSay(line, L.words, L.parts[0]);
-    showSay();
+    if (!unboxed(line)) showSay();
     sayLine = line;
     if (line.who !== 'narrator') sfx('pop', 0.28);
     log.push({ scene: st.scene, who: line.who, text: line.text });
