@@ -12,7 +12,7 @@
   'use strict';
 
   var $ = function (s) { return document.querySelector(s); };
-  var root, stageEl, hud, bubble, instruction, progress, loadEl, continueBtn;
+  var root, stageEl, hud, bubble, instruction, progress, loadEl, continueBtn, nextBtn;
   var director, current = -1, playing = false, settleTimer = null, mouthTimer = null, bubbleTimer = null;
   /* Whether Swiftee is on this screen at all. Set per screen from its
      `purpose`; when false, his lines go to the plank and his beats are
@@ -1723,7 +1723,8 @@
       ? instruction.getBoundingClientRect() : null;
     var hudBox = hud.getBoundingClientRect();
     // the finale's Part 2 button stands in the bottom-right corner, so it is kept clear
-    var nextBox = continueBtn && continueBtn.classList.contains('show') ? continueBtn.getBoundingClientRect() : null;
+    var nextBox = continueBtn && continueBtn.classList.contains('show') ? continueBtn.getBoundingClientRect()
+      : (nextBtn && nextBtn.classList.contains('show') ? nextBtn.getBoundingClientRect() : null);
 
     /* ON THE LEDGE (readyScene): UP AND TO HIS RIGHT, over the gap, as the reference has
        it. The stage holds only scenery there, so the solo rule below would centre the
@@ -1813,7 +1814,10 @@
      * bubble's own span, so the tail drops straight onto it. Only when none of
      * those is clear (no room over him at all: the sorting screens, where he
      * hovers under the HUD) does the search below take over. */
-    if (global.Swiftee && Swiftee.pos !== 'corner' && Swiftee.pos !== 'off') {
+    // (the corner mark too, now: he stands on the card's glass there, and the bubble keeps clear of
+    // what is drawn on it rather than of the whole card — see ON THE GLASS WITH HIM below. Before,
+    // the corner went to the slot search, which could leave the line a hundred pixels over him.)
+    if (global.Swiftee && Swiftee.pos !== 'off') {
       var overHead = birdRect();
       if (overHead && overHead.width) {
         var ABOVE_GAP = 22 * K;
@@ -1828,7 +1832,19 @@
         // over his head and the line went to the top of the screen, its tail
         // aimed at the tray ("dialouge box placement not currect?")
         var teachOn = Stage.teachBox && Stage.teachBox();
-        var aparts = teachOn ? [teachOn] : (Stage.contentParts ? Stage.contentParts({}) : []);
+        /* ON THE GLASS WITH HIM (the final pass: "the bubble must feel physically connected"): when
+           he stands on the card itself (the corner mark on the measuring and stretching screens),
+           the slab is under him whatever the bubble does — avoiding it sent the line to a nook far
+           above his head (screen 28). Then only what is drawn on the glass is kept clear. */
+        var onGlass = false;
+        if (!teachOn && Stage.contentBox) {
+          var cb0 = Stage.contentBox(), hx0 = (overHead.left + overHead.right) / 2, hy0 = overHead.top + overHead.height * 0.2;
+          onGlass = !!(cb0 && hx0 > cb0.left && hx0 < cb0.right && hy0 > cb0.top && hy0 < cb0.bottom);
+          // (or standing in front of it: his body over the card's rim, as beside the make-concave
+          // card — the card is behind him either way, and only what is drawn on it is in the way)
+          if (!onGlass && cb0) onGlass = overHead.right > cb0.left + 8 && overHead.left < cb0.right - 8 && overHead.bottom > cb0.top + 8 && overHead.top < cb0.bottom - 8;
+        }
+        var aparts = teachOn ? [teachOn] : (Stage.contentParts ? Stage.contentParts(onGlass ? { glass: true } : {}) : []);
         var ablocks = [hudBox, nextBox].filter(function (b) { return b && b.width; });
         var aclear = function (x, y) {
           var box = { left: x, right: x + aw, top: y, bottom: y + ah };
@@ -1848,7 +1864,10 @@
           var lo = lane ? lane.l : f.x + GAP, hi = lane ? lane.r - aw : f.x + f.w - GAP - aw;
           for (var ti = 0; ti < tries.length; ti++) {
             var ax2 = Math.max(lo, Math.min(hi, tries[ti]));
-            if (acx < ax2 + 26 * K || acx > ax2 + aw - 26 * K) continue;   // his head must be under the bubble
+            // his head must be under the bubble — to within the tail's reach of its corners (12, not
+            // 26: a head just past the straight run is still met by a tail leaning out to it; at 26
+            // the column beside a card missed him by a few pixels and the line went to the top)
+            if (acx < ax2 + 12 * K || acx > ax2 + aw - 12 * K) continue;
             if (aclear(ax2, atop)) {
               bubble.style.left = ax2 + 'px';
               bubble.style.top = atop + 'px';
@@ -1871,9 +1890,15 @@
           if (col >= MIN_W && col < aw) {
             bubble.style.maxWidth = col + 'px';
             snugWidth();
-            if (rowsOfLine() <= 3) {
+            // (four rows, not three: four over his head, near him, is still his speech; the band
+            // this gave up to was the top of the screen, the tail over empty sky — the final pass)
+            if (rowsOfLine() <= 4) {
               aw = bubble.offsetWidth; ah = bubble.offsetHeight; atop = overHead.top - ABOVE_GAP - ah;
+              // (held inside the column it was fitted to: tried at his centre or leaning left or
+              // right, a column-wide bubble crossed the lesson's edge by a few pixels every time)
+              lane = { l: f.x + GAP, r: content.left - 12 * K };
               if (tryAbove()) return;
+              lane = null;
             }
           }
         }
@@ -1899,7 +1924,9 @@
           if (laneW >= MIN_W && laneW < aw) {
             bubble.style.maxWidth = laneW + 'px';
             snugWidth();
-            if (rowsOfLine() <= 3) {
+            // (four rows, not three: four over his head, near him, is still his speech; the band
+            // this gave up to was the top of the screen, the tail over empty sky — the final pass)
+            if (rowsOfLine() <= 4) {
               lane = { l: laneL, r: laneR };
               aw = bubble.offsetWidth; ah = bubble.offsetHeight; atop = overHead.top - ABOVE_GAP - ah;
               if (tryAbove()) return;
@@ -2382,6 +2409,17 @@
     if (!tail) return;
     var r = layoutRect(bubble);
     if (!r.width || !r.height) return;
+    /* AIMED FROM WHERE IT IS GOING, NOT FROM WHERE ITS SLIDE HAS GOT TO. The bubble glides to a
+       new place (a 240ms transition on left/top), and its layout box mid-glide is the old place:
+       re-placed as an input armed (screen 20), the tail was worked out from there and pointed
+       past his cheek for the rest of the line. The target is what style.left/top say. */
+    var par = bubble.offsetParent, pr0 = par && par.getBoundingClientRect();
+    var toPx = function (v, span) { if (!v) return NaN; var n = parseFloat(v); return /%$/.test(v) ? n * span / 100 : (/px$/.test(v) ? n : NaN); };
+    if (pr0) {
+      var sl = toPx(bubble.style.left, par.clientWidth), stp = toPx(bubble.style.top, par.clientHeight);
+      if (isFinite(sl)) r.left = pr0.left + sl + (parseFloat(bubble.style.marginLeft) || 0);
+      if (isFinite(stp)) r.top = pr0.top + stp + (parseFloat(bubble.style.marginTop) || 0);
+    }
     // OUT ON THE MEASURING WALK he is not where his words are: the tail
     // pointed at the empty corner he had left. While the walk has him the
     // line is a plain card with no tail; it points at him again once he is
@@ -2881,6 +2919,11 @@
         // and his words go down with him: a line left up after he has gone
         // is re-placed against nobody (the orphan bubble at the top-left)
         if (state === 'exit' && opts && opts.to === 'below') { standing = null; say(null); return leave(); }
+        // ALREADY STANDING WHERE THE ENTRANCE WOULD PUT HIM: nothing to do. A screen that may or
+        // may not have brought him in by now (make-concave: in on the first miss, or not until
+        // the cheer) asks for the same mark either way, and a second walk-on would replay.
+        if (state === 'enter' && present && !entering && opts && opts.to && opts.to === Swiftee.pos &&
+            (!opts.size || opts.size === Swiftee.size)) return Promise.resolve();
         // Not on yet? He comes in first, then does what the beat asked.
         if (state !== 'enter' && !present) {
           return entrance().then(function () { return handlerSwiftee(state, opts, ctx); });
@@ -2936,6 +2979,11 @@
         }
         if (state === 'move' || state === 'enter') p.then(placeBubble);
         return p;
+      },
+      /* the director's line tests (a beat's `alt.if`): what the shape on screen actually shows */
+      test: function (name) {
+        if (name === 'manyOutside') return !!(Stage.outsideCount && Stage.outsideCount() > 1);
+        return false;
       },
       say: function handlerSay(text, opts, ctx) {
         // The index is fetched asynchronously. Without this gate the first
@@ -3322,7 +3370,7 @@
         if (!waiting && buddyOn && present && global.Swiftee && Swiftee.stance) {
           Swiftee.stance(HOLDS_A_QUESTION.test(Swiftee.state || '') ? Swiftee.state : null);
         }
-        var answered = Stage.waitFor(spec, ctx);
+        var answered = spec.type === 'summary-review' ? reviewSummary(spec, ctx) : Stage.waitFor(spec, ctx);
         // A RETRY THAT ARMS WHILE HE IS STILL ANSWERING THE LAST TRY waits for
         // him: held, and handed back as his reply ends (pop). A wrong answer
         // that ends its input re-arms the question at once, and the child
@@ -3332,6 +3380,11 @@
         if (inputLive && replying()) { holdInput(true); holdForReply = true; }
         return answered.then(function (r) {
           inputLive = false; inputSpec = null;
+          /* ONE STATE AT A TIME (the final pass): the answer is in, so nothing on the stage takes
+             a press until the next input arms and sets its own mode — not under his reply, not
+             under an explanation or a demonstration. (A reading beat keeps its mode: it is how
+             the screen goes on.) */
+          if (!waiting && global.Input) Input.mode('locked');
           bubble.classList.remove('dim');
           // the task is over: whatever he was watching or holding, the answer's
           // reaction comes next, and after it he rests
@@ -4085,6 +4138,64 @@
     Swiftee.perform('hint', direction({ at: at }));
   }
 
+  /* THE SUMMARY, LOOKED BACK AT (the final pass). Its explanations have all been given; now Next
+   * is shown, and every card in the collection can be tapped to hear its idea again.
+   *
+   *   READY → CARD_SELECTED → LOCK_OTHER_CARDS → REPLAY_EXPLANATION → SETTLE → READY
+   *
+   * One replay at a time: a tap while one runs is not taken (nor is Next — it waits, dimmed, and
+   * comes back), so no two voices and no two animations ever overlap. A replay replays only the
+   * card tapped: its idea drawn again in place (Stage.summaryReplay) and its own line and voice,
+   * the same words it was first given. Next resolves the input, and the game's ending follows. */
+  function reviewSummary(spec, ctx) {
+    return new Promise(function (resolve) {
+      var lines = {}; (spec.cards || []).forEach(function (c) { lines[c.id] = c; });
+      var cards = Stage.summaryCards ? Stage.summaryCards() : [];
+      var busy = false, over = false, offs = [];
+      if (global.Input) Input.mode('polygon');
+      var ready = function () { busy = false; if (nextBtn) nextBtn.classList.remove('wait'); if (Stage.summaryReplay) Stage.summaryReplay(null); };
+      var end = function () {
+        if (over) return; over = true;
+        offs.forEach(function (f) { f(); }); offs = [];
+        if (nextBtn) nextBtn.classList.remove('show', 'wait');
+        cards.forEach(function (c) { c.el.style.cursor = ''; });
+      };
+      var onNext = function (e) {
+        if (e) e.preventDefault();
+        if (over || busy) return;
+        if (global.SFX) SFX.play('select');
+        end(); resolve({ result: 'tap' });
+      };
+      if (nextBtn) {
+        nextBtn.classList.remove('wait'); nextBtn.classList.add('show');
+        nextBtn.addEventListener('click', onNext);
+        offs.push(function () { nextBtn.removeEventListener('click', onNext); });
+        placeBubble();
+      }
+      cards.forEach(function (c) {
+        c.el.style.cursor = 'pointer';
+        var tap = function (e) {
+          if (over || busy || (global.Input && Input.guarded)) return;
+          var L = lines[c.id]; if (!L) return;
+          if (e) { e.preventDefault(); e.stopPropagation(); }
+          busy = true;
+          if (nextBtn) nextBtn.classList.add('wait');
+          if (global.SFX) SFX.play('pop', { gain: 0.4 });
+          var shown = Stage.summaryReplay ? Stage.summaryReplay(c.id) : Promise.resolve();
+          var told = Promise.resolve(H && H.say ? H.say(L.say, { vo: L.vo, type: 'narration' }, ctx) : null);
+          Promise.all([shown, told]).then(function () {
+            if (over) return;
+            // a breath to read it, then the collection is all his again
+            setTimeout(function () { if (!over) ready(); }, Math.round(500 * paceScale()));
+          }, function () { if (!over) ready(); });
+        };
+        c.el.addEventListener('pointerdown', tap);
+        offs.push(function () { c.el.removeEventListener('pointerdown', tap); });
+      });
+      if (ctx && ctx.onCancel) ctx.onCancel(function () { end(); });
+    });
+  }
+
   function finish() {
     say(null); setCard(null);
     if (global.Music) Music.mood('win');   // the tune lifts for the last screen
@@ -4275,6 +4386,7 @@
     if (global.SFX && SFX.cancelSequences) SFX.cancelSequences();
     hud.querySelector('.replay').classList.remove('show');
     if (continueBtn) continueBtn.classList.remove('show');
+    if (nextBtn) nextBtn.classList.remove('show', 'wait');
     leaveReady();   // (playGen has moved on, so a snow already falling stays here too)
     Stage.apply({ kind: 'vista' });
     // back in to the opening's close shot, eased — screen 1 lets the move finish (setCam)
@@ -4291,6 +4403,7 @@
     root = $('#game'); stageEl = $('#stage'); hud = $('#hud'); bubble = $('#bubble');
     instruction = $('#instruction'); progress = $('#progress'); loadEl = $('#loading');
     continueBtn = $('#continue');
+    nextBtn = $('#next');
     // pressed on the hand-over screen, and only there (readyScene), through the snow
     if (continueBtn) continueBtn.addEventListener('click', function (e) {
       e.preventDefault();

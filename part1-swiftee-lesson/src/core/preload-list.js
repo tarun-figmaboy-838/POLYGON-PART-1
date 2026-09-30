@@ -173,7 +173,7 @@ window.PreloadList = {
   "assets/swiftee/spritesheets/2x/swiftee_write_start@2x.webp": 62540,
   "assets/swiftee/spritesheets/2x/swiftee_write_stop@2x.webp": 56290,
   "assets/swiftee/spritesheets/2x/swiftee_writing@2x.webp": 202400,
-  "assets/swiftee/swiftee-angle-measuring.json": 447,
+  "assets/swiftee/swiftee-angle-measuring.json": 1370,
   "assets/swiftee/swiftee-angle-protractor-v3.webp": 235156,
   "assets/swiftee/swiftee-inspect-flight.webp": 146312,
   "assets/swiftee/swiftee-measuring.json": 986,
@@ -236,8 +236,12 @@ window.PreloadList = {
   "assets/vo/fb50.ogg": 32088,
   "assets/vo/fb51.mp3": 63020,
   "assets/vo/fb51.ogg": 34682,
-  "assets/vo/index.js": 8031,
-  "assets/vo/index.json": 15265,
+  "assets/vo/fb52.mp3": 39404,
+  "assets/vo/fb52.ogg": 19686,
+  "assets/vo/fb53.mp3": 34604,
+  "assets/vo/fb53.ogg": 17139,
+  "assets/vo/index.js": 8186,
+  "assets/vo/index.json": 15574,
   "assets/vo/p01.mp3": 20106,
   "assets/vo/p01.ogg": 10846,
   "assets/vo/p02.mp3": 24285,
@@ -366,6 +370,6 @@ window.PreloadList = {
   "assets/vo/st4-momo.ogg": 18879,
   "assets/vo/st5-narrator.mp3": 66860,
   "assets/vo/st5-narrator.ogg": 32042,
-  "assets/vo/word-timings.json": 6183
+  "assets/vo/word-timings.json": 6318
  }
 };

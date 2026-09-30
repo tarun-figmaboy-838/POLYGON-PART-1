@@ -701,8 +701,8 @@
      pixel wider each side, so the joins of one layer fall on the solid
      pixels of the other at any display scaling. */
   #continue { text-decoration: none; }
-  #continue, #hud .replay { isolation: isolate; }
-  #continue::before, #hud .replay::before {
+  #next, #continue, #hud .replay { isolation: isolate; }
+  #next::before, #continue::before, #hud .replay::before {
     content: ''; position: absolute; z-index: -1; pointer-events: none;
     top: 0; bottom: 0; left: -35px; right: -35px;
     border-style: solid; border-width: 0 34px; border-image: inherit;
@@ -710,15 +710,17 @@
   #hud .replay { position: relative; }
   #hud .replay::before { left: -29px; right: -29px; border-width: 0 28px; }
   @media (max-width: 760px) {
-    #continue::before { left: -29px; right: -29px; border-width: 0 28px; }
+    #next::before, #continue::before { left: -29px; right: -29px; border-width: 0 28px; }
   }
 
   /* IT WAITS BEFORE IT NUDGES. A button that twitches from the moment it
      appears is hurrying a child who is still reading; this one first moves
      after four seconds of nothing, and then once every eight. */
-  #continue.show { display: inline-flex; animation: nextNudge 8s ease-in-out 4s infinite; }
-  #continue:active { transform: translateY(4px); filter: drop-shadow(0 0 0 rgba(10, 60, 120, 0)) brightness(.94); animation: none; }
-  #continue .chev { font-size: 1.1em; line-height: 1; }
+  #next.show, #continue.show { display: inline-flex; animation: nextNudge 8s ease-in-out 4s infinite; }
+  #next:active, #continue:active { transform: translateY(4px); filter: drop-shadow(0 0 0 rgba(10, 60, 120, 0)) brightness(.94); animation: none; }
+  #next .chev, #continue .chev { font-size: 1.1em; line-height: 1; }
+  /* while a card's explanation replays, Next waits for it (a press is not lost: it is not taken) */
+  #next.show.wait { opacity: .55; cursor: default; animation: none; }
   @keyframes nextNudge {
     0%, 12%, 100% { transform: translateX(0); }
     4% { transform: translateX(5px); }
@@ -937,6 +939,44 @@
   /* the ice's twinkle: the lesson's own four-point star (stage.js glints) */
   #story .story-glint { position: absolute; width: 24px; height: 24px; margin: -12px 0 0 -12px; opacity: 0; pointer-events: none; overflow: visible; }
   #story .story-ui { pointer-events: none; }
+
+  /* THE STORY AS A COMIC PANEL ON A PAGE (the user's story frame). The page is cream paper with
+     two offset grids of halftone dots; each painting is one panel at its own 1672 x 941, scaled
+     as one piece to fit the story's box with a 0.95 gutter (story.js fitFrame: --story-k, --sf-x,
+     --sf-y), with a black ink frame and a soft offset shadow. The ink stays 3–7 screen pixels at
+     any scale (--sf-ink-w is divided by the scale). The blurred band that carried the painting
+     past its edge is not shown: the page is what lies around the panel now. The words and the
+     snow (the .story-ui layer) share the panel's box, so they stay on the painting. */
+  #story {
+    --sf-paper: #f6efdd; --sf-dot: 160, 120, 60; --sf-ink: #151515;
+    background:
+      radial-gradient(circle at 50% 50%, rgba(var(--sf-dot), 0.13) 1.6px, transparent 2px) 0 0 / 15px 15px,
+      radial-gradient(circle at 50% 50%, rgba(var(--sf-dot), 0.08) 1.2px, transparent 1.6px) 7.5px 7.5px / 15px 15px,
+      var(--sf-paper);
+  }
+  #story .story-around { display: none; }
+  #story .story-frame { left: var(--sf-x, var(--band-x, 0px)); top: var(--sf-y, var(--band-y, 0px)); }
+  #story .story-frame:not(.story-ui) {
+    background: #cfe6f7;                                   /* behind the picture while it loads */
+    border-radius: calc(var(--sf-ink-w, 6px) * 0.6);
+    box-shadow:
+      0 0 0 var(--sf-ink-w, 6px) var(--sf-ink),
+      calc(var(--sf-ink-w, 6px) * 1.8) calc(var(--sf-ink-w, 6px) * 2) 0 calc(var(--sf-ink-w, 6px) * 0.6) rgba(21, 21, 21, 0.18);
+  }
+  /* ON AN UPRIGHT PHONE the picture is too small to letter inside: the panel moves up and the
+     words sit in a row under it, at a reading size of their own (story.js puts the line there) */
+  #story .sf-caption {
+    position: absolute; left: max(16px, env(safe-area-inset-left)); right: max(16px, env(safe-area-inset-right));
+    top: var(--sf-caption-top, 70%); display: none; justify-content: center; pointer-events: none; z-index: 2;
+  }
+  #story.is-portrait .sf-caption { display: flex; }
+  #story.is-portrait .sf-caption .story-say { position: relative; max-width: 100%; }
+  #story.is-portrait .sf-caption .story-say-text { white-space: normal; }
+  #story.is-portrait .sf-caption .story-say[data-who="narrator"] { font-size: 19px; padding: 12px 20px 14px; border-width: 3px; border-radius: 18px; box-shadow: 4px 5px 0 rgba(107, 68, 35, .92); }
+  #story.is-portrait .sf-caption .story-say[data-who="momo"], #story.is-portrait .sf-caption .story-say[data-who="popo"] {
+    font-size: 20px; padding: 12px 20px 14px; background: #fff; border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 4px 0 var(--ink);
+  }
+  #story.is-portrait .sf-caption .story-say-shape { display: none; }
   /* a light snowfall over all five, the same crystals the lesson's weather is made of
      (fx/snowflake.js) and the same flakes the whole way through */
   #story .story-snow { position: absolute; left: 0; top: 0; width: 1672px; height: 941px; overflow: visible; }
@@ -1081,6 +1121,9 @@
        and goes there by itself a few seconds after Swiftee's last word (goOn:
        the snow closes in, then Frozen Rush opens); pressing it just goes now.
        The href is the one place the address of Part 2 is written. -->
+  <!-- NEXT, ON THE SUMMARY ONLY (the final pass): shown once its explanations are over, and the
+       way on from it; the lesson's other screens go on by themselves -->
+  <button id="next" type="button" aria-label="Next"><span>Next</span><span class="chev" aria-hidden="true">&#9654;</span></button>
   <a id="continue" href="../part2-frozen-rush/game/index.html" aria-label="Continue to Part 2: Frozen Rush"><span>Part 2</span><span class="chev" aria-hidden="true">&#9654;</span></a>
   <div id="progress-track"><div id="progress"></div></div>
 

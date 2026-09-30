@@ -1511,7 +1511,9 @@
     st.fill = mk('path', { d: pathOf(v), fill: 'url(#' + candy(SHAPE.fill) + ')', stroke: SHAPE.edge, 'stroke-width': SHAPE.edgeW, 'stroke-linejoin': 'round' }, g);
 
     // diagonals
-    st.diagG = mk('g', {}, g);
+    // (a drawn diagonal is a result on the figure, not something to press: it takes no pointer
+    // events, so a press near it always reaches the corner under it — the final pass)
+    st.diagG = mk('g', { 'pointer-events': 'none' }, g);
     (st.diagonals || []).forEach(function (d, k) {
       var a = v[d[0]], b = v[d[1]];
       var outside = !Poly.isDiagonalInside(v, d[0], d[1]);
@@ -2153,6 +2155,13 @@
         var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
         var dx = mx - c.x, dy = my - c.y, len = Math.hypot(dx, dy) || 1;
         var ux = dx / len, uy = dy / len;
+        /* OUT ALONG THE SIDE'S OWN NORMAL, not away from the centre. For a side beside a dent the
+           centre is off to one side, and "away from it" pointed along the side at a corner — the
+           length printed over that corner's degrees ("4 cm" on "48°", screen 27). The normal that
+           leaves the shape is the one whose foot is outside it. */
+        var sl0 = Math.hypot(b.x - a.x, b.y - a.y) || 1, nx0 = (b.y - a.y) / sl0, ny0 = -(b.x - a.x) / sl0;
+        if (Poly.contains(v, { x: mx + nx0 * 3, y: my + ny0 * 3 })) { nx0 = -nx0; ny0 = -ny0; }
+        if (!Poly.contains(v, { x: mx + nx0 * 3, y: my + ny0 * 3 })) { ux = nx0; uy = ny0; }
         var t = mk('g', { 'class': 'meas', 'data-side': i }, g);
         if (sideText) {
           /* A TICK ACROSS THE SIDE, AND ITS LENGTH BESIDE IT.
@@ -2194,7 +2203,8 @@
           }
           mk('text', { x: lx2, y: ly2 + 6, 'text-anchor': 'middle', 'font-size': 17, 'font-weight': 800,
                        fill: dink, stroke: '#ffffff', 'stroke-width': 3.5, 'paint-order': 'stroke',
-                       'stroke-linejoin': 'round', text: dtext }, t);
+                       'stroke-linejoin': 'round', 'class': 'meas-num', 'data-ux': ux.toFixed(4), 'data-uy': uy.toFixed(4),
+                       text: dtext }, t);
         }
         if (sideTicks) {
           // the ticks sit across the side at its middle, spaced along it
@@ -2213,6 +2223,53 @@
       // AN ANGLE STILL TO MEASURE SHOWS ITSELF, not a dot: its wedge in outline,
       // breathing, is the thing to tap; the tap fills it and its degrees come
       else if (st.angleTodo) drawArc(g, i, null, 1, true);
+    }
+    untangle(g);
+  }
+  /* NO READING ON ANOTHER (the final pass, screen 27). A sharp corner or a dent brings a side's
+     length and a corner's degrees into the same few units, and one was printed over the other.
+     Each reading is one text; any two whose boxes meet are pulled apart — the degrees further
+     along their corner's bisector, into the shape, and a length further out along its side's
+     normal — a few units at a time until nothing overlaps, and kept on the glass. Boxes are
+     measured from the text (17px bold ≈ 9.5 units a character), not the layout, so a live drag
+     does not force a reflow every frame. */
+  function untangle(g) {
+    var els = [].slice.call(g.querySelectorAll('text.meas-num'));
+    if (els.length < 2) return;
+    var face = st.panel ? panelFace(st.panel) : null;
+    var boxOf = function (el) {
+      var w = el.textContent.length * 9.5 + 4, x = +el.getAttribute('x'), y = +el.getAttribute('y') - 6;
+      return { l: x - w / 2, r: x + w / 2, t: y - 11, b: y + 11 };
+    };
+    var push = function (el, k) { move(el, (+el.getAttribute('data-ux') || 0) * k, (+el.getAttribute('data-uy') || 0) * k); };
+    var move = function (el, dx, dy) {
+      var x = +el.getAttribute('x') + dx, y = +el.getAttribute('y') + dy;
+      if (face) {
+        var hw = el.textContent.length * 4.75 + 6;
+        x = Math.max(face.x + hw, Math.min(face.x + face.w - hw, x));
+        y = Math.max(face.y + 22, Math.min(face.y + face.h - 6, y));
+      }
+      el.setAttribute('x', x.toFixed(1)); el.setAttribute('y', y.toFixed(1));
+    };
+    for (var pass = 0; pass < 14; pass++) {
+      var moved = false;
+      for (var i = 0; i < els.length; i++) for (var j = i + 1; j < els.length; j++) {
+        var A = boxOf(els[i]), B = boxOf(els[j]);
+        if (A.r <= B.l || B.r <= A.l || A.b <= B.t || B.b <= A.t) continue;
+        // the degrees give way (they have the inside of their corner to move into); two of a kind: both
+        var ai = /°/.test(els[i].textContent), aj = /°/.test(els[j].textContent);
+        if (ai && !aj) push(els[i], 6);
+        else if (aj && !ai) push(els[j], 6);
+        else {
+          // two of a kind (two corners, two sides): apart from each other, along the line between
+          // them — both inward along their bisectors could meet in the middle
+          var sx = (B.l + B.r - A.l - A.r) / 2, sy = (B.t + B.b - A.t - A.b) / 2, sn = Math.hypot(sx, sy);
+          if (sn < 0.5) { sx = 0; sy = 1; sn = 1; }
+          move(els[i], -sx / sn * 4, -sy / sn * 4); move(els[j], sx / sn * 4, sy / sn * 4);
+        }
+        moved = true;
+      }
+      if (!moved) break;
     }
   }
   /** Hold a point inside the card's glass, with room for a vertex knob. */
@@ -2287,9 +2344,15 @@
     // wedge — degrees inside, centimetres outside, and neither on the other.
     if (deg != null) {
       var cc = Poly.centroid(v), bx = cc.x - p.x, by = cc.y - p.y, bl = Math.hypot(bx, by) || 1;
+      // (a reflex corner — a dent — along its own inside bisector: the centre of a dented shape
+      // can lie off to one side of it)
+      if (sweep > Math.PI === inside) { var ia = inside ? mid : mid + Math.PI; bx = Math.cos(ia); by = Math.sin(ia); bl = 1; }
       var tx = p.x + bx / bl * (r + 24), ty = p.y + by / bl * (r + 24);
+      // ONE READING, ONE ELEMENT: the number and its unit are one centred text ("108°"), so they
+      // move together and never overlap each other; untangle() keeps it off the other readings
       mk('text', { x: tx, y: ty + 6, 'text-anchor': 'middle', 'font-size': 17, 'font-weight': 800, fill: '#f2fdff',
                    stroke: '#123a7a', 'stroke-width': 3.5, 'paint-order': 'stroke', 'stroke-linejoin': 'round',
+                   'class': 'meas-num', 'data-ux': (bx / bl).toFixed(4), 'data-uy': (by / bl).toFixed(4),
                    text: Math.round(deg) + '°' }, ag);
     }
     return w;
@@ -5498,10 +5561,15 @@
       var ai = spec.autoConcave.vertex || 0, av = st.verts[ai], ac = Poly.centroid(st.verts);
       var at = st.verts.length === 4 ? 1.3 : 0.88;
       var target = { x: av.x + (ac.x - av.x) * at, y: av.y + (ac.y - av.y) * at }, from = { x: av.x, y: av.y };
-      st.highlightOutside = true; st.showVerts = true; st.touchVerts = false; st.breatheAt = null;
+      /* SHOWN SLOWLY, THEN NAMED (the final pass, `settle` / `hold`): the corner travels in over
+         `ms` with the diagonals plain, the shape settles, a breath (`settle`), and only then
+         does the diagonal that has gone outside light — and it is held (`hold`) before the beat
+         ends, so the change is seen before it is explained. Without them: lit as it goes. */
+      var paced = spec.autoConcave.settle != null;
+      st.highlightOutside = !paced; st.showVerts = true; st.touchVerts = false; st.breatheAt = null;
       st.vcolor = {}; st.vcolor[ai] = HI.picked; renderPoly();
       return new Promise(function (res) {
-        var t0 = null, ms = reduced() ? 0 : 1000;
+        var t0 = null, ms = reduced() ? 0 : (spec.autoConcave.ms || 1000);
         var step = function (tn) {
           if (t0 == null) t0 = tn;
           var k = ms ? Math.min(1, (tn - t0) / ms) : 1, e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
@@ -5513,7 +5581,15 @@
             if (st.liveBadge._retint) st.liveBadge._retint(cc ? 'concave' : 'convex');
           }
           if (k < 1 && global.requestAnimationFrame) global.requestAnimationFrame(step);
-          else { rememberMade('concave', st.verts, ai); renderPoly(); if (st.diagG) juice('flash', st.diagG); sfx('zip', { gain: 0.5 }); later(200, res); }
+          else if (!paced) { rememberMade('concave', st.verts, ai); renderPoly(); if (st.diagG) juice('flash', st.diagG); sfx('zip', { gain: 0.5 }); later(200, res); }
+          else {
+            rememberMade('concave', st.verts, ai); renderPoly();
+            later(reduced() ? 0 : spec.autoConcave.settle, function () {
+              st.highlightOutside = true; renderPoly();
+              if (st.diagG) juice('flash', st.diagG); sfx('zip', { gain: 0.5 });
+              later(reduced() ? 0 : (spec.autoConcave.hold || 1000), res);
+            });
+          }
         };
         if (global.requestAnimationFrame && ms) global.requestAnimationFrame(step); else step(0);
       });
@@ -7315,7 +7391,19 @@
   }
 
   function drawDiagonals(spec, count, ctx) {
-    return new Promise(function (resolve) {
+    return new Promise(function (resolveRaw) {
+      /* THE RESULT IS LOCKED THE MOMENT IT IS IN (the final pass: DIAGONAL_CREATED → LOCK_INTERACTION
+         → DIALOGUE). Its handlers go with the interaction, but the pointer mode stayed 'polygon'
+         and the corners stayed touchable under "Yay! You made a diagonal!", so a press there
+         looked live. Now the input is locked and the corners take no presses until the next
+         interaction arms (which sets both again: a new preview line from the same corner). */
+      var resolve = function (r) {
+        if (global.Input) Input.mode('locked');
+        // (their pointer events only — not st.touchVerts, which is also how the corners are
+        // drawn: white points, not small dark dots, for as long as the figure is up)
+        (st.vertEls || []).forEach(function (c) { if (c && c.style) { c.style.pointerEvents = 'none'; c.style.cursor = ''; } });
+        resolveRaw(r);
+      };
       if (global.Input) Input.mode('polygon');
       var from = spec.from === 'picked' ? (st.picked == null ? 0 : st.picked) : spec.from;
       /* `sides`: CONNECT IT TO ANY CORNER, AND FIND OUT. The child joins their
@@ -7451,6 +7539,19 @@
            to a line let go along a side, in the open glass or on the card's frame: that line
            goes home, and the corners stay ready to try again. */
         var j = hot >= 0 ? hot : nearestVertex(inCard(pt(e)), from, 44);
+        /* A DIAGONAL ALREADY MADE IS A RESULT, NOT A TRY (the final pass: "a completed diagonal must
+           become a locked learning result"). A line taken from the corner along a diagonal that is
+           already there, to its far corner, is not a new connection and not a wrong one — "Try
+           again!" for it read as the finished diagonal being judged again. That diagonal catches
+           the light once ("this one is made"), the new line goes home, and the try stands. */
+        if (j >= 0 && diagonalUsed(from, j)) {
+          var made0 = (st.diagonals || []).findIndex(function (d) { return (d[0] === from && d[1] === j) || (d[1] === from && d[0] === j); });
+          if (made0 >= 0) shimmer(made0);
+          hot = -1; showTargets([], false); still(true);
+          if (sides) setConnect('READY_TO_CONNECT', { from: from });
+          retract(line, from, function () { line = previewLine(from); });
+          return;
+        }
         // (and never on a corner that is done with — a side already found: the frozen side
         // flashes once, "this is a side already", and the line goes home)
         if (sides && j >= 0 && targets().indexOf(j) < 0) {
@@ -8033,6 +8134,43 @@
     mount: mount, apply: apply, focus: focus, waitFor: waitFor, element: element,
     snapshot: snapshot, restore: restore,
     isEmpty: isEmpty, contentBox: contentBox, contentParts: contentParts,
+    /** The summary's collected cards, in the lesson's order (game.js reviewSummary). */
+    summaryCards: function () {
+      var S = st.summary;
+      return S ? S.collected.map(function (id) { return { id: id, el: S.cards[id] }; }).filter(function (c) { return c.el; }) : [];
+    },
+    /* ONE CARD'S IDEA AGAIN (the review: CARD_SELECTED → LOCK_OTHER_CARDS → REPLAY_EXPLANATION →
+       SETTLE): the others rest (faded), the card gives a small lift, and what it draws — its corners,
+       its lines — is cleared and drawn again, where it sits. `null` puts every card back (READY). */
+    summaryReplay: function (id) {
+      var S = st.summary;
+      if (!S) return Promise.resolve(false);
+      var fade = function (el, o) { if (!el || !el.style) return; el.style.transition = 'opacity 240ms ease'; el.style.opacity = o; };
+      if (id == null) {
+        S.collected.forEach(function (k) { var c = S.cards[k]; if (c) { fade(c, ''); fade(c._mini, ''); } });
+        setSummary('READY');
+        return Promise.resolve(true);
+      }
+      var c = S.cards[id];
+      if (!c) return Promise.resolve(false);
+      setSummary('CARD_SELECTED', id);
+      S.collected.forEach(function (k) { if (k !== id && S.cards[k]) { fade(S.cards[k], '.42'); fade(S.cards[k]._mini, '.42'); } });
+      setSummary('LOCK_OTHER_CARDS', id);
+      fade(c, ''); fade(c._mini, '');
+      if (!reduced() && c._pop && c._pop.animate) {
+        c._pop.style.transformBox = 'fill-box'; c._pop.style.transformOrigin = 'center';
+        try { c._pop.animate([{ scale: '1' }, { scale: '1.06', offset: 0.45 }, { scale: '1' }], { duration: 360, easing: 'cubic-bezier(.3,1.4,.5,1)' }); } catch (e) {}
+      }
+      setSummary('REPLAY_EXPLANATION', id);
+      if (c._linesG) while (c._linesG.firstChild) c._linesG.removeChild(c._linesG.firstChild);
+      var ms = summaryReveal(c);
+      return sumHold((ms || 0) + 200).then(function () { setSummary('SETTLE', id); return true; });
+    },
+    /** How many of the shape's diagonals lie outside it, as it stands (game.js test: 'manyOutside'). */
+    outsideCount: function () {
+      if (!st.verts || st.verts.length < 4) return 0;
+      return Poly.allDiagonals(st.verts.length).filter(function (d) { return !Poly.isDiagonalInside(st.verts, d[0], d[1]); }).length;
+    },
     /** The card's face and the shape's box, in page pixels: the nook beside
         the shape where a bird waiting in the corner can be spoken from. */
     nook: function () {

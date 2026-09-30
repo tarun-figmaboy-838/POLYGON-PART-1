@@ -50,6 +50,8 @@ function fromDeck() {
       if (b.otherwise) walk(b.otherwise);
       if (b.feedback) walk(b.feedback);
       if (b.parallel) walk(b.parallel);
+      // a line's alternative, chosen by what is on screen (director `alt`)
+      if (b.alt && b.alt.vo) walk([b.alt]);
     });
     walk(s.beats);
     // the shape taught up close after a second miss (screens.js `teach`)

@@ -458,6 +458,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     switch (spec.type) {
       // the end of a screen: the lesson goes on by itself (game.js autoAdvance) — nothing is
       // pressed, and a Next button showing in the lesson is a fault
+      // the summary's review (the final pass): Next shows once every card has been explained; press it
+      case 'summary-review': {
+        await page.waitForSelector('#next.show', { timeout: 60000 });
+        await page.click('#next');
+        await page.waitForFunction(() => !document.querySelector('#next.show'), null, { timeout: 10000 });
+        return;
+      }
       case 'tap-anywhere': {
         const scr = await page.evaluate(() => window.Game.screen);
         // (on to the next screen — or, after the last one, the finale)

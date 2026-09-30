@@ -143,8 +143,12 @@
       { swiftee: 'enter', from: 'below', quick: true, to: 'middle', size: 'medium' },
       { swiftee: 'celebrate' },
       { say: SUMMARY_DONE.text, vo: SUMMARY_DONE.vo },
-      // and the game's own ending follows on Next (game.js finish())
-      { input: { type: 'tap-anywhere' } }
+      /* THEN IT IS THEIRS TO LOOK BACK AT (the final pass): once every explanation has been
+         given, Next appears, and a tap on any card replays that card's idea and its line — one at
+         a time, the others resting — until Next goes on to the game's own ending (game.js
+         reviewSummary, then finish()). Each card's line is carried here so the replay says
+         exactly what the card first said. */
+      { input: { type: 'summary-review', cards: list.map(function (c) { return { id: c.id, say: c.text, vo: c.vo }; }) } }
     );
     return out;
   }
@@ -687,7 +691,10 @@
         { swiftee: 'surprised' },
         { stage: { highlight: { diagonal: 'outside', color: 'red', style: 'dashed', enter: 'flash' } } },
         { sfx: 'honk' },
-        { say: 'Whoa! One of the diagonals went outside.', parts: ['Whoa! One of the diagonals', 'went outside.'], vo: 'p20' },
+        // THE WORDS MATCH THE SHAPE (the final pass): the child's dent can send more than one
+        // diagonal outside, and then it is "some", not "one" (director alt / game.js test)
+        { say: 'Whoa! One of the diagonals went outside.', parts: ['Whoa! One of the diagonals', 'went outside.'], vo: 'p20',
+          alt: { if: 'manyOutside', say: 'Whoa! Some of the diagonals went outside.', parts: ['Whoa! Some of the diagonals', 'went outside.'], vo: 'fb52' } },
         { input: { type: 'tap-anywhere' } }
       ]
     },
@@ -730,8 +737,11 @@
       // the concave one is the pentagon the child dented (made: stage.js
       // keeps it); the stock dent stands in when the screen is reached without it.
       // NO DIAGONALS YET: they are drawn as each card is talked about.
-      // each card named on a tab (stage.js compare), so "this one" is always one of two names
-      stage: { kind: 'compare', left: { sides: 5, name: 'Pentagon A' }, right: { sides: 5, dent: 0, made: 'concave', name: 'Pentagon B' } },
+      // NO NAME TABS ON THE CARDS (the final pass: "remove the text tags … Concave Pentagon, Convex
+      // Pentagon"): the shapes are the focus; which one he means is shown by the warm glow behind
+      // the card he is talking about (focus) and by his pointing, and the concept is named under
+      // it on its word (the Convex / Concave badges)
+      stage: { kind: 'compare', left: { sides: 5 }, right: { sides: 5, dent: 0, made: 'concave' } },
       beats: [
         { instruction: null },
         // THE PAIR ARRIVES, THEN HE SPEAKS OF IT
@@ -832,8 +842,8 @@
         { focus: 'compare.left', style: 'lean' },
         // THE NAME ARRIVES ON ITS WORD, in the INSIDE mark's place: a soft
         // chime, a few sparkles, and his nod
-        // ...and its tab, "Pentagon A" till now, takes the name: "Convex pentagon" (MASTER brief §12)
-        { stage: { badge: { under: 'compare.left', text: 'Convex', tone: 'convex', enter: 'pop', cue: 'convex', sfx: 'correct', sparkle: true, react: 'nod', tab: 'Convex pentagon' } } },
+        // (no tab renamed to "Convex pentagon" any more: the cards carry no name tags — final pass)
+        { stage: { badge: { under: 'compare.left', text: 'Convex', tone: 'convex', enter: 'pop', cue: 'convex', sfx: 'correct', sparkle: true, react: 'nod' } } },
         { parallel: [
           // stating the rule
           { swiftee: 'explain', at: 'compare.left' },
@@ -858,7 +868,7 @@
         { focus: 'compare.right', style: 'lean' },
         // on "outside" the diagonal that leaves lights again (emphasize);
         // on "concave" the name, in the OUTSIDE mark's place, and his "got it!"
-        { stage: { badge: { under: 'compare.right', text: 'Concave', tone: 'concave', enter: 'pop', cue: 'concave', sfx: 'correct', sparkle: true, react: 'happySmall', tab: 'Concave pentagon' } } },
+        { stage: { badge: { under: 'compare.right', text: 'Concave', tone: 'concave', enter: 'pop', cue: 'concave', sfx: 'correct', sparkle: true, react: 'happySmall' } } },
         { parallel: [
           // he points at it
           { swiftee: 'point', at: 'compare.right' },
@@ -873,9 +883,13 @@
 
     {
       id: 'make-concave', page: 26,
-      swiftee: { pos: 'off', size: 'medium' },
+      // OFF FOR THE TASK, HIS FOR THE EXPLANATIONS (`purpose`): every line on this screen is in a
+      // branch, so it did not count as one he speaks on (screens wantsBuddy looks at the top
+      // level) — his entrances were skipped and the explanations came as a voice with no one
+      // saying them. The purpose makes the screen his; he still starts off-stage.
+      swiftee: { pos: 'off', size: 'medium', purpose: 'concept' },
       instruction: 'Drag any vertex to make this polygon concave.',
-      lines: ['The diagonals are still inside the shape, so it is still convex.', 'Now one diagonal goes outside, so the polygon is concave.', 'Great job!'],
+      lines: ['The diagonals are still inside the shape, so it is still convex.', 'Let me show you. Watch this corner.', 'Now one diagonal goes outside, so the polygon is concave.', 'Great job!'],
       // A QUADRILATERAL (the user, screen 21), and the badge reading "Convex" during the task — a
       // live readout that flips to "Concave" the moment the shape does. TWO TRIES: a corner let
       // go short of a dent is answered with the diagonals drawn on the shape as it stands, kept,
@@ -893,18 +907,35 @@
           on: { correct: [] },
           otherwise: [
             { stage: { diagonals: 'all', style: 'dashed', animate: 'sequential', each: 420 } },
+            // HE COMES IN TO SAY IT (the final pass: the words come from him, and the bubble is
+            // his): beside the card's lower-left corner, small, clear of the shape. He started
+            // off-stage, so the entrance names its mark — an entrance to 'off' showed nothing.
+            { swiftee: 'enter', from: 'left', to: 'left', size: 'small' },
             { say: 'The diagonals are still inside the shape, so it is still convex.', vo: 'p26r1' },
+            // (a breath to look at the clue before the task comes back — the final pass)
+            { wait: 600 },
             // (the task, shown again — not said again)
             { instruction: 'Drag any vertex to make this polygon concave.' },
             // (the diagonals stay, and the one that leaves lights as the corner goes in: live 'both')
-            { input: { type: 'drag-vertex', vertex: 'any', until: 'concave', live: 'both', attempts: true, retry: true } },
+            // (quietMiss: this is the last try — a miss here is answered by the demonstration below,
+            // not by "Try again!" for a try that is not coming)
+            { input: { type: 'drag-vertex', vertex: 'any', until: 'concave', live: 'both', attempts: true, retry: true, quietMiss: true } },
             { branch: true,
               on: { correct: [] },
+              /* THE SECOND MISS IS TAUGHT, NOT GIVEN AWAY (the final pass): the input is locked
+                 (game.js), a breath to register the miss; he comes in and says what to watch;
+                 the corner goes in slowly (1 s), the shape settles, a breath, the diagonal that
+                 now leaves the shape lights and is held; then why — and a reading pause before
+                 the lesson goes on. No third try. (A quadrilateral's dent sends exactly one
+                 diagonal outside, so the recorded "one" is right here.) */
               otherwise: [
-                { stage: { autoConcave: { vertex: 0 } } },
+                { wait: 500 },
+                { swiftee: 'enter', from: 'left', to: 'left', size: 'small' },
+                { focus: 'polygon.vertex.0', style: 'pulse' },
+                { say: 'Let me show you. Watch this corner.', vo: 'fb53' },
+                { stage: { autoConcave: { vertex: 0, ms: 1000, settle: 400, hold: 1000 } } },
                 { say: 'Now one diagonal goes outside, so the polygon is concave.', vo: 'p26r2' },
-                { wait: 1200 },
-                { swiftee: 'enter', from: 'left' }
+                { wait: 1000 }
               ] }
           ] },
         // the child's own dent, either time: the cheer, and he is back for it (a dent made for
@@ -912,8 +943,9 @@
         { branch: true,
           on: { correct: [
             { feedback: [{ sfx: 'correct' }, { juice: 'celebrate', target: 'polygon' }] },
+            // (in first, so "Great job!" is his — on the same mark as the explanations)
+            { swiftee: 'enter', from: 'left', to: 'left', size: 'small' },
             { say: 'Great job!', vo: 'fb03' },
-            { swiftee: 'enter', from: 'left' },
             { swiftee: 'celebrate' }
           ] },
           otherwise: [] }

@@ -433,6 +433,15 @@
       }
       if (beat.stage != null)       return beatStage(beat, token);
       if (beat.wait != null)        return beatWait(beat, token);
+      /* A LINE CHOSEN BY WHAT IS ON SCREEN (`alt: { if, say, parts, vo }`). The words must match
+         the picture: "One of the diagonals went outside." over a shape with two outside was
+         wrong (the final pass). The handlers' test(name) is asked when the line starts — the
+         shape is what the child made — and the alternative replaces the line when it holds. */
+      if (beat.say != null && beat.alt && beat.alt.if && typeof handlers.test === 'function') {
+        var useAlt = false;
+        try { useAlt = !!handlers.test(beat.alt.if); } catch (e) { useAlt = false; }
+        if (useAlt) beat = Object.assign({}, beat, beat.alt, { alt: null });
+      }
       if (beat.say != null)         return beatSay(beat, token, info);
       if (beat.instruction != null) return beatInstruction(beat, token, info);
       if (beat.swiftee != null)     return beatSwiftee(beat, token);

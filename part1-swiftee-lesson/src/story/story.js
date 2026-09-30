@@ -92,7 +92,7 @@
 
   var o = {};                        // mount: { root, next(on), pace() }
   var cfg = {};                      // start: { lift, done }
-  var host = null, ui = null, sayEl = null, sayShape = null, sayText = null, sayWords = [];
+  var host = null, ui = null, caption = null, sayEl = null, sayShape = null, sayText = null, sayWords = [];
   var snow = null, snowAnims = [];
   var st = { active: false, scene: 0, phase: 'idle', canAdvance: false, isTransitioning: false, isDialoguePlaying: false };
   var gen = 0, timers = [], anims = [], raf = 0;
@@ -453,6 +453,12 @@
   function place(line) {
     var b = line.box || {};
     sayEl.style.fontSize = '';
+    // (in the caption row the row lays it out: no place on the painting, no tail)
+    if (caption && sayEl.parentNode === caption) {
+      sayEl.style.left = ''; sayEl.style.top = '';
+      sayEl.style.setProperty('--ox', '50%'); sayEl.style.setProperty('--oy', '0px');
+      return;
+    }
     sayEl.style.left = '0px'; sayEl.style.top = '0px';
     var room = Math.min(W - 40, b.w1 || (W - 80));
     var wide = sayEl.offsetWidth, padX = wide - sayText.offsetWidth;
@@ -728,6 +734,7 @@
     if (!host || !DATA || !ART) return false;
     DATA.scenes.forEach(function (s) { (s.lines || []).forEach(function (l) { if (l.vo) ids[l.vo] = true; }); });
     ui = el('div', 'story-frame story-ui', host);
+    caption = el('div', 'sf-caption', host);
     snow = doc.createElementNS(NS, 'svg');
     snow.setAttribute('class', 'story-snow'); snow.setAttribute('viewBox', '0 0 ' + W + ' ' + H); snow.setAttribute('aria-hidden', 'true');
     ui.appendChild(snow);
@@ -745,7 +752,45 @@
     // a line laid out in the fallback face is re-measured once the real one is in
     if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(function () { if (sayLine && st.active) place(sayLine); }, function () {});
     preload();
+    fitFrame();
+    global.addEventListener('resize', fitFrame);
+    global.addEventListener('orientationchange', fitFrame);
     return true;
+  }
+
+  /* THE PANEL FITTED TO THE PAGE (the user's StoryFrame.fit, for this story's 1672 x 941
+     paintings). The panel is scaled as one piece to fill 95% of the story's box, centred, and
+     its ink set so it is 3 to 7 screen pixels whatever the scale. On an upright phone, where
+     50px lettering would show under 15px, the page is marked is-portrait: the panel moves to the
+     upper part of the screen and the line is shown in the caption row under it. */
+  function fitFrame() {
+    if (!host) return;
+    var vw = host.clientWidth || global.innerWidth || 0, vh = host.clientHeight || global.innerHeight || 0;
+    if (!vw || !vh) return;
+    var contain = Math.min(vw / W, vh / H);
+    var portrait = vh > vw * 1.1 && contain * 50 < 15;
+    var k = contain * (portrait ? 0.96 : 0.95);
+    var pw = W * k, ph = H * k, top;
+    if (portrait) {
+      var centre = Math.max(80 + ph / 2, vh * 0.3);
+      top = centre - ph / 2;
+      host.style.setProperty('--sf-caption-top', (centre + ph / 2 + 20).toFixed(1) + 'px');
+    } else {
+      top = (vh - ph) / 2;
+      host.style.removeProperty('--sf-caption-top');
+    }
+    host.style.setProperty('--story-k', k.toFixed(5));
+    host.style.setProperty('--sf-x', ((vw - pw) / 2).toFixed(1) + 'px');
+    host.style.setProperty('--sf-y', top.toFixed(1) + 'px');
+    host.style.setProperty('--sf-ink-w', (Math.max(3, Math.min(7, vw / 260)) / k).toFixed(2) + 'px');
+    var was = host.classList.contains('is-portrait');
+    host.classList.toggle('is-portrait', portrait);
+    // the line lives in the caption row on an upright phone, on the painting otherwise
+    if (sayEl && caption && ui) {
+      var want = portrait ? caption : ui;
+      if (sayEl.parentNode !== want) want.appendChild(sayEl);
+    }
+    if (was !== portrait && sayLine && st.active) place(sayLine);
   }
 
   function enabled() {
@@ -762,6 +807,7 @@
     try { reduce = !!(global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { reduce = false; }
     st.active = true; st.scene = 0; st.phase = 'entering'; st.canAdvance = false; st.isTransitioning = true;
     host.hidden = false; host.style.opacity = '';
+    fitFrame();   // (measured now it is shown: hidden, it has no size to fit to)
     if (o.root) o.root.classList.add('story-on');
     snowfall(true);
     if (global.VO && VO.ready && VO.preload) VO.ready().then(function () { VO.preload(Object.keys(ids)); }, function () {});

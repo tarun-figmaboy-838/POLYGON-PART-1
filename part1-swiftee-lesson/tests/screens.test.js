@@ -180,7 +180,8 @@ t('no screen claims page 34 or 36', !S.some((s) => s.page === 34 || s.page === 3
  * from `choice` would otherwise hide behind these.
  */
 const JUDGING = ['draw-diagonal', 'draw-diagonals', 'choice', 'multi-select', 'sort', 'swipe'];
-const OPEN = ['vertex-pick', 'drag-vertex', 'tap-each', 'tap-anywhere'];
+// (summary-review: the summary looked back at — tap a card to hear it again, Next to go on; nothing to get wrong)
+const OPEN = ['vertex-pick', 'drag-vertex', 'tap-each', 'tap-anywhere', 'summary-review'];
 
 const inputsOf = (s) => allBeats(s).filter((b) => b.input).map((b) => b.input.type);
 const judged = S.filter((s) => inputsOf(s).some((ty) => JUDGING.indexOf(ty) >= 0));
@@ -314,8 +315,9 @@ t('every wrong path re-opens the input or is judged per tap',
 // 'excited' since the sprite sheets landed, and a storyboard beat that used
 // it failed a test whose message said it was not implemented.
 const SWIFTEE = require('../src/character/swiftee.js').states;
+// (summary-review is the game's own, not the stage's: game.js reviewSummary)
 const INPUTS = ['tap-anywhere', 'vertex-pick', 'draw-diagonal', 'draw-diagonals',
-                'drag-vertex', 'choice', 'multi-select', 'tap-each', 'sort', 'swipe'];
+                'drag-vertex', 'choice', 'multi-select', 'tap-each', 'sort', 'swipe', 'summary-review'];
 const KINDS = ['vista', 'polygon', 'choice-grid', 'compare', 'sort', 'swipe-sort', 'summary'];
 const SFX = ['boing', 'correct', 'honk', 'levelUp', 'menuWhoosh', 'pop', 'select', 'slice',
              'slideWhistle', 'sparkle', 'tick', 'wrong', 'zip', 'drumroll'];
@@ -382,7 +384,8 @@ t('every juice effect referenced exists', unknown(used.juice, JUICE).length === 
 // 11: the drag-a-side's-end interaction (the old page 11) is gone — the child
 // now draws the diagonal from their own corner
 // 10: and the builder's stepper went with the builder
-t('all 10 interaction types are actually used somewhere', used.input.size === INPUTS.length, [...used.input]);
+// 11: the summary's review (tap a card to replay it, Next to go on) — the final pass
+t('all 11 interaction types are actually used somewhere', used.input.size === INPUTS.length, [...used.input]);
 t('all 7 stage kinds are actually used somewhere', used.kind.size === 7, [...used.kind]);
 
 /* ------------------------------------------------------------------ *
@@ -422,7 +425,9 @@ t('all 7 stage kinds are actually used somewhere', used.kind.size === 7, [...use
     t('a card only comes in once the one before it has been collected', nextStarts);
     const fin = at((b) => b.stage && b.stage.summary && b.stage.summary.final);
     const last = at((b) => b.stage && b.stage.summary && b.stage.summary.collect === 'irregular');
-    t('the finale comes after the last card is collected, and ends on Next', fin > last && beats[beats.length - 1].input && beats[beats.length - 1].input.type === 'tap-anywhere');
+    // (ends on the review: Next, and a tap on any card to hear it again — the final pass)
+    const endIn = beats[beats.length - 1].input;
+    t('the finale comes after the last card is collected, and ends on Next', fin > last && endIn && endIn.type === 'summary-review' && (endIn.cards || []).length === want.length && endIn.cards.every((c) => c.say === lines[c.id] && !!c.vo));
     t('the completion line is said at the finale', beats.some((b, i) => i > fin && b.say === 'Amazing! You explored all these polygon ideas!'));
 
     const G = (id) => Stage.summaryGeometry(id);

@@ -61,6 +61,8 @@ async function act(spec){
       await until(()=>{ if(d.querySelector('#next.show')) nextInLesson=true; return w.Game.screen!==scr || w.Input.mode()!=='dialogue' || !!d.querySelector('#hud .replay.show'); }, 30000).catch(()=>{});
       return;
     }
+    // the summary's review (the final pass): Next shows once every card has been explained; press it
+    case 'summary-review': { await until(()=>!!d.querySelector('#next.show'), 30000); d.querySelector('#next').dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await until(()=>!d.querySelector('#next.show'), 5000).catch(()=>{}); return; }
     case 'vertex-pick': await until(()=>svg().querySelectorAll('.vertex').length>0); tapEl(svg().querySelectorAll('.vertex')[0]); return;   // picked=0 -> adjacent 1, non-adjacent 2,3
     case 'draw-diagonal': case 'draw-diagonals': {
       const from=spec.from==='picked'?s.picked:spec.from; const V=v(); const n=V.length; const cnt=spec.count||1;
@@ -80,11 +82,13 @@ async function act(spec){
       return;
     }
     case 'drag-vertex': {
-      const V=v(); const i=spec.vertex==='any'?0:spec.vertex; const c=P.centroid(V);
+      // (a drag for a screen that has gone on is not made: the input is locked between tries now —
+      // the final pass — so the wait below can outlast the screen it was for)
+      const scr=w.Game.screen; const V=v(); if(!V) return; const i=spec.vertex==='any'?0:spec.vertex; const c=P.centroid(V);
       const tt=V.length===4?1.35:0.92; const target=spec.until==='concave'?{x:V[i].x+(c.x-V[i].x)*tt,y:V[i].y+(c.y-V[i].y)*tt}:{x:V[i].x,y:V[i].y-70};
       // first: grab, move a little, RELEASE early (the bug we fixed), then grab again and finish
       await drag(svg().querySelectorAll('.vertex')[i], lerp(V[i],target,10).slice(0,2)); await sleep(40); await free();
-      const V2=v(); await drag(svg().querySelectorAll('.vertex')[i], lerp(V2[i],target,14)); return;
+      const V2=v(); if(!V2 || w.Game.screen!==scr) return; await drag(svg().querySelectorAll('.vertex')[i], lerp(V2[i],target,14)); return;
     }
     case 'choice': {
       await until(()=>svg().querySelectorAll('.choice').length>0);
@@ -255,7 +259,8 @@ async function act(spec){
   const types=new Set(asked.map(a=>a.type));
   // 10: the storyboard no longer drags a side's loose end (drag-endpoint),
   // and the builder's stepper went with the builder
-  t('all 10 interaction types were exercised', types.size===10, [...types].join(','));
+  // (11: the summary's review — Next, and a tap on a card to hear it again)
+  t('all 11 interaction types were exercised', types.size===11, [...types].join(','));
   t('the connect step went side, then diagonal', Object.values(sideTries).some(k=>k===2), JSON.stringify(sideTries));
   t('the summary collected all eight ideas, in order, and reached its finale', !!SM && SM.state==='FINAL_SUMMARY' && SM.collected.join(',')==='vertex,side,angle,diagonal,convex,concave,regular,irregular',
     JSON.stringify(SM));
