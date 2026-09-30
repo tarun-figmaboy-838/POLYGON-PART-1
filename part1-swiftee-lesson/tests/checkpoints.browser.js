@@ -307,13 +307,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const after = await ev(() => ({ from: window.Stage.state.from, verts: window.Stage.state.verts.map((p) => [Math.round(p.x), Math.round(p.y)]), screen: window.Game.screen, picked: window.Stage.state.vcolor && window.Stage.state.vcolor[0] }));
     return { ok: before.knobs >= 5 && before.pulsing <= before.knobs && before.rings === 0 && Math.max(...before.r) <= 12 && (after.from === 0 || !!after.picked) && JSON.stringify(after.verts) === JSON.stringify(before.verts), extra: { before, after: { from: after.from, screen: after.screen } } };
   });
-  await step(13, 'Level 2 ghost: from the real vertex, toward a non-adjacent one, inside the card, the polygon untouched', async () => {
+  await step(13, 'Level 2 ghost: from the real vertex, first toward a NEIGHBOUR (a side, the Screen 7 brief), inside the card, the polygon untouched', async () => {
     const i = await idx('connect'); await waiting(i);
     const g = await ev(() => new Promise((res) => {
       const T0 = performance.now();
       const tick = () => {
         const gh = document.querySelector('#stage .gesture-ghost line, #stage .gesture-ghost path, #stage .ghost-demo line');
-        if (gh) { const v = window.Stage.state.verts, f = window.Stage.state.from || 0; const x1 = +gh.getAttribute('x1'), y1 = +gh.getAttribute('y1'); res({ found: true, x1, y1, from: [v[f].x, v[f].y], verts: v.map((p) => [Math.round(p.x), Math.round(p.y)]), waited: Math.round(performance.now() - T0), box: gh.getBoundingClientRect().toJSON() }); return; }
+        if (gh) { const v = window.Stage.state.verts, f = window.Stage.state.from || 0; const x1 = +gh.getAttribute('x1'), y1 = +gh.getAttribute('y1'), x2 = +gh.getAttribute('x2'), y2 = +gh.getAttribute('y2'); const to = v.findIndex((p) => Math.hypot(p.x - x2, p.y - y2) < 2); res({ found: true, x1, y1, to, adjacent: to >= 0 && window.Poly.isAdjacent(f, to, v.length), from: [v[f].x, v[f].y], verts: v.map((p) => [Math.round(p.x), Math.round(p.y)]), waited: Math.round(performance.now() - T0), box: gh.getBoundingClientRect().toJSON() }); return; }
         if (performance.now() - T0 > 22000) { res({ found: false }); return; }
         setTimeout(tick, 100);
       };
@@ -323,7 +323,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const panel = await rect('#stage .panel');
     const inside = g.box.left >= panel.x - 12 && g.box.right <= panel.r + 12 && g.box.top >= panel.y - 12 && g.box.bottom <= panel.b + 12;
     const same = JSON.stringify(g.verts) === JSON.stringify(vertsL2);
-    return { ok: (isNaN(g.x1) || (Math.abs(g.x1 - g.from[0]) < 3 && Math.abs(g.y1 - g.from[1]) < 3)) && inside && same, extra: { waited: g.waited, start: [g.x1, g.y1], from: g.from, inside, same } };
+    return { ok: (isNaN(g.x1) || (Math.abs(g.x1 - g.from[0]) < 3 && Math.abs(g.y1 - g.from[1]) < 3)) && g.adjacent && inside && same, extra: { waited: g.waited, start: [g.x1, g.y1], from: g.from, to: g.to, adjacent: g.adjacent, inside, same } };
   });
   await step(14, 'Level 2 invalid drops (a side, empty card, off the card): no diagonal, no progress, still open', async () => {
     const i = await idx('connect'); await waiting(i);
@@ -368,6 +368,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const c0 = await cues(), panel0 = await rect('#stage .panel');
     const f = await ev(() => window.Stage.state.from || 0), n = await ev(() => window.Stage.state.verts.length);
     const to = (f + 2) % n;
+    // SIDE FIRST (the Screen 7 brief): the side is made and named, then the diagonal from the same corner
+    await dragPath(await knobClient(f), await knobClient((f + 1) % n), 12, 80);
+    await waitFn(() => (window.Stage.state.sidesDone || []).length > 0 && window.Stage.state.connect === 'READY_TO_CONNECT' && window.Input.mode() === 'polygon', null, 45000);
+    await sleep(400);
     await dragPath(await knobClient(f), await knobClient(to), 12, 80);
     await waitFn(() => (window.Stage.state.diagonals || []).length >= 1, null, 8000);
     const d = await ev(() => { const D = window.Stage.state.diagonals[0], v = window.Stage.state.verts; return { d: [D[0], D[1]], solid: !!D.solid, n: window.Stage.state.diagonals.length }; });

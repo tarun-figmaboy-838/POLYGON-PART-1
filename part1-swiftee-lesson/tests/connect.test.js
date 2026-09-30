@@ -179,10 +179,21 @@ async function play(k, { w, d, errors, voice }) {
   await sleep(40);
   t('k=' + k + ': a line dropped on nothing has no verdict', !sfx.slice(-3).includes('wrong') && w.Stage.connectState() === 'READY_TO_CONNECT' && !(St().diagonals || []).length && !St().segment,
     { sfx: sfx.slice(-3), state: w.Stage.connectState() });
-  t('k=' + k + ': ...and lights every corner for a moment, not just the answers', [...St().knobEls].filter((kn, i) => i !== k && kn.classList.contains('target')).length === 4);
+  // SIDE FIRST (the Screen 7 brief): before a side is made, the places a line may go are the two
+  // neighbours — so a miss lights those two, the move being asked for, and no far corner
+  const litNow = () => [...St().knobEls].map((kn, i) => kn.classList.contains('target') ? i : -1).filter((i) => i >= 0).sort().join(',');
+  t('k=' + k + ': ...and lights the two neighbours for a moment', litNow() === [left, right].sort().join(','), litNow());
   await sleep(1500);
   t('k=' + k + ': ...then they settle back to plain points', [...St().knobEls].filter((kn) => kn.classList.contains('target')).length === 0 && [...St().knobEls].every((kn) => kn.getAttribute('opacity') === '1'));
   t('k=' + k + ': still ready after the miss', w.Stage.connectState() === 'READY_TO_CONNECT' && pending === null);
+
+  // a far corner before any side: not a place the line may go yet — home, no verdict, no diagonal
+  await drag(from(), lerp(V()[k], V()[far], 6));
+  await sleep(40);
+  t('k=' + k + ': a far corner before the side makes nothing', w.Stage.connectState() === 'READY_TO_CONNECT' && !(St().diagonals || []).length && !St().segment && pending === null && !sfx.slice(-3).includes('wrong'),
+    { st: w.Stage.connectState(), dg: St().diagonals, sfx: sfx.slice(-3) });
+  t('k=' + k + ': ...and the neighbours light, the side to make first', litNow() === [left, right].sort().join(','), litNow());
+  await sleep(1500);
 
   // the neighbour on one side
   await drag(from(), lerp(V()[k], V()[right], 6));

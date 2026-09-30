@@ -428,6 +428,24 @@
       drawn.forEach(function (ln) { ln.style.strokeDasharray = '14 12'; ln.style.strokeDashoffset = '0px'; });
     }
     if (mover && mover.animate) anims.push(mover.animate(frames, { duration: ms, iterations: times, delay: delay }));
+    /* THE CORNER IT GOES TO LIGHTS AS THE LINE REACHES IT (opts.target — the connect hint:
+       "adjacent vertex briefly highlights → ghost line reaches it"): the knob swells a size
+       and brightens just before the line lands, holds while the line holds, and settles as
+       the line fades. Animates `scale`, never `transform`; cancelled with the rest (stop). */
+    if (opts.target && opts.target.animate) {
+      try {
+        opts.target.style.transformBox = 'fill-box'; opts.target.style.transformOrigin = 'center';
+        var lit = 'brightness(1.18) drop-shadow(0 0 5px ' + HI.lit + ')';
+        anims.push(opts.target.animate([
+          { scale: '1', filter: 'none', offset: 0 },
+          { scale: '1', filter: 'none', offset: 0.46 },
+          { scale: '1.32', filter: lit, offset: 0.62, easing: 'cubic-bezier(.3,1.4,.5,1)' },
+          { scale: '1.32', filter: lit, offset: 0.8 },
+          { scale: '1', filter: 'none', offset: 0.94 },
+          { scale: '1', filter: 'none', offset: 1 }
+        ], { duration: ms, iterations: times, delay: delay }));
+      } catch (e) {}
+    }
     /* AND A HAND DOES IT. The glove comes down onto the start, presses, and
        carries the ghost along the move with its fingertip on it; at the end it
        lifts off and away, leaving the mark where the move finishes. */
@@ -1557,8 +1575,11 @@
     // try (clearSide); nothing else on the shape is drawn over a side.
     if (st.segment) {
       var sa = v[st.segment[0]], sb = v[st.segment[1]];
-      var segEl = mk('line', { x1: sa.x, y1: sa.y, x2: sb.x, y2: sb.y, stroke: HI.line, 'stroke-width': 4.5,
-                               'stroke-linecap': 'round', 'pointer-events': 'none', 'class': 'segment' }, g);
+      // (a size thicker than the outline, and glowing: the side the child has just made is
+      // not lost in the outline — the Screen 7 brief; drawn so on every rebuild, not only once)
+      var segEl = mk('line', { x1: sa.x, y1: sa.y, x2: sb.x, y2: sb.y, stroke: HI.line, 'stroke-width': 6,
+                               'stroke-linecap': 'round', 'pointer-events': 'none', 'class': 'segment',
+                               style: 'filter: drop-shadow(0 0 5px ' + HI.lit + ');' }, g);
       st.segGlow = segEl; st.segLine = segEl;
     }
     // THE SIDES ALREADY FOUND STAY FOUND, LIT (the user: "freeze the side line, highlighted, so
@@ -1646,17 +1667,18 @@
       // (NO RING round the corner the child chose — the user: "remove the large rings around
       // vertex dots". The dot itself says it: gold, and a size up.)
       // A CORNER ALREADY JOINED BY A SIDE (st.sidesDone) is not somewhere a line can be taken
-      // again — but it is NOT dimmed (the user: "do not disable the dot; the frozen, highlighted
-      // side is what shows this is a side")
+      // again, and it now LOOKS spent (the Screen 7 brief: "disable it as the next target, stop
+      // its pulse, visually de-emphasise it" — which replaces the earlier "do not dim the dot"):
+      // a size down, faded, never breathing. The frozen, lit side still shows what it was.
       var spent = !!(st.sidesDone && st.sidesDone.some(function (sd) { return sd[1] === j; }));
       var knob = mk('circle', {
         cx: v[j].x, cy: v[j].y,
-        r: col ? 10 : (touch ? 9 : 6),
+        r: col ? 10 : (spent ? 7 : (touch ? 9 : 6)),
         fill: col || (touch ? '#ffffff' : SHAPE.edge),
         stroke: col ? '#ffffff' : (touch ? '#0b3f7a' : 'none'),
-        'stroke-width': col ? 3 : (touch ? 3 : 2),
-        'class': 'knob' + ((st.breathe && !col && touch) || (st.breatheAt && st.breatheAt[j]) ? ' breathe' : ''), 'data-i': j,
-        opacity: shown ? 1 : 0,
+        'stroke-width': col ? 3 : (spent ? 2 : (touch ? 3 : 2)),
+        'class': 'knob' + (!spent && ((st.breathe && !col && touch) || (st.breatheAt && st.breatheAt[j])) ? ' breathe' : '') + (spent ? ' spent' : ''), 'data-i': j,
+        opacity: shown ? (spent && !col ? 0.42 : 1) : 0,
         'pointer-events': 'none'
       }, g);
       // 18 units: 36 across, which is 37px on a 1024-wide window and more on
@@ -7204,7 +7226,9 @@
   function shimmerLine(ln) {
     if (reduced() || !ln || !ln.animate) return;
     try {
-      ln.animate([{ strokeWidth: 4.5, filter: 'brightness(1)' }, { strokeWidth: 8, filter: 'brightness(1.5)', offset: 0.35 }, { strokeWidth: 4.5, filter: 'brightness(1)' }],
+      // from the line's own weight (the made side is 6 now, the others 4.5), so it does not jump
+      var w0 = parseFloat(ln.getAttribute('stroke-width')) || 4.5;
+      ln.animate([{ strokeWidth: w0, filter: 'brightness(1)' }, { strokeWidth: w0 + 3.5, filter: 'brightness(1.5)', offset: 0.35 }, { strokeWidth: w0, filter: 'brightness(1)' }],
                  { duration: 560, easing: 'ease-out' });
     } catch (e) {}
   }
@@ -7317,16 +7341,30 @@
         // NEIGHBOUR once a side has been named: the user, "the child made a side, so why can the
         // card draw the other side?" One side is the lesson; a second is the same lesson
         // again. After it, only a corner a diagonal can reach is a place the line may go.)
+        // SIDE FIRST, THEN THE DIAGONAL (the Screen 7 brief): until a side has been made and
+        // named, a line can only be joined to a NEIGHBOUR — the side is the discovery the
+        // diagonal is measured against, and a first line to a far corner skipped it. A line
+        // let go on a far corner goes home and the two neighbours light (release, below).
         var spentAt = (st.sidesDone || []).map(function (sd) { return sd[1]; });
         var sideMade = !!(st.sidesDone && st.sidesDone.length);
         var all = [];
         for (var q = 0; q < st.n; q++) {
           if (q === from || diagonalUsed(from, q) || spentAt.indexOf(q) >= 0) continue;
-          if (sideMade && Poly.isAdjacent(from, q, st.n)) continue;
+          var adj = Poly.isAdjacent(from, q, st.n);
+          if (sideMade ? adj : !adj) continue;
           all.push(q);
         }
         return all;
       };
+      var sideMade = function () { return !!(st.sidesDone && st.sidesDone.length); };
+      // THE CORNERS A DIAGONAL CAN REACH, SHOWN ONCE (the brief: "valid non-adjacent vertices
+      // … only these receive subtle emphasis"): when the try after the side arms, the far
+      // corners light for a moment and settle back — a light, not a pulse that keeps going
+      if (sides && sideMade()) later(450, function () {
+        if (active) return;
+        showTargets(targets(), true);
+        later(1400, function () { if (!active) showTargets([], false); });
+      });
       // THE MOVE, SHOWN — once the child has been still a while (hintLadder).
       // First the corners a line may go to breathe; then a ghost runs from the
       // chosen corner to one of them. It gives no answer away: every corner
@@ -7338,12 +7376,16 @@
         // point"): it is the one thing to press; the corners a line may go to stay still
         pulse: function () { return pulseHint([knobOf(from)].filter(Boolean)); },
         demo: function () {
-          // connecting for the first time, the ghost shows JOINING TWO CORNERS
-          // (to a neighbour: the side is the lesson's first answer); after a
-          // side has been made, it shows a line that is not one
-          // (a LINE drawn out of the corner, which stays where it is — gestureGhost `line`)
-          var t = (sides && !spec.retry) ? (from + 1) % st.n : valid()[0];
-          return t == null ? null : gestureGhost(st.verts[from], st.verts[t], { line: true });
+          // THE GHOST FOLLOWS THE LESSON (the Screen 7 brief): before a side has been made it
+          // draws a SIDE — to a neighbour, which lights as the line reaches it; once the side
+          // is named it draws the DIAGONAL, to a far corner, which lights the same way. Keyed
+          // on whether a side exists, not on the input being a retry: a retry before any side
+          // must still show the side. (A LINE drawn out of the corner, which stays where it
+          // is — gestureGhost `line`; one ghost at a time, taken down by a press: hintLadder.)
+          var t;
+          if (sides && !sideMade()) { var nb = targets(); t = nb.indexOf((from + 1) % st.n) >= 0 ? (from + 1) % st.n : nb[0]; }
+          else t = sides ? targets()[0] : valid()[0];
+          return t == null ? null : gestureGhost(st.verts[from], st.verts[t], { line: true, target: knobOf(t) });
         }
       });
       /* THE LINE STAYS ON THE CARD (the user: "the dragged line must never extend outside the
@@ -7432,7 +7474,21 @@
           st.lastEl = st.segLine || knobOf(j);
           // lit while it is being named, and only then (clearSide takes it
           // down before the next try)
-          if (st.segLine) { st.segLine.setAttribute('style', litGlow(HI.lit)); shimmerLine(st.segLine); }
+          /* THE SIDE THEY MADE IS NOT LOST IN THE OUTLINE (the Screen 7 brief): on the very
+             edge, never off it, but a size thicker than the outline, glowing, and drawn on —
+             a bright sweep from their corner to the neighbour — before its shimmer, so it reads
+             as "the line I just connected", not as one more side of the shape. */
+          if (st.segLine) {
+            if (!reduced() && st.segLine.animate) {
+              var sl = Math.hypot(st.verts[j].x - st.verts[from].x, st.verts[j].y - st.verts[from].y) || 1;
+              try {
+                st.segLine.animate([{ strokeDasharray: sl + ' ' + sl, strokeDashoffset: sl + 'px' },
+                                    { strokeDasharray: sl + ' ' + sl, strokeDashoffset: '0px' }],
+                                   { duration: 320, easing: 'cubic-bezier(.3,.7,.3,1)' })
+                  .finished.then(function () { shimmerLine(st.segLine); }, function () {});
+              } catch (x) { shimmerLine(st.segLine); }
+            } else shimmerLine(st.segLine);
+          }
           setConnect('SIDE_FEEDBACK', { from: from, to: j });
           evt('side:made', { from: from, to: j });
           endInteraction(); resolve({ result: 'side', vertex: j });
