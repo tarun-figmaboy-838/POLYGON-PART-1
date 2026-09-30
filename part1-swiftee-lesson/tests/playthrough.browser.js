@@ -844,7 +844,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     t('Swiftee is on screen only where he has a purpose', buddy.length === 0, buddy.join(' '));
     // 10: the storyboard no longer drags a side's loose end (drag-endpoint),
     // and the builder's stepper went with the builder
-    t('all 10 interaction types were exercised', new Set(asked).size === 10, [...new Set(asked)].join(','));
+  // (11: the summary's review — Next, and a tap on a card to hear it again)
+    t('all 11 interaction types were exercised', new Set(asked).size === 11, [...new Set(asked)].join(','));
     t('correct cues fired', cues.correct > 0, JSON.stringify(cues));
     t('never stalled on a screen', stalls === 0, stalled ? JSON.stringify(stalled) : '');
     if (VOICED) {

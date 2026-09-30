@@ -529,12 +529,17 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const before = (await said()).length;
     await dragPath(k, { x: k.x + (c.x - k.x) * 0.3, y: k.y + (c.y - k.y) * 0.3 }, 8, 80);
     await waitFn(() => window.Poly.classify(window.Stage.state.verts).concave, null, 15000).catch(() => {});
+    // (the outside diagonal lights once the shape has SETTLED, a breath after the dent — the final
+    // pass's demonstration order — so it is waited for, and how long after is kept)
+    const tDent = Date.now();
+    await waitFn(() => [...document.querySelectorAll('#stage line')].some((l) => /7a4cff|b98cff|8a5cff/i.test(l.getAttribute('stroke') || '')), null, 5000).catch(() => {});
+    const litAfter = Date.now() - tDent;
     const s = await ev(() => ({ concave: window.Poly.classify(window.Stage.state.verts).concave, purple: [...document.querySelectorAll('#stage line')].filter((l) => /7a4cff|b98cff|8a5cff/i.test(l.getAttribute('stroke') || '')).length, locked: window.Input.mode() === 'locked' }));
     await shot('09-screen21-auto-concave');
     await waitFn((i) => window.Game.screen > i, i, 40000).catch(() => {});
     const lines = (await said()).slice(before);
     const advanced = await ev((i) => window.Game.screen > i, i);
-    return { ok: s.concave && s.purple >= 1 && lines.some((t) => /outside|concave/i.test(t)) && advanced, extra: { ...s, lines, advanced } };
+    return { ok: s.concave && s.purple >= 1 && lines.some((t) => /outside|concave/i.test(t)) && advanced, extra: { ...s, litAfter, lines, advanced } };
   });
 
   // ---- the sort (screen 22) ----------------------------------------------------
