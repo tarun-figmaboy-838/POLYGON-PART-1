@@ -608,8 +608,14 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       const now = performance.now() - T0;
       if (g) {
         tools = Math.max(tools, document.querySelectorAll('#stage .angle-protractor').length);
-        const bird = g.querySelector('g[data-frame]'), tool = g.querySelector('.angle-protractor');
-        const bt = num(bird.getAttribute('transform'), /translate\(([-\d.]+),([-\d.]+)\)/), tt = num(tool.getAttribute('transform'), /translate\(([-\d.]+),([-\d.]+)\)/), rot = num(tool.getAttribute('transform'), /rotate\(([-\d.]+)\)/);
+        const tool = g.querySelector('.angle-protractor');
+        const tt = num(tool.getAttribute('transform'), /translate\(([-\d.]+),([-\d.]+)\)/), rot = num(tool.getAttribute('transform'), /rotate\(([-\d.]+)\)/);
+        // WHERE HE IS: the whole drawing turns about the protractor's centre (stage.js angleMeasurer),
+        // so his body's place is the tool's place plus the drawn body's offset from the registration
+        // point, turned with it — the body sits about (225, 290) in the 512 cell, the anchor at (384, 320)
+        const F = window.AngleMeasuringFrames, rr = ((rot && rot[0]) || 0) * Math.PI / 180;
+        const lx = (225 - F.anchor.x) * F.scale, ly = (290 - F.anchor.y) * F.scale;
+        const bt = tt ? [tt[0] + Math.cos(rr) * lx - Math.sin(rr) * ly, tt[1] + Math.sin(rr) * lx + Math.cos(rr) * ly] : null;
         const st = g.getAttribute('data-state'), k = +g.getAttribute('data-angle');
         if (bt && prev && /MOVE_TO|RETURN/.test(st)) maxJump = Math.max(maxJump, Math.hypot(bt[0] - prev[0], bt[1] - prev[1]));
         prev = bt;
@@ -631,7 +637,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const carried = rig.samples.filter((s) => /MOVE_TO|RETURN/.test(s.st) && s.gap != null).map((s) => s.gap);
     const spread = carried.length ? Math.max(...carried) - Math.min(...carried) : 999;
     const shotSample = rig.samples.find((s) => /MOVE_TO/.test(s.st));
-    return { ok: rig.tools === 1 && carried.length > 3 && spread <= 3 && (carried[0] || 0) < 40, extra: { tools: rig.tools, carriedSamples: carried.length, gap: carried.length ? [Math.min(...carried), Math.max(...carried)] : null, sample: shotSample } };
+    // (the gap is body-centre to tool-centre, about 53 units in the drawing; constant while carried)
+    return { ok: rig.tools === 1 && carried.length > 3 && spread <= 3 && (carried[0] || 0) < 80, extra: { tools: rig.tools, carriedSamples: carried.length, gap: carried.length ? [Math.min(...carried), Math.max(...carried)] : null, sample: shotSample } };
   });
   await step(34, 'at each corner: the tool’s centre on the vertex (≤ 5 units), its edge along a side (≤ 1.5°), him outside the shape, beside it', async () => {
     const out = [];
