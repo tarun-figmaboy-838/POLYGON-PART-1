@@ -1949,7 +1949,7 @@
       }
       return { x: st.verts[0].x - 35, y: st.verts[0].y + 55 };
     }
-    pose = Object.assign({ rotation: 0 }, home());
+    pose = Object.assign({ rotation: 0, mirror: 1 }, home());
     if (global.Swiftee && Swiftee.lock) Swiftee.lock('angle-measuring');
     g.style.opacity = '0';
     function stop() {
@@ -1961,7 +1961,8 @@
     cleanup.push(stop);
     function paint() {
       // the protractor's centre at the pose, the whole drawing turned about it
-      instrument.setAttribute('transform', 'translate(' + pose.x + ',' + pose.y + ') rotate(' + pose.rotation + ')');
+      // (mirror: -1 draws him on the other end of the baseline — see AS UPRIGHT AS THE CORNER ALLOWS)
+      instrument.setAttribute('transform', 'translate(' + pose.x + ',' + pose.y + ') rotate(' + pose.rotation + ') scale(' + pose.mirror.toFixed(3) + ',1)');
       var at = Math.min(phases.length - 1, framePosition);
       var frame = phases[Math.round(at)];
       sheet.setAttribute('x', -(frame % frames.cols) * cell); sheet.setAttribute('y', -Math.floor(frame / frames.cols) * cell);
@@ -1994,12 +1995,22 @@
       if (!Poly.contains(v, { x: p.x + Math.cos(a + sweep / 2) * 2, y: p.y + Math.sin(a + sweep / 2) * 2 })) sweep -= 2 * Math.PI;
       // The generated protractor opens above its baseline; this ray keeps
       // that semicircle inside the polygon while the bird follows its grip.
-      var base = sweep < 0 ? a : b, rotation = base * 180 / Math.PI;
+      var base = sweep < 0 ? a : b, rotation = base * 180 / Math.PI, mirror = 1;
+      /* AS UPRIGHT AS THE CORNER ALLOWS. The baseline can lie on either side of the corner: on
+         this one the drawing turns to the side's direction and he hangs off its far end; on
+         the other side it turns half a turn further and is MIRRORED, so he hangs off that
+         side's far end instead — the face opens into the corner and he is outside the shape
+         either way. Whichever turns him less is used: at the flat bottom of the pentagon he
+         stands upright beside the corner rather than hanging head down (the rotation alone
+         put him upside down at both bottom corners). He turns round in the air on the way. */
+      var norm = function (d) { return ((d % 360) + 540) % 360 - 180; };
+      var alt = ((base === a ? b : a) * 180 / Math.PI) + 180;
+      if (Math.abs(norm(alt)) < Math.abs(norm(rotation)) - 1) { rotation = alt; mirror = -1; }
       var outward = a + sweep / 2 + Math.PI;
       var carry = { x: p.x + Math.cos(outward) * 16, y: p.y + Math.sin(outward) * 16 };
       var approach = first; first = false;
       g.setAttribute('data-angle', index); highlight.replaceChildren();
-      var flight = Object.assign({ rotation: rotation - 8 }, carry);
+      var flight = Object.assign({ rotation: rotation - 8 * mirror, mirror: mirror }, carry);
       tween('MOVE_TO_VERTEX', 'carry', flight, approach ? 750 : 600, function () {
         tween('POSITION_PROTRACTOR', 'position', { x: p.x, y: p.y }, 400, function () {
           tween('ALIGN', 'align', { rotation: rotation }, 420, function () {
@@ -2012,7 +2023,7 @@
                 tween('LIFT', 'lift', carry, 350, function () {
                   highlight.replaceChildren();
                   if (!last) { done(); return; }
-                  tween('RETURN', 'carry', Object.assign({ rotation: 0 }, home()), 800, function () {
+                  tween('RETURN', 'carry', Object.assign({ rotation: 0, mirror: 1 }, home()), 800, function () {
                     tween('COMPLETE', 'carry', {}, 250, function () { stop(); done(); }, function (t) {
                       g.style.opacity = 1 - t;
                       if (companion) companion.style.opacity = String(t * Number(opacity || 1));
