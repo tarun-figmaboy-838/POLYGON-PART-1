@@ -1886,73 +1886,53 @@
     else begin();
   }
 
-  // One rig owns the whole angle demonstration. All coordinates are in the
-  // polygon's SVG space, so the bird, instrument and vertex scale together.
+  // Generated bird and held protractor are one registered performance: the
+  // same baseline-center pivot drives both flight and exact vertex alignment.
   function angleMeasurer() {
     var frames = global.AngleMeasuringFrames;
     if (reduced() || !frames || !global.requestAnimationFrame) return null;
-    var companion = global.Swiftee && Swiftee.el;
-    var opacity = companion && companion.style.opacity;
+    var companion = global.Swiftee && Swiftee.el, opacity = companion && companion.style.opacity;
     var g = mk('g', { 'class': 'swiftee-angle-measuring', 'pointer-events': 'none', 'aria-hidden': 'true' }, layers.fx);
-    var highlight = mk('g', { 'class': 'active-angle' }, g);
-    var bird = mk('g', {}, g), cell = 60;
-    var phaseFrames = frames.phases.carry, framePosition = 0;
-    var crop = mk('svg', { x: -30, y: -30, width: cell, height: cell, viewBox: '0 0 256 256', overflow: 'hidden' }, bird);
-    var sheet = mk('image', { href: frames.image, width: frames.cols * frames.cell, height: frames.rows * frames.cell }, crop);
-    var blend = mk('image', { href: frames.image, width: frames.cols * frames.cell, height: frames.rows * frames.cell, opacity: 0 }, crop);
-    /* THE PROTRACTOR IS A THING HE HOLDS (the user: "the protractor does not look in Swiftee's
-       hand; the position and angle do not look correct"). It was a faint tinted arc dropped
-       on the corner with him hovering 34 units off — inside its own disc, the tool drawn over
-       his face — so it read as a mark on the shape, not an instrument. Now it is a piece of
-       pale plastic with a proper straight edge and a readable scale, and it is always at his
-       wing: carried edge-first as he flies (carried), then reached out from his wing to the
-       corner (POSITION_PROTRACTOR), turned so its edge lies along one side (ALIGN), held,
-       and taken back into his wing (LIFT). He stands at the outer end of the straight edge —
-       past the corner along that side, a touch to the flat side of the tool — which is
-       outside the shape at every corner of a convex polygon, with the whole of him clear of
-       it. The scale starts at 0 on the straight edge (local +x) and rises through 90 at the
-       top (local -y) to 180, so the other side of the corner crosses it at the reading. */
-    var HAND = { x: 21, y: 5 }, PR = 46;              // his wing tip in his own 60-unit cell; the tool's radius
     var instrument = mk('g', { 'class': 'angle-protractor' }, g);
-    mk('path', { d: 'M-' + PR + ' 0 A' + PR + ' ' + PR + ' 0 0 1 ' + PR + ' 0 Z', fill: '#f5fcff', 'fill-opacity': 0.74, stroke: '#4a7d99', 'stroke-width': 1.5, 'stroke-linejoin': 'round' }, instrument);
-    mk('line', { x1: -PR, y1: 0, x2: PR, y2: 0, stroke: '#4a7d99', 'stroke-width': 2.4, 'stroke-linecap': 'round' }, instrument);   // the straight edge
-    mk('path', { d: 'M-30 0 A30 30 0 0 1 30 0', fill: 'none', stroke: '#a9cfdf', 'stroke-width': 0.9 }, instrument);
-    /* TURNED OVER WHEN THAT SUITS THE CORNER (mirror): the disc on the other side of its
-       edge and the scale running the other way round — the second scale a real protractor
-       carries. THE NUMBERS STAY UPRIGHT whichever way the tool lies (paint: each sits in its
-       own seat, turned back by the tool's rotation and flip), so a child can read the scale
-       at any corner — on a real one they turn with it, and "108" upside down is nothing. */
-    var seats = [];
-    for (var degree = 0; degree <= 180; degree += 10) {
-      var rad = -degree * Math.PI / 180, inner = degree % 30 === 0 ? PR - 9 : PR - 5;
-      mk('line', { x1: Math.cos(rad) * inner, y1: Math.sin(rad) * inner, x2: Math.cos(rad) * PR, y2: Math.sin(rad) * PR, stroke: '#2f5a72', 'stroke-width': degree % 30 === 0 ? 1.3 : 0.9 }, instrument);
-      if (degree % 30 === 0) {
-        var seat = mk('g', {}, instrument);
-        seat._at = { x: Math.cos(rad) * 27, y: Math.sin(rad) * 27 };
-        var label = mk('text', { x: 0, y: 2.4, 'text-anchor': 'middle', 'font-size': 6.5, fill: '#1f4860', 'font-weight': 700 }, seat);
-        label.textContent = degree;
-        seats.push(seat);
-      }
-    }
-    mk('circle', { r: 2.4, fill: 'none', stroke: '#2f5a72', 'stroke-width': 1 }, instrument);   // the centre mark, over the corner
-    mk('line', { x1: 0, y1: -5, x2: 0, y2: 5, stroke: '#2f5a72', 'stroke-width': 0.9 }, instrument);
-    var stopped = false, raf = null, pose = null, approaching = true, facing = 1, mirror = 1;
-    /* The tool in his wing: its straight edge held upright at his wing tip, the disc ahead
-       of him (rotate(±90) turns local -y, where the disc is, to the side he faces — the other
-       way about when the tool is turned over). */
-    function carried(x, y) { return { px: x + facing * (HAND.x + 4), py: y + HAND.y + 6, rotation: facing * 90 * mirror }; }
+    var scale = frames.scale, cell = frames.cell, anchor = frames.anchor;
+    // Both layers use the NEW generated held-tool drawing. Separate clips let
+    // the protractor rotate accurately while Swiftee remains upright; his
+    // generated gripping wing stays attached to the same point on its rim.
+    var defs = mk('defs', {}, g), token = 'angle-rig-' + Date.now();
+    var bodyMask = mk('clipPath', { id: token + '-body', clipPathUnits: 'userSpaceOnUse' }, defs);
+    var r = frames.radius + 3, ax = anchor.x, ay = anchor.y;
+    var cut = 'M0 0H' + cell + 'V' + cell + 'H0Z M' + (ax-r) + ' ' + (ay+12) +
+      'H' + (ax+r) + 'V' + ay + 'A' + r + ' ' + r + ' 0 0 0 ' + (ax-r) + ' ' + ay + 'Z';
+    mk('path', { d: cut, 'clip-rule': 'evenodd' }, bodyMask);
+    var toolMask = mk('clipPath', { id: token + '-tool', clipPathUnits: 'userSpaceOnUse' }, defs);
+    mk('path', { d: 'M' + (ax-r) + ' ' + (ay+12) + 'H' + (ax+r) + 'V' + ay +
+      'A' + r + ' ' + r + ' 0 0 0 ' + (ax-r) + ' ' + ay + 'Z' }, toolMask);
+    var toolCrop = mk('svg', { x: -ax * scale, y: -ay * scale, width: cell * scale,
+      height: cell * scale, viewBox: '0 0 ' + cell + ' ' + cell, overflow: 'hidden' }, instrument);
+    var toolArt = mk('g', { 'clip-path': 'url(#' + token + '-tool)' }, toolCrop);
+    mk('image', { href: frames.image, width: frames.cols * cell, height: frames.rows * cell }, toolArt);
+    var bird = mk('g', { 'class': 'angle-performer' }, g);
+    var grip = { x: ax - frames.radius + 5, y: ay + 13 };
+    var crop = mk('svg', { x: -grip.x * scale, y: -grip.y * scale, width: cell * scale,
+      height: cell * scale, viewBox: '0 0 ' + cell + ' ' + cell, overflow: 'hidden' }, bird);
+    var bodyArt = mk('g', { 'clip-path': 'url(#' + token + '-body)' }, crop);
+    var sheet = mk('image', { href: frames.image, width: frames.cols * cell, height: frames.rows * cell }, bodyArt);
+    var blend = mk('image', { href: frames.image, width: frames.cols * cell, height: frames.rows * cell, opacity: 0 }, bodyArt);
+    // The real interior arc stays legible over the translucent tool face.
+    var highlight = mk('g', { 'class': 'active-angle' }, g);
+    var phases = frames.phases.carry, framePosition = 0, pose, raf, stopped = false, first = true;
     function home() {
       var bounds = companion && global.Swiftee.bounds && Swiftee.bounds();
       var matrix = g.getScreenCTM && g.getScreenCTM();
       if (bounds && matrix) {
         var point = svg.createSVGPoint();
         point.x = (bounds.left + bounds.right) / 2; point.y = bounds.bottom - bounds.height / 2;
-        return point.matrixTransform(matrix.inverse());
+        point = point.matrixTransform(matrix.inverse());
+        return { x: point.x + 42, y: point.y + 8 };
       }
-      return { x: st.verts[0].x - 70, y: st.verts[0].y + 50 };
+      return { x: st.verts[0].x - 35, y: st.verts[0].y + 55 };
     }
-    var origin = home();
-    pose = Object.assign({ x: origin.x, y: origin.y, lean: 0 }, carried(origin.x, origin.y));
+    pose = Object.assign({ rotation: 0 }, home());
     if (global.Swiftee && Swiftee.lock) Swiftee.lock('angle-measuring');
     g.style.opacity = '0';
     function stop() {
@@ -1962,50 +1942,35 @@
       if (global.Swiftee && Swiftee.unlock) Swiftee.unlock('angle-measuring');
     }
     cleanup.push(stop);
-    function paint(time) {
-      bird.setAttribute('transform', 'translate(' + pose.x + ',' + pose.y + ') rotate(' + pose.lean + ') scale(' + facing + ',1)');
-      instrument.setAttribute('transform', 'translate(' + pose.px + ',' + pose.py + ') rotate(' + pose.rotation + ') scale(1,' + mirror + ')');
-      var unturn = ' scale(1,' + mirror + ') rotate(' + (-pose.rotation) + ')';
-      seats.forEach(function (s) { s.setAttribute('transform', 'translate(' + s._at.x.toFixed(2) + ',' + s._at.y.toFixed(2) + ')' + unturn); });
-      var at = Math.min(phaseFrames.length - 1, framePosition), low = Math.floor(at), mix = at - low;
-      var frame = phaseFrames[low], nextFrame = phaseFrames[Math.min(low + 1, phaseFrames.length - 1)];
-      sheet.setAttribute('x', -(frame % frames.cols) * frames.cell);
-      sheet.setAttribute('y', -Math.floor(frame / frames.cols) * frames.cell);
-      blend.setAttribute('x', -(nextFrame % frames.cols) * frames.cell);
-      blend.setAttribute('y', -Math.floor(nextFrame / frames.cols) * frames.cell);
-      blend.setAttribute('opacity', mix);
-      bird.setAttribute('data-frame', frame);
+    function paint() {
+      instrument.setAttribute('transform', 'translate(' + pose.x + ',' + pose.y + ') rotate(' + pose.rotation + ')');
+      var radians = pose.rotation * Math.PI / 180, ux = (grip.x - ax) * scale, uy = (grip.y - ay) * scale;
+      var handX = pose.x + Math.cos(radians) * ux - Math.sin(radians) * uy;
+      var handY = pose.y + Math.sin(radians) * ux + Math.cos(radians) * uy;
+      var face = Math.cos(radians) < 0 ? -1 : 1;
+      bird.setAttribute('transform', 'translate(' + handX + ',' + handY + ') scale(' + face + ',1)');
+      var at = Math.min(phases.length - 1, framePosition), low = Math.floor(at), mix = at - low;
+      var frame = phases[low], next = phases[Math.min(low + 1, phases.length - 1)];
+      sheet.setAttribute('x', -(frame % frames.cols) * cell); sheet.setAttribute('y', -Math.floor(frame / frames.cols) * cell);
+      blend.setAttribute('x', -(next % frames.cols) * cell); blend.setAttribute('y', -Math.floor(next / frames.cols) * cell);
+      blend.setAttribute('opacity', mix); instrument.setAttribute('data-frame', frame);
     }
-    paint(0);
-    /* opts.lift: the flight rises this much at its middle and settles — a curve, not a slide
-       (the user's brief: "slight upward movement before moving, curved path, slow down when
-       approaching"); opts.carry: the tool rides his wing every frame of it (carried), with a
-       small sway (opts.sway, degrees) as it is carried — never tweened on its own, so it can
-       neither lag behind him nor arrive before him. */
-    function tween(state, target, duration, done, progress, opts) {
+    paint();
+    function tween(state, phase, target, duration, done, progress, lift) {
       if (stopped) return;
-      opts = opts || {};
       g.setAttribute('data-state', state);
-      var names = { MOVE_TO_VERTEX: 'carry', SETTLE: 'position', POSITION_PROTRACTOR: 'position', ALIGN: 'align', ADJUST: 'align', MEASURE: 'align', HOLD: 'hold', NOD: 'hold', LIFT: 'lift', RETURN: 'carry', COMPLETE: 'carry' };
-      var incoming = frames.phases[names[state]];
-      // Start from the previous drawing, so phase changes also interpolate.
-      var prior = phaseFrames[Math.min(phaseFrames.length - 1, Math.round(framePosition))];
-      phaseFrames = [prior].concat(incoming); framePosition = 0;
+      var prior = phases[Math.min(phases.length - 1, Math.round(framePosition))];
+      phases = [prior].concat(frames.phases[phase]); framePosition = 0;
       var start = null, from = Object.assign({}, pose);
       if (target.rotation != null) target.rotation = from.rotation + ((target.rotation - from.rotation + 540) % 360 + 360) % 360 - 180;
       function tick(time) {
         if (stopped) return;
         if (start === null) start = time;
-        var t = Math.min(1, (time - start) / duration), eased = t * t * (3 - 2 * t);
-        Object.keys(target).forEach(function (key) { pose[key] = from[key] + (target[key] - from[key]) * eased; });
-        if (opts.lift) pose.y -= opts.lift * Math.sin(Math.PI * t);
-        if (opts.carry) {
-          var held = carried(pose.x, pose.y);
-          pose.px = held.px; pose.py = held.py;
-          pose.rotation = held.rotation + (opts.sway || 0) * Math.sin(2 * Math.PI * t);
-        }
-        framePosition = t * (phaseFrames.length - 1);
-        paint(time); if (progress) progress(eased);
+        var t = Math.min(1, (time - start) / duration), ease = t * t * (3 - 2 * t);
+        Object.keys(target).forEach(function (key) { pose[key] = from[key] + (target[key] - from[key]) * ease; });
+        if (lift) pose.y -= Math.sin(Math.PI * t) * lift;
+        framePosition = t * (phases.length - 1); paint();
+        if (progress) progress(ease);
         if (t < 1) raf = global.requestAnimationFrame(tick); else done();
       }
       raf = global.requestAnimationFrame(tick);
@@ -2015,76 +1980,42 @@
       var a = Math.atan2(prev.y - p.y, prev.x - p.x), b = Math.atan2(next.y - p.y, next.x - p.x);
       var sweep = ((b - a) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
       if (!Poly.contains(v, { x: p.x + Math.cos(a + sweep / 2) * 2, y: p.y + Math.sin(a + sweep / 2) * 2 })) sweep -= 2 * Math.PI;
-      // The scale rises from the straight edge: the edge goes along whichever side leaves the
-      // corner's other side under the scale — that is where it is read.
-      /* WHICH SIDE THE EDGE LIES ALONG. Either side of the corner will do once the tool may be
-         turned over (mirror, above), so the side is chosen for him: the one whose extension
-         past the corner runs nearest to level, so that he stands beside the tool with his wing
-         on its edge — not under it with the tool over his face, which a steep side gave. */
-      var plain = sweep < 0 ? a : b, turned = sweep < 0 ? b : a;
-      var useTurned = Math.abs(Math.cos(turned)) > Math.abs(Math.cos(plain)) + 0.08;
-      var base = useTurned ? turned : plain, rotation = base * 180 / Math.PI, side = useTurned ? -1 : 1;
-      // where he stands to hold it (see the note above the tool): at the outer end of the
-      // straight edge, a touch to the flat side, his body away from the corner
-      var ex = Math.cos(base + Math.PI), ey = Math.sin(base + Math.PI);
-      var fx = Math.cos(base + Math.PI / 2) * side, fy = Math.sin(base + Math.PI / 2) * side;
-      var wing = { x: p.x + ex * (PR - 6) + fx * 4, y: p.y + ey * (PR - 6) + fy * 4 };
-      var face = p.x < wing.x ? -1 : 1;
-      var stand = { x: wing.x - face * HAND.x, y: wing.y - HAND.y };
-      g.setAttribute('data-angle', index);
-      highlight.replaceChildren();
-      var firstApproach = approaching; approaching = false;
-      // he flies the way he is going, tool in wing, and turns to the corner on landing
-      if (Math.abs(stand.x - pose.x) > 4) facing = stand.x < pose.x ? -1 : 1;
-      /* THE FLIGHT, A CURVE (opts.lift), THE TOOL ON HIS WING THE WHOLE WAY (opts.carry);
-         then, at the corner: he turns to it and settles (SETTLE), reaches the tool out to the
-         vertex (POSITION), lays its edge along the side a touch past true and adjusts it
-         back (ALIGN, ADJUST — the small correction anyone makes), the reading (MEASURE,
-         HOLD), a small nod at it (NOD), and the tool back into his wing (LIFT). */
-      // (as long as the way is far: a hop to the next corner in half a second, the long first
-      // flight from his perch in a full one — never a dash)
-      var far = Math.hypot(stand.x - pose.x, stand.y - pose.y), flightMs = far < 40 ? 250 : Math.min(1100, Math.max(500, far * 1.8));
-      tween('MOVE_TO_VERTEX', { x: stand.x, y: stand.y, lean: 0 }, flightMs, function () {
-        // turned to the corner, and the tool turned over if this corner wants it — in the
-        // wing, where the disc stays ahead of him either way (carried), so nothing jumps
-        if (facing !== face || mirror !== side) { facing = face; mirror = side; Object.assign(pose, carried(pose.x, pose.y)); paint(0); }
-        tween('SETTLE', { lean: face * 2 }, 180, function () {
-        tween('POSITION_PROTRACTOR', { px: p.x, py: p.y, lean: face * 4 }, 380, function () {
-          tween('ALIGN', { rotation: rotation + face * 5 }, 300, function () {
-          tween('ADJUST', { rotation: rotation }, 240, function () {
+      // The generated protractor opens above its baseline; this ray keeps
+      // that semicircle inside the polygon while the bird follows its grip.
+      var base = sweep < 0 ? a : b, rotation = base * 180 / Math.PI;
+      var outward = a + sweep / 2 + Math.PI;
+      var carry = { x: p.x + Math.cos(outward) * 16, y: p.y + Math.sin(outward) * 16 };
+      var approach = first; first = false;
+      g.setAttribute('data-angle', index); highlight.replaceChildren();
+      var flight = Object.assign({ rotation: rotation - 8 }, carry);
+      tween('MOVE_TO_VERTEX', 'carry', flight, approach ? 750 : 600, function () {
+        tween('POSITION_PROTRACTOR', 'position', { x: p.x, y: p.y }, 400, function () {
+          tween('ALIGN', 'align', { rotation: rotation }, 420, function () {
             drawArc(highlight, index, null, 1);
+            var wedge = highlight.querySelector('path[fill-opacity]');
+            if (wedge) wedge.setAttribute('fill-opacity', '0.16');
             highlight.style.opacity = '0';
-            tween('MEASURE', {}, 300, function () {
-              tween('HOLD', {}, 850, function () {
-              tween('NOD', { lean: face * 8 }, 170, function () {
-              tween('NOD', { lean: face * 3 }, 150, function () {
-                var back = carried(pose.x, pose.y);
-                tween('LIFT', { px: back.px, py: back.py, rotation: back.rotation, lean: 0 }, 320, function () {
+            tween('MEASURE', 'align', {}, 300, function () {
+              tween('HOLD', 'hold', {}, 900, function () {
+                tween('LIFT', 'lift', carry, 350, function () {
                   highlight.replaceChildren();
                   if (!last) { done(); return; }
-                  var h = home();
-                  if (Math.abs(h.x - pose.x) > 4) facing = h.x < pose.x ? -1 : 1;
-                  tween('RETURN', { x: h.x, y: h.y }, Math.min(1100, Math.max(500, Math.hypot(h.x - pose.x, h.y - pose.y) * 1.8)), function () {
-                    tween('COMPLETE', {}, 250, function () { stop(); done(); }, function (t) {
+                  tween('RETURN', 'carry', Object.assign({ rotation: 0 }, home()), 800, function () {
+                    tween('COMPLETE', 'carry', {}, 250, function () { stop(); done(); }, function (t) {
                       g.style.opacity = 1 - t;
                       if (companion) companion.style.opacity = String(t * Number(opacity || 1));
                     });
-                  }, null, { lift: 16, carry: true, sway: 4 });
+                  }, null, 10);
                 });
-              });
-              });
               });
             }, function (t) { highlight.style.opacity = t; });
           });
-          });
-        });
         });
       }, function (t) {
-        if (!firstApproach) return;
-        var visible = Math.min(1, t * 4);
-        g.style.opacity = visible;
+        if (!approach) return;
+        var visible = Math.min(1, t * 4); g.style.opacity = visible;
         if (companion) companion.style.opacity = String((1 - visible) * Number(opacity || 1));
-      }, { lift: far < 40 ? 0 : 18, carry: true, sway: 4 });
+      }, 10);
     };
   }
 
@@ -5326,8 +5257,22 @@
     ghost: function (gh) { st.ghost = gh ? { from: resolveVertex(gh.from), to: resolveVertex(gh.to) } : null; renderPoly(); },
     diagonals: function (d) {
       if (d.diagonals === 'all') {
-        st.diagonals = Poly.allDiagonals(st.n).map(function (pair, k) { return Object.assign(pair, { animate: d.animate === 'sequential', delay: k * (d.each || 200), each: d.each }); });
+        var seq = d.animate === 'sequential' && !reduced();
+        var all = Poly.allDiagonals(st.n);
+        st.diagonals = all.map(function (pair, k) { return Object.assign(pair, { animate: seq, delay: k * (d.each || 200), each: d.each }); });
         st.segment = null; st.vcolor = null; renderPoly();
+        /* THE BEAT LASTS UNTIL THE LAST LINE HAS LANDED. Five diagonals drawn one after
+           another are some six seconds of animation, and the op handed back nothing — so the
+           sparkle, his look at the shape and the screen's auto-advance all ran over a star
+           still drawing itself, and the lesson went on before it was complete (the user:
+           "before the line animation completes, why jump to the next screen?"). The same
+           timing drawIn uses, plus a breath to see the finished star. */
+        if (seq && all.length) {
+          var each = d.each || 200, dur = Math.max(500, Math.min(1000, (d.each || 1150) - 250));
+          // (a plain timer, not later(): a promise the director is waiting on must always
+          // settle — a scene rebuilt under it would otherwise leave the beat hanging for good)
+          return new Promise(function (res) { setTimeout(res, (all.length - 1) * each + dur + 200); });
+        }
       }
     },
     choices: function (list, spec) {
@@ -5499,7 +5444,8 @@
     if (!spec) return;
     if (spec.kind) BUILD[spec.kind] && BUILD[spec.kind](spec);
     if (spec.highlight) op.highlight(spec.highlight);
-    if (spec.diagonals && !spec.kind) op.diagonals(spec);
+    // (a sequential draw-in hands back a promise: the beat is over when the last line is)
+    var drawing = spec.diagonals && !spec.kind ? op.diagonals(spec) : null;
     if ('ghost' in spec && !spec.kind) op.ghost(spec.ghost);
     if (spec.label && !spec.kind) op.label(spec.label);
     // a carried name tag is taken down by a beat that says label: null
@@ -5584,7 +5530,7 @@
     if (spec.marks) op.marks(spec.marks);
     if (spec.kind) applySeat(false);
     if (spec.summary) return op.summary(spec.summary);
-    return growing;
+    return growing || drawing;
   }
 
   /* ------------------------------------------------------------------ *
