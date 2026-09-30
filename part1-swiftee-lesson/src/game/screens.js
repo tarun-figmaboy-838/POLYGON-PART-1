@@ -590,53 +590,26 @@
       id: 'inside-or-outside', page: 17,
       log: true,   // on the log arc at the left of the ground, as since the intro (the user: "after level-1, the log sit too")
       swiftee: { pos: 'log', size: 'medium' },
-      instruction: 'Are the diagonals inside or outside?',
-      lines: ['These diagonals stay inside the polygon, so the answer is Inside.'],
-      // (no choices on the screen-level stage: the beats deal them on the question's words, and
-      // a rebuild — a jump, a resize — must not put them up before the question)
+      /* A STATEMENT AND ONE ANSWER (the user's text + UI change: "The diagonals are inside.", one
+         "Inside" button, no "Outside" on this state). The diagonals stay up; he says it — on
+         "inside" the shape's inside glows (dual coding) and the diagonals light one after
+         another — a moment to look, and only then is the one button dealt, after the line and
+         never during it; a tap on it and the lesson goes on. No second option, so no wrong
+         answer and no second try; and no spoken praise after it (no extra dialogue). */
+      instruction: null,
+      say: 'The diagonals are inside.',
+      // (no choices on the screen-level stage: the button is dealt after the line, and a rebuild —
+      // a jump, a resize — must not put it up before)
       stage: { kind: 'polygon', sides: 5, diagonals: 'all' },
       beats: [
-        // THE QUESTION FIRST, THEN THE ANSWERS (the user: never a button before the learner has
-        // been introduced to it). The name tag from the screen before comes down; he asks — on
-        // "inside" the shape's inside glows with its diagonals, on "outside" the band round it
-        // (dual coding) — a beat to take it in, and only then are the two answers dealt.
         { stage: { label: null } },
-        // THE ANSWERS ARRIVE ON THEIR WORDS (the user: "the buttons are delayed — when the VO says
-        // 'are the diagonals inside or outside?'"): "Inside" is dealt as he says inside, "Outside"
-        // as he says outside — introduced by the question itself, not after a pause behind it.
-        // The question is still asked before either can be pressed (the input comes after).
-        { parallel: [
-          { instruction: 'Are the diagonals inside or outside?', vo: 'p17i' },
-          { stage: { choices: ['Inside', 'Outside'], cue: true } }
-        ] },
-        // SAID ONCE: the line that echoed the instruction ("Are they inside or outside?") went —
-        // the same request twice in a row read as a stutter, not a lesson.
-        { swiftee: 'think' },
-        /* TWO TRIES (the user, the inside/outside question). The first miss is "Try again!" and
-           nothing more — the answer is not given away. The second is answered: the diagonals
-           light one after another inside the shape, he says why the answer is Inside, the
-           Inside button shows green, a moment to take it in, and the lesson goes on. */
-        { input: { type: 'choice', correct: 'Inside' } },
-        { branch: true,
-          on: { correct: correct() },
-          otherwise: WRONG.concat([
-            { input: { type: 'choice', correct: 'Inside', retry: true, quietMiss: true } },
-            { branch: true,
-              on: { correct: correct() },
-              otherwise: [
-                { juice: 'refuse', target: 'answer' }, { sfx: 'wrong' },
-                { parallel: [
-                  // the diagonals light one after another and stay lit while he explains; the
-                  // Inside button goes green as he says "inside"
-                  { stage: { lit: 'diagonals' } },
-                  { stage: { reveal: 'Inside', cue: 'inside' } },
-                  { swiftee: 'explain', at: 'polygon' },
-                  { say: 'These diagonals stay inside the polygon, so the answer is Inside.', vo: 'p17r' }
-                ] },
-                { sfx: 'correct' },
-                { wait: 1200 }
-              ] }
-          ]) }
+        { swiftee: 'explain', at: 'polygon' },
+        { stage: { onWord: [{ word: 'inside', lit: 'diagonals' }] } },
+        { say: 'The diagonals are inside.', vo: 'fb54' },
+        { wait: 700 },
+        { stage: { choices: ['Inside'] } },
+        { input: { type: 'choice', correct: 'Inside', praise: false } },
+        { branch: true, on: { correct: correct() }, otherwise: [] }
       ]
     },
 
@@ -1209,8 +1182,15 @@
       // ABOVE. The pair fills the middle and its checks fill the foot, so
       // the band above them is the only place a sentence fits.
       swiftee: { pos: 'peek', size: 'small', purpose: 'concept'},
-      say: 'All sides AND all angles same: regular. Otherwise, it\u2019s irregular.',
-      lines: ['This one is a regular pentagon, and this one is an irregular pentagon.'],
+      /* THE USER'S TEXT (screen 29, three lines, word for word): the pair is introduced; the regular
+         one is shown equal — its side ticks on "sides", its angle arcs on "angles" — while the other
+         steps back; then the irregular one, the other way round, its unequal marks on the same
+         words; then the rule, each half on its words ("equal" / "unequal" light that card's marks),
+         and each name tag on its word ("regular" / "irregular", captionCue). One card at a time. */
+      say: 'Let\u2019s compare these two pentagons.',
+      lines: ['All the sides and angles are equal in this pentagon.',
+              'But this pentagon has unequal sides and unequal angles.',
+              'All sides and angles equal means a regular polygon. Sides and angles unequal means an irregular polygon.'],
       stage: {
         kind: 'compare',
         // each name tag on its word; the irregular one is the pentagon the
@@ -1226,17 +1206,26 @@
         { wait: 300 },
         // a rule goes in the book
         { swiftee: 'note' },
-        // ONE CARD AT A TIME: the regular one while he says what makes it regular, the irregular
-        // one from "Otherwise", and the pair side by side again once the line is said
+        { say: 'Let\u2019s compare these two pentagons.', vo: 'fb55' },
+        { wait: 300 },
+        // THE REGULAR ONE: forward, the other back; its evidence on its words
         { focus: 'compare.left', style: 'lean' },
-        { stage: { onWord: [{ word: 'otherwise', focus: 'right' }] } },
-        { say: 'All sides AND all angles same: regular. Otherwise, it\u2019s irregular.', parts: ['All sides AND all angles same:', 'regular.', 'Otherwise, it\u2019s irregular.'], vo: 'p32c' },
-        // AND THE TWO NAMED (the user): the pair side by side, and each named as he turns to it
+        { stage: { onWord: [{ word: 'sides', evidence: { card: 'left', what: 'sides' } }, { word: 'angles', evidence: { card: 'left', what: 'angles' } }] } },
+        { say: 'All the sides and angles are equal in this pentagon.', vo: 'fb56' },
+        { wait: 600 },
+        // THE IRREGULAR ONE: the turn to it, and its unequal marks on the same words
+        { focus: 'compare.right', style: 'lean' },
+        { stage: { onWord: [{ word: 'sides', evidence: { card: 'right', what: 'sides' } }, { word: 'angles', evidence: { card: 'right', what: 'angles' } }] } },
+        { say: 'But this pentagon has unequal sides and unequal angles.', vo: 'fb57' },
+        { wait: 700 },
+        // THE RULE: both again, each half turning to its card; the names arrive on their words
         { focus: 'compare', style: 'even' },
-        { wait: 300 },
-        { stage: { onWord: [{ word: 'regular', focus: 'left' }, { word: 'irregular', focus: 'right' }] } },
-        { say: 'This one is a regular pentagon, and this one is an irregular pentagon.', parts: ['This one is a regular pentagon,', 'and this one is an irregular pentagon.'], vo: 'p32d' },
-        { wait: 300 },
+        { stage: { onWord: [{ word: 'equal', focus: 'left', glow: 'left' }, { word: 'unequal', focus: 'right', glow: 'right' }] } },
+        { say: 'All sides and angles equal means a regular polygon. Sides and angles unequal means an irregular polygon.',
+          parts: ['All sides and angles equal', 'means a regular polygon.', 'Sides and angles unequal', 'means an irregular polygon.'], vo: 'fb58' },
+        // (the pair, evenly, both named: the final Regular / Irregular state)
+        { focus: 'compare', style: 'even' },
+        { wait: 700 },
         { input: { type: 'tap-anywhere' } }
       ]
     },

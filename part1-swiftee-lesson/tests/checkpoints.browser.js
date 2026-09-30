@@ -450,7 +450,40 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const advanced = await ev((i) => window.Game.screen > i, i);
     cp(n + 1, id + ' second wrong: locked, explained, the answer shown, then on — no third try', s2.locked && lines2.length >= 1 && revealed && advanced, { locked: s2.locked, lines: lines2, revealed, ...lit, advanced });
   };
-  await twoTry('inside-or-outside', 19);
+  // THE INSIDE SCREEN IS A STATEMENT AND ONE BUTTON (the user's text + UI change): no second option,
+  // so no two-try flow — the one "Inside" comes after the line, and a tap on it goes on
+  await step(19, 'Inside screen: "The diagonals are inside.", the diagonals lit on "inside", then ONE "Inside" button, only after the line', async () => {
+    const i = await jump('inside-or-outside');
+    const r = await ev(() => new Promise((res) => {
+      // (CP18 has just run this same screen, so the bubble still holds its finished line when the
+      // jump lands: nothing is stamped until THIS run's recording of the line has started)
+      const T0 = performance.now(); let wordAt = null, litAt = null, buttonAt = null, most = 0, lineDone = null, voAt = null;
+      const tick = () => {
+        const now = performance.now() - T0;
+        if (voAt == null && window.VO && window.VO.id === 'fb54') voAt = now;
+        if (voAt != null && wordAt == null && [...document.querySelectorAll('#bubble .in')].some((w) => /^inside/i.test(w.textContent))) wordAt = now;
+        if (voAt != null && litAt == null && document.querySelector('#stage .polygon g[style*="brightness"]')) litAt = now;
+        const n = document.querySelectorAll('#stage .choice').length; most = Math.max(most, n);
+        if (buttonAt == null && n) buttonAt = now;
+        if (voAt != null && lineDone == null && window.VO.id !== 'fb54') lineDone = now;
+        if ((buttonAt != null && now > buttonAt + 600) || now > 30000) { res({ voAt, wordAt, litAt, buttonAt, lineDone, most, labels: [...document.querySelectorAll('#stage .choice')].map((c) => c.getAttribute('data-label')), line: document.getElementById('bubble').textContent.trim() }); return; }
+        setTimeout(tick, 30);
+      };
+      tick();
+    }));
+    const ok = /The diagonals are inside\./.test(r.line) && r.most === 1 && JSON.stringify(r.labels) === '["Inside"]' &&
+      r.voAt != null && r.litAt != null && r.wordAt != null && Math.abs(r.litAt - r.wordAt) <= 500 && r.buttonAt != null && r.lineDone != null && r.buttonAt >= r.lineDone;
+    return { ok, extra: r };
+  });
+  await step(20, 'Inside screen: a tap on "Inside" goes on — no wrong path, no extra line', async () => {
+    const i = await jump('inside-or-outside'); await waiting(i); await sleep(200);
+    const before = (await said()).length;
+    await tapChoice('Inside');
+    await waitFn((i) => window.Game.screen > i, i, 20000).catch(() => {});
+    const lines = (await said()).slice(before);
+    const advanced = await ev((i) => window.Game.screen > i, i);
+    return { ok: advanced && !lines.some((t) => /Try again|These diagonals/.test(t)), extra: { advanced, lines } };
+  });
   await step(21, 'Inside / Outside text sync: the "Inside" and "Outside" marks land on their words (≤ 500 ms), on their own screens', async () => {
     const out = [];
     for (const [id, word] of [['all-inside', 'inside'], ['one-outside', 'outside']]) {

@@ -93,7 +93,9 @@ async function act(spec){
     case 'choice': {
       await until(()=>svg().querySelectorAll('.choice').length>0);
       const els=[...svg().querySelectorAll('.choice')];
-      if(!spec.retry){ tapEl(els.find(e=>e.getAttribute('data-label')!==spec.correct)); wrongTried++; return; }
+      // (a one-button statement — the inside screen's "Inside" — has no wrong answer to try first)
+      const wrongEl=els.find(e=>e.getAttribute('data-label')!==spec.correct);
+      if(!spec.retry && wrongEl){ tapEl(wrongEl); wrongTried++; return; }
       tapEl(els.find(e=>e.getAttribute('data-label')===spec.correct)); return;
     }
     case 'multi-select': { const cards=[...svg().querySelectorAll('.card')]; tapEl(cards.find(c=>c.getAttribute('data-id')==='circle')); wrongTried++; await sleep(30);

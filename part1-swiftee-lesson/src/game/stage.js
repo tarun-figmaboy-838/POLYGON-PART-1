@@ -2053,6 +2053,56 @@
    * across two sides means what it means. Rounded before grouping, or a
    * pixel of drag would split a set of equals into two.
    */
+  /* EQUAL OR NOT, SHOWN ON A COMPARE CARD (screen 29: the regular and the irregular pentagon).
+     `sides`: a tick across the middle of every side, as a geometry book marks them — sides of one
+     length share a count of ticks (marksBy); `angles`: an arc in every corner, nested the same way.
+     All one group (the regular card): gold, one each. More than one (the irregular card): violet,
+     the counts telling the lengths apart. Drawn one after another on the card itself, so they dim
+     and return with it (focus). */
+  function compareEvidence(side, what) {
+    var c = st.compare && st.compare[side];
+    if (!c || !c.pg || !c.verts) return;
+    var v = c.verts, n = v.length, idx = v.map(function (_, i) { return i; }), items = [];
+    var g = c.evidence && c.evidence.parentNode ? c.evidence : (c.evidence = mk('g', { 'class': 'compare-evidence', 'pointer-events': 'none' }, c.pg));
+    if (what === 'sides') {
+      var L = Poly.sideLengths(v), sm = marksBy(L, idx, 15), same = sm.groups === 1;
+      for (var i = 0; i < n; i++) {
+        var a = v[i], b = v[(i + 1) % n], mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        var sl = Math.hypot(b.x - a.x, b.y - a.y) || 1, tdx = (b.x - a.x) / sl, tdy = (b.y - a.y) / sl, tnx = -tdy, tny = tdx;
+        var cnt = sm.mark[i] || 1, tg = mk('g', { 'class': 'ev-tick', 'data-side': i }, g);
+        for (var k = 0; k < cnt; k++) {
+          var o = (k - (cnt - 1) / 2) * 7, cx = mx + tdx * o, cy = my + tdy * o;
+          litLine(tg, { x1: cx - tnx * 9, y1: cy - tny * 9, x2: cx + tnx * 9, y2: cy + tny * 9, 'stroke-width': 3, 'stroke-linecap': 'round' }, same ? { warm: true } : { bad: true });
+        }
+        items.push(tg);
+      }
+    } else if (what === 'angles') {
+      var A = Poly.interiorAngles(v), am = marksBy(A, idx, 3), eq = am.groups === 1;
+      for (var j = 0; j < n; j++) {
+        var p = v[j], q = v[(j + n - 1) % n], s2 = v[(j + 1) % n];
+        var a1 = Math.atan2(q.y - p.y, q.x - p.x), a2 = Math.atan2(s2.y - p.y, s2.x - p.x);
+        var sweep = ((a2 - a1) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI), mid = a1 + sweep / 2;
+        var inside = Poly.contains(v, { x: p.x + Math.cos(mid) * 10, y: p.y + Math.sin(mid) * 10 }), large = sweep > Math.PI ? 1 : 0;
+        var ag = mk('g', { 'class': 'ev-arc', 'data-angle': j }, g), rings = am.mark[j] || 1;
+        for (var r0 = 0; r0 < rings; r0++) {
+          var r = 20 + r0 * 6;
+          var x1 = p.x + Math.cos(a1) * r, y1 = p.y + Math.sin(a1) * r, x2 = p.x + Math.cos(a2) * r, y2 = p.y + Math.sin(a2) * r;
+          var d = inside ? 'M' + x1 + ' ' + y1 + ' A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2 + ' ' + y2
+                         : 'M' + x1 + ' ' + y1 + ' A' + r + ' ' + r + ' 0 ' + (1 - large) + ' 0 ' + x2 + ' ' + y2;
+          mk('path', { d: d, fill: 'none', stroke: eq ? '#ffe27a' : HI.bad, 'stroke-width': 3, 'stroke-linecap': 'round',
+                       style: litGlow(eq ? '#ffb020' : HI.badLit) }, ag);
+        }
+        items.push(ag);
+      }
+    }
+    items.forEach(function (it, i) {
+      if (reduced()) return;
+      it.style.opacity = 0;
+      later(i * 110, function () { it.style.opacity = ''; enter(it, 'ui'); });
+    });
+    sfx('tick', { gain: 0.5 });
+  }
+
   function marksBy(vals, idxs, q) {
     var groups = {}, order = [];
     idxs.forEach(function (i) {
@@ -5317,7 +5367,16 @@
           if (w.sfx) sfx(w.sfx, { gain: w.gain || 0.5 });
           // the focus moves on its word too: the line turns from one card to the other
           if (w.focus && st.compare) focus(w.focus === 'even' ? 'compare' : 'compare.' + w.focus, w.focus === 'even' ? 'even' : (w.style || 'lean'));
+          // THE EVIDENCE ON ITS WORD (screen 29: "All the SIDES and ANGLES are equal…"): the card's
+          // side ticks or angle arcs, drawn as the word is said (compareEvidence)
+          if (w.evidence && st.compare) compareEvidence(w.evidence.card, w.evidence.what);
+          // a lighting on its word (the inside screen: the diagonals light as he says "inside")
+          if (w.lit) apply({ lit: w.lit });
           if (reduced() || !st.compare) return;
+          // and a card's marks lit again as the rule names them ("equal", "unequal")
+          if (w.glow && st.compare[w.glow] && st.compare[w.glow].evidence) {
+            warmPulse([st.compare[w.glow].evidence], { together: true, peak: '1.04', ms: 560 });
+          }
           if (w.pulse) {
             var ks = w.pulse === 'both' ? ['left', 'right'] : [w.pulse];
             warmPulse(ks.map(function (k) { return st.compare[k] && st.compare[k].pg; }), { together: true, peak: '1.04', ms: 560 });

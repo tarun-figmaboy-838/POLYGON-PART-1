@@ -184,9 +184,15 @@ const JUDGING = ['draw-diagonal', 'draw-diagonals', 'choice', 'multi-select', 's
 const OPEN = ['vertex-pick', 'drag-vertex', 'tap-each', 'tap-anywhere', 'summary-review'];
 
 const inputsOf = (s) => allBeats(s).filter((b) => b.input).map((b) => b.input.type);
-const judged = S.filter((s) => inputsOf(s).some((ty) => JUDGING.indexOf(ty) >= 0));
+// (a choice with ONE button — the inside screen's "Inside", a tap to go on — has no wrong answer
+// to take, so it is not judged: every choice the screen offers has a single option)
+const oneButton = (s) => {
+  const offered = allBeats(s).filter((b) => b.stage && Array.isArray(b.stage.choices)).map((b) => b.stage.choices.length);
+  return inputsOf(s).every((ty) => ty === 'choice') && offered.length > 0 && offered.every((n) => n === 1);
+};
+const judged = S.filter((s) => !oneButton(s) && inputsOf(s).some((ty) => JUDGING.indexOf(ty) >= 0));
 
-t('there are judged screens to check', judged.length >= 8, judged.length);
+t('there are judged screens to check', judged.length >= 7, judged.length);   // 7 since the inside screen became one button
 t('every interaction is either judging or open, with nothing unclassified',
   S.every((s) => inputsOf(s).every((ty) => JUDGING.indexOf(ty) >= 0 || OPEN.indexOf(ty) >= 0)),
   S.flatMap(inputsOf).filter((ty) => JUDGING.indexOf(ty) < 0 && OPEN.indexOf(ty) < 0));
@@ -677,7 +683,18 @@ const levelOf = (st) => { const d = RIG[st]; return d ? (d.level || 1) : 0; };
      question's own words — the instruction and the choices in one `parallel`, each answer
      waiting for its word (`cue`) — and never from a beat before the question, nor from the
      screen-level stage (a rebuild would put them up ahead of it). */
-  ['inside-or-outside', 'stayed-changed'].forEach((id) => {
+  /* THE INSIDE SCREEN IS A STATEMENT AND ONE BUTTON (the user's text + UI change): "The diagonals
+     are inside." is said, and only after it is the single "Inside" button dealt — never with the
+     line, never on the screen-level stage, and no "Outside". */
+  {
+    const s = Screens.byId['inside-or-outside'], bs = s.beats;
+    const line = bs.findIndex((b) => b.say === 'The diagonals are inside.');
+    const deal = bs.findIndex((b) => b.stage && b.stage.choices);
+    const dealt = deal >= 0 ? bs[deal].stage.choices : null;
+    t('inside-or-outside: "The diagonals are inside.", then one "Inside" button after it', line >= 0 && deal > line && JSON.stringify(dealt) === '["Inside"]' && !(s.stage && s.stage.choices),
+      { line, deal, dealt });
+  }
+  ['stayed-changed'].forEach((id) => {
     const s = Screens.byId[id], bs = s.beats;
     const par = bs.find((b) => b.parallel && b.parallel.some((x) => typeof x.instruction === 'string') &&
                                b.parallel.some((x) => x.stage && x.stage.choices && x.stage.cue));
