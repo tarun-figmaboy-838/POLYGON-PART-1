@@ -4623,7 +4623,11 @@
       // THE TUNE COMES IN WITH THE GAME, not with the page: audio may only
       // start on a gesture, and this is the gesture. It is quiet and it is on
       // the music bus, so the mute button and every duck already reach it.
-      if (global.Music) Music.start();
+      // (not under the story: it has its own music — src/audio/story-music.js — and the lesson's
+      // tune comes in when the story hands over, below)
+      var skipping = storySkip;
+      var storyNext = !skipping && global.Story && Story.enabled && Story.enabled();
+      if (global.Music && !storyNext) Music.start();
       if (global.TitleFx) { TitleFx.pressUp(); TitleFx.press(); }
       var curtain = function () {
         // A beat before the curtain, so the burst is something the child sees
@@ -4643,7 +4647,7 @@
         var lifted = false;
         Story.start({
           lift: function () { if (!lifted) { lifted = true; curtain(); } },
-          done: function () { play(0); }
+          done: function () { if (global.Music) Music.start(); play(0); }
         });
         return;
       }
@@ -4689,6 +4693,8 @@
     if (global.Swiftee && Swiftee.sheetUrls) P.want(Swiftee.sheetUrls());
     FACES.forEach(function (f) { P.font(f); });
     var voice = (global.VO && VO.ready) ? VO.ready() : Promise.resolve();
+    // the story's music, in the one format this browser plays (src/story/story.js MUSIC_SRC)
+    if (global.StoryMusic && StoryMusic.ext) P.want(['assets/story/story-music.' + StoryMusic.ext()], { keep: keep });
     voice.then(function () { if (global.VO && VO.urls) P.want(VO.urls(), { keep: keep }); }, function () {})
       .then(function () { P.seal(); });
     P.done.then(ready);

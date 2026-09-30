@@ -49,6 +49,7 @@
          happy bounce, Momo first (and his trunk lifts), Popo only once Momo has finished. */
       {
         id: 1,
+        music: 'warm',   // the friends and their picnic idea: a curious music box over a soft pad
         regions: {
           momo: { poly: [[300, 380], [420, 280], [540, 196], [680, 196], [730, 290], [744, 360], [800, 360], [872, 372], [880, 446], [862, 488], [842, 530], [806, 610], [764, 656], [700, 684], [664, 818], [240, 818], [218, 700], [246, 460]],
                   origin: [455, 806], feather: 26 },
@@ -90,6 +91,7 @@
          he sets off. */
       {
         id: 2,
+        music: 'playful',   // splitting the jobs: the same chords, plucked, livelier
         regions: {
           momo: { poly: [[230, 470], [330, 360], [440, 300], [560, 238], [680, 250], [740, 300], [790, 380], [790, 470], [760, 520], [700, 560], [680, 640], [650, 720], [640, 800], [220, 800], [210, 700], [215, 560]],
                   origin: [430, 796], feather: 26 },
@@ -118,6 +120,7 @@
          the light once, the sheen running the way its arrow points: toward the pass. */
       {
         id: 3,
+        music: 'tension',   // the shortest route, through the frozen land: a minor turn, a low pulse
         camera: { origin: [740, 360], to: 1.02, ms: 4600 },
         regions: {
           momo: { poly: [[300, 440], [440, 330], [590, 350], [640, 440], [690, 480], [748, 580], [746, 690], [640, 772], [580, 818], [180, 818], [170, 640], [226, 520]],
@@ -147,6 +150,7 @@
          out across the water). Momo pulls up short — surprised and curious, not frightened. */
       {
         id: 4,
+        music: 'tension',   // the trickier path: the same, carried on (no crossfade between the two)
         regions: {
           momo: { poly: [[120, 640], [180, 560], [260, 500], [340, 472], [420, 468], [480, 520], [540, 600], [600, 660], [610, 760], [560, 830], [110, 830], [100, 740]],
                   origin: [300, 822], feather: 24 }
@@ -173,6 +177,7 @@
          a light crossing the blocks of the route — and then the lesson. */
       {
         id: 5,
+        music: 'resolve',   // "Momo needs your help": the melody comes home, once, into the lesson
         camera: { origin: [900, 620], to: 1.012, ms: 8000 },
         regions: {
           momo: { poly: [[120, 640], [180, 560], [260, 500], [340, 472], [420, 468], [480, 520], [540, 600], [600, 660], [610, 760], [560, 830], [110, 830], [100, 740]],

@@ -177,6 +177,33 @@
   /** A painting from the loading bar's copy in memory (src/core/preload.js), else the file. */
   function mem(u) { return (global.Preload && Preload.url) ? Preload.url(u) : u; }
 
+  /* THE STORY'S OWN MUSIC (src/audio/story-music.js: one file, a section per mood). Each scene
+     names its mood in story-data.js (`music`), and the player crossfades to it as the scene
+     comes in; a line's voice dips it; the hand-over fades it out and the lesson's tune takes
+     over. It plays into the game's music bus, so the mute button, the bus's own dip under a
+     voice and the hidden-tab pause all reach it — which is why its own dip is shallow (0.9: the
+     two together are the 55% it was designed for) and its level higher (the bus is at 0.45). The
+     file is held in memory by the loading bar (game.js startLoading: MUSIC_SRC + this browser's
+     format), so the first scene's music is there with the first painting. */
+  var MUSIC_SRC = 'assets/story/story-music';
+  var music = null;
+  function musicOn() {
+    if (music || !global.StoryMusic) return music;
+    var ctx = global.SFX && SFX.context ? SFX.context() : null;
+    var bus = global.SFX && SFX.musicBus ? SFX.musicBus() : null;
+    try {
+      music = StoryMusic.create({ src: MUSIC_SRC, url: mem(MUSIC_SRC + '.' + StoryMusic.ext()),
+                                  context: ctx || undefined, output: bus || undefined, level: 0.3, duck: 0.9 });
+    } catch (e) { music = null; }
+    return music;
+  }
+  function musicOff(fade) {
+    var m = music; music = null;
+    if (!m) return;
+    if (fade) { m.fadeOut(fade); setTimeout(function () { m.stop(); }, Math.round(fade * 1000) + 120); }
+    else m.stop();
+  }
+
   function el(tag, cls, parent) {
     var e = doc.createElement(tag);
     if (cls) e.className = cls;
@@ -599,9 +626,11 @@
     log.push({ scene: st.scene, who: line.who, text: line.text });
     await sleep(T.sayLead); if (g !== gen) return;
     var audio = playVoice(line);
+    if (audio && music) music.duck(true);    // a voice: the music dips...
     (line.start || []).forEach(cue);
-    await reveal(line, L, cuesFor(line, !!audio, L.words.length), audio); if (g !== gen) return;
-    if (audio && global.VO && VO.finished) { await VO.finished(); if (g !== gen) return; }
+    await reveal(line, L, cuesFor(line, !!audio, L.words.length), audio); if (g !== gen) { if (music) music.duck(false); return; }
+    if (audio && global.VO && VO.finished) { await VO.finished(); if (g !== gen) { if (music) music.duck(false); return; } }
+    if (music) music.duck(false);            // ...and comes back when it ends
     st.isDialoguePlaying = false;
     if (idx < sc.lines.length - 1) {
       var hold = audio ? T.voHold : (global.Timing && Timing.readingPause ? Timing.readingPause(line.text, 1) : 1800);
@@ -645,6 +674,8 @@
       if (g !== gen) return;
     }
     st.isTransitioning = false; st.phase = 'playing';
+    // the scene's mood: a crossfade from the last one (the same mood carries on untouched)
+    if (sc.music && music) music.mood(sc.music);
     await sleep(T.settle); if (g !== gen) return;
     (sc.enter || []).forEach(cue);
     // a reaction that comes before the words is let finish first (scene 4's stop)
@@ -680,6 +711,7 @@
     st.phase = 'exiting'; st.isTransitioning = true;
     sfx('sparkle', 0.55);
     later(160, function () { sfx('chime', 0.45); }, true);
+    musicOff(1.2);   // the story's music fades with the story; the lesson's tune follows (game.js)
     host.style.opacity = '0';
     animate(host, [{ opacity: 1 }, { opacity: 0 }], { duration: T.outro, easing: 'ease-in-out' });
     later(T.outro, function () { end(true); });
@@ -687,6 +719,7 @@
 
   function end(told) {
     cleanupStoryScene();
+    musicOff(told ? 0 : 0.3);
     removeShot(shot); shot = null;
     Array.prototype.slice.call(host.querySelectorAll('.story-shot')).forEach(function (e) { e.parentNode.removeChild(e); });
     if (sayEl) { sayEl.className = 'story-say'; sayText.textContent = ''; sayWords = []; }
@@ -822,6 +855,8 @@
     if (o.root) o.root.classList.add('story-on');
     snowfall(true);
     if (global.VO && VO.ready && VO.preload) VO.ready().then(function () { VO.preload(Object.keys(ids)); }, function () {});
+    // (inside Play's tap: the one moment a page may start sound)
+    if (musicOn()) music.unlock();
     showScene(1);
     return true;
   }
@@ -837,7 +872,8 @@
     get active() { return st.active; },
     get state() {
       return { active: st.active, scene: st.scene, phase: st.phase, canAdvance: st.canAdvance,
-               isTransitioning: st.isTransitioning, isDialoguePlaying: st.isDialoguePlaying, lines: log.slice() };
+               isTransitioning: st.isTransitioning, isDialoguePlaying: st.isDialoguePlaying, lines: log.slice(),
+               music: music ? music.state() : null };
     }
   };
 })(typeof window !== 'undefined' ? window : this);
