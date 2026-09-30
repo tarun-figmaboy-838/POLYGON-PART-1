@@ -344,12 +344,15 @@
        * screen: a neighbour, i±1 wrapping round, is a SIDE; any other corner
        * is a DIAGONAL.
        *
-       *   SIDE      the side lights, its tag pops on the word "side", and he
-       *             says so in full; a readable pause; the side and the tag
-       *             fade; "Let’s connect it to a different vertex." — and the same
-       *             corner is theirs to try again. As often as they like: the
-       *             other neighbour is a side too. It is not a wrong answer —
-       *             it is the first thing there is to learn — so no wrong
+       *   SIDE      (the Screen 7 vertex brief) the preview line goes and the
+       *             side is the polygon's own edge, looking like every other;
+       *             its end is disabled on the drop; its tag pops on the word
+       *             "side", and he says so in full; a readable pause; the tag
+       *             fades; "Let’s connect it to a different vertex." — and the
+       *             same corner, still the anchor, draws again. BOTH neighbours
+       *             are sides, one after the other; only then are the far
+       *             corners places a line may go. A side is not a wrong answer
+       *             — it is the first thing there is to learn — so no wrong
        *             sound, no "oops", and it does not count as a miss.
        *   DIAGONAL  the line stays and glows, the right-answer sound, the
        *             instruction goes, and he cheers it: "Yay! You made a
@@ -359,7 +362,8 @@
        * Nothing can be drawn while a line is being said: the input is only
        * armed after each instruction has been heard out (the say/instruction
        * handlers wait for the voice, and a tap cannot cut it), and the stage
-       * refuses a line outside READY_TO_CONNECT. until: 'correct' keeps asking
+       * refuses a line outside its READY states (stage.js setConnect; each
+       * corner's own state, setVertexStates). until: 'correct' keeps asking
        * until the diagonal is made. */
       id: 'connect', page: 7,
       // LEVEL 2 LAYOUT (the user): he stays on the log at the left, with his line; the card is
@@ -379,7 +383,7 @@
         { input: { type: 'draw-diagonal', from: 'picked', sides: true, praise: false } },
         { branch: true, until: 'correct',
           on: {
-            // SIDE_FEEDBACK: kept a moment, named, and another try
+            // SIDE_COMPLETE / SECOND_SIDE_COMPLETE: named, its end disabled, and another try
             side: [
               { sfx: 'pop' },
               // the tag arrives on the word "side"
@@ -387,15 +391,14 @@
               { swiftee: 'discover' },
               { say: 'This is a side of the polygon.', vo: 'p09' },
               { wait: 1200 },
-              // THE SIDE STAYS, ITS CORNER IS SPENT (the user: "freeze the side line so the child
-              // can't pick that side point again"): only its tag goes, and the next try can only
-              // be a corner not tried yet — the other side, or the diagonal (stage.js freezeSide)
+              // THE SIDE STAYS, ITS CORNER IS DONE WITH (stage.js freezeSide): only its tag goes;
+              // the next try is the other neighbour, or — both sides made — a far corner
               { stage: { side: 'done' } },
               { instruction: 'Let’s connect it to a different vertex.', vo: 'p10i' },
               { swiftee: 'point', at: 'picked' },
               { input: { type: 'draw-diagonal', from: 'picked', sides: true, praise: false, retry: true } }
             ],
-            // DIAGONAL_SUCCESS: the line is in and glowing (stage.js shimmer)
+            // DIAGONAL_CREATED: the line is in, locked, and glowing (stage.js shimmer)
             correct: [
               { sfx: 'correct' },
               { juice: 'collect', target: 'answer' },
@@ -405,6 +408,8 @@
               // tag under the card, which also made the card shrink to fit it
               { stage: { label: { text: 'Diagonal', at: 'diagonal', arrow: true, enter: 'pop', cue: 'diagonal' } } },
               { swiftee: 'celebrate' },
+              // (the connecting step's last state: the diagonal is locked, and now explained)
+              { stage: { connectState: 'EXPLANATION' } },
               { say: 'Yay! You made a diagonal!', vo: 'p12' }
             ]
           },

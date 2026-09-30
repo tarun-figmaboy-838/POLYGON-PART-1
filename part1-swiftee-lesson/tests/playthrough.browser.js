@@ -442,7 +442,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   const st = () => page.evaluate(() => {
     const s = window.Stage.state;
-    return { verts: s.verts, n: s.n, picked: s.picked, segment: s.segment,
+    return { verts: s.verts, n: s.n, picked: s.picked, segment: s.segment, sidesDone: (s.sidesDone || []).length,
              diagonals: (s.diagonals || []).map((d) => [d[0], d[1]]) };
   });
 
@@ -483,9 +483,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       case 'draw-diagonals': {
         const s = await st();
         const from = spec.from === 'picked' ? s.picked : spec.from;
-        // connecting (sides): the first try goes to a neighbour — a side, named,
-        // and asked again — and the retry draws the diagonal
-        if (spec.sides && !spec.retry) { await dragPath(s.verts[from], s.verts[(from + 1) % s.n]); return; }
+        // connecting (sides — the Screen 7 vertex brief): a neighbour, a side, named; the other
+        // neighbour, the second side; and only then the diagonal
+        if (spec.sides && s.sidesDone === 0) { await dragPath(s.verts[from], s.verts[(from + 1) % s.n]); return; }
+        if (spec.sides && s.sidesDone === 1) { await dragPath(s.verts[from], s.verts[(from + s.n - 1) % s.n]); return; }
         const used = new Set(s.diagonals.map((d) => d.slice().sort((a, b) => a - b).join('-')));
         const adj = (i, j) => Math.abs(i - j) === 1 || Math.abs(i - j) === s.n - 1;
         const targets = [];

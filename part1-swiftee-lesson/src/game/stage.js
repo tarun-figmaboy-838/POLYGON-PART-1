@@ -1571,29 +1571,20 @@
       }
     }
 
-    // THE SIDE BEING TALKED ABOUT: the one the child just connected, drawn in
-    // pale ice over the outline. The connect step lights it while it is named
-    // ("This is a side of the polygon.") and takes it down before the next
-    // try (clearSide); nothing else on the shape is drawn over a side.
+    /* A SIDE THE CHILD MADE IS A SIDE OF THE POLYGON, AND LOOKS IT (the Screen 7 vertex brief:
+       "the completed side must NOT remain cyan … same dark-blue stroke, same width, same
+       opacity, no glow, no special highlight"). The ice line under the finger was the drag
+       preview only, and it is gone on the drop. The side being named (st.segment) is one line
+       in the outline's own stroke, exactly over the outline — nothing to see, but a line the
+       word "side" can trace as it is said (emphasize) and the tag can point at. A side already
+       found (st.sidesDone) draws nothing at all: it is the outline. Neither ever takes a
+       pointer — a finished line is never the line being dragged. */
     if (st.segment) {
       var sa = v[st.segment[0]], sb = v[st.segment[1]];
-      // (a size thicker than the outline, and glowing: the side the child has just made is
-      // not lost in the outline — the Screen 7 brief; drawn so on every rebuild, not only once)
-      var segEl = mk('line', { x1: sa.x, y1: sa.y, x2: sb.x, y2: sb.y, stroke: HI.line, 'stroke-width': 6,
-                               'stroke-linecap': 'round', 'pointer-events': 'none', 'class': 'segment',
-                               style: 'filter: drop-shadow(0 0 5px ' + HI.lit + ');' }, g);
+      var segEl = mk('line', { x1: sa.x, y1: sa.y, x2: sb.x, y2: sb.y, stroke: SHAPE.edge, 'stroke-width': SHAPE.edgeW,
+                               'stroke-linecap': 'round', 'pointer-events': 'none', 'class': 'segment' }, g);
       st.segGlow = segEl; st.segLine = segEl;
     }
-    // THE SIDES ALREADY FOUND STAY FOUND, LIT (the user: "freeze the side line, highlighted, so
-    // the child can see this is a side"): each named side stays drawn over the outline in the
-    // lit ice, glowing, and its far corner is not somewhere a line can go again (above)
-    (st.sidesDone || []).forEach(function (sd) {
-      var da = v[sd[0]], db = v[sd[1]];
-      if (!da || !db) return;
-      mk('line', { x1: da.x, y1: da.y, x2: db.x, y2: db.y, stroke: HI.lit, 'stroke-width': 5.5, opacity: 1,
-                   'stroke-linecap': 'round', 'pointer-events': 'none', 'class': 'segment-done',
-                   style: 'filter: drop-shadow(0 0 5px rgba(75, 224, 255, .9));' }, g);
-    });
 
     // edges as tap targets (invisible, wide)
     st.edgeEls = [];
@@ -1668,21 +1659,26 @@
       var shown = !!(col || st.showVerts);
       // (NO RING round the corner the child chose — the user: "remove the large rings around
       // vertex dots". The dot itself says it: gold, and a size up.)
-      // A CORNER ALREADY JOINED BY A SIDE (st.sidesDone) is not somewhere a line can be taken
-      // again, and it now LOOKS spent (the Screen 7 brief: "disable it as the next target, stop
-      // its pulse, visually de-emphasise it" — which replaces the earlier "do not dim the dot"):
-      // a size down, faded, never breathing. The frozen, lit side still shows what it was.
-      var spent = !!(st.sidesDone && st.sidesDone.some(function (sd) { return sd[1] === j; }));
+      /* SCREEN 7's CORNERS EACH HAVE ONE STATE (st.vstate — the Screen 7 vertex brief; set by
+         setVertexStates): 'anchor', the one corner a line is drawn from, green; a corner a line
+         may go to now ('adjacent-available' for a side, 'diagonal-available' once both sides are
+         made), a white point; and a corner a line may not go to — 'side-used-disabled', the far
+         end of a side already made, or 'inactive', a far corner before the diagonal step — which
+         is a plain corner of the polygon: the outline's own dot, full strength, never breathing,
+         never lit, never touched. With no state (every other screen) a corner is drawn as before. */
+      var vs = st.vstate ? st.vstate[j] : null;
+      var plain = vs === 'side-used-disabled' || vs === 'inactive';
       var knob = mk('circle', {
         cx: v[j].x, cy: v[j].y,
-        r: col ? 10 : (spent ? 7 : (touch ? 9 : 6)),
-        fill: col || (touch ? '#ffffff' : SHAPE.edge),
-        stroke: col ? '#ffffff' : (touch ? '#0b3f7a' : 'none'),
-        'stroke-width': col ? 3 : (spent ? 2 : (touch ? 3 : 2)),
-        'class': 'knob' + (!spent && ((st.breathe && !col && touch) || (st.breatheAt && st.breatheAt[j])) ? ' breathe' : '') + (spent ? ' spent' : ''), 'data-i': j,
-        opacity: shown ? (spent && !col ? 0.42 : 1) : 0,
+        r: col ? 10 : (plain ? 6 : (touch ? 9 : 6)),
+        fill: col || (touch && !plain ? '#ffffff' : SHAPE.edge),
+        stroke: col ? '#ffffff' : (touch && !plain ? '#0b3f7a' : 'none'),
+        'stroke-width': col ? 3 : (touch && !plain ? 3 : 2),
+        'class': 'knob' + (!plain && ((st.breathe && !col && touch) || (st.breatheAt && st.breatheAt[j])) ? ' breathe' : '') + (vs === 'side-used-disabled' ? ' spent' : ''), 'data-i': j,
+        opacity: shown ? 1 : 0,
         'pointer-events': 'none'
       }, g);
+      if (vs) knob.setAttribute('data-state', vs);
       // 18 units: 36 across, which is 37px on a 1024-wide window and more on
       // anything bigger — the 36–44px a finger needs, however small the
       // knob it lands on looks.
@@ -1691,7 +1687,11 @@
         fill: '#000', 'fill-opacity': 0, stroke: 'none',
         'class': 'vertex', 'data-i': j
       }, g);
-      c.style.pointerEvents = touch && !spent ? 'all' : 'none';
+      // (with states, only the anchor takes a press — a line only ever starts there; the corners
+      // it may go to are found by where the finger is, so nothing else needs one, and a corner
+      // that is done with is out of reach of every press, hover and drop)
+      c.style.pointerEvents = touch && (vs ? vs === 'anchor' : true) ? 'all' : 'none';
+      if (vs) c.setAttribute('data-state', vs);
       if (st.breathe && !col && touch) knob.style.animationDelay = (j * 0.22).toFixed(2) + 's';   // one after another, round the shape
       st.knobEls.push(knob);
       st.vertEls.push(c);
@@ -5598,6 +5598,8 @@
     // the side that was named, and its tag, fade before the next try
     if (spec.side === null) clearSide();
     if (spec.side === 'done') freezeSide();
+    // (the connecting step's last state, EXPLANATION, is the lesson's to say: screens.js)
+    if (spec.connectState) setConnect(spec.connectState);
     /* THE CORNERS SHOWN BEFORE THEY ARE ASKED FOR (the user: "the dots appear before 'Select
        any vertex'"): up, softly, ahead of the line — so its word "vertex" has corners to swell
        (emphasize) — and touchable once the input that follows is armed. */
@@ -5840,7 +5842,7 @@
           { scale: '1', filter: 'brightness(1) drop-shadow(0 0 0 rgba(255,150,40,0))' },
           { scale: peak, filter: 'brightness(1.12) drop-shadow(0 0 7px ' + WARM + ')', offset: 0.4 },
           { scale: '1', filter: 'brightness(1) drop-shadow(0 0 0 rgba(255,150,40,0))' }
-        ], { duration: o.ms || 480, delay: (o.together ? 0 : i * 60) + (o.delay || 0), easing: 'cubic-bezier(.3,1.25,.45,1)' });
+        ], { duration: o.ms || 480, delay: (o.together ? 0 : i * (o.gap || 60)) + (o.delay || 0), easing: 'cubic-bezier(.3,1.25,.45,1)' });
         n++;
       } catch (x) {}
     });
@@ -5977,6 +5979,11 @@
         // "another vertex", "a different vertex": the OTHER corners; "this
         // vertex", "the same vertex": the one the lesson has marked
         var mine = relevantKnobs(), all = (st.knobEls || []).filter(function (k) { return k && k.getAttribute('opacity') !== '0'; });
+        // SCREEN 7: "a different vertex" is a corner a line may go to NOW — never a used end or
+        // a far corner before the diagonal step — each in turn, not all at once (the vertex brief)
+        if (st.vstate && /\b(another|different|other)\s+vert/.test(line)) {
+          return warmPulse(st.vstate.map(function (vs, q) { return /-available$/.test(vs) ? knobOf(q) : null; }), { gap: 240 });
+        }
         if (/\b(another|different|other)\s+vert/.test(line) && mine.length < all.length) {
           return warmPulse(all.filter(function (k) { return mine.indexOf(k) < 0; }));
         }
@@ -6339,7 +6346,8 @@
         if (!were && !reduced()) (st.knobEls || []).forEach(function (k) {
           try { k.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, easing: 'ease-out' }); } catch (e) {}
         });
-        setConnect('SELECT_VERTEX');
+        st.vstate = null;
+        setConnect('IDLE_VERTEX');
         // ON THE FIRST IDLE HINT, not the last: tapping is the move, and a child who has not
         // tapped yet is shown it — on the corner that is breathing, and that one only
         var pickHand = function (strong) {
@@ -6359,7 +6367,7 @@
             st.picked = i; st.lastEl = knobOf(i) || c; st.vcolor = {}; st.vcolor[i] = HI.picked; st.showVerts = false; st.breathe = false; st.breatheAt = null; renderPoly();
             // the tap answered on the dot itself: a brief glow as it turns gold
             juice('good', knobOf(i));
-            setConnect('VERTEX_SELECTED', { from: i });
+            setConnect('ANCHOR_SELECTED', { from: i });
             endInteraction(); resolve({ result: 'correct', vertex: i });
           });
         });
@@ -7332,10 +7340,15 @@
   }
 
   /** Move the line's free end: to the finger, or snapped to a corner it may
-      join. Returns the corner it is snapped to, or -1. */
-  function followFinger(line, from, p, valid, was) {
-    var best = -1, bd = SNAP;
-    valid.forEach(function (j) { var q = st.verts[j], d = Math.hypot(q.x - p.x, q.y - p.y); if (d < bd) { bd = d; best = j; } });
+      join. Returns the corner it is snapped to, or -1.
+      (`finger`: where the finger really is, when `p` is that point held inside the card. The
+      snap is measured from the FINGER — a corner near the card's edge stayed snapped while the
+      finger went on far past the card, because the held end sat beside it, and a line let go
+      off the card locked there: the code's own rule is that a line let go on the card's frame
+      goes home.) */
+  function followFinger(line, from, p, valid, was, finger) {
+    var best = -1, bd = SNAP, f = finger || p;
+    valid.forEach(function (j) { var q = st.verts[j], d = Math.hypot(q.x - f.x, q.y - f.y); if (d < bd) { bd = d; best = j; } });
     var end = best >= 0 ? st.verts[best] : p;
     line.setAttribute('opacity', 1);
     line.setAttribute('x2', end.x); line.setAttribute('y2', end.y);
@@ -7397,23 +7410,85 @@
     } catch (e) {}
   }
 
-  /* THE CONNECTING STEP, AS A STATE. Pick → connect has several moments in
-     which the shape must not take a line — while he names a side, while the
-     next instruction is still being said, while the diagonal is cheered — and
-     the stage says which one it is in, so nothing overlaps and a test can
-     ask:
-       SELECT_VERTEX     corners showing, any one may be picked
-       VERTEX_SELECTED   the corner is theirs; the instruction is being given
-       READY_TO_CONNECT  a line may be drawn from it
-       DRAWING           a finger is down, the line follows it
-       SIDE_FEEDBACK     it landed on a neighbour: a side, being named
-       DIAGONAL_SUCCESS  it landed on any other corner: a diagonal
-     Drawing is only taken in READY_TO_CONNECT; every other state belongs to
-     the lesson. */
+  /* THE CONNECTING STEP, AS A STATE (the Screen 7 vertex brief's flow). Pick → connect has
+     moments in which the shape must not take a line — while he names a side, while the next
+     instruction is still being said, while the diagonal is cheered — and the stage says which
+     one it is in, so nothing overlaps and a test can ask:
+       IDLE_VERTEX           corners showing, any one may be picked
+       ANCHOR_SELECTED       the corner is theirs (the anchor); the instruction is being given
+       SIDE_HINT             a line may be drawn from it, to a neighbour: the first side (the
+                             idle ghost, if it comes, draws that side)
+       SIDE_DRAG             a finger is down, making a side; the preview line follows it
+       SIDE_COMPLETE         it landed on a neighbour: a side, being named
+       ENDPOINT_DISABLED     that neighbour is done with (setVertexStates), the next line said
+       NEXT_SIDE_READY       a line may be drawn to the other neighbour: the second side
+       SECOND_SIDE_COMPLETE  it landed there: the second side, being named
+       DIAGONAL_INSTRUCTION  both sides are made: the far corners are the places to go now,
+                             and "Let’s connect it to a different vertex." is being said
+       DIAGONAL_READY        a line may be drawn to a far corner
+       DIAGONAL_DRAG         a finger is down, making the diagonal
+       DIAGONAL_CREATED      it landed on a far corner: the diagonal, locked
+       INTERACTION_LOCKED    nothing on the shape takes a press any more
+       EXPLANATION           "Yay! You made a diagonal!" (screens.js, stage connectState)
+     A line is only taken in the three READY states; every other state belongs to the lesson. */
+  var CONNECT_READY = { SIDE_HINT: 1, NEXT_SIDE_READY: 1, DIAGONAL_READY: 1 };
   function setConnect(state, detail) {
     if (st.connect === state) return;
     st.connect = state;
+    // (the last few, in order, for a test to read the flow back: Stage.state.connectLog)
+    (st.connectLog = st.connectLog || []).push(state);
+    if (st.connectLog.length > 40) st.connectLog.shift();
     evt('connect:state', Object.assign({ state: state }, detail || {}));
+  }
+  /* EACH CORNER'S STATE ON SCREEN 7 (the Screen 7 vertex brief), from the anchor and the sides
+     made — never from a selected flag alone:
+       anchor               the corner picked; the only place a line starts; never disabled
+       adjacent-available   a neighbour with no side yet: where a SIDE may go
+       side-used-disabled   a neighbour a side has been made to: visible, a plain corner, and
+                            out of every press, hover, drop, pulse and hint
+       diagonal-available   a far corner once both sides are made: where the DIAGONAL may go
+       inactive             a far corner before that; and, once the diagonal is made
+                            (`locked`), every corner that is not the anchor or a used end
+     The side being named (st.segment) counts as made the moment it lands: its end is disabled
+     on the drop. */
+  function sideEnds() {
+    var ends = (st.sidesDone || []).map(function (sd) { return sd[1]; });
+    if (st.segment) ends.push(st.segment[1]);
+    return ends;
+  }
+  function sidesLeft(from) {
+    var ends = sideEnds(), left = 0;
+    for (var q = 0; q < st.n; q++) if (q !== from && Poly.isAdjacent(from, q, st.n) && ends.indexOf(q) < 0) left++;
+    return left;
+  }
+  function setVertexStates(from, locked) {
+    // (the far corners open only once both sides are MADE AND NAMED — frozen, st.sidesDone — not
+    // while the second is still being named: the diagonal step begins with its instruction)
+    var ends = sideEnds(), diag = sidesLeft(from) === 0 && !st.segment, out = [];
+    for (var q = 0; q < st.n; q++) {
+      if (q === from) out.push('anchor');
+      else if (ends.indexOf(q) >= 0) out.push('side-used-disabled');
+      else if (locked) out.push('inactive');
+      else if (Poly.isAdjacent(from, q, st.n)) out.push('adjacent-available');
+      else out.push(diag && !diagonalUsed(from, q) ? 'diagonal-available' : 'inactive');
+    }
+    st.vstate = out;
+    evt('connect:vertices', { states: out.slice() });
+    return out;
+  }
+  /* THE CORNERS A DIAGONAL CAN REACH COME UP, ONE AFTER THE OTHER, when the diagonal step
+     begins (the brief: "subtle active target indication only when diagonal step begins … do
+     not pulse multiple vertices simultaneously"): each plain corner turns into a white point
+     with one small swell, a beat apart. Nothing else moves. */
+  function riseTargets() {
+    if (reduced()) return;
+    var nth = 0;
+    (st.vstate || []).forEach(function (vs, q) {
+      var k = vs === 'diagonal-available' ? knobOf(q) : null;
+      if (!k || !k.animate) return;
+      k.style.transformBox = 'fill-box'; k.style.transformOrigin = 'center';
+      try { k.animate([{ scale: '0.6' }, { scale: '1.18', offset: 0.55 }, { scale: '1' }], { duration: 420, delay: nth++ * 220, easing: 'cubic-bezier(.3,1.25,.45,1)', fill: 'backwards' }); } catch (e) {}
+    });
   }
 
   /** The side that was named goes: its mark and its tag fade, and the shape is
@@ -7421,11 +7496,17 @@
   /* The named side kept, frozen, and its corner spent (screens.js `side: 'done'`): only its
      tag goes. The next try can only be a new corner. */
   function freezeSide() {
-    var tag = st.labelEl;
+    var tag = st.labelEl, from = st.picked;
     if (st.segment) { st.sidesDone = (st.sidesDone || []).concat([st.segment.slice()]); st.segment = null; }
     st.segLine = st.segGlow = null;
     if (tag) { st.labelEl = null; st.labelSpec = null; fadeOut(tag); }
+    // ENDPOINT_DISABLED; and with both sides made the lesson turns to the diagonal — the far
+    // corners are now the places a line may go (DIAGONAL_INSTRUCTION, while that is said)
+    var toDiagonal = st.vstate && from != null && sidesLeft(from) === 0;
+    if (st.vstate && from != null) setVertexStates(from);
+    if (st.vstate) setConnect('ENDPOINT_DISABLED', { from: from });
     if (st.polyG) renderPoly();
+    if (toDiagonal) { setConnect('DIAGONAL_INSTRUCTION', { from: from }); riseTargets(); }
   }
   function fadeOut(el) {
     if (!el) return;
@@ -7481,6 +7562,8 @@
       // THE CORNER TO DRAW FROM breathes — it, and nothing else (the user: "subtle pulse only on
       // the active dot") — while it waits to be taken
       st.picked = from; st.vcolor = {}; st.vcolor[from] = HI.picked; st.showVerts = true; st.touchVerts = true;
+      // (each corner's state, from the anchor and the sides made so far: setVertexStates)
+      if (sides) setVertexStates(from); else st.vstate = null;
       st.breatheAt = {}; st.breatheAt[from] = true; renderPoly();
       var still = function (on) { var fk = knobOf(from); if (fk && fk.classList) fk.classList.toggle('breathe', !!on); };
       cleanup.push(function () { st.breatheAt = null; still(false); });
@@ -7489,40 +7572,21 @@
          rebuilt after every line, so the hand is put back each time. */
       var dressFrom = function () { var c = st.vertEls && st.vertEls[from]; if (c) c.style.cursor = 'grab'; };
       dressFrom();
-      if (sides) setConnect('READY_TO_CONNECT', { from: from });
+      // THE READY STATE FOR WHERE THE LESSON IS: the first side, the second, or the diagonal
+      var readyState = function () { return sidesLeft(from) === 0 ? 'DIAGONAL_READY' : ((st.sidesDone || []).length ? 'NEXT_SIDE_READY' : 'SIDE_HINT'); };
+      if (sides) setConnect(readyState(), { from: from });
       var made = 0, active = false, hot = -1;
       var line = previewLine(from);
       var valid = function () { return Poly.diagonalsFrom(from, st.n).filter(function (j) { return !diagonalUsed(from, j); }); };
+      /* WHERE A LINE MAY GO IS WHAT THE CORNERS' STATES SAY (the Screen 7 vertex brief): SIDE
+         FIRST — both neighbours, one after the other, each a side and each done with once made —
+         and only then the DIAGONAL, to a far corner. A used end or a far corner before the
+         diagonal step is not a place a line may go: it is never snapped to, never lit, and a line
+         let go on it simply goes home (release, below). */
       var targets = function () {
         if (!sides) return valid();
-        // (a corner already joined by a side is done with: st.sidesDone — AND SO IS THE OTHER
-        // NEIGHBOUR once a side has been named: the user, "the child made a side, so why can the
-        // card draw the other side?" One side is the lesson; a second is the same lesson
-        // again. After it, only a corner a diagonal can reach is a place the line may go.)
-        // SIDE FIRST, THEN THE DIAGONAL (the Screen 7 brief): until a side has been made and
-        // named, a line can only be joined to a NEIGHBOUR — the side is the discovery the
-        // diagonal is measured against, and a first line to a far corner skipped it. A line
-        // let go on a far corner goes home and the two neighbours light (release, below).
-        var spentAt = (st.sidesDone || []).map(function (sd) { return sd[1]; });
-        var sideMade = !!(st.sidesDone && st.sidesDone.length);
-        var all = [];
-        for (var q = 0; q < st.n; q++) {
-          if (q === from || diagonalUsed(from, q) || spentAt.indexOf(q) >= 0) continue;
-          var adj = Poly.isAdjacent(from, q, st.n);
-          if (sideMade ? adj : !adj) continue;
-          all.push(q);
-        }
-        return all;
+        return (st.vstate || []).map(function (vs, q) { return /-available$/.test(vs) ? q : -1; }).filter(function (q) { return q >= 0; });
       };
-      var sideMade = function () { return !!(st.sidesDone && st.sidesDone.length); };
-      // THE CORNERS A DIAGONAL CAN REACH, SHOWN ONCE (the brief: "valid non-adjacent vertices
-      // … only these receive subtle emphasis"): when the try after the side arms, the far
-      // corners light for a moment and settle back — a light, not a pulse that keeps going
-      if (sides && sideMade()) later(450, function () {
-        if (active) return;
-        showTargets(targets(), true);
-        later(1400, function () { if (!active) showTargets([], false); });
-      });
       // THE MOVE, SHOWN — once the child has been still a while (hintLadder).
       // First the corners a line may go to breathe; then a ghost runs from the
       // chosen corner to one of them. It gives no answer away: every corner
@@ -7540,8 +7604,10 @@
           // on whether a side exists, not on the input being a retry: a retry before any side
           // must still show the side. (A LINE drawn out of the corner, which stays where it
           // is — gestureGhost `line`; one ghost at a time, taken down by a press: hintLadder.)
+          // (a side while a neighbour is still free — the FIRST ghost is always a side — and never
+          // to a corner that is done with: targets() holds only the corners available now)
           var t;
-          if (sides && !sideMade()) { var nb = targets(); t = nb.indexOf((from + 1) % st.n) >= 0 ? (from + 1) % st.n : nb[0]; }
+          if (sides && sidesLeft(from) > 0) { var nb = targets(); t = nb.indexOf((from + 1) % st.n) >= 0 ? (from + 1) % st.n : nb[0]; }
           else t = sides ? targets()[0] : valid()[0];
           return t == null ? null : gestureGhost(st.verts[from], st.verts[t], { line: true, target: knobOf(t) });
         }
@@ -7566,13 +7632,13 @@
       on(st.polyG, 'pointerdown', function (e) {
         var t = e.target; if (!t || !t.classList || !t.classList.contains('vertex') || +t.getAttribute('data-i') !== from) return;
         if (global.Input && Input.guarded) return;
-        if (sides && st.connect !== 'READY_TO_CONNECT') return;
+        if (sides && !CONNECT_READY[st.connect]) return;
         if (active) return;
         active = true; pid = e.pointerId; e.preventDefault();
         still(false);
         try { svg.setPointerCapture && svg.setPointerCapture(e.pointerId); } catch (x) {}
         // connecting, nothing lights up front; the corner the line finds does
-        if (sides) { showTargets([], false); setConnect('DRAWING', { from: from }); }
+        if (sides) { showTargets([], false); setConnect(sidesLeft(from) ? 'SIDE_DRAG' : 'DIAGONAL_DRAG', { from: from }); }
         else showTargets(targets(), true);
         svg.style.cursor = 'grabbing';
         evt('diagonal:start', { from: from });
@@ -7582,7 +7648,8 @@
         if (!mine(e)) return;
         if (e.pointerType === 'mouse' && e.buttons === 0) { cancel(); return; }
         var was = hot;
-        hot = followFinger(line, from, inCard(pt(e)), targets(), hot);
+        var at = pt(e);
+        hot = followFinger(line, from, inCard(at), targets(), hot, at);
         if (sides && hot !== was) {
           // only the corner it has snapped to shows, for as long as it is there
           showTargets(hot >= 0 ? [hot] : [], true);
@@ -7597,7 +7664,7 @@
            finger was let go on (a fingertip's reach of it) — never the nearest corner
            to a line let go along a side, in the open glass or on the card's frame: that line
            goes home, and the corners stay ready to try again. */
-        var j = hot >= 0 ? hot : nearestVertex(inCard(pt(e)), from, 44);
+        var j = hot >= 0 ? hot : nearestVertex(pt(e), from, 44);
         /* A DIAGONAL ALREADY MADE IS A RESULT, NOT A TRY (the final pass: "a completed diagonal must
            become a locked learning result"). A line taken from the corner along a diagonal that is
            already there, to its far corner, is not a new connection and not a wrong one — "Try
@@ -7607,29 +7674,23 @@
           var made0 = (st.diagonals || []).findIndex(function (d) { return (d[0] === from && d[1] === j) || (d[1] === from && d[0] === j); });
           if (made0 >= 0) shimmer(made0);
           hot = -1; showTargets([], false); still(true);
-          if (sides) setConnect('READY_TO_CONNECT', { from: from });
+          if (sides) setConnect(readyState(), { from: from });
           retract(line, from, function () { line = previewLine(from); });
           return;
         }
-        // (and never on a corner that is done with — a side already found: the frozen side
-        // flashes once, "this is a side already", and the line goes home)
-        if (sides && j >= 0 && targets().indexOf(j) < 0) {
-          if (st.polyG) pulseHint([].slice.call(st.polyG.querySelectorAll('.segment-done')), { pop: true });
-          j = -1;
-        }
+        // (and never on a corner that is not available now — a used end, or a far corner before
+        // the diagonal step: no verdict, no flash, nothing lit; the line goes home, below)
+        if (sides && j >= 0 && targets().indexOf(j) < 0) j = -1;
         hot = -1;
         showTargets([], false);
         if (j < 0) {
           still(true);
           retract(line, from, function () { line = previewLine(from); });
           if (sides) {
-            // NOTHING WAS CONNECTED, SO THERE IS NO VERDICT. The line goes home,
-            // and every corner lights for a moment — where a line can go, all
-            // of them, neighbours included, so it is not an answer — and
-            // settles back to a plain point.
-            setConnect('READY_TO_CONNECT', { from: from });
-            showTargets(targets(), true);
-            later(1400, function () { if (!active) showTargets([], false); });
+            // NOTHING WAS CONNECTED, SO THERE IS NO VERDICT (the Screen 7 vertex brief: "remove/
+            // reset only the preview line, keep anchor selected, keep vertex states unchanged,
+            // allow retry"). The preview goes home; every corner stays as it was.
+            setConnect(readyState(), { from: from });
             return;
           }
           missedCorner(valid(), null, function () { return active; });
@@ -7638,59 +7699,48 @@
         var ok = !Poly.isAdjacent(from, j, st.n) && !diagonalUsed(from, j);
         st.lastEl = knobOf(j) || st.vertEls[j];
         if (sides && !ok && Poly.isAdjacent(from, j, st.n)) {
-          // A SIDE: the line lands along the outline and stays there, marked,
-          // for the lesson to name ("This is a side of the polygon.")
+          /* A SIDE (the Screen 7 vertex brief): accepted; the ice preview line is taken away;
+             the side is the polygon's own edge, looking exactly like the others (renderPoly
+             draws nothing over it but a line in the outline's stroke, for the word "side" to
+             trace); its end is done with at once (side-used-disabled); the anchor stays the
+             anchor. The lesson names it ("This is a side of the polygon."), and the next try is
+             a fresh preview line from the same corner. */
+          var second = (st.sidesDone || []).length > 0;
           line.remove();
-          st.segment = [from, j]; st.ghost = null; renderPoly();
+          st.segment = [from, j]; st.ghost = null;
+          setVertexStates(from);
+          renderPoly();
           st.lastEl = st.segLine || knobOf(j);
-          // lit while it is being named, and only then (clearSide takes it
-          // down before the next try)
-          /* THE SIDE THEY MADE IS NOT LOST IN THE OUTLINE (the Screen 7 brief): on the very
-             edge, never off it, but a size thicker than the outline, glowing, and drawn on —
-             a bright sweep from their corner to the neighbour — before its shimmer, so it reads
-             as "the line I just connected", not as one more side of the shape. */
-          if (st.segLine) {
-            if (!reduced() && st.segLine.animate) {
-              var sl = Math.hypot(st.verts[j].x - st.verts[from].x, st.verts[j].y - st.verts[from].y) || 1;
-              try {
-                st.segLine.animate([{ strokeDasharray: sl + ' ' + sl, strokeDashoffset: sl + 'px' },
-                                    { strokeDasharray: sl + ' ' + sl, strokeDashoffset: '0px' }],
-                                   { duration: 320, easing: 'cubic-bezier(.3,.7,.3,1)' })
-                  .finished.then(function () { shimmerLine(st.segLine); }, function () {});
-              } catch (x) { shimmerLine(st.segLine); }
-            } else shimmerLine(st.segLine);
-          }
-          setConnect('SIDE_FEEDBACK', { from: from, to: j });
+          setConnect(second ? 'SECOND_SIDE_COMPLETE' : 'SIDE_COMPLETE', { from: from, to: j });
           evt('side:made', { from: from, to: j });
           endInteraction(); resolve({ result: 'side', vertex: j });
           return;
         }
         if (ok) {
           if (sides) {
-            // the side that was named — and the ones found before it — step aside for the diagonal
+            // (the sides stay made, and their ends stay disabled — the brief: "keep all previously
+            // used side endpoints disabled"; they are the outline, so there is nothing to take down)
             st.segment = null;
             if (st.labelEl) { st.labelEl.remove(); st.labelEl = null; st.labelSpec = null; }
-            if (st.sidesDone && st.sidesDone.length && st.polyG) {
-              [].slice.call(st.polyG.querySelectorAll('.segment-done')).forEach(function (ln) {
-                var c2 = ln.cloneNode(true); if (st.polyG.parentNode) st.polyG.parentNode.appendChild(c2); fadeOut(c2);
-              });
-            }
-            st.sidesDone = null;
           }
           line.remove(); line = previewLine(from);
           // (connecting: the corner it reached shows as a corner too — a
           // diagonal joins two vertices, and a line into a hidden corner read
           // as a line that stopped in mid-air)
           if (sides) st.vcolor[j] = HI.picked;
-          st.diagonals = st.diagonals || []; st.diagonals.push(Object.assign([Math.min(from, j), Math.max(from, j)], { solid: true })); st.ghost = null; renderPoly(); made++;
+          st.diagonals = st.diagonals || []; st.diagonals.push(Object.assign([Math.min(from, j), Math.max(from, j)], { solid: true })); st.ghost = null;
+          // (the diagonal is a locked result: every corner but the anchor and the used ends is
+          // inactive now, and none takes a press — the input is locked on resolve)
+          if (sides) setVertexStates(from, true);
+          renderPoly(); made++;
           if (made < count) dressFrom();
           st.lastEl = knobOf(j) || st.vertEls[j];
           shimmer(st.diagonals.length - 1, sides);
           dotBurst(j);
-          if (sides) setConnect('DIAGONAL_SUCCESS', { from: from, to: j });
+          if (sides) setConnect('DIAGONAL_CREATED', { from: from, to: j });
           evt('diagonal:complete', { from: from, to: j });
           if (count > 1) onTap('correct', null, { last: made >= count });
-          if (made >= count) { line.remove(); endInteraction(); resolve({ result: 'correct' }); }
+          if (made >= count) { line.remove(); endInteraction(); resolve({ result: 'correct' }); if (sides) setConnect('INTERACTION_LOCKED', { from: from }); }
         } else if (count > 1) {
           retract(line, from, function () { line = previewLine(from); });
           onTap('wrong');
@@ -7702,7 +7752,7 @@
       var cancel = function () {
         if (!active) return; active = false; pid = null; hot = -1; showTargets([], false);
         svg.style.cursor = ''; still(true);
-        if (sides) setConnect('READY_TO_CONNECT', { from: from });
+        if (sides) setConnect(readyState(), { from: from });
         retract(line, from, function () { line = previewLine(from); });
       };
       on(win, 'pointerup', function (e) { if (mine(e)) release(e); });
@@ -8364,6 +8414,15 @@
     forgetMade: function () { made = {}; },
     /** Where the pick → connect step is (setConnect), or null off it. */
     connectState: function () { return st.connect || null; },
+    /* SCREEN 7's CORNER STATES END WITH SCREEN 7 (game.js runScreen, at every screen's start):
+       the sides made there, and their disabled ends, are its own. The screens after it draw
+       their corners as they always have — on the next one a neighbour is a wrong answer, and
+       must look like any other corner. */
+    leaveConnect: function () {
+      if (!st.vstate && !st.sidesDone && !st.segment) return;
+      st.vstate = null; st.sidesDone = null; st.segment = null; st.segLine = st.segGlow = null;
+      if (st.polyG && st.verts) renderPoly();
+    },
     flurry: flurry,
     /* How many delayed callbacks from a finished scene have been refused.
        A test reads this: a suppression mechanism that never suppresses

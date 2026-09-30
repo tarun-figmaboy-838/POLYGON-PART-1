@@ -3587,6 +3587,8 @@
     // child is shown two buttons, taps one, and nothing happens, which is a
     // worse lesson than no buttons at all.
     if (!screenAsksChoices(s) && global.Stage && Stage.apply) Stage.apply({ choices: null });
+    // (Screen 7's corner states — its sides made and their disabled ends — are its own)
+    if (global.Stage && Stage.leaveConnect) Stage.leaveConnect();
 
     // WHERE HE STANDS ON THIS SCREEN.
     //

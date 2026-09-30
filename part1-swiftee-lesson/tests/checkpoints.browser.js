@@ -27,6 +27,10 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const HEADED = process.argv.includes('--headed');
 const SHOTS = process.argv.includes('--shots') ? path.join(ROOT, 'artifacts', 'qa') : null;
+// --only=10-16: boot (CP1) and then only the steps numbered in that range — for a quick look at one
+// stretch; a range must start where a step jumps to its own screen (CP10 jumps to the vertex pick)
+const ONLY = ((process.argv.find((a) => a.startsWith('--only=')) || '').slice(7).split('-').filter(Boolean).map(Number));
+const wanted = (n) => !ONLY.length || n === 1 || (n >= ONLY[0] && n <= (ONLY[1] == null ? ONLY[0] : ONLY[1]));
 if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
 
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json',
@@ -64,6 +68,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     console.log((ok ? '  ok   ' : '  FAIL ') + 'CP' + n + ' ' + label + (ok || extra == null ? '' : '  ' + (typeof extra === 'string' ? extra : JSON.stringify(extra)).slice(0, 400)));
   };
   const step = async (n, label, fn) => {
+    if (!wanted(n)) return;
     try { const r = await fn(); if (r && typeof r === 'object' && 'ok' in r) cp(n, label, r.ok, r.extra); else cp(n, label, !!r, r === true ? undefined : r); }
     catch (e) { cp(n, label, false, 'threw: ' + String(e.message).split('\n')[0]); }
   };
@@ -363,24 +368,86 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const clamped = s.every((b) => b.right <= panel.r + 10 && b.top >= panel.y - 10 && b.left >= panel.x - 10 && b.bottom <= panel.b + 10);
     return { ok: s.length > 0 && clamped && left === 0, extra: { lines: s.length, clamped, left } };
   });
-  await step(16, 'Level 2 valid diagonal: vertex to vertex, kept, one cue, named "Diagonal" with an arrow, no tag under the card', async () => {
+  // THE SCREEN 7 VERTEX BRIEF (its regression list — the first ghost being a side is CP13): a
+  // side, then the other side, each the polygon's own edge the moment it lands and its end
+  // disabled; the anchor kept; the far corners only for the diagonal step; the diagonal locked
+  await step(16, 'Level 2: side, other side — each a normal edge, its end disabled, the anchor kept — then the diagonal, kept, one cue, named "Diagonal" with an arrow', async () => {
     const i = await idx('connect'); await waiting(i);
     const c0 = await cues(), panel0 = await rect('#stage .panel');
-    const f = await ev(() => window.Stage.state.from || 0), n = await ev(() => window.Stage.state.verts.length);
-    const to = (f + 2) % n;
-    // SIDE FIRST (the Screen 7 brief): the side is made and named, then the diagonal from the same corner
-    await dragPath(await knobClient(f), await knobClient((f + 1) % n), 12, 80);
-    await waitFn(() => (window.Stage.state.sidesDone || []).length > 0 && window.Stage.state.connect === 'READY_TO_CONNECT' && window.Input.mode() === 'polygon', null, 45000);
+    const f = await ev(() => window.Stage.state.picked), n = await ev(() => window.Stage.state.verts.length);
+    const to = (f + 2) % n, R = (f + 1) % n, L = (f + n - 1) % n, O = (R + 1) % n;   // O–(O+1): a side nobody drew
+    const look = (q) => ev((q) => {
+      const S = window.Stage.state, outline = getComputedStyle(S.fill);
+      const seg = S.segLine ? getComputedStyle(S.segLine) : null;
+      const kn = S.knobEls[q], disc = S.vertEls[q];
+      return { states: (S.vstate || []).join(','), connect: S.connect,
+        seg: seg ? seg.stroke === outline.stroke && seg.strokeWidth === outline.strokeWidth && (!seg.filter || seg.filter === 'none') && seg.opacity === '1' : null,
+        lit: document.querySelectorAll('#stage .segment-done').length,
+        end: { state: kn.getAttribute('data-state'), plain: getComputedStyle(kn).fill === outline.stroke, pe: getComputedStyle(disc).pointerEvents, breathe: kn.classList.contains('breathe') },
+        preview: [...document.querySelectorAll('#stage .layer-fx line')].filter((l) => +l.getAttribute('opacity') > 0 && !l.closest('.gesture-ghost')).length };
+    }, q);
+    // THE SIDE AS IT LOOKS: the darkest pixel on the middle of the side made, against the same on
+    // a side nobody drew — the same dark blue (an ice-lit side is far lighter)
+    const darkest = async (p, q) => {
+      const s0 = await ev(({ p, q }) => { const v = window.Stage.state.verts; return { x: (v[p].x + v[q].x) / 2, y: (v[p].y + v[q].y) / 2 }; }, { p, q });
+      const c = await toClient(s0);
+      const buf = await page.screenshot({ clip: { x: c.x - 4, y: c.y - 4, width: 9, height: 9 } });
+      return ev(async (b64) => {
+        const im = new Image(); im.src = 'data:image/png;base64,' + b64; await im.decode();
+        const cv = document.createElement('canvas'); cv.width = im.width; cv.height = im.height;
+        const x = cv.getContext('2d'); x.drawImage(im, 0, 0);
+        const d = x.getImageData(0, 0, cv.width, cv.height).data; let best = null;
+        for (let k = 0; k < d.length; k += 4) { const L = d[k] + d[k + 1] + d[k + 2]; if (!best || L < best[3]) best = [d[k], d[k + 1], d[k + 2], L]; }
+        return best.slice(0, 3);
+      }, buf.toString('base64'));
+    };
+    const near = (a, b) => a && b && a.every((v, k) => Math.abs(v - b[k]) <= 24);
+    const wrong0 = (await cues()).wrong || 0;
+    // side 1, and a drag while it is being named (it does nothing)
+    await dragPath(await knobClient(f), await knobClient(R), 12, 80);
+    await sleep(250);
+    const a = await look(R);
+    await dragPath(await knobClient(f), await knobClient(to), 10, 40); await sleep(200);
+    const during = await ev(() => ({ connect: window.Stage.state.connect, diags: (window.Stage.state.diagonals || []).length }));
+    await waitFn(() => window.Stage.state.connect === 'NEXT_SIDE_READY' && window.Input.mode() === 'polygon', null, 45000);
+    await sleep(300);
+    const a2 = await look(R), px1 = await darkest(f, R), px0 = await darkest(O, (O + 1) % n);
+    await shot('06a-level2-first-side');
+    // side 2
+    await dragPath(await knobClient(f), await knobClient(L), 12, 80);
+    await sleep(250);
+    const b = await look(L);
+    await waitFn(() => window.Stage.state.connect === 'DIAGONAL_READY' && window.Input.mode() === 'polygon', null, 45000);
     await sleep(400);
+    const b2 = await look(L), px2 = await darkest(f, L);
+    await shot('06b-level2-both-sides');
+    // a used end never reacts
+    await dragPath(await knobClient(f), await knobClient(R), 12, 80); await sleep(500);
+    const used = await ev(() => ({ connect: window.Stage.state.connect, diags: (window.Stage.state.diagonals || []).length, seg: !!window.Stage.state.segment }));
+    // the diagonal
     await dragPath(await knobClient(f), await knobClient(to), 12, 80);
     await waitFn(() => (window.Stage.state.diagonals || []).length >= 1, null, 8000);
-    const d = await ev(() => { const D = window.Stage.state.diagonals[0], v = window.Stage.state.verts; return { d: [D[0], D[1]], solid: !!D.solid, n: window.Stage.state.diagonals.length }; });
+    const d = await ev(() => { const D = window.Stage.state.diagonals[0]; return { d: [D[0], D[1]], solid: !!D.solid, n: window.Stage.state.diagonals.length, connect: window.Stage.state.connect, locked: window.Input.mode() === 'locked' }; });
     await waitFn(() => [...document.querySelectorAll('#stage .label')].some((l) => /Diagonal/.test(l.textContent)), null, 30000).catch(() => {});
     const lab = await ev(() => { const l = [...document.querySelectorAll('#stage .label')].find((l) => /Diagonal/.test(l.textContent)); return { label: !!l, arrow: !!(l && l.querySelector('.tag-arrow')) || !!document.querySelector('#stage .tag-arrow'), badges: [...document.querySelectorAll('#stage .badge')].map((b) => b.textContent.trim()) }; });
     const c1 = await cues(), panel1 = await rect('#stage .panel');
     await shot('06-level2-valid-diagonal');
     const pair = d.d.slice().sort().join('-') === [f, to].sort().join('-');
-    return { ok: pair && d.n === 1 && c1.correct - c0.correct === 1 && lab.label && lab.arrow && lab.badges.length === 0 && Math.abs(panel1.x - panel0.x) < 2 && Math.abs(panel1.w - panel0.w) < 2, extra: { ...d, cues: c1.correct - c0.correct, ...lab } };
+    const sideOk = (x) => x.seg === true && x.lit === 0 && x.preview === 0 && x.end.state === 'side-used-disabled' && x.end.plain && x.end.pe === 'none' && !x.end.breathe;
+    const restOk = (x) => x.lit === 0 && x.preview === 0 && x.end.state === 'side-used-disabled' && x.end.plain && x.end.pe === 'none' && !x.end.breathe;
+    const st = (m) => { const o = []; for (let q = 0; q < n; q++) o.push(m[q]); return o.join(','); };
+    const flow = {
+      side1: sideOk(a) && a.connect === 'SIDE_COMPLETE', dragDuringLine: during.connect === 'SIDE_COMPLETE' && during.diags === 0,
+      ready2: restOk(a2) && a2.states === st({ [f]: 'anchor', [R]: 'side-used-disabled', [L]: 'adjacent-available', [to]: 'inactive', [(f + 3) % n]: 'inactive' }),
+      side2: sideOk(b) && b.connect === 'SECOND_SIDE_COMPLETE',
+      ready3: restOk(b2) && b2.states === st({ [f]: 'anchor', [R]: 'side-used-disabled', [L]: 'side-used-disabled', [to]: 'diagonal-available', [(f + 3) % n]: 'diagonal-available' }),
+      usedEndQuiet: used.connect === 'DIAGONAL_READY' && used.diags === 0 && !used.seg,
+      pixels: near(px1, px0) && near(px2, px0),
+      locked: d.locked && /^(INTERACTION_LOCKED|EXPLANATION)$/.test(d.connect),
+      noTryAgain: (c1.wrong || 0) === wrong0
+    };
+    return { ok: Object.values(flow).every(Boolean) && pair && d.n === 1 && c1.correct - c0.correct === 1 && lab.label && lab.arrow && lab.badges.length === 0 && Math.abs(panel1.x - panel0.x) < 2 && Math.abs(panel1.w - panel0.w) < 2,
+             extra: { flow, px: { made1: px1, made2: px2, untouched: px0 }, a, a2, b, b2, ...d, cues: c1.correct - c0.correct, ...lab } };
   });
   await step(5.1, 'Level 2 vertex selection screenshot', async () => { const i = await jump('pick-vertex'); await waiting(i); await sleep(300); await shot('05-level2-vertex-selection'); return true; });
 
