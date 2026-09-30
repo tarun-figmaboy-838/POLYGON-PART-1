@@ -304,6 +304,20 @@
    * ------------------------------------------------------------------ */
 
   var el = null, cellEl = null, shadowEl = null, flightEl = null;
+  /* THE CELL IS DRAWN, NOT SWAPPED (the production glitch). Each frame used to be the cell's CSS
+     background, and a new clip swapped that background to its sheet whether or not the sheet
+     had arrived: awaitSheet waits 400 ms at most, then the clip starts regardless. A CSS
+     background pointing at an image that is still downloading — or loaded but not yet decoded
+     — paints NOTHING, so on a real network Swiftee went blank between states (measured on the
+     deployed build: every state change on screens 1–4 blank on a slow line with the cache off,
+     and a one-frame blank on a clean load). Now every frame is drawn on a canvas from an Image
+     that has loaded AND decoded; a frame whose sheet is not ready is not drawn, so the last good
+     frame stays on screen until it is (`held`, retried every tick). The canvas is a fixed 512
+     square (the @2x cell), so a change of sheet resolution never clears it. Where there is no
+     canvas (jsdom), the old background path is kept. */
+  var canvasEl = null, cctx = null, held = null, drawnOnce = false;
+  var flightReady = false, flightHold = null;   // the inspection flight's art: decoded, and kept
+  var CANVAS_PX = 512;
   var flightArt = null;
   var layout = null;                  // function(pos, size) -> { x, y, scale }
   var pos = 'left', size = 'medium';
@@ -353,7 +367,15 @@
     rec.promise = new Promise(function (resolve) {
       if (!global.Image) { resolve(false); return; }
       var img = new global.Image();
-      img.onload = function () { rec.ok = true; everLoaded[u] = true; resolve(true); };
+      // READY MEANS DECODED: a loaded image can still cost a decode on first paint
+      var ready = function () {
+        if (rec.ok) return;
+        rec.ok = true; everLoaded[u] = true; resolve(true);
+        if (held) paint(held.name, held.frame);
+      };
+      img.onload = function () {
+        if (img.decode) img.decode().then(ready, ready); else ready();
+      };
       img.onerror = function () {
         // Do not cache a failure. A sheet can fail for reasons that pass —
         // a device briefly out of resources, a flaky connection — and a
@@ -366,7 +388,7 @@
       };
       img.src = u;
       rec.img = img;
-      if (img.complete && img.naturalWidth) { rec.ok = true; resolve(true); }
+      if (img.complete && img.naturalWidth) { if (img.decode) img.decode().then(ready, ready); else ready(); }
     });
     sheets[u] = rec;
     evict();
@@ -377,7 +399,10 @@
   function evict() {
     var keys = Object.keys(sheets);
     if (keys.length <= SHEET_BUDGET) return;
-    keys.filter(function (k) { return !sheets[k].pinned && sheets[k].url !== painted; })
+    // (never one still in flight: dropping its Image cancels the download, and it would only be
+    // asked for again — nor the sheet a held frame is waiting on)
+    var waiting = held && pagesOf(held.name) ? pagesOf(held.name).map(function (pg) { return url(pg.image); }) : [];
+    keys.filter(function (k) { return !sheets[k].pinned && sheets[k].url !== painted && sheets[k].ok && waiting.indexOf(k) < 0; })
         .sort(function (a, b) { return sheets[a].used - sheets[b].used; })
         .slice(0, keys.length - SHEET_BUDGET)
         .forEach(function (k) {
@@ -437,9 +462,24 @@
     var local = frame - page.first;
     var col = local % page.cols, row = Math.floor(local / page.cols);
 
+    var u = url(page.image);
+    if (cctx) {
+      var rec = sheets[u] || sheet(page.image, name);
+      rec.used = ++sheetClock;
+      // NOT READY: nothing is drawn, so the last good frame stays up — never a blank cell
+      if (!rec.ok || !rec.img || !rec.img.naturalWidth) { held = { name: name, frame: frame }; return; }
+      held = null;
+      var img = rec.img, sw = img.naturalWidth / page.cols, sh = img.naturalHeight / page.rows;
+      cctx.clearRect(0, 0, CANVAS_PX, CANVAS_PX);
+      cctx.drawImage(img, col * sw, row * sh, sw, sh, 0, 0, CANVAS_PX, CANVAS_PX);
+      if (painted !== u) { painted = u; cellEl.setAttribute('data-sheet', page.image); }
+      cellEl.setAttribute('data-frame', String(frame));
+      // the first real frame reveals the cell: before it, nothing (never a wrong or empty frame)
+      if (!drawnOnce) { drawnOnce = true; canvasEl.style.visibility = 'visible'; }
+      return;
+    }
     // Only touch background-image when the page actually changes; the
     // position is the per-frame work and it is a single style write.
-    var u = url(page.image);
     if (painted !== u) {
       cellEl.style.backgroundImage = 'url("' + u + '")';
       cellEl.style.backgroundSize = (page.cols * CELL_PX) + 'px ' + (page.rows * CELL_PX) + 'px';
@@ -464,7 +504,7 @@
       var frame = Math.floor((t - flightArt.start) / 110) % 4;
       if (frame !== flightArt.frame) {
         flightArt.frame = frame;
-        flightEl.style.backgroundPosition = (3 - frame * 250) + 'px -38px';
+        if (flightHold) flightHold.style.left = (3 - frame * 250) + 'px';
         var r = el.getBoundingClientRect();
         var dx = flightArt.target.x - (r.left + r.width / 2);
         var dy = flightArt.target.y - (r.top + r.height / 2);
@@ -473,6 +513,7 @@
         flightEl.style.transform = 'scaleX(' + facing + ') rotate(' + (pitch * facing).toFixed(1) + 'deg)';
       }
     }
+    if (held) paint(held.name, held.frame);
     if (!active) return;
     active.acc += dt;
     var step = 1000 / F.fps;
@@ -525,6 +566,7 @@
     }
     if (active && active.resolve) active.resolve({ interrupted: true });
     active = null;
+    preload([name]);   // every page of it, not only the first
 
     return awaitSheet(name).then(function () {
       return new Promise(function (resolve) {
@@ -1007,7 +1049,9 @@
     if (want === scale) return;
     scale = want;
     painted = null;                                    // force a background-image swap
-    sheets = {};                                       // the other scale's pages are dead weight
+    // the other scale's pages are dead weight — but the one on screen (and on the canvas) stays
+    // until the new scale's page is drawn over it
+    Object.keys(sheets).forEach(function (k) { if (!sheets[k].ok || !cctx) delete sheets[k]; });
     if (active) paint(active.name, active.order[active.i]);
   }
 
@@ -1088,7 +1132,10 @@
   }
 
   function startFlightArt(target) {
-    if (!flightEl || !cellEl || reduced) return;
+    // NOT BEFORE ITS ART IS IN: the flight hides the cell and shows the flight art, and art that
+    // has not arrived is an empty box — he flew as nothing (the production glitch). Without it the
+    // cell's own flapping clip carries the flight, which is always there (pinned, preloaded).
+    if (!flightEl || !cellEl || reduced || !flightReady) return;
     flightArt = { target: target, start: nowMs(), frame: -1 };
     cellEl.style.visibility = 'hidden';
     cellEl.style.opacity = '1';
@@ -1529,6 +1576,16 @@
                        { duration: 520, easing: 'ease-out', fill: 'forwards' });
     }
 
+    /* THE SAME HELD STATE, ASKED FOR AGAIN, IS NOT RESTARTED (as rest() already does). Every
+       play() ran the state from the top, so a second request for the pose he was already
+       holding reset its loop to the first frame — a visible twitch, and on a slow line a wait on
+       a sheet he was already showing. A held loop that is running stays running; opts.restart
+       asks for the old behaviour. */
+    if (def.hold && state === stateName && !opts.restart && !busy && rigLoop === def.rig &&
+        active && active.repeats === Infinity && active.name === triad(def.rig).loop) {
+      return Promise.resolve({ holding: true, same: true });
+    }
+
     var g = fresh();
     stateName = state;
     // A one-shot is something he is in the middle of; a held pose is not.
@@ -1756,12 +1813,22 @@
     cellEl.style.cssText =
       'position:absolute;inset:0;background-repeat:no-repeat;image-rendering:auto;' +
       'filter: drop-shadow(0 3px 5px rgba(24,52,96,.20));';
+    // (not under jsdom, which has no 2D context and says so on the console)
+    var jsdom = /jsdom/i.test((global.navigator && global.navigator.userAgent) || '');
+    if (!jsdom && global.HTMLCanvasElement) {
+      canvasEl = document.createElement('canvas');
+      canvasEl.width = CANVAS_PX; canvasEl.height = CANVAS_PX;
+      canvasEl.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block;visibility:hidden;pointer-events:none;';
+      try { cctx = canvasEl.getContext('2d'); } catch (e) { cctx = null; }
+      if (cctx) { cctx.imageSmoothingEnabled = true; cctx.imageSmoothingQuality = 'high'; cellEl.appendChild(canvasEl); }
+      else canvasEl = null;
+    }
 
     flightEl = document.createElement('div');
+    // (the flight art is the decoded Image itself, placed inside — see flightHold below — not a
+    // CSS background, which asked for the file again and showed nothing until it came)
     flightEl.style.cssText =
-      'position:absolute;inset:0;display:none;pointer-events:none;background-repeat:no-repeat;' +
-      'background-image:url("' + url('swiftee-inspect-flight.webp') + '");' +
-      'background-size:1000px 333px;background-position:3px -38px;transform-origin:50% 50%;' +
+      'position:absolute;inset:0;display:none;pointer-events:none;overflow:hidden;transform-origin:50% 50%;' +
       'filter:drop-shadow(0 7px 11px rgba(24,52,96,.24));';
 
     el.appendChild(shadowEl);
@@ -1771,7 +1838,19 @@
 
     if (opts.layout) layout = opts.layout;
     preload(PRELOAD);
-    if (global.Image) { var flightImage = new Image(); flightImage.src = url('swiftee-inspect-flight.webp'); }
+    // (and it is only used once it has loaded and decoded — flightReady, startFlightArt)
+    if (global.Image) {
+      var flightImage = new Image();
+      var flightOk = function () { flightReady = true; };
+      flightImage.onload = function () { if (flightImage.decode) flightImage.decode().then(flightOk, flightOk); else flightOk(); };
+      flightImage.src = url('swiftee-inspect-flight.webp');
+      flightHold = flightImage;   // (held, so the decoded art stays in memory)
+      // the strip of four frames, 1000 x 333, stepped by moving it (tick): the same pixels the
+      // background used to show, from an image already in hand
+      flightImage.alt = ''; flightImage.draggable = false;
+      flightImage.style.cssText = 'position:absolute;left:3px;top:-38px;width:1000px;height:333px;max-width:none;pointer-events:none;';
+      flightEl.appendChild(flightImage);
+    }
     // Decode the one-off arrival art while the title screen is waiting. The
     // three large sheets used to start loading only after Start was pressed,
     // which presented an empty canvas as a visible pause before the sleigh.

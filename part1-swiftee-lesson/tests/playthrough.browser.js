@@ -315,13 +315,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   // sleep passes on a fast machine and fails on a busy one, which says
   // nothing about the game and everything about the box it ran on.
   await safe(() => page.waitForFunction(
-    () => window.Swiftee.state !== 'enter' &&
-          !getComputedStyle(window.Swiftee.el.lastChild).backgroundImage.includes('flapping'),
+    () => { const c = window.Swiftee.el.lastChild; return window.Swiftee.state !== 'enter' &&
+          !((c.getAttribute('data-sheet') || '') + getComputedStyle(c).backgroundImage).includes('flapping'); },
     null, { timeout: 20000 }));
   const landed = await safe(() => page.evaluate(() => ({
     visible: getComputedStyle(window.Swiftee.el).opacity !== '0',
     state: window.Swiftee.state,
-    grounded: !getComputedStyle(window.Swiftee.el.lastChild).backgroundImage.includes('flapping')
+    grounded: !(((c) => (c.getAttribute('data-sheet') || '') + getComputedStyle(c).backgroundImage)(window.Swiftee.el.lastChild)).includes('flapping')
   })), {});
   t('he lands and settles into talking', landed.visible && landed.grounded, JSON.stringify(landed));
 
@@ -743,8 +743,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   const sprite = await safe(() => page.evaluate(async () => {
     const cell = window.Swiftee.el.lastChild, seen = new Set();
-    for (let i = 0; i < 12; i++) { seen.add(getComputedStyle(cell).backgroundPosition); await new Promise((r) => setTimeout(r, 60)); }
-    return { frames: seen.size, image: getComputedStyle(cell).backgroundImage, scale: window.Swiftee.scale };
+    // (the frame and the sheet are the cell's data-frame / data-sheet when drawn on the canvas)
+    for (let i = 0; i < 12; i++) { seen.add(cell.getAttribute('data-frame') || getComputedStyle(cell).backgroundPosition); await new Promise((r) => setTimeout(r, 60)); }
+    return { frames: seen.size, image: cell.getAttribute('data-sheet') || getComputedStyle(cell).backgroundImage, scale: window.Swiftee.scale };
   }), { frames: 0, image: '' });
   t('the sprite sheet is loaded and advancing frames',
     sprite.frames > 2 && /swiftee_/.test(sprite.image), JSON.stringify(sprite).slice(0, 120));

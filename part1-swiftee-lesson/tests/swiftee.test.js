@@ -124,11 +124,21 @@ t('all 6 standalone clips are carried over', F.standalone.length === MANIFEST.st
     const c = F.clips[name];
     ['1x', '2x'].forEach((scale) => {
       (c.sheets[scale] || []).forEach((p) => {
-        if (!fs.existsSync(path.join(ROOT, F.base, p.image))) missing.push(p.image);
+        // (the path carries its content hash, ?v=, for the cache — build-swiftee-frames.js)
+        if (!fs.existsSync(path.join(ROOT, F.base, p.image.split('?')[0]))) missing.push(p.image);
       });
     });
   });
   t('every sheet the table names is on disk', missing.length === 0, missing.slice(0, 5));
+  // and the hash is the file's own: a sheet redrawn under the same name gets a new URL
+  const crypto = require('crypto');
+  const stale = [];
+  Object.keys(F.clips).forEach((name) => ['1x', '2x'].forEach((scale) => (F.clips[name].sheets[scale] || []).forEach((p) => {
+    const [file, q] = p.image.split('?v=');
+    const want = crypto.createHash('md5').update(fs.readFileSync(path.join(ROOT, F.base, file))).digest('hex').slice(0, 8);
+    if (q !== want) stale.push(p.image + ' (file is ' + want + ')');
+  })));
+  t('every sheet URL carries its file\'s current content hash', stale.length === 0, stale.slice(0, 3));
 }
 
 t('the asset base path is where index.html expects it',
