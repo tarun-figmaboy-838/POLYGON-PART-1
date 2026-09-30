@@ -518,8 +518,49 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const advanced = await ev((i) => window.Game.screen > i, i);
     cp(n + 1, id + ' second wrong: locked, explained, the answer shown, then on — no third try', s2.locked && lines2.length >= 1 && revealed && advanced, { locked: s2.locked, lines: lines2, revealed, ...lit, advanced });
   };
-  // (the two-button Inside / Outside question is back — the user: "revert the activity")
-  await twoTry('inside-or-outside', 19);
+  // THE INSIDE / OUTSIDE QUESTION, TWO TRIES (the user's 2-wrong brief): the first miss is "Try
+  // again!" with both answers kept; the second is taught — the diagonals lit, "The diagonals are
+  // inside.", then the two answers merge into ONE centred "Inside" (only after the voice), and a
+  // tap on it goes on as a continue: no third attempt, no verdict for it
+  await step(19, 'inside-or-outside first wrong: "Try again", both answers kept, nothing revealed, another go', async () => {
+    const i = await jump('inside-or-outside'); await waiting(i); await sleep(300);
+    const before = (await said()).length;
+    await tapChoice('Outside'); await sleep(300);
+    await unlocked(25000); await waiting(i, 30000).catch(() => {}); await sleep(300);
+    const lines = (await said()).slice(before);
+    const seen = await ev(() => [...document.querySelectorAll('#stage .choice')].filter((c) => +getComputedStyle(c).opacity > 0.5).map((c) => c.getAttribute('data-label')));
+    const ok = lines.some((t) => /^Try again/.test(t)) && !lines.some((t) => /The diagonals are inside/.test(t)) && JSON.stringify(seen) === '["Inside","Outside"]' && (await ev((i) => window.Game.screen === i, i));
+    return { ok, extra: { lines, seen } };
+  });
+  await step(20, 'inside-or-outside second wrong: locked, diagonals lit, "The diagonals are inside.", then ONE centred Inside after the voice; a tap goes on', async () => {
+    const i = await ev(() => window.Game.screen);
+    const before = (await said()).length, c0 = await cues();
+    await ev(() => { window.__io = { lockedAt: null, litAt: null, voAt: null, voEnd: null, oneAt: null, liveAt: null, both: false }; const T0 = performance.now();
+      const tick = () => { const n = performance.now() - T0, o = window.__io;
+        if (o.lockedAt == null && window.Input.mode() === 'locked') o.lockedAt = n;
+        if (o.litAt == null && document.querySelector('#stage .polygon g[style*="brightness"]')) o.litAt = n;
+        if (o.voAt == null && window.VO.id === 'fb54') o.voAt = n;
+        if (o.voAt != null && o.voEnd == null && window.VO.id !== 'fb54') o.voEnd = n;
+        const vis = [...document.querySelectorAll('#stage .choice')].filter((c) => +getComputedStyle(c).opacity > 0.05).map((c) => c.getAttribute('data-label'));
+        if (o.voAt != null && o.oneAt == null && vis.length === 1 && vis[0] === 'Inside' && document.querySelectorAll('#stage .choice').length === 1) o.oneAt = n;
+        if (o.oneAt != null && o.liveAt == null && window.Game.director.state === 'WAITING_FOR_USER' && window.Input.mode() === 'polygon') o.liveAt = n;
+        if (o.oneAt == null && vis.indexOf('Outside') >= 0 && o.voEnd != null && n > o.voEnd + 1500) o.both = true;
+        if (n < 25000 && o.liveAt == null) requestAnimationFrame(tick); };
+      tick(); });
+    await tapChoice('Outside');
+    await waitFn(() => window.__io.liveAt != null, null, 25000).catch(() => {});
+    const io = await ev(() => window.__io);
+    const mid = await ev(() => { const c = document.querySelector('#stage .choice'), p = document.querySelector('#stage .panel'); if (!c || !p) return null; const a = c.getBoundingClientRect(), b = p.getBoundingClientRect(); return Math.round((a.left + a.width / 2) - (b.left + b.width / 2)); });
+    await shot('07b-inside-outside-merged');
+    await tapChoice('Inside');
+    await waitFn((i) => window.Game.screen > i, i, 20000).catch(() => {});
+    const lines = (await said()).slice(before), c1 = await cues();
+    const advanced = await ev((i) => window.Game.screen > i, i);
+    const ok = io.lockedAt != null && io.litAt != null && io.voAt != null && io.litAt <= io.voAt && io.voEnd != null && io.oneAt != null && io.oneAt >= io.voEnd && io.liveAt >= io.voEnd &&
+      mid != null && Math.abs(mid) <= 3 && !io.both && lines.some((t) => /The diagonals are inside/.test(t)) && !lines.some((t) => /^Try again/.test(t)) &&
+      advanced && c1.correct === c0.correct;
+    return { ok, extra: { io, mid, lines, advanced, correctCues: c1.correct - c0.correct } };
+  });
   await step(21, 'Inside / Outside text sync: the "Inside" and "Outside" marks land on their words (≤ 500 ms), on their own screens', async () => {
     const out = [];
     for (const [id, word] of [['all-inside', 'inside'], ['one-outside', 'outside']]) {

@@ -522,7 +522,9 @@ const levelOf = (st) => { const d = RIG[st]; return d ? (d.level || 1) : 0; };
     if (!nb || !(nb.on && nb.on.correct)) return false;
     const last = nb.otherwise || [];
     const shows = JSON.stringify(last);
-    return !last.some((x) => x && x.input) && /"reveal"|"say"|"autoConcave"|"teach"/.test(shows);
+    // (a `continue` input is not a third attempt: the answer is shown and the tap goes on — the
+    // inside / outside question's merged "Inside")
+    return !last.some((x) => x && x.input && !x.input['continue']) && /"reveal"|"say"|"autoConcave"|"teach"/.test(shows);
   };
   S.forEach((s) => (s.beats || []).forEach((b) => {
     if (!b || !b.branch) return;
@@ -682,6 +684,20 @@ const levelOf = (st) => { const d = RIG[st]; return d ? (d.level || 1) : 0; };
      question's own words — the instruction and the choices in one `parallel`, each answer
      waiting for its word (`cue`) — and never from a beat before the question, nor from the
      screen-level stage (a rebuild would put them up ahead of it). */
+  // THE INSIDE / OUTSIDE SECOND MISS (the user's 2-wrong brief): "The diagonals are inside.", then
+  // the two answers merge into one "Inside", a continue tap — no third attempt, no "Try again!"
+  {
+    const s = Screens.byId['inside-or-outside'];
+    const last = JSON.stringify(s.beats);
+    const arm = (function find(list) { for (const b of list || []) { if (b && b.branch && b.otherwise && b.otherwise.some((x) => x && x.stage && x.stage.merge)) return b.otherwise; const r = b && (find(b.otherwise) || (b.on && find(b.on.correct))); if (r) return r; } return null; })(s.beats);
+    const iLine = arm ? arm.findIndex((x) => x.say === 'The diagonals are inside.') : -1;
+    const iLit = arm ? arm.findIndex((x) => x.stage && x.stage.lit === 'diagonals') : -1;
+    const iMerge = arm ? arm.findIndex((x) => x.stage && x.stage.merge === 'Inside') : -1;
+    const iTap = arm ? arm.findIndex((x) => x.input && x.input['continue']) : -1;
+    t('inside-or-outside second miss: diagonals lit, "The diagonals are inside.", then ONE merged Inside, then a continue tap',
+      !!arm && iLit >= 0 && iLit < iLine && iLine < iMerge && iMerge < iTap && !arm.some((x) => x.say && /Try again/.test(x.say)) && /fb54/.test(last),
+      { iLit, iLine, iMerge, iTap });
+  }
   ['inside-or-outside', 'stayed-changed'].forEach((id) => {
     const s = Screens.byId[id], bs = s.beats;
     const par = bs.find((b) => b.parallel && b.parallel.some((x) => typeof x.instruction === 'string') &&

@@ -50,7 +50,7 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 | 15 | 10 | hexagon-your-turn | `assets/vo/p15i.mp3` | instruction | Let’s draw all the diagonals from this vertex. |  | screen 10, the instruction | an instruction: plain, steady, every word clear | yes |
 | 16 | 11 | look-diagonals | `assets/vo/p16b.mp3` | say | Let’s look at the diagonals of this pentagon. | Let’s look at the diagonals / of this pentagon. | screen 11 | playful, inviting | yes |
 | 17 | 12 | inside-or-outside | `assets/vo/p17i.mp3` | instruction | Are the diagonals inside or outside? |  | screen 12, the instruction | an instruction: plain, steady, every word clear | yes |
-| 18 | 12 | inside-or-outside | `assets/vo/p17r.mp3` | say | These diagonals stay inside the polygon, so the answer is Inside. |  | screen 12, after a wrong answer | explaining, warm and clear | yes |
+| 18 | 12 | inside-or-outside | `assets/vo/fb54.mp3` | say | The diagonals are inside. |  | screen 12, after a wrong answer | explaining, warm and clear | yes |
 | 19 | 13 | lets-change | `assets/vo/p18.mp3` | say | Let’s make a change. |  | screen 13 | playful, inviting | yes |
 | 20 | 14 | drag-inward | `assets/vo/p19i.mp3` | instruction | Help me pull this vertex inside. |  | screen 14, the instruction | an instruction: plain, steady, every word clear | yes |
 | 21 | 15 | whoa | `assets/vo/p20.mp3` | say | Whoa! One of the diagonals went outside. | Whoa! One of the diagonals / went outside. | screen 15 | surprised, amazed | yes |

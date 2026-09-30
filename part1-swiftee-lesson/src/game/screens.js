@@ -601,7 +601,7 @@
       log: true,   // on the log arc at the left of the ground, as since the intro (the user: "after level-1, the log sit too")
       swiftee: { pos: 'log', size: 'medium' },
       instruction: 'Are the diagonals inside or outside?',
-      lines: ['These diagonals stay inside the polygon, so the answer is Inside.'],
+      lines: ['The diagonals are inside.'],
       // (no choices on the screen-level stage: the beats deal them on the question's words, and
       // a rebuild — a jump, a resize — must not put them up before the question)
       stage: { kind: 'polygon', sides: 5, diagonals: 'all' },
@@ -623,9 +623,9 @@
         // the same request twice in a row read as a stutter, not a lesson.
         { swiftee: 'think' },
         /* TWO TRIES (the user, the inside/outside question). The first miss is "Try again!" and
-           nothing more — the answer is not given away. The second is answered: the diagonals
-           light one after another inside the shape, he says why the answer is Inside, the
-           Inside button shows green, a moment to take it in, and the lesson goes on. */
+           nothing more — the answer is not given away, both buttons stay. The second is taught:
+           the diagonals light inside the shape, "The diagonals are inside.", and the two
+           buttons merge into one "Inside" to tap on (below). */
         { input: { type: 'choice', correct: 'Inside' } },
         { branch: true,
           on: { correct: correct() },
@@ -633,18 +633,23 @@
             { input: { type: 'choice', correct: 'Inside', retry: true, quietMiss: true } },
             { branch: true,
               on: { correct: correct() },
+              /* THE SECOND MISS IS TAUGHT, AND THE ANSWER BECOMES THE WAY ON (the user's 2-wrong
+                 brief): the answers are locked (the input is over — game.js), a short beat, the
+                 diagonals light one after another and stay lit, still dashed, still inside the
+                 shape; "The diagonals are inside."; a moment to look; the two buttons slide
+                 together into ONE centred green "Inside" (stage `merge`), and a tap on it goes
+                 on — a continue, not a third attempt (`continue`). No "Try again!" here. */
               otherwise: [
-                { juice: 'refuse', target: 'answer' }, { sfx: 'wrong' },
-                { parallel: [
-                  // the diagonals light one after another and stay lit while he explains; the
-                  // Inside button goes green as he says "inside"
-                  { stage: { lit: 'diagonals' } },
-                  { stage: { reveal: 'Inside', cue: 'inside' } },
-                  { swiftee: 'explain', at: 'polygon' },
-                  { say: 'These diagonals stay inside the polygon, so the answer is Inside.', vo: 'p17r' }
-                ] },
-                { sfx: 'correct' },
-                { wait: 1200 }
+                { sfx: 'wrong' },
+                { wait: 500 },
+                { swiftee: 'explain', at: 'polygon' },
+                { stage: { lit: 'diagonals' } },
+                { wait: 1000 },
+                { say: 'The diagonals are inside.', vo: 'fb54' },
+                { wait: 800 },
+                { stage: { merge: 'Inside' } },
+                { wait: 500 },
+                { input: { type: 'choice', correct: 'Inside', 'continue': true, praise: false } }
               ] }
           ]) }
       ]

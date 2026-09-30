@@ -24,7 +24,7 @@ order,id,file,kind,screen,screen_id,text,breaths,when,delivery
 23,p15i,assets/vo/p15i.mp3,instruction,10,hexagon-your-turn,"Let’s draw all the diagonals from this vertex.","","screen 10, the instruction","an instruction: plain, steady, every word clear"
 24,p16b,assets/vo/p16b.mp3,say,11,look-diagonals,"Let’s look at the diagonals of this pentagon.","Let’s look at the diagonals / of this pentagon.","screen 11","playful, inviting"
 25,p17i,assets/vo/p17i.mp3,instruction,12,inside-or-outside,"Are the diagonals inside or outside?","","screen 12, the instruction","an instruction: plain, steady, every word clear"
-26,p17r,assets/vo/p17r.mp3,say,12,inside-or-outside,"These diagonals stay inside the polygon, so the answer is Inside.","","screen 12, after a wrong answer","explaining, warm and clear"
+26,fb54,assets/vo/fb54.mp3,say,12,inside-or-outside,"The diagonals are inside.","","screen 12, after a wrong answer","explaining, warm and clear"
 27,p18,assets/vo/p18.mp3,say,13,lets-change,"Let’s make a change.","","screen 13","playful, inviting"
 28,p19i,assets/vo/p19i.mp3,instruction,14,drag-inward,"Help me pull this vertex inside.","","screen 14, the instruction","an instruction: plain, steady, every word clear"
 29,p20,assets/vo/p20.mp3,say,15,whoa,"Whoa! One of the diagonals went outside.","Whoa! One of the diagonals / went outside.","screen 15","surprised, amazed"

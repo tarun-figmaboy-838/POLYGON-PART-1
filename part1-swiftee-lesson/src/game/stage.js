@@ -5509,6 +5509,7 @@
         }
         var words = cueFor(label);
         if (words && holdForWord(b, words)) return;       // arrives with its word
+        if (spec && spec.enter === false) return;          // (its entrance is the caller's: `merge`)
         if (!reduced()) { b.style.opacity = 0; later(90 * i, function () { b.style.opacity = 1; enter(b, 'ui'); }); }
       });
       // Each pill is now as wide as its word, so the row is laid again from
@@ -5698,6 +5699,33 @@
       };
       // (on its word, `cue`, when he says it)
       if (!(spec.cue && onWord(spec.cue, doReveal))) doReveal();
+    }
+    /* THE TWO ANSWERS BECOME ONE (`merge`: a label — the inside / outside question after its second
+       miss, the user: "remove the two buttons and replace them with ONE centered Inside … do not
+       simply hide Outside and leave a gap"). The row is rebuilt as one pill, centred under the
+       card where the pair's middle was; the old pair slides in to that middle as it fades, and
+       the new pill arrives in its place, green — the answer shown. It takes no press until the
+       input after it arms. */
+    if (spec.merge && st.choiceG) {
+      var oldG = st.choiceG, oldEls = (st.choiceEls || []).slice();
+      st.choiceG = null;                                   // (so op.choices builds beside it, not over it)
+      op.choices([spec.merge], { enter: false });
+      var one = st.choiceEls[0];
+      if (one) {
+        if (one._retint) one._retint('uiSuccess');
+        var mid = one._rect ? one._rect.x + one._rect.w / 2 : W / 2;
+        if (!reduced()) {
+          one.style.opacity = 0;
+          oldEls.forEach(function (b) {
+            if (!b || !b._rect || !b.animate) return;
+            var dx = mid - (b._rect.x + b._rect.w / 2), keep = b.getAttribute('data-label') === spec.merge;
+            try { b.animate([{ translate: '0 0', opacity: 1 }, { translate: dx.toFixed(1) + 'px 0', opacity: keep ? 1 : 0, offset: 0.7 }, { translate: dx.toFixed(1) + 'px 0', opacity: 0 }],
+                            { duration: 460, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' }); } catch (x) {}
+          });
+          later(320, function () { if (one.parentNode) { one.style.opacity = 1; enter(one, 'ui'); } });
+        }
+      }
+      later(reduced() ? 0 : 480, function () { if (oldG.parentNode) oldG.remove(); });
     }
     /* THE DIAGONALS LIT, AND LEFT LIT (`lit: 'diagonals'` — a two-try question's explanation):
        each brightens in turn and stays glowing while he explains, so the lines he is talking
@@ -6617,6 +6645,15 @@
           b.style.cursor = 'pointer';
           on(b, 'pointerdown', function (e) {
             e.preventDefault(); st.lastEl = b;
+            /* `continue`: THE ANSWER IS ALREADY SHOWN (the inside / outside question's merged
+               "Inside" after its second miss). The tap goes on — it is not another attempt, so no
+               verdict, no flash, no praise: result 'tap'. */
+            if (spec['continue']) {
+              if (b.getAttribute('data-label') !== spec.correct) return;
+              sfx('select', { gain: 0.5 });
+              endInteraction(); resolve({ result: 'tap', label: b.getAttribute('data-label') });
+              return;
+            }
             var ok = b.getAttribute('data-label') === spec.correct;
             evt('answer:selected', { label: b.getAttribute('data-label'), correct: ok });
             if (ok && global.Juice && Juice.sparkle && !reduced()) { try { Juice.sparkle(b); } catch (x) {} }
