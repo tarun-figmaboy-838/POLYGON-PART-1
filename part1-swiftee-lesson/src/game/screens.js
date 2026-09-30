@@ -598,21 +598,24 @@
       /* A STATEMENT AND ONE ANSWER (the user's text + UI change: "The diagonals are inside.", one
          "Inside" button, no "Outside" on this state). The diagonals stay up; he says it — on
          "inside" the shape's inside glows (dual coding) and the diagonals light one after
-         another — a moment to look, and only then is the one button dealt, after the line and
-         never during it; a tap on it and the lesson goes on. No second option, so no wrong
-         answer and no second try; and no spoken praise after it (no extra dialogue). */
+         another, still dashed — a moment to look, and only then does the one button show, after
+         the line and never during it; a tap on it and the lesson goes on. No second option, so no
+         wrong answer and no second try; and no spoken praise after it (no extra dialogue).
+         THE BUTTON'S ROOM IS MADE FIRST (the user: "level 12 is wrong?" — the card shrank and
+         the shape jumped up the moment the line ended, when the button was dealt): the row is
+         laid out with the screen's first beat, hidden and out of reach (`hold`), and shows when
+         the input arms. */
       instruction: null,
       say: 'The diagonals are inside.',
-      // (no choices on the screen-level stage: the button is dealt after the line, and a rebuild —
-      // a jump, a resize — must not put it up before)
+      // (no choices on the screen-level stage: a rebuild — a jump, a resize — builds the scene
+      // from it, and the row belongs to the first beat, held)
       stage: { kind: 'polygon', sides: 5, diagonals: 'all' },
       beats: [
-        { stage: { label: null } },
+        { stage: { label: null, choices: ['Inside'], hold: true } },
         { swiftee: 'explain', at: 'polygon' },
         { stage: { onWord: [{ word: 'inside', lit: 'diagonals' }] } },
         { say: 'The diagonals are inside.', vo: 'fb54' },
         { wait: 700 },
-        { stage: { choices: ['Inside'] } },
         { input: { type: 'choice', correct: 'Inside', praise: false } },
         { branch: true, on: { correct: correct() }, otherwise: [] }
       ]

@@ -684,15 +684,19 @@ const levelOf = (st) => { const d = RIG[st]; return d ? (d.level || 1) : 0; };
      waiting for its word (`cue`) — and never from a beat before the question, nor from the
      screen-level stage (a rebuild would put them up ahead of it). */
   /* THE INSIDE SCREEN IS A STATEMENT AND ONE BUTTON (the user's text + UI change): "The diagonals
-     are inside." is said, and only after it is the single "Inside" button dealt — never with the
+     are inside." is said, and only after it is the single "Inside" button shown — never with the
      line, never on the screen-level stage, and no "Outside". */
   {
     const s = Screens.byId['inside-or-outside'], bs = s.beats;
     const line = bs.findIndex((b) => b.say === 'The diagonals are inside.');
     const deal = bs.findIndex((b) => b.stage && b.stage.choices);
+    const input = bs.findIndex((b) => b.input && b.input.type === 'choice');
     const dealt = deal >= 0 ? bs[deal].stage.choices : null;
-    t('inside-or-outside: "The diagonals are inside.", then one "Inside" button after it', line >= 0 && deal > line && JSON.stringify(dealt) === '["Inside"]' && !(s.stage && s.stage.choices),
-      { line, deal, dealt });
+    // (the row is laid out before the line — so the card never resizes under it — but HELD: it
+    // shows only when the input arms, after the line; stage.js choices `hold`)
+    t('inside-or-outside: "The diagonals are inside.", and one "Inside" button, held until the input after it', line >= 0 && deal >= 0 && bs[deal].stage.hold === true && input > line &&
+      JSON.stringify(dealt) === '["Inside"]' && !(s.stage && s.stage.choices),
+      { line, deal, input, dealt, hold: deal >= 0 && bs[deal].stage.hold });
   }
   ['stayed-changed'].forEach((id) => {
     const s = Screens.byId[id], bs = s.beats;

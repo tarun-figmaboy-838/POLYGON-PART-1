@@ -478,7 +478,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const now = performance.now() - T0;
         if (marks == null && document.querySelector('#stage .compare-mark, #stage .word-sides')) marks = now;
         if (labels == null && [...document.querySelectorAll('#stage .compare-mark, #stage .badge, #stage .label')].some((e) => /Inside|Outside/.test(e.textContent))) labels = now;
-        if (choices == null && document.querySelector('#stage .choice')) choices = now;
+        // (a choice counts once it can be SEEN: the row is laid out with the screen, held hidden)
+        if (choices == null && [...document.querySelectorAll('#stage .choice')].some((c) => +getComputedStyle(c).opacity > 0.05)) choices = now;
         if (open == null && choices != null && window.Input.mode() === 'polygon' && window.Game.director.state === 'WAITING_FOR_USER') open = now;
         if (open != null || now > 40000) { res({ marks, labels, choices, open, bubble: document.getElementById('bubble').textContent.trim().slice(0, 60) }); return; }
         setTimeout(tick, 40);
@@ -519,26 +520,38 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   };
   // THE INSIDE SCREEN IS A STATEMENT AND ONE BUTTON (the user's text + UI change): no second option,
   // so no two-try flow — the one "Inside" comes after the line, and a tap on it goes on
-  await step(19, 'Inside screen: "The diagonals are inside.", the diagonals lit on "inside", then ONE "Inside" button, only after the line', async () => {
-    const i = await jump('inside-or-outside');
+  await step(19, 'Inside screen: "The diagonals are inside.", the diagonals lit (still dashed) on "inside", then ONE "Inside" button, only after the line; the card never moves', async () => {
+    // (entered as a player enters it, from the screen before: a dev jump from this screen into
+    // itself replays the card's entrance under the line, which no player ever sees)
+    const i = await idx('inside-or-outside');
+    await jump('look-diagonals'); await waitFn((i) => window.Game.screen === i, i, 60000);
     const r = await ev(() => new Promise((res) => {
       // (CP18 has just run this same screen, so the bubble still holds its finished line when the
       // jump lands: nothing is stamped until THIS run's recording of the line has started)
-      const T0 = performance.now(); let wordAt = null, litAt = null, buttonAt = null, most = 0, lineDone = null, voAt = null;
+      const T0 = performance.now(); let wordAt = null, litAt = null, buttonAt = null, most = 0, lineDone = null, voAt = null, card0 = null, cardMoved = false;
+      const dashed = () => [...document.querySelectorAll('#stage .polygon line')].filter((l) => (l.style.strokeDasharray || l.getAttribute('stroke-dasharray') || 'none') === 'none' && l.getAttribute('stroke') === '#eafcff').length === 0;
+      let solidLit = false;
       const tick = () => {
         const now = performance.now() - T0;
         if (voAt == null && window.VO && window.VO.id === 'fb54') voAt = now;
         if (voAt != null && wordAt == null && [...document.querySelectorAll('#bubble .in')].some((w) => /^inside/i.test(w.textContent))) wordAt = now;
         if (voAt != null && litAt == null && document.querySelector('#stage .polygon g[style*="brightness"]')) litAt = now;
-        const n = document.querySelectorAll('#stage .choice').length; most = Math.max(most, n);
+        if (litAt != null && !dashed()) solidLit = true;
+        // (seen buttons: the row is built with the screen, hidden until the input arms)
+        const n = [...document.querySelectorAll('#stage .choice')].filter((c) => +getComputedStyle(c).opacity > 0.05).length; most = Math.max(most, n);
         if (buttonAt == null && n) buttonAt = now;
+        // (from the moment the line starts: the jump's own rebuild and the card's entrance come before it)
+        const cr = document.querySelector('#stage .panel').getBoundingClientRect(), ck = [cr.left, cr.top, cr.width, cr.height].map(Math.round).join(',');
+        if (voAt != null && card0 == null) card0 = ck;
+        if (card0 != null && ck !== card0) cardMoved = card0 + ' -> ' + ck;
         if (voAt != null && lineDone == null && window.VO.id !== 'fb54') lineDone = now;
-        if ((buttonAt != null && now > buttonAt + 600) || now > 30000) { res({ voAt, wordAt, litAt, buttonAt, lineDone, most, labels: [...document.querySelectorAll('#stage .choice')].map((c) => c.getAttribute('data-label')), line: document.getElementById('bubble').textContent.trim() }); return; }
+        if ((buttonAt != null && now > buttonAt + 600) || now > 30000) { res({ voAt, wordAt, litAt, buttonAt, lineDone, most, cardMoved, solidLit, labels: [...document.querySelectorAll('#stage .choice')].map((c) => c.getAttribute('data-label')), line: document.getElementById('bubble').textContent.trim() }); return; }
         setTimeout(tick, 30);
       };
       tick();
     }));
-    const ok = /The diagonals are inside\./.test(r.line) && r.most === 1 && JSON.stringify(r.labels) === '["Inside"]' &&
+    // (and the card holds still the whole time, and the lit diagonals stay DASHED — level 12's fixes)
+    const ok = /The diagonals are inside\./.test(r.line) && r.most === 1 && JSON.stringify(r.labels) === '["Inside"]' && !r.cardMoved && !r.solidLit &&
       r.voAt != null && r.litAt != null && r.wordAt != null && Math.abs(r.litAt - r.wordAt) <= 500 && r.buttonAt != null && r.lineDone != null && r.buttonAt >= r.lineDone;
     return { ok, extra: r };
   });

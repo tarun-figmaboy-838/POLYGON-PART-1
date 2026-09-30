@@ -979,7 +979,13 @@
   function litLine(parent, attrs, o) {
     o = o || {};
     var bad = !!o.bad;
-    var glowCol = bad ? HI.badLit : (o.warm ? '#ffb020' : HI.lit), coreCol = bad ? HI.bad : (o.warm ? '#ffe27a' : HI.line);
+    /* THE ONE THAT GOES OUTSIDE, SEEN AT A GLANCE (the convex / concave clarity brief: "make at
+       least one dashed diagonal clearly go outside"). It was a pale lavender (HI.bad) with a violet
+       glow, and on the pale ice outside the shape — which is where an outside diagonal lies — it
+       all but disappeared. Now a deep violet dash with a thin white halo: dark against the ice,
+       lifted off the blue where it crosses the shape. Still the lesson's violet for "the odd
+       one", still dashed where it is a diagonal. */
+    var glowCol = bad ? 'rgba(255, 255, 255, 0.95)' : (o.warm ? '#ffb020' : HI.lit), coreCol = bad ? HI.badLit : (o.warm ? '#ffe27a' : HI.line);
     var core = mk('line', Object.assign({}, attrs, { stroke: coreCol, style: litGlow(glowCol) }), parent);
     return [core, core];
   }
@@ -1529,7 +1535,7 @@
         x1: a.x, y1: a.y, x2: b.x, y2: b.y,
         // THIN (the user: "use thin line for showing diagonals"): a fine dashed line across
         // the shape, the glow doing the lighting; the same weight in updatePoly() below
-        'stroke-width': hl || d.solid ? 2.6 : 2, 'stroke-linecap': 'round',
+        'stroke-width': hl ? 3.2 : (d.solid ? 2.6 : 2), 'stroke-linecap': 'round',
         'stroke-dasharray': d.solid ? null : '14 12'
       }, { bad: hl });
       var line = pair[1];
@@ -1714,11 +1720,13 @@
         var hl = st.highlightOutside && out;
         // (the same weight renderPoly() draws them at: at 6/5 the diagonals thickened the
         // moment a corner was dragged, and thinned again when it was let go)
-        var kids = G.childNodes, w = hl || d.solid ? 2.6 : 2;
+        var kids = G.childNodes, w = hl ? 3.2 : (d.solid ? 2.6 : 2);
         for (var q = 0; q < kids.length; q++) {
           var L = kids[q], isGlow = kids.length > 1 && q === 0;
           L.setAttribute('x1', a.x); L.setAttribute('y1', a.y); L.setAttribute('x2', b.x); L.setAttribute('y2', b.y);
-          L.setAttribute('stroke', isGlow ? (hl ? HI.badLit : HI.lit) : (hl ? HI.bad : HI.line));
+          // (the outside one as litLine draws it: deep violet with a white halo — see there)
+          L.setAttribute('stroke', isGlow ? (hl ? HI.badLit : HI.lit) : (hl ? HI.badLit : HI.line));
+          if (!isGlow) L.style.filter = 'drop-shadow(0 0 2px ' + (hl ? 'rgba(255, 255, 255, 0.95)' : HI.lit) + ')';
           L.setAttribute('stroke-width', isGlow ? w + 7 : w);
           L.style.strokeDasharray = d.solid ? '' : '14 12'; L.style.strokeDashoffset = 0;
         }
@@ -2475,7 +2483,7 @@
     if (d.el) { if (full) finishLine(c, d); return d.el; }
     var a = c.verts[d.a], b = c.verts[d.b];
     var el = litLine(c.dg, { x1: a.x, y1: a.y, x2: full ? b.x : a.x, y2: full ? b.y : a.y,
-                             'stroke-width': d.out ? 3 : 2.2, 'stroke-dasharray': '10 9', 'stroke-linecap': 'round' }, { bad: d.out })[0];
+                             'stroke-width': d.out ? 3.4 : 2.2, 'stroke-dasharray': '10 9', 'stroke-linecap': 'round' }, { bad: d.out })[0];
     el.setAttribute('class', d.out ? 'diag diag-out' : 'diag diag-in');
     d.el = el; d.state = full ? 'drawn' : 'growing';
     return el;
@@ -5476,6 +5484,16 @@
           press: true, attrs: { 'class': 'choice', 'data-label': label }
         });
         st.choiceEls.push(b);
+        /* `hold`: LAID OUT NOW, SHOWN WHEN IT CAN BE PRESSED (level 12: "The diagonals are
+           inside." and then one "Inside" button). Added in a later beat, the row made the card
+           shrink and the shape jump up the moment the line ended; built with the screen, the
+           card has its final size from the start, and the button waits — hidden, out of reach —
+           until the input arms (releaseHeld), with or without reduced motion. */
+        if (spec && spec.hold) {
+          b.style.opacity = '0'; b._held = true; b._heldEvents = b.style.pointerEvents || ''; b.style.pointerEvents = 'none';
+          heldForWord.push({ words: [], el: b, onShow: null });
+          return;
+        }
         var words = cueFor(label);
         if (words && holdForWord(b, words)) return;       // arrives with its word
         if (!reduced()) { b.style.opacity = 0; later(90 * i, function () { b.style.opacity = 1; enter(b, 'ui'); }); }
@@ -5675,8 +5693,9 @@
     if (spec.lit === 'diagonals' && st.diagG) {
       [].slice.call(st.diagG.childNodes).filter(function (g) { return g.style && g.style.display !== 'none'; }).forEach(function (g, k) {
         later(reduced() ? 0 : k * 260, function () {
-          // solid and glowing: dashes turned bright are still dashes; a lit line is a new state
-          [].slice.call(g.querySelectorAll('line')).forEach(function (ln) { ln.style.strokeDasharray = 'none'; });
+          // STILL DASHED, JUST BRIGHTER (the convex / concave clarity brief: "solid line = side,
+          // dashed line = diagonal", everywhere): the glow is the highlight; turning the dashes
+          // solid made the lit diagonals look like more sides of the shape
           g.style.transition = reduced() ? '' : 'filter 320ms ease';
           g.style.filter = 'brightness(1.25) drop-shadow(0 0 6px rgba(75, 224, 255, .95))';
           if (g.animate && !reduced()) { try { g.animate([{ opacity: 0.5 }, { opacity: 1 }], { duration: 300, easing: 'ease-out' }); } catch (e) {} }
@@ -7897,11 +7916,17 @@
         s.style.animationDelay = (i * 140) + 'ms';
       });
     };
-    var grow = function (a, b, delay, bad) {
+    /* SOLID IS A SIDE, DASHED IS A DIAGONAL (the convex / concave clarity brief: "sides = solid
+       straight lines, diagonals = dashed lines ... do not style diagonals the same way as
+       sides"). `diag` says which this line is. It used to be keyed on `bad`, which drew the two
+       SIDES into a dent dashed and the diagonal that leaves the shape SOLID — the rule the whole
+       lesson draws by, inverted, on the one sheet that explains it. The violet still marks the
+       diagonal that goes outside. */
+    var grow = function (a, b, delay, bad, diag) {
       // butt caps: a round cap reached a few pixels past the corner it ends
       // on — a white nub outside the shape, inside the corner's ring
       var l = litLine(fx, { x1: a.x, y1: a.y, x2: a.x, y2: a.y, 'stroke-width': bad ? 2.3 : 1.9, 'stroke-linecap': 'butt',
-                            'stroke-dasharray': bad ? 'none' : '4.2 3.4' }, { bad: bad })[0];
+                            'stroke-dasharray': diag ? '4.2 3.4' : 'none' }, { bad: bad })[0];
       later(delay || 0, function () {
         if (reduced() || !global.requestAnimationFrame) { l.setAttribute('x2', b.x); l.setAttribute('y2', b.y); return; }
         var t0 = null;
@@ -7935,12 +7960,12 @@
           // the corner that goes inward: its dot, and the two sides into it traced as lines
           // (no shaded fill — the user: "use clear diagonal lines, not large shaded areas")
           var a = v[(dent + n - 1) % n], b = v[(dent + 1) % n], p = v[dent];
-          grow(a, p, 0, false); grow(b, p, 120, false);
+          grow(a, p, 0, false, false); grow(b, p, 120, false, false);   // sides: solid
           ring(p, 0, TEACH.warm); sparkle(p); sfx('tick', { gain: 0.6 }); breathe();
         } else if (what === 'outside' && dent >= 0) {
           // the diagonal across the dent: out of the shape, violet
           var a2 = v[(dent + n - 1) % n], b2 = v[(dent + 1) % n];
-          grow(a2, b2, 0, true); ring(a2, 0, TEACH.out); ring(b2, 120, TEACH.out);
+          grow(a2, b2, 0, true, true); ring(a2, 0, TEACH.out); ring(b2, 120, TEACH.out);   // a diagonal: dashed, violet
           later(420, function () { sparkle({ x: (a2.x + b2.x) / 2, y: (a2.y + b2.y) / 2 }); });
           sfx('zip', { gain: 0.5 });
         } else if (what === 'corners') {
@@ -7952,7 +7977,7 @@
           var pairs = [];
           for (var j = 2; j <= n - 2; j++) pairs.push([0, j]);
           if (n === 4) pairs.push([1, 3]);
-          pairs.forEach(function (q, i) { grow(v[q[0]], v[q[1]], i * 260, false); });
+          pairs.forEach(function (q, i) { grow(v[q[0]], v[q[1]], i * 260, false, true); });   // diagonals: dashed
           later(pairs.length * 260 + 200, function () { if (copy.parentNode) sparkle(Poly.centroid(v)); });
           sfx('zip', { gain: 0.5 });
         } else if (what === 'sides') {
@@ -7961,7 +7986,7 @@
              (marksBy: the largest set of equal lengths is the match) — and the lengths
              printed on the card pulse with them. On a regular shape every side comes up gold. */
           var L = Poly.sideLengths(v), sm = marksBy(L, v.map(function (_, i) { return i; }), 15);
-          v.forEach(function (p, i) { grow(p, v[(i + 1) % n], i * 140, sm.mark[i] !== 1); });
+          v.forEach(function (p, i) { grow(p, v[(i + 1) % n], i * 140, sm.mark[i] !== 1, false); });   // sides: solid
           pulseHint([].slice.call(copy.querySelectorAll('.u-side')), { strong: true });
           sfx('tick', { gain: 0.6 }); breathe();
         } else if (what === 'angles') {
