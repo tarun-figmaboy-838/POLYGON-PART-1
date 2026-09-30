@@ -44,7 +44,7 @@ const lerp=(a,b,n)=>{const o=[];for(let i=1;i<=n;i++)o.push({x:a.x+(b.x-a.x)*i/n
 // SFX/juice sync counters for the section-6 check
 let cues={correct:0,wrong:0}; const origPlay=w.SFX.play.bind(w.SFX); w.SFX.play=(n,o)=>{ if(n==='correct')cues.correct++; if(n==='wrong')cues.wrong++; return origPlay(n,o); };
 
-let wrongTried=0, screensSeen=new Set(), asked=[], sideTries={}, inwardKept=[], nextInLesson=false, swipePutAway=null;
+let wrongTried=0, screensSeen=new Set(), asked=[], sideTries={}, inwardKept=[], sidesOkMade=0, hexSide={ok:false}, nextInLesson=false, swipePutAway=null;
 
 // HANDED BACK: while he replies to an answer the stage takes nothing (game.js
 // pop(): lock, his line, unlock), and a child cannot answer again in that time
@@ -76,7 +76,10 @@ async function act(spec){
         const k=sideTries[w.Game.screen], to=k===1?(from+1)%n:(k===2?(from+n-1)%n:targets[0]);
         await drag(hnd(), lerp(V[from],V[to],5)); await sleep(60); return;
       }
-      if(!spec.retry){ await drag(hnd(), lerp(V[from],V[(from+1)%n],5)); wrongTried++; await sleep(60); if(spec.type==='draw-diagonal') return; }   // wrong: adjacent
+      // (sidesOk — the hexagon: a neighbour is a SIDE, not a wrong try — made, and its end disabled)
+      if(!spec.retry && spec.sidesOk){ await drag(hnd(), lerp(V[from],V[(from+1)%n],5)); sidesOkMade++; await sleep(80);
+        hexSide={ ok: (St().vstate||[])[(from+1)%n]==='side-used-disabled' && (St().sidesDone||[]).length===1 && !(St().diagonals||[]).length, vs:(St().vstate||[]).join(',') }; }
+      else if(!spec.retry){ await drag(hnd(), lerp(V[from],V[(from+1)%n],5)); wrongTried++; await sleep(60); if(spec.type==='draw-diagonal') return; }   // wrong: adjacent
       for(let k=0;k<cnt;k++){ await free(); await drag(hnd(), lerp(V[from],V[targets[k]],5)); await sleep(60); }
       return;
     }
@@ -269,6 +272,7 @@ async function act(spec){
   // (11: the summary's review — Next, and a tap on a card to hear it again)
   t('all 11 interaction types were exercised', types.size===11, [...types].join(','));
   // (the Screen 7 vertex brief: a side, the other side, then the diagonal — three tries)
+  t('hexagon: a line to a neighbour was taken as a side — its end disabled, no wrong cue for it', sidesOkMade>0 && hexSide.ok, JSON.stringify({ sidesOkMade, hexSide }));
   t('drag inward: a release short of the dent stays where it was let go', inwardKept.length>0 && inwardKept.every((d)=>d>3), JSON.stringify(inwardKept));
   t('the connect step went side, side, then diagonal', Object.values(sideTries).some(k=>k===3), JSON.stringify(sideTries));
   t('the summary collected all eight ideas, in order, and reached its finale', !!SM && SM.state==='FINAL_SUMMARY' && SM.collected.join(',')==='vertex,side,angle,diagonal,convex,concave,regular,irregular',

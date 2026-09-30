@@ -517,12 +517,13 @@
       //  (2) Answer leak: the deck draws all three diagonals as dashed
       //      ghosts on the "your turn" screen, so the exercise can be done
       //      by tracing. Section 2 of the brief forbids exactly this. The
-      //      ghosts are removed here; the label "Hexagon" stays.
-      // (the same slab, in the same place, at the same size as the pentagon's: its name hangs
-      // on the card's top edge rather than under it, which would have had the card built short)
-      stage: { kind: 'polygon', sides: 6, panel: 'right', label: { text: 'Hexagon', at: 'top' }, ghost: null },
+      //      ghosts are removed here.
+      // NO NAME TAG (the user: "remove the Hexagon name tag … do not replace it with another
+      // shape-name tag; keep the polygon as the main visual focus"). The same slab, in the same
+      // place, at the same size as the pentagon's.
+      stage: { kind: 'polygon', sides: 6, panel: 'right', label: null, ghost: null },
       beats: [
-        { stage: { kind: 'polygon', sides: 6, panel: 'right', enter: 'morph', label: { text: 'Hexagon', at: 'top' } } },
+        { stage: { kind: 'polygon', sides: 6, panel: 'right', enter: 'morph', label: null } },
         { sfx: 'pop' },
         { wait: 400 },
         { swiftee: 'encourage' },
@@ -536,7 +537,9 @@
         { swiftee: 'step-back' },
         // Three diagonals from one hexagon vertex (n - 3). Each correct one
         // gets its own small reward; the screen completes on the third.
-        { input: { type: 'draw-diagonals', from: 0, count: 3 } },
+        // (sidesOk — the user: a line to a NEIGHBOUR is a valid side, not a miss: it becomes the
+        // polygon's own edge, that neighbour is disabled for good, the anchor stays; stage.js)
+        { input: { type: 'draw-diagonals', from: 0, count: 3, sidesOk: true } },
         // EVERY DIAGONAL FROM ONE CORNER: a milestone, and the one place his
         // jumping-for-joy clip belongs
         { feedback: milestone([{ sfx: 'levelUp' }], 'excited') }

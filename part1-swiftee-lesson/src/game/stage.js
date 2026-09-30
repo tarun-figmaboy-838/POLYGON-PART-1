@@ -1673,7 +1673,7 @@
          is a plain corner of the polygon: the outline's own dot, full strength, never breathing,
          never lit, never touched. With no state (every other screen) a corner is drawn as before. */
       var vs = st.vstate ? st.vstate[j] : null;
-      var plain = vs === 'side-used-disabled' || vs === 'inactive';
+      var plain = vs === 'side-used-disabled' || vs === 'inactive' || vs === 'diagonal-used';
       var knob = mk('circle', {
         cx: v[j].x, cy: v[j].y,
         r: col ? 10 : (plain ? 6 : (touch ? 9 : 6)),
@@ -1720,7 +1720,13 @@
         var hl = st.highlightOutside && out;
         // (the same weight renderPoly() draws them at: at 6/5 the diagonals thickened the
         // moment a corner was dragged, and thinned again when it was let go)
-        var kids = G.childNodes, w = hl ? 3.2 : (d.solid ? 2.6 : 2);
+        /* ONLY THE LINES (the user: "see the glow and thick dashes, it looks odd"). A diagonal is
+           one line now (litLine), but while it draws itself in, its group also holds the moving
+           tip's dot — two children, so the line was taken for the glow under a core, and
+           repainted 9 wide in the glow's cyan whenever a corner moved during a draw-in (make-
+           concave's spring-back as its diagonals arrive): thick bright dashes until the next
+           full redraw. The dot is not a line. */
+        var kids = [].filter.call(G.childNodes, function (el) { return el.tagName === 'line'; }), w = hl ? 3.2 : (d.solid ? 2.6 : 2);
         for (var q = 0; q < kids.length; q++) {
           var L = kids[q], isGlow = kids.length > 1 && q === 0;
           L.setAttribute('x1', a.x); L.setAttribute('y1', a.y); L.setAttribute('x2', b.x); L.setAttribute('y2', b.y);
@@ -7515,15 +7521,20 @@
     for (var q = 0; q < st.n; q++) if (q !== from && Poly.isAdjacent(from, q, st.n) && ends.indexOf(q) < 0) left++;
     return left;
   }
-  function setVertexStates(from, locked) {
+  /* `free` (the hexagon's "draw all the diagonals from this vertex", sidesOk): the far corners
+     are diagonal targets from the start, the neighbours are sides the child may make on the
+     way — each disabled once made — and a far corner a diagonal has already reached is
+     'diagonal-used': done with, drawn and treated like a used side end. */
+  function setVertexStates(from, locked, free) {
     // (the far corners open only once both sides are MADE AND NAMED — frozen, st.sidesDone — not
     // while the second is still being named: the diagonal step begins with its instruction)
-    var ends = sideEnds(), diag = sidesLeft(from) === 0 && !st.segment, out = [];
+    var ends = sideEnds(), diag = free || (sidesLeft(from) === 0 && !st.segment), out = [];
     for (var q = 0; q < st.n; q++) {
       if (q === from) out.push('anchor');
       else if (ends.indexOf(q) >= 0) out.push('side-used-disabled');
       else if (locked) out.push('inactive');
       else if (Poly.isAdjacent(from, q, st.n)) out.push('adjacent-available');
+      else if (free && diagonalUsed(from, q)) out.push('diagonal-used');
       else out.push(diag && !diagonalUsed(from, q) ? 'diagonal-available' : 'inactive');
     }
     st.vstate = out;
@@ -7613,11 +7624,17 @@
          corner points, and their own stays bright and ringed; the one the
          line snaps to grows under the finger. */
       var sides = !!spec.sides;
+      /* `sidesOk` (the hexagon, the "remove hexagon tag + disable used side vertices" brief): the
+         task is still every diagonal from this corner (count), judged per line as before — but a
+         line to a NEIGHBOUR is not a wrong answer: it is a side, accepted quietly, drawn as the
+         polygon's own edge (nothing over it), and that neighbour is done with for good. The anchor
+         never is. Each corner's state is the same machine as the connect screen's (vstate). */
+      var sidesOk = !sides && !!spec.sidesOk;
       // THE CORNER TO DRAW FROM breathes — it, and nothing else (the user: "subtle pulse only on
       // the active dot") — while it waits to be taken
       st.picked = from; st.vcolor = {}; st.vcolor[from] = HI.picked; st.showVerts = true; st.touchVerts = true;
       // (each corner's state, from the anchor and the sides made so far: setVertexStates)
-      if (sides) setVertexStates(from); else st.vstate = null;
+      if (sides) setVertexStates(from); else if (sidesOk) setVertexStates(from, false, true); else st.vstate = null;
       st.breatheAt = {}; st.breatheAt[from] = true; renderPoly();
       var still = function (on) { var fk = knobOf(from); if (fk && fk.classList) fk.classList.toggle('breathe', !!on); };
       cleanup.push(function () { st.breatheAt = null; still(false); });
@@ -7638,7 +7655,7 @@
          diagonal step is not a place a line may go: it is never snapped to, never lit, and a line
          let go on it simply goes home (release, below). */
       var targets = function () {
-        if (!sides) return valid();
+        if (!sides && !sidesOk) return valid();
         return (st.vstate || []).map(function (vs, q) { return /-available$/.test(vs) ? q : -1; }).filter(function (q) { return q >= 0; });
       };
       // THE MOVE, SHOWN — once the child has been still a while (hintLadder).
@@ -7735,6 +7752,13 @@
         // (and never on a corner that is not available now — a used end, or a far corner before
         // the diagonal step: no verdict, no flash, nothing lit; the line goes home, below)
         if (sides && j >= 0 && targets().indexOf(j) < 0) j = -1;
+        // (the hexagon: a used side end takes no line and gives no feedback — it goes home quietly,
+        // not as a miss: "no 'Try again' feedback" for a disabled vertex)
+        if (sidesOk && j >= 0 && targets().indexOf(j) < 0) {
+          hot = -1; showTargets([], false); still(true);
+          retract(line, from, function () { line = previewLine(from); });
+          return;
+        }
         hot = -1;
         showTargets([], false);
         if (j < 0) {
@@ -7752,6 +7776,17 @@
         }
         var ok = !Poly.isAdjacent(from, j, st.n) && !diagonalUsed(from, j);
         st.lastEl = knobOf(j) || st.vertEls[j];
+        if (sidesOk && !ok && Poly.isAdjacent(from, j, st.n)) {
+          // A SIDE ON THE WAY: accepted, the preview gone, the edge the polygon's own, its end
+          // disabled, the anchor still the anchor — and a fresh preview line for the next drag
+          line.remove();
+          st.sidesDone = (st.sidesDone || []).concat([[from, j]]);
+          setVertexStates(from, false, true); renderPoly(); dressFrom(); still(true);
+          line = previewLine(from);
+          sfx('pop', { gain: 0.5 });
+          evt('side:made', { from: from, to: j });
+          return;
+        }
         if (sides && !ok && Poly.isAdjacent(from, j, st.n)) {
           /* A SIDE (the Screen 7 vertex brief): accepted; the ice preview line is taken away;
              the side is the polygon's own edge, looking exactly like the others (renderPoly
@@ -7786,6 +7821,7 @@
           // (the diagonal is a locked result: every corner but the anchor and the used ends is
           // inactive now, and none takes a press — the input is locked on resolve)
           if (sides) setVertexStates(from, true);
+          else if (sidesOk) setVertexStates(from, made + 1 >= count, true);   // (its far end is used now)
           renderPoly(); made++;
           if (made < count) dressFrom();
           st.lastEl = knobOf(j) || st.vertEls[j];

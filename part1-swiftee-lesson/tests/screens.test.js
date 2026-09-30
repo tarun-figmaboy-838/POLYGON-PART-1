@@ -151,6 +151,11 @@ const p15 = Screens.byId['hexagon-your-turn'];
 t('page 15 exists', !!p15);
 t('the "your turn" screen ships no ghost answers',
   !allBeats(p15).some((b) => b.stage && b.stage.ghost), allBeats(p15).filter((b) => b.stage && b.stage.ghost));
+// (the user: "remove the Hexagon name tag … do not replace it with another shape-name tag")
+t('the hexagon card carries no name tag', ![p15.stage].concat(allBeats(p15).map((b) => b.stage)).some((sg) => sg && sg.label && sg.label.text),
+  [p15.stage].concat(allBeats(p15).map((b) => b.stage)).filter((sg) => sg && sg.label));
+// (and a line to a neighbour there is a side, its end disabled — never a wrong answer: stage.js sidesOk)
+t('the hexagon takes a side on the way to its diagonals', allBeats(p15).some((b) => b.input && b.input.type === 'draw-diagonals' && b.input.sidesOk === true));
 
 t('Screens.flags() reports every deviation from the deck', Screens.flags().length >= 8, Screens.flags().length);
 t('flags name the answer leak', Screens.flags().some((f) => f.kind === 'answer-leak'));
