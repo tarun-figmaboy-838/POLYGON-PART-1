@@ -46,7 +46,7 @@ const path = require('node:path');
     assert.equal(await page.locator('.angle-todo').count(), 0);
     await page.evaluate(() => { window.originalInstrument = document.querySelector('.angle-protractor'); });
     const measured = new Set();
-    for (let i = 0; i < 190; i++) {
+    for (let i = 0; i < 220; i++) {
       await page.clock.runFor(100);
       const data = await page.evaluate(() => {
         const rig = document.querySelector('.swiftee-angle-measuring');

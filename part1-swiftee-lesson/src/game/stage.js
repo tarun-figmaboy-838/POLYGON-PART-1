@@ -1899,25 +1899,46 @@
     // the protractor rotate accurately while Swiftee remains upright; his
     // generated gripping wing stays attached to the same point on its rim.
     var defs = mk('defs', {}, g), token = 'angle-rig-' + Date.now();
-    var bodyMask = mk('clipPath', { id: token + '-body', clipPathUnits: 'userSpaceOnUse' }, defs);
-    var r = frames.radius + 3, ax = anchor.x, ay = anchor.y;
-    var cut = 'M0 0H' + cell + 'V' + cell + 'H0Z M' + (ax-r) + ' ' + (ay+12) +
-      'H' + (ax+r) + 'V' + ay + 'A' + r + ' ' + r + ' 0 0 0 ' + (ax-r) + ' ' + ay + 'Z';
-    mk('path', { d: cut, 'clip-rule': 'evenodd' }, bodyMask);
-    var toolMask = mk('clipPath', { id: token + '-tool', clipPathUnits: 'userSpaceOnUse' }, defs);
-    mk('path', { d: 'M' + (ax-r) + ' ' + (ay+12) + 'H' + (ax+r) + 'V' + ay +
-      'A' + r + ' ' + r + ' 0 0 0 ' + (ax-r) + ' ' + ay + 'Z' }, toolMask);
-    var toolCrop = mk('svg', { x: -ax * scale, y: -ay * scale, width: cell * scale,
-      height: cell * scale, viewBox: '0 0 ' + cell + ' ' + cell, overflow: 'hidden' }, instrument);
-    var toolArt = mk('g', { 'clip-path': 'url(#' + token + '-tool)' }, toolCrop);
-    mk('image', { href: frames.image, width: frames.cols * cell, height: frames.rows * cell }, toolArt);
+    var ax = anchor.x, ay = anchor.y;
+    var bodyMasks = frames.bodyClips.map(function (d, i) {
+      var id = token + '-body-' + i;
+      var clip = mk('clipPath', { id: id, clipPathUnits: 'userSpaceOnUse' }, defs);
+      mk('path', { d: d }, clip);
+      return 'url(#' + id + ')';
+    });
+    /* THE INSTRUMENT IS DRAWN, NOT CUT OUT OF THE SHEET. The protractor used to be the pixels
+       of the first frame's tool zone, clipped and turned about the vertex — and whatever else
+       of that frame lay in the zone (the gripping wing's dark outline, a sliver of belly)
+       turned with it: grey specks and white flecks orbiting the corner, and a bite in the
+       rim where the wing had been (the user: "some bug"). The same protractor as the art —
+       pale-blue face, gold rim and baseline bar, dark ticks, a centre notch — is drawn here
+       in the sheet's own units and colours (sampled from the packed frame), so it is whole at
+       every angle. The bird keeps his drawn one under the clip below, so at rest the two lie
+       exactly on each other. */
+    var R = frames.radius, tool = mk('g', { 'class': 'protractor-art', transform: 'scale(' + scale + ')' }, instrument);
+    var half = function (r) { return 'M' + (-r) + ' 0A' + r + ' ' + r + ' 0 0 1 ' + r + ' 0Z'; };
+    mk('path', { d: half(R + 3), fill: '#c98f1c' }, tool);                      // the rim's outer edge
+    mk('path', { d: half(R), fill: '#f4c43a' }, tool);                          // the gold rim
+    mk('path', { d: half(R - 6), fill: '#bdedfb' }, tool);                      // the face
+    mk('rect', { x: -R - 4, y: 0, width: 2 * R + 8, height: 13, rx: 3, fill: '#f4c43a', stroke: '#c98f1c', 'stroke-width': 1.5 }, tool);
+    mk('rect', { x: -R + 2, y: 2, width: 2 * R - 4, height: 3, rx: 1.5, fill: '#fdd95a', opacity: 0.85 }, tool);
+    for (var tk = 0; tk <= 180; tk += 10) {
+      var big = tk % 30 === 0, ta = tk * Math.PI / 180, r1 = big ? R - 20 : R - 14, r2 = R - 8;
+      mk('line', { x1: (Math.cos(ta) * r1).toFixed(1), y1: (-Math.sin(ta) * r1).toFixed(1), x2: (Math.cos(ta) * r2).toFixed(1), y2: (-Math.sin(ta) * r2).toFixed(1),
+                   stroke: '#73440b', 'stroke-width': big ? 2.2 : 1.4, 'stroke-linecap': 'round' }, tool);
+    }
+    mk('path', { d: 'M' + (-(R - 8)) + ' 0A' + (R - 8) + ' ' + (R - 8) + ' 0 0 1 ' + (R - 8) + ' 0', fill: 'none', stroke: '#73440b', 'stroke-width': 1, opacity: 0.45 }, tool);
+    mk('line', { x1: 0, y1: 0, x2: 0, y2: -9, stroke: '#73440b', 'stroke-width': 1.6, 'stroke-linecap': 'round' }, tool);   // the centre notch
+    mk('circle', { cx: 0, cy: 0, r: 3.5, fill: '#bdedfb', stroke: '#73440b', 'stroke-width': 1.5 }, tool);
     var bird = mk('g', { 'class': 'angle-performer' }, g);
     var grip = { x: ax - frames.radius + 5, y: ay + 13 };
     var crop = mk('svg', { x: -grip.x * scale, y: -grip.y * scale, width: cell * scale,
       height: cell * scale, viewBox: '0 0 ' + cell + ' ' + cell, overflow: 'hidden' }, bird);
-    var bodyArt = mk('g', { 'clip-path': 'url(#' + token + '-body)' }, crop);
+    // ONE FRAME AT A TIME. Two frames cross-faded under different clips read as a double
+    // exposure — a blurred, ghosted bird for most of every move (the user: "it looks cropped").
+    // The drawings step, as a sprite does.
+    var bodyArt = mk('g', {}, crop);
     var sheet = mk('image', { href: frames.image, width: frames.cols * cell, height: frames.rows * cell }, bodyArt);
-    var blend = mk('image', { href: frames.image, width: frames.cols * cell, height: frames.rows * cell, opacity: 0 }, bodyArt);
     // The real interior arc stays legible over the translucent tool face.
     var highlight = mk('g', { 'class': 'active-angle' }, g);
     var phases = frames.phases.carry, framePosition = 0, pose, raf, stopped = false, first = true;
@@ -1947,13 +1968,20 @@
       var radians = pose.rotation * Math.PI / 180, ux = (grip.x - ax) * scale, uy = (grip.y - ay) * scale;
       var handX = pose.x + Math.cos(radians) * ux - Math.sin(radians) * uy;
       var handY = pose.y + Math.sin(radians) * ux + Math.cos(radians) * uy;
-      var face = Math.cos(radians) < 0 ? -1 : 1;
+      /* HE STANDS CLEAR OF THE FACE OF THE TOOL. Mirrored only when the protractor pointed
+         left, he stood on whichever side the grip put him — and with the baseline upright
+         along a side, the half-disc swung over him and the tool vanished behind his head
+         (the user's "some bug"). The side the face opens to decides: it opens left, he
+         stands on the right; it opens right, he stands on the left; opening up or down,
+         the old rule holds. */
+      var opens = Math.sin(radians);   // where the face of the protractor opens: < 0 left, > 0 right
+      var face = opens < -0.3 ? -1 : opens > 0.3 ? 1 : (Math.cos(radians) < 0 ? -1 : 1);
       bird.setAttribute('transform', 'translate(' + handX + ',' + handY + ') scale(' + face + ',1)');
-      var at = Math.min(phases.length - 1, framePosition), low = Math.floor(at), mix = at - low;
-      var frame = phases[low], next = phases[Math.min(low + 1, phases.length - 1)];
+      var at = Math.min(phases.length - 1, framePosition);
+      var frame = phases[Math.round(at)];
+      bodyArt.setAttribute('clip-path', bodyMasks[frame]);
       sheet.setAttribute('x', -(frame % frames.cols) * cell); sheet.setAttribute('y', -Math.floor(frame / frames.cols) * cell);
-      blend.setAttribute('x', -(next % frames.cols) * cell); blend.setAttribute('y', -Math.floor(next / frames.cols) * cell);
-      blend.setAttribute('opacity', mix); instrument.setAttribute('data-frame', frame);
+      instrument.setAttribute('data-frame', frame);
     }
     paint();
     function tween(state, phase, target, duration, done, progress, lift) {
