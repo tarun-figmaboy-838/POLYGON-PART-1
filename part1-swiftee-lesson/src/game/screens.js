@@ -596,31 +596,57 @@
 
     {
       id: 'inside-or-outside', page: 17,
+      // (THE QUESTION IS BACK — the user: "revert the activity of screen 11 inside and outside": the
+      // two-button Inside / Outside question and its two tries, as it was before the one-button line)
       log: true,   // on the log arc at the left of the ground, as since the intro (the user: "after level-1, the log sit too")
       swiftee: { pos: 'log', size: 'medium' },
-      /* A STATEMENT AND ONE ANSWER (the user's text + UI change: "The diagonals are inside.", one
-         "Inside" button, no "Outside" on this state). The diagonals stay up; he says it — on
-         "inside" the shape's inside glows (dual coding) and the diagonals light one after
-         another, still dashed — a moment to look, and only then does the one button show, after
-         the line and never during it; a tap on it and the lesson goes on. No second option, so no
-         wrong answer and no second try; and no spoken praise after it (no extra dialogue).
-         THE BUTTON'S ROOM IS MADE FIRST (the user: "level 12 is wrong?" — the card shrank and
-         the shape jumped up the moment the line ended, when the button was dealt): the row is
-         laid out with the screen's first beat, hidden and out of reach (`hold`), and shows when
-         the input arms. */
-      instruction: null,
-      say: 'The diagonals are inside.',
-      // (no choices on the screen-level stage: a rebuild — a jump, a resize — builds the scene
-      // from it, and the row belongs to the first beat, held)
+      instruction: 'Are the diagonals inside or outside?',
+      lines: ['These diagonals stay inside the polygon, so the answer is Inside.'],
+      // (no choices on the screen-level stage: the beats deal them on the question's words, and
+      // a rebuild — a jump, a resize — must not put them up before the question)
       stage: { kind: 'polygon', sides: 5, diagonals: 'all' },
       beats: [
-        { stage: { label: null, choices: ['Inside'], hold: true } },
-        { swiftee: 'explain', at: 'polygon' },
-        { stage: { onWord: [{ word: 'inside', lit: 'diagonals' }] } },
-        { say: 'The diagonals are inside.', vo: 'fb54' },
-        { wait: 700 },
-        { input: { type: 'choice', correct: 'Inside', praise: false } },
-        { branch: true, on: { correct: correct() }, otherwise: [] }
+        // THE QUESTION FIRST, THEN THE ANSWERS (the user: never a button before the learner has
+        // been introduced to it). The name tag from the screen before comes down; he asks — on
+        // "inside" the shape's inside glows with its diagonals, on "outside" the band round it
+        // (dual coding) — a beat to take it in, and only then are the two answers dealt.
+        { stage: { label: null } },
+        // THE ANSWERS ARRIVE ON THEIR WORDS (the user: "the buttons are delayed — when the VO says
+        // 'are the diagonals inside or outside?'"): "Inside" is dealt as he says inside, "Outside"
+        // as he says outside — introduced by the question itself, not after a pause behind it.
+        // The question is still asked before either can be pressed (the input comes after).
+        { parallel: [
+          { instruction: 'Are the diagonals inside or outside?', vo: 'p17i' },
+          { stage: { choices: ['Inside', 'Outside'], cue: true } }
+        ] },
+        // SAID ONCE: the line that echoed the instruction ("Are they inside or outside?") went —
+        // the same request twice in a row read as a stutter, not a lesson.
+        { swiftee: 'think' },
+        /* TWO TRIES (the user, the inside/outside question). The first miss is "Try again!" and
+           nothing more — the answer is not given away. The second is answered: the diagonals
+           light one after another inside the shape, he says why the answer is Inside, the
+           Inside button shows green, a moment to take it in, and the lesson goes on. */
+        { input: { type: 'choice', correct: 'Inside' } },
+        { branch: true,
+          on: { correct: correct() },
+          otherwise: WRONG.concat([
+            { input: { type: 'choice', correct: 'Inside', retry: true, quietMiss: true } },
+            { branch: true,
+              on: { correct: correct() },
+              otherwise: [
+                { juice: 'refuse', target: 'answer' }, { sfx: 'wrong' },
+                { parallel: [
+                  // the diagonals light one after another and stay lit while he explains; the
+                  // Inside button goes green as he says "inside"
+                  { stage: { lit: 'diagonals' } },
+                  { stage: { reveal: 'Inside', cue: 'inside' } },
+                  { swiftee: 'explain', at: 'polygon' },
+                  { say: 'These diagonals stay inside the polygon, so the answer is Inside.', vo: 'p17r' }
+                ] },
+                { sfx: 'correct' },
+                { wait: 1200 }
+              ] }
+          ]) }
       ]
     },
 
@@ -647,6 +673,8 @@
       beats: [
         // THE ASK IS HIS: "Help me pull this vertex inside." — the deck's own
         // line, now the instruction itself (it replaced "Drag the vertex inward.")
+        // (the point to pull comes up ON the word "vertex", not when the drag arms after the line)
+        { stage: { onWord: [{ word: 'vertex', knob: 0 }] } },
         { instruction: 'Help me pull this vertex inside.', vo: 'p19i' },
         { focus: 'polygon.vertex.0', style: 'pulse' },
         // "what will happen?" — curious, leaning toward the corner, not the

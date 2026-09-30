@@ -518,52 +518,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const advanced = await ev((i) => window.Game.screen > i, i);
     cp(n + 1, id + ' second wrong: locked, explained, the answer shown, then on — no third try', s2.locked && lines2.length >= 1 && revealed && advanced, { locked: s2.locked, lines: lines2, revealed, ...lit, advanced });
   };
-  // THE INSIDE SCREEN IS A STATEMENT AND ONE BUTTON (the user's text + UI change): no second option,
-  // so no two-try flow — the one "Inside" comes after the line, and a tap on it goes on
-  await step(19, 'Inside screen: "The diagonals are inside.", the diagonals lit (still dashed) on "inside", then ONE "Inside" button, only after the line; the card never moves', async () => {
-    // (entered as a player enters it, from the screen before: a dev jump from this screen into
-    // itself replays the card's entrance under the line, which no player ever sees)
-    const i = await idx('inside-or-outside');
-    await jump('look-diagonals'); await waitFn((i) => window.Game.screen === i, i, 60000);
-    const r = await ev(() => new Promise((res) => {
-      // (CP18 has just run this same screen, so the bubble still holds its finished line when the
-      // jump lands: nothing is stamped until THIS run's recording of the line has started)
-      const T0 = performance.now(); let wordAt = null, litAt = null, buttonAt = null, most = 0, lineDone = null, voAt = null, card0 = null, cardMoved = false;
-      const dashed = () => [...document.querySelectorAll('#stage .polygon line')].filter((l) => (l.style.strokeDasharray || l.getAttribute('stroke-dasharray') || 'none') === 'none' && l.getAttribute('stroke') === '#eafcff').length === 0;
-      let solidLit = false;
-      const tick = () => {
-        const now = performance.now() - T0;
-        if (voAt == null && window.VO && window.VO.id === 'fb54') voAt = now;
-        if (voAt != null && wordAt == null && [...document.querySelectorAll('#bubble .in')].some((w) => /^inside/i.test(w.textContent))) wordAt = now;
-        if (voAt != null && litAt == null && document.querySelector('#stage .polygon g[style*="brightness"]')) litAt = now;
-        if (litAt != null && !dashed()) solidLit = true;
-        // (seen buttons: the row is built with the screen, hidden until the input arms)
-        const n = [...document.querySelectorAll('#stage .choice')].filter((c) => +getComputedStyle(c).opacity > 0.05).length; most = Math.max(most, n);
-        if (buttonAt == null && n) buttonAt = now;
-        // (from the moment the line starts: the jump's own rebuild and the card's entrance come before it)
-        const cr = document.querySelector('#stage .panel').getBoundingClientRect(), ck = [cr.left, cr.top, cr.width, cr.height].map(Math.round).join(',');
-        if (voAt != null && card0 == null) card0 = ck;
-        if (card0 != null && ck !== card0) cardMoved = card0 + ' -> ' + ck;
-        if (voAt != null && lineDone == null && window.VO.id !== 'fb54') lineDone = now;
-        if ((buttonAt != null && now > buttonAt + 600) || now > 30000) { res({ voAt, wordAt, litAt, buttonAt, lineDone, most, cardMoved, solidLit, labels: [...document.querySelectorAll('#stage .choice')].map((c) => c.getAttribute('data-label')), line: document.getElementById('bubble').textContent.trim() }); return; }
-        setTimeout(tick, 30);
-      };
-      tick();
-    }));
-    // (and the card holds still the whole time, and the lit diagonals stay DASHED — level 12's fixes)
-    const ok = /The diagonals are inside\./.test(r.line) && r.most === 1 && JSON.stringify(r.labels) === '["Inside"]' && !r.cardMoved && !r.solidLit &&
-      r.voAt != null && r.litAt != null && r.wordAt != null && Math.abs(r.litAt - r.wordAt) <= 500 && r.buttonAt != null && r.lineDone != null && r.buttonAt >= r.lineDone;
-    return { ok, extra: r };
-  });
-  await step(20, 'Inside screen: a tap on "Inside" goes on — no wrong path, no extra line', async () => {
-    const i = await jump('inside-or-outside'); await waiting(i); await sleep(200);
-    const before = (await said()).length;
-    await tapChoice('Inside');
-    await waitFn((i) => window.Game.screen > i, i, 20000).catch(() => {});
-    const lines = (await said()).slice(before);
-    const advanced = await ev((i) => window.Game.screen > i, i);
-    return { ok: advanced && !lines.some((t) => /Try again|These diagonals/.test(t)), extra: { advanced, lines } };
-  });
+  // (the two-button Inside / Outside question is back — the user: "revert the activity")
+  await twoTry('inside-or-outside', 19);
   await step(21, 'Inside / Outside text sync: the "Inside" and "Outside" marks land on their words (≤ 500 ms), on their own screens', async () => {
     const out = [];
     for (const [id, word] of [['all-inside', 'inside'], ['one-outside', 'outside']]) {
@@ -592,9 +548,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // ---- the dent (screen 14) ---------------------------------------------------
   // THE DRAG-INWARD FIX: a pull short of the dent is progress, not a miss — the corner stays where
-  // it was let go, the next pull starts there (no jump), nothing is said or buzzed, and small pulls
-  // add up until the classifier calls the shape concave, which completes it once
-  await step(22, 'drag inward: small pulls stay where they are let go and add up — no spring back, no jump, no miss — and the real dent completes once', async () => {
+  // it was let go, the next pull starts there (no jump), he says "Pull it in more!" softly (no
+  // wrong sound — the user asked for the line back), and small pulls add up until the classifier
+  // calls the shape concave, which completes it once
+  await step(22, 'drag inward: small pulls stay where they are let go and add up — no spring back, no jump, a soft "Pull it in more!" — and the real dent completes once', async () => {
     const i = await jump('drag-inward'); await waiting(i); await sleep(300);
     const v0 = await ev(() => window.Stage.state.verts.map((p) => ({ x: p.x, y: p.y })));
     const c = await ev(() => window.Poly.centroid(window.Stage.state.verts));
@@ -603,6 +560,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const info = () => ev(() => ({ concave: window.Poly.classify(window.Stage.state.verts).concave, n: window.Stage.state.verts.length, state: window.Game.director.state, screen: window.Game.screen }));
     // one pull: grabbed a few pixels off the knob's centre, as a finger does, a tenth of the way in
     const pull = async (frac) => {
+      // (he answers a short pull, and the corner takes no press while he says it: wait for it back)
+      await waitFn((i) => window.Game.screen !== i || (window.Game.director.state === 'WAITING_FOR_USER' && window.Input.mode() === 'polygon' && !window.Input.guarded), i, 20000).catch(() => {});
       const cur = await corner(), a = await toClient(cur);
       const b = await toClient({ x: cur.x + (c.x - v0[0].x) * frac, y: cur.y + (c.y - v0[0].y) * frac });
       await page.mouse.move(a.x + 6, a.y - 4); await page.mouse.down();
@@ -626,7 +585,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       kept: unfinished.every((p) => p.drift < 0.5 && p.n === 5),
       addsUp: pulls.length > 2 && pulls[pulls.length - 1].concave,
       once: c1.correct - c0.correct === 1 && (c1.wrong || 0) === (c0.wrong || 0),
-      quiet: !lines.some((t) => /Pull it in more|Try again/.test(t)),
+      nudged: lines.some((t) => /Pull it in more/.test(t)) && !lines.some((t) => /Try again/.test(t)),
       others: JSON.stringify((await ev(() => window.Stage.state.verts.slice(1).map((p) => ({ x: p.x, y: p.y }))))) === JSON.stringify(v0.slice(1))
     };
     return { ok: Object.values(r).every(Boolean), extra: { r, pulls: pulls.map((p) => [Math.round(p.moved), +p.drift.toFixed(2), +p.jump.toFixed(2), p.concave]), lines } };

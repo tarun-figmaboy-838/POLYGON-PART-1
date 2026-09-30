@@ -5386,6 +5386,13 @@
           if (w.evidence && st.compare) compareEvidence(w.evidence.card, w.evidence.what);
           // a lighting on its word (the inside screen: the diagonals light as he says "inside")
           if (w.lit) apply({ lit: w.lit });
+          // A CORNER THAT COMES UP ON ITS WORD (drag-inward — the user: "when VO says pull this
+          // vertex the vertex point not appear and sync?"): the point was hidden until the drag
+          // armed, two seconds after "vertex"; now it pops in as the word is said
+          if (w.knob != null && st.verts && st.verts[w.knob] && st.polyG) {
+            st.vcolor = st.vcolor || {}; st.vcolor[w.knob] = HI.picked; renderPoly();
+            var kn = knobOf(w.knob); if (kn) sumPop(kn, 0, true);
+          }
           if (reduced() || !st.compare) return;
           // and a card's marks lit again as the rule names them ("equal", "unequal")
           if (w.glow && st.compare[w.glow] && st.compare[w.glow].evidence) {
@@ -6573,11 +6580,11 @@
                drag remains in place after release; several small drags accumulate toward
                completion"). On the one dent drag that counts no tries — "Help me pull this vertex
                inside." — the corner stays where it was let go (clampSimple has already kept it a
-               valid, five-sided shape), the next drag starts from there, and nothing is said:
-               no spring back, no "Pull it in more!". The knob breathes again (above), and the
-               idle ghost still shows the move if the child waits. The two-try screens (make-
-               concave, `attempts`) keep their own teaching, below. */
-            if (keep) return;
+               valid, five-sided shape) and the next drag starts from there: no spring back. He
+               still says how much further to go (the user: "why u not add pull it more
+               feedback?") — "Pull it in more!", soft: no miss sound, no red, no shake. The two-try
+               screens (make-concave, `attempts`) keep their own teaching, below. */
+            if (keep) { onTap('wrong', { t: 'Pull it in more!', vo: 'fb11' }, { soft: true }); return; }
             /* NOT FAR ENOUGH: THE CORNER GOES BACK (the user, screen 14: a corner left on the line
                between its neighbours made the pentagon look like a quadrilateral — wrong for the
                lesson). It springs back to where it started, so the shape is a pentagon again,
