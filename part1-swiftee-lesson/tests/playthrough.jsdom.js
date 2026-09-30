@@ -44,7 +44,7 @@ const lerp=(a,b,n)=>{const o=[];for(let i=1;i<=n;i++)o.push({x:a.x+(b.x-a.x)*i/n
 // SFX/juice sync counters for the section-6 check
 let cues={correct:0,wrong:0}; const origPlay=w.SFX.play.bind(w.SFX); w.SFX.play=(n,o)=>{ if(n==='correct')cues.correct++; if(n==='wrong')cues.wrong++; return origPlay(n,o); };
 
-let wrongTried=0, screensSeen=new Set(), asked=[], sideTries={}, nextInLesson=false, swipePutAway=null;
+let wrongTried=0, screensSeen=new Set(), asked=[], sideTries={}, inwardKept=[], nextInLesson=false, swipePutAway=null;
 
 // HANDED BACK: while he replies to an answer the stage takes nothing (game.js
 // pop(): lock, his line, unlock), and a child cannot answer again in that time
@@ -86,8 +86,14 @@ async function act(spec){
       const scr=w.Game.screen; const V=v(); if(!V) return; const i=spec.vertex==='any'?0:spec.vertex; const c=P.centroid(V);
       const tt=V.length===4?1.35:0.92; const target=spec.until==='concave'?{x:V[i].x+(c.x-V[i].x)*tt,y:V[i].y+(c.y-V[i].y)*tt}:{x:V[i].x,y:V[i].y-70};
       // first: grab, move a little, RELEASE early (the bug we fixed), then grab again and finish
+      // (on drag-inward the short pull is made once the input is live, so it is a real release to keep)
+      if(spec.until==='concave' && !spec.attempts) await free();
+      const at0={x:V[i].x,y:V[i].y};   // (V is the live array: its corner is read again below)
       await drag(svg().querySelectorAll('.vertex')[i], lerp(V[i],target,10).slice(0,2)); await sleep(40); await free();
-      const V2=v(); if(!V2 || w.Game.screen!==scr) return; await drag(svg().querySelectorAll('.vertex')[i], lerp(V2[i],target,14)); return;
+      const V2=v(); if(!V2 || w.Game.screen!==scr) return;
+      // (the drag-inward fix: that early release is progress, kept where it was let go — no spring back)
+      if(spec.until==='concave' && !spec.attempts) inwardKept.push(Math.hypot(V2[i].x-at0.x, V2[i].y-at0.y));
+      await drag(svg().querySelectorAll('.vertex')[i], lerp(V2[i],target,14)); return;
     }
     case 'choice': {
       await until(()=>svg().querySelectorAll('.choice').length>0);
@@ -263,6 +269,7 @@ async function act(spec){
   // (11: the summary's review — Next, and a tap on a card to hear it again)
   t('all 11 interaction types were exercised', types.size===11, [...types].join(','));
   // (the Screen 7 vertex brief: a side, the other side, then the diagonal — three tries)
+  t('drag inward: a release short of the dent stays where it was let go', inwardKept.length>0 && inwardKept.every((d)=>d>3), JSON.stringify(inwardKept));
   t('the connect step went side, side, then diagonal', Object.values(sideTries).some(k=>k===3), JSON.stringify(sideTries));
   t('the summary collected all eight ideas, in order, and reached its finale', !!SM && SM.state==='FINAL_SUMMARY' && SM.collected.join(',')==='vertex,side,angle,diagonal,convex,concave,regular,irregular',
     JSON.stringify(SM));

@@ -4473,8 +4473,12 @@
         // at the snow — and both come back up when he next has something to say.
         if (inputSpec && inputSpec.type === 'swipe' && present && !entering && global.Swiftee && Swiftee.pos === 'peek') { say(null); leave(); }
       });
-      (stageEl.ownerDocument.defaultView || global).addEventListener('pointerup', function () {
-        if (inputLive && director) director.mark(Director.STATES ? Director.STATES.WAITING_FOR_USER : 'WAITING_FOR_USER');
+      // (and a touch the system cancelled is over too: the finger is off the glass, and the input
+      // is waiting again — it was left marked as being interacted with until the next release)
+      ['pointerup', 'pointercancel'].forEach(function (type) {
+        (stageEl.ownerDocument.defaultView || global).addEventListener(type, function () {
+          if (inputLive && director) director.mark(Director.STATES ? Director.STATES.WAITING_FOR_USER : 'WAITING_FOR_USER');
+        });
       });
       var lastNoticed = 0;
       Input.on('down', function () {

@@ -6183,7 +6183,7 @@
    * the SVG so they keep firing wherever the pointer goes.
    */
   function dragVertices(idxs, moveFn, upFn, ctx) {
-    var active = -1, pid = null, last = null;
+    var active = -1, pid = null, last = null, grab = { x: 0, y: 0 };
     idxs.forEach(function (i) {
       var h = st.vertEls[i]; if (h) { h.style.cursor = 'grab'; h.style.pointerEvents = 'all'; }
       var k = knobOf(i); if (k) k.setAttribute('opacity', 1);
@@ -6200,6 +6200,13 @@
       if (global.Input && Input.guarded) return;
       if (active >= 0 || (e.button != null && e.button > 0)) return;
       active = i; pid = e.pointerId; last = pt(e);
+      /* TAKEN WHERE IT IS (the drag-inward fix: "re-grabbing the vertex causes no jump"). The
+         finger lands anywhere on the corner's wide disc, not on its centre, and the corner was
+         moved to the finger itself on the first move — a jump of up to the disc's radius, which
+         on a corner already moved in read as the shape resetting. The offset from the finger to
+         the corner is kept for the whole drag, so the corner moves only as far as the finger. */
+      var cv = st.verts && st.verts[i];
+      grab = cv ? { x: cv.x - last.x, y: cv.y - last.y } : { x: 0, y: 0 };
       try { svg.setPointerCapture && svg.setPointerCapture(e.pointerId); } catch (x) {}
       e.preventDefault();
     }
@@ -6207,13 +6214,15 @@
     function move(e) {
       if (!mine(e)) return;
       if (e.pointerType === 'mouse' && e.buttons === 0) { up(e); return; }     // its release was missed
-      last = pt(e); moveFn(last, active);
+      last = pt(e); moveFn({ x: last.x + grab.x, y: last.y + grab.y }, active);
     }
     function up(e) {
       if (!mine(e)) return;
       var i = active; active = -1; pid = null;
-      // (a cancelled touch has no real point: the corner's last one is where it was let go)
-      upFn(e && e.type === 'pointerup' ? pt(e) : last, i);
+      // (a cancelled touch has no real point: the corner's last one is where it was let go; and
+      // it is not a release the child made — `cancelled`, for the drags that must not judge it)
+      var cancelled = !!e && (e.type === 'pointercancel' || e.type === 'lostpointercapture');
+      upFn(e && e.type === 'pointerup' ? pt(e) : last, i, { cancelled: cancelled });
     }
     on(st.polyG, 'pointerdown', down); on(win, 'pointermove', move); on(win, 'pointerup', up); on(win, 'pointercancel', up);
     on(svg, 'lostpointercapture', function (e) { if (mine(e)) later(0, function () { if (mine(e)) up(e); }); });
@@ -6390,6 +6399,16 @@
         renderPoly();
         var idxs = spec.vertex === 'any' ? st.verts.map(function (_, i) { return i; }) : [spec.vertex];
         var start = null, done = false, held = -1, grabAt = null;
+        // (a dent drag with no counted tries — drag-inward — keeps every release: see the release)
+        var keep = spec.until === 'concave' && !spec.attempts;
+        /* SMALL DRAGS ADD UP THROUGH THE HELD BAND (the drag-inward fix). Near the line between
+           its neighbours the corner is held a clear corner (offTheLine) until the finger has
+           crossed that line — so a drag that ended in the band left the corner held, and the next
+           small drag began from the held corner again: the finger's way in was lost every time,
+           and small drags could never reach the dent. `ahead` is where the finger had taken the
+           corner (before the hold); the next drag carries on from there. The corner itself never
+           jumps on a grab — it is held exactly where it was until the finger crosses the line. */
+        var ahead = {}, lead = { x: 0, y: 0 };
         var liveDiags = spec.live === 'diagonals' || spec.live === 'both', liveBadge = spec.live === 'badge' || spec.live === 'both';
         if (liveDiags) st.highlightOutside = true;
         // the gesture: from the vertex, inward toward the middle to make a
@@ -6448,7 +6467,9 @@
               st.vcolor = st.vcolor || {}; st.vcolor[i] = HI.picked;
               var hk = knobOf(i);
               if (hk) { hk.setAttribute('fill', HI.fill); hk.setAttribute('stroke', shade(HI.fill, -0.45)); hk.setAttribute('stroke-width', 3); hk.setAttribute('r', 10); }
+              lead = keep && ahead[i] ? { x: ahead[i].x - st.verts[i].x, y: ahead[i].y - st.verts[i].y } : { x: 0, y: 0 };
             }
+            if (lead.x || lead.y) p = { x: p.x + lead.x, y: p.y + lead.y };
             /* AND IT STAYS ON THE CARD.
              *
              * clampSimple only stops the outline crossing itself; nothing
@@ -6481,7 +6502,7 @@
                left it. So that band is skipped: on the way in the corner stays a clear corner
                until the finger has crossed the line, and then it goes straight to the smallest
                real dent (DENT_SNAP); the shape is always either convex or plainly concave. */
-            if (spec.until === 'concave') np = offTheLine(i, np);
+            if (spec.until === 'concave') { if (keep) ahead[i] = { x: np.x, y: np.y }; np = offTheLine(i, np); }
             st.verts[i] = np;
             updatePoly();
             if (liveBadge && st.liveBadge) {
@@ -6492,7 +6513,7 @@
               st.liveBadge._text.textContent = cc ? 'Concave' : 'Convex';
               if (st.liveBadge._retint) st.liveBadge._retint(cc ? 'concave' : 'convex');
             }
-          }, function (p, i) {
+          }, function (p, i, how) {
             // JUDGED ON RELEASE. The vertex stays where the finger let go.
             // If the shape has become what was asked, that is the answer;
             // if not, he says so, the knob shakes, and the child tries again
@@ -6502,6 +6523,11 @@
             var from = grabAt || st.verts[i]; held = -1; grabAt = null;
             evt('vertex:dragged', { vertex: i });
             if (!judge(i)) breathe(i, true);
+            /* A POINTER THE SYSTEM CANCELLED IS NOT A RELEASE (the drag-inward fix: "pointer
+               cancellation must not erase accepted progress or trigger success"): on a drag that
+               keeps its progress the corner stays exactly where it was, and nothing is judged —
+               the next real release is. */
+            if (keep && how && how.cancelled) { breathe(i, true); st.lastEl = knobOf(i) || st.polyG; return; }
             if (judge(i)) {
               done = true; st.lastEl = st.polyG; endInteraction();
               // the vertex they moved keeps its knob: the dent IS a vertex
@@ -6518,6 +6544,15 @@
             var moved = Math.hypot(st.verts[i].x - from.x, st.verts[i].y - from.y);
             if (moved < 6) return;
             st.lastEl = knobOf(i) || st.polyG;
+            /* NOT CONCAVE YET IS PROGRESS, NOT A MISS (the drag-inward fix: "a tiny valid inward
+               drag remains in place after release; several small drags accumulate toward
+               completion"). On the one dent drag that counts no tries — "Help me pull this vertex
+               inside." — the corner stays where it was let go (clampSimple has already kept it a
+               valid, five-sided shape), the next drag starts from there, and nothing is said:
+               no spring back, no "Pull it in more!". The knob breathes again (above), and the
+               idle ghost still shows the move if the child waits. The two-try screens (make-
+               concave, `attempts`) keep their own teaching, below. */
+            if (keep) return;
             /* NOT FAR ENOUGH: THE CORNER GOES BACK (the user, screen 14: a corner left on the line
                between its neighbours made the pentagon look like a quadrilateral — wrong for the
                lesson). It springs back to where it started, so the shape is a pentagon again,

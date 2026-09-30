@@ -578,18 +578,45 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await step(7.1, 'Inside / Outside explanation screenshot', async () => { const i = await jump('inside-or-outside'); await waiting(i); await sleep(300); await shot('07-inside-outside-explanation'); return true; });
 
   // ---- the dent (screen 14) ---------------------------------------------------
-  await step(22, 'drag inward: a slight pull does nothing, a deeper one still nothing, a real dent completes — from the classifier', async () => {
+  // THE DRAG-INWARD FIX: a pull short of the dent is progress, not a miss — the corner stays where
+  // it was let go, the next pull starts there (no jump), nothing is said or buzzed, and small pulls
+  // add up until the classifier calls the shape concave, which completes it once
+  await step(22, 'drag inward: small pulls stay where they are let go and add up — no spring back, no jump, no miss — and the real dent completes once', async () => {
     const i = await jump('drag-inward'); await waiting(i); await sleep(300);
-    const k0 = await knobClient(0);
-    const c = await ev(() => { const c = window.Poly.centroid(window.Stage.state.verts); return c; });
-    const cc = await toClient(c);
-    const pull = async (t, holdMs) => { await dragPath(k0, { x: k0.x + (cc.x - k0.x) * t, y: k0.y + (cc.y - k0.y) * t }, 10, holdMs || 80); await sleep(900); return ev(() => ({ concave: window.Poly.classify(window.Stage.state.verts).concave, state: window.Game.director.state, screen: window.Game.screen, angle: Math.round(window.Poly.interiorAngles(window.Stage.state.verts)[0]) })); };
-    const a = await pull(0.3); await unlocked(15000);
-    const b = await pull(0.62); await unlocked(15000);
-    const d = await pull(0.88);
+    const v0 = await ev(() => window.Stage.state.verts.map((p) => ({ x: p.x, y: p.y })));
+    const c = await ev(() => window.Poly.centroid(window.Stage.state.verts));
+    const c0 = await cues(), said0 = (await said()).length;
+    const corner = () => ev(() => ({ x: window.Stage.state.verts[0].x, y: window.Stage.state.verts[0].y }));
+    const info = () => ev(() => ({ concave: window.Poly.classify(window.Stage.state.verts).concave, n: window.Stage.state.verts.length, state: window.Game.director.state, screen: window.Game.screen }));
+    // one pull: grabbed a few pixels off the knob's centre, as a finger does, a tenth of the way in
+    const pull = async (frac) => {
+      const cur = await corner(), a = await toClient(cur);
+      const b = await toClient({ x: cur.x + (c.x - v0[0].x) * frac, y: cur.y + (c.y - v0[0].y) * frac });
+      await page.mouse.move(a.x + 6, a.y - 4); await page.mouse.down();
+      await page.mouse.move(a.x + 6.5, a.y - 3.5); await sleep(40);
+      const grabbed = await corner();
+      for (let k = 1; k <= 8; k++) { await page.mouse.move(a.x + 6 + (b.x - a.x) * k / 8, a.y - 4 + (b.y - a.y) * k / 8); await sleep(16); }
+      const held = await corner();
+      await page.mouse.up(); await sleep(700);
+      const kept = await corner();
+      return { jump: Math.hypot(grabbed.x - cur.x, grabbed.y - cur.y), moved: Math.hypot(held.x - cur.x, held.y - cur.y), drift: Math.hypot(kept.x - held.x, kept.y - held.y), ...(await info()) };
+    };
+    const first = await pull(0.1);
+    const pulls = [first];
+    for (let k = 0; k < 14; k++) { const s0 = await info(); if (s0.screen !== i || s0.state !== 'WAITING_FOR_USER' || s0.concave) break; pulls.push(await pull(0.1)); }
     await waitFn((i) => window.Game.screen > i || window.Game.director.state !== 'WAITING_FOR_USER', i, 20000).catch(() => {});
-    const done = await ev((i) => window.Game.screen > i || window.Game.director.state !== 'WAITING_FOR_USER', i);
-    return { ok: !a.concave && a.screen === i && !b.concave && b.screen === i && d.concave && done, extra: { slight: a, deeper: b, deep: d, done } };
+    const c1 = await cues(), lines = (await said()).slice(said0);
+    const unfinished = pulls.filter((p) => !p.concave);
+    const r = {
+      firstStays: first.moved > 5 && first.drift < 0.5 && !first.concave && first.screen === i,
+      noJump: pulls.every((p) => p.jump < 2),
+      kept: unfinished.every((p) => p.drift < 0.5 && p.n === 5),
+      addsUp: pulls.length > 2 && pulls[pulls.length - 1].concave,
+      once: c1.correct - c0.correct === 1 && (c1.wrong || 0) === (c0.wrong || 0),
+      quiet: !lines.some((t) => /Pull it in more|Try again/.test(t)),
+      others: JSON.stringify((await ev(() => window.Stage.state.verts.slice(1).map((p) => ({ x: p.x, y: p.y }))))) === JSON.stringify(v0.slice(1))
+    };
+    return { ok: Object.values(r).every(Boolean), extra: { r, pulls: pulls.map((p) => [Math.round(p.moved), +p.drift.toFixed(2), +p.jump.toFixed(2), p.concave]), lines } };
   });
   await step(23, 'compare focus: a glow, not a thick yellow stroke; the outline unchanged', async () => {
     await jump('compare');
