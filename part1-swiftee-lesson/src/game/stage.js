@@ -364,7 +364,7 @@
     }
     var trail = null;
     if (opts.trail !== false && !opts.line) {
-      var tp = litLine(g, { x1: from.x, y1: from.y, x2: to.x, y2: to.y, 'stroke-width': 4, 'stroke-linecap': 'round', 'stroke-dasharray': '8 10', opacity: 0 });
+      var tp = litLine(g, { x1: from.x, y1: from.y, x2: to.x, y2: to.y, 'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-dasharray': '8 10', opacity: 0 });
       trail = mk('g', {}, g); trail.appendChild(tp[0]); trail.appendChild(tp[1]);
       g.insertBefore(trail, mover);
     }
@@ -1507,7 +1507,9 @@
       if (st.onlyOutside && !outside) dg.style.display = 'none';
       var pair = litLine(dg, {
         x1: a.x, y1: a.y, x2: b.x, y2: b.y,
-        'stroke-width': hl || d.solid ? 4 : 3.5, 'stroke-linecap': 'round',
+        // THIN (the user: "use thin line for showing diagonals"): a fine dashed line across
+        // the shape, the glow doing the lighting; the same weight in updatePoly() below
+        'stroke-width': hl || d.solid ? 2.6 : 2, 'stroke-linecap': 'round',
         'stroke-dasharray': d.solid ? null : '14 12'
       }, { bad: hl });
       var line = pair[1];
@@ -1533,7 +1535,7 @@
       var ga = v[st.ghost.from], gb = v[st.ghost.to];
       var gg = mk('g', { 'class': 'ghost-demo', 'pointer-events': 'none' }, g);
       var glen = Math.hypot(gb.x - ga.x, gb.y - ga.y) || 1;
-      var trailPair = litLine(gg, { x1: ga.x, y1: ga.y, x2: gb.x, y2: gb.y, 'stroke-width': 4, 'stroke-linecap': 'round' });
+      var trailPair = litLine(gg, { x1: ga.x, y1: ga.y, x2: gb.x, y2: gb.y, 'stroke-width': 2.6, 'stroke-linecap': 'round' });
       var trail = trailPair[1]; trailPair[0].setAttribute('opacity', .3); trail.setAttribute('opacity', .55);
       if (reduced() || !trail.animate) {
         // no motion: the trail alone, dashed, so the hint is still there
@@ -1686,7 +1688,9 @@
         var d = st.diagonals[i], a = v[d[0]], b = v[d[1]], G = groups[i];
         var out = !Poly.isDiagonalInside(v, d[0], d[1]);
         var hl = st.highlightOutside && out;
-        var kids = G.childNodes, w = hl || d.solid ? 6 : 5;
+        // (the same weight renderPoly() draws them at: at 6/5 the diagonals thickened the
+        // moment a corner was dragged, and thinned again when it was let go)
+        var kids = G.childNodes, w = hl || d.solid ? 2.6 : 2;
         for (var q = 0; q < kids.length; q++) {
           var L = kids[q], isGlow = kids.length > 1 && q === 0;
           L.setAttribute('x1', a.x); L.setAttribute('y1', a.y); L.setAttribute('x2', b.x); L.setAttribute('y2', b.y);
@@ -2325,7 +2329,7 @@
     if (d.el) { if (full) finishLine(c, d); return d.el; }
     var a = c.verts[d.a], b = c.verts[d.b];
     var el = litLine(c.dg, { x1: a.x, y1: a.y, x2: full ? b.x : a.x, y2: full ? b.y : a.y,
-                             'stroke-width': d.out ? 5 : 4, 'stroke-dasharray': '10 9', 'stroke-linecap': 'round' }, { bad: d.out })[0];
+                             'stroke-width': d.out ? 3 : 2.2, 'stroke-dasharray': '10 9', 'stroke-linecap': 'round' }, { bad: d.out })[0];
     el.setAttribute('class', d.out ? 'diag diag-out' : 'diag diag-in');
     d.el = el; d.state = full ? 'drawn' : 'growing';
     return el;
@@ -3056,7 +3060,7 @@
     var line = function (a, b, kind, dur, delay) {
       var el = kind === 'side'
         ? litLine(g._linesG, { x1: a.x, y1: a.y, x2: a.x, y2: a.y, 'stroke-width': 7, 'stroke-linecap': 'round', opacity: 0 }, { warm: true })[0]
-        : litLine(g._linesG, { x1: a.x, y1: a.y, x2: a.x, y2: a.y, 'stroke-width': kind === 'out' ? 5 : 4, 'stroke-dasharray': '10 8',
+        : litLine(g._linesG, { x1: a.x, y1: a.y, x2: a.x, y2: a.y, 'stroke-width': kind === 'out' ? 3 : 2.2, 'stroke-dasharray': '10 8',
                                'stroke-linecap': 'round', opacity: 0 }, { bad: kind === 'out' })[0];
       growLine(el, a, b, dur, delay);
       return el;

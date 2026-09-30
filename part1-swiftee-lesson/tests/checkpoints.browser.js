@@ -657,8 +657,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await step(35, 'corner to corner: a different stand each time, continuous motion, no jump', async () => {
     const stands = Object.values(rig.stands).map((s) => s.join(','));
     const distinct = new Set(stands).size;
-    // (≤ 60 units between 60 ms samples: a unit a millisecond, the long first flight included)
-    return { ok: distinct === stands.length && stands.length >= 5 && rig.maxJump <= 60, extra: { stands: stands.length, distinct, maxStep: rig.maxJump } };
+    // (≤ 90 units between 60 ms samples: his body is measured now, some 53 units out from the
+    // turning point, so a flight's travel and its turn add up; a real jump is hundreds)
+    return { ok: distinct === stands.length && stands.length >= 5 && rig.maxJump <= 90, extra: { stands: stands.length, distinct, maxStep: rig.maxJump } };
   });
   await step(36, 'the reading is the geometry: each printed degree equals the interior angle from the vertices (±1°)', async () => {
     const h = rig.holds[Object.keys(rig.holds)[0]];
