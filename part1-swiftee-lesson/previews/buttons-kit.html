@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Buttons Kit</title>
+<!--
+  BUTTONS KIT — the Play button and the text buttons from Swiftee & the Polygons (Part 1), on
+  their own, to copy into another game.
+
+  WHERE THEY COME FROM (part1-swiftee-lesson/)
+    PLAY   index.html   <button id="start"> in .title-play, and its CSS: #start, #start img,
+                        startPop, #start:active, #start:focus-visible, .start-halo, .start-sparks
+           src/fx/titlefx.js   sparkle() (the halo breathes, the glow swells, crystals turn on the
+                        rim, four-point glints), pressDown() / pressUp() (the squash and the bounce
+                        back), press() + burstFlake() (a ring of crystals knocked off it)
+           src/fx/snowflake.js  Snowflake.svg(size, seed, opts) — the crystals (copy this file too)
+    TEXT   index.html   #next, #continue (the blue navigation pill), #hud .replay (the gold one),
+                        the ::before seam fix, #continue:active, nextNudge
+           src/game/button-frame.js  each pill's image size and cap width (the round end, in the
+                        image's own pixels): uiPrimary 405x147 cap 82, uiNav 404x148 cap 83,
+                        uiSuccess 404x148 cap 83, uiDanger 401x149 cap 83
+
+  FILES TO COPY
+    assets/ui/play.webp            320 x 320, the round Play button
+    assets/ui/btn-uiPrimary.webp   gold   — acts        ("Play again")
+    assets/ui/btn-uiNav.webp       blue   — navigates   ("Next", "Part 2")
+    assets/ui/btn-uiSuccess.webp   green  — a right answer
+    assets/ui/btn-uiDanger.webp    red    — a wrong answer
+    src/fx/snowflake.js            the crystals on the Play button
+
+  HOW THE TEXT BUTTON WORKS: a 3-SLICE PILL. border-image cuts each picture into a left cap, a
+  middle and a right cap; the caps are drawn at their true proportion (cap x height / image height
+  — 34px at a 60px-tall button) and only the flat middle stretches to the word, so one picture
+  fits "Next" and "Play again" alike without turning the round ends into ovals. The ::before is
+  the same pill once more, a pixel wider each side, so the joins between slices never show at any
+  display scaling.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  /* ---------- the page (demo only) ---------- */
+  :root { --page: #bfe6ff; --page2: #eaf7ff; --ink: #183d58; --card: #ffffffb8; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --page: #10263a; --page2: #1b3a55; --ink: #e8f4ff; --card: #0d2133b8; }
+  }
+  :root[data-theme="dark"] { --page: #10263a; --page2: #1b3a55; --ink: #e8f4ff; --card: #0d2133b8; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    background: linear-gradient(var(--page), var(--page2)); color: var(--ink);
+    font-family: "Nunito", "Segoe UI", system-ui, sans-serif; font-weight: 700;
+    display: grid; justify-items: center; gap: 28px; padding: 32px 16px 48px;
+  }
+  h1 { margin: 0; font-size: clamp(22px, 4vw, 30px); font-weight: 800; }
+  section { width: min(900px, 100%); background: var(--card); border-radius: 22px; padding: 22px 20px 28px; }
+  section h2 { margin: 0 0 4px; font-size: 18px; font-weight: 800; }
+  section p { margin: 0 0 18px; font-weight: 600; opacity: .8; }
+  .row { display: flex; flex-wrap: wrap; gap: 26px 40px; align-items: center; justify-content: center; padding: 10px 0; }
+  .demo-link { font: inherit; border: 0; background: none; color: inherit; text-decoration: underline; cursor: pointer; opacity: .8; }
+
+  /* ================================================================
+     1. THE PLAY BUTTON  (index.html #start, .start-halo, .start-sparks)
+     ================================================================ */
+  .kit-play-wrap { position: relative; display: inline-block; }
+  .kit-play {
+    position: relative; z-index: 2; display: block;
+    width: clamp(118px, 19vh, 212px); height: clamp(118px, 19vh, 212px);
+    padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer;
+    filter: drop-shadow(0 10px 18px rgba(12, 64, 102, .45));
+    transition: opacity 340ms ease, filter 110ms ease, transform 110ms ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .kit-play img { display: block; width: 100%; height: 100%; -webkit-user-drag: none; user-select: none; }
+  /* it pops in when it is ready to be pressed (the game: when the last file has loaded) */
+  .kit-play.enter { animation: kitPlayPop 520ms cubic-bezier(.2, 1.6, .35, 1) backwards; }
+  @keyframes kitPlayPop {
+    0%   { opacity: 0; transform: scale(.45); }
+    60%  { opacity: 1; transform: scale(1.08); }
+    100% { opacity: 1; transform: none; }
+  }
+  .kit-play:active { transform: translateY(4px) scale(.965); filter: drop-shadow(0 4px 8px rgba(12, 64, 102, .5)) brightness(.97); }
+  .kit-play:focus-visible { outline: 4px solid #fff; outline-offset: 7px; border-radius: 50%; }
+  /* the warm glow behind it — this breathes, the button holds still (titlefx.js sparkle) */
+  .kit-play-halo {
+    position: absolute; inset: -30%; border-radius: 50%; z-index: -1; pointer-events: none;
+    background: radial-gradient(closest-side, rgba(255, 238, 176, .6), rgba(255, 214, 120, .16) 60%, rgba(255, 214, 120, 0) 100%);
+  }
+  .kit-play-sparks { position: absolute; inset: -20%; pointer-events: none; z-index: 3; }
+  @media (prefers-reduced-motion: reduce) { .kit-play.enter { animation: none; } }
+
+  /* ================================================================
+     2. THE TEXT BUTTON — a 3-slice pill  (index.html #next / #continue / #hud .replay)
+     ================================================================ */
+  .kit-btn {
+    position: relative; isolation: isolate;
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 60px; line-height: 60px; padding: 0 6px 0 10px;
+    font: 800 clamp(17px, 2vw, 23px) "Nunito", "Segoe UI", system-ui, sans-serif; color: #fff;
+    text-decoration: none; cursor: pointer; white-space: nowrap;
+    background: none; border: 0 solid transparent; border-width: 0 34px;
+    border-image: var(--pill) 0 var(--cap) 0 var(--cap) fill stretch;
+    filter: drop-shadow(0 4px 0 var(--drop)); text-shadow: 0 2px 0 var(--shade);
+    transition: transform 90ms, filter 90ms, opacity 160ms;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* NO SEAMS: the same pill once more behind the label, a pixel wider each side */
+  .kit-btn::before {
+    content: ''; position: absolute; z-index: -1; pointer-events: none;
+    top: 0; bottom: 0; left: -35px; right: -35px;
+    border-style: solid; border-width: 0 34px; border-image: inherit;
+  }
+  .kit-btn:active { transform: translateY(4px); filter: drop-shadow(0 0 0 transparent) brightness(.94); animation: none; }
+  .kit-btn:focus-visible { outline: 3px solid #fff; outline-offset: 4px; border-radius: 30px; }
+  .kit-btn:disabled, .kit-btn[aria-disabled="true"] { opacity: .55; cursor: default; pointer-events: none; }
+  .kit-btn .chev { font-size: 1.1em; line-height: 1; }
+  /* the four colours, each with a job: gold acts, blue navigates, green and red are verdicts */
+  .kit-btn--primary { --pill: url("../assets/ui/btn-uiPrimary.webp"); --cap: 82; color: #6a3200;
+                      --shade: rgba(255, 244, 200, .7); --drop: rgba(140, 80, 0, .35); text-shadow: 0 1px 0 var(--shade); }
+  .kit-btn--nav     { --pill: url("../assets/ui/btn-uiNav.webp");     --cap: 83; --shade: rgba(12, 70, 140, .55); --drop: rgba(10, 60, 120, .35); }
+  .kit-btn--success { --pill: url("../assets/ui/btn-uiSuccess.webp"); --cap: 83; --shade: rgba(20, 90, 30, .5);   --drop: rgba(20, 90, 30, .35); }
+  .kit-btn--danger  { --pill: url("../assets/ui/btn-uiDanger.webp");  --cap: 83; --shade: rgba(130, 20, 20, .5);  --drop: rgba(130, 20, 20, .35); }
+  /* optional: the "I am where you go on" nudge — waits 4s, then once every 8s (Next and Part 2) */
+  .kit-btn.nudge { animation: kitNudge 8s ease-in-out 4s infinite; }
+  @keyframes kitNudge {
+    0%, 12%, 100% { transform: translateX(0); }
+    4% { transform: translateX(5px); }
+    8% { transform: translateX(1px); }
+  }
+  /* the smaller size used on narrow screens: the caps shrink with the height */
+  .kit-btn.small { height: 50px; line-height: 50px; border-width: 0 28px; }
+  .kit-btn.small::before { left: -29px; right: -29px; border-width: 0 28px; }
+  @media (max-width: 760px) {
+    .kit-btn { height: 50px; line-height: 50px; border-width: 0 28px; }
+    .kit-btn::before { left: -29px; right: -29px; border-width: 0 28px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .kit-btn, .kit-btn.nudge { transition: none; animation: none; } }
+</style>
+</head>
+<body>
+<h1>Buttons kit</h1>
+
+<section>
+  <h2>1 · The Play button</h2>
+  <p>The glow behind it breathes and crystals turn on its rim, while the button itself holds still. A press squashes it, and a ring of crystals flies off.</p>
+  <div class="row">
+    <!-- copy from here -->
+    <div class="kit-play-wrap" id="play-wrap">
+      <button class="kit-play enter" id="play" type="button" aria-label="Play">
+        <span class="kit-play-halo" aria-hidden="true"></span>
+        <img src="../assets/ui/play.webp" alt="" draggable="false">
+      </button>
+      <span class="kit-play-sparks" aria-hidden="true"></span>
+    </div>
+    <!-- to here -->
+  </div>
+  <div class="row"><button class="demo-link" id="again" type="button">Play the entrance again</button></div>
+</section>
+
+<section>
+  <h2>2 · Text buttons</h2>
+  <p>One picture per colour, cut into caps and a stretching middle, so any word fits and the ends stay round.</p>
+  <div class="row">
+    <!-- copy any of these -->
+    <button class="kit-btn kit-btn--nav nudge" type="button"><span>Next</span><span class="chev" aria-hidden="true">&#9654;</span></button>
+    <button class="kit-btn kit-btn--primary" type="button"><span>Play again</span></button>
+    <button class="kit-btn kit-btn--success" type="button"><span>Inside</span></button>
+    <button class="kit-btn kit-btn--danger" type="button"><span>Outside</span></button>
+  </div>
+  <div class="row">
+    <a class="kit-btn kit-btn--nav" href="#"><span>Part 2</span><span class="chev" aria-hidden="true">&#9654;</span></a>
+    <button class="kit-btn kit-btn--primary small" type="button"><span>A much longer label</span></button>
+    <button class="kit-btn kit-btn--nav" type="button" disabled><span>Disabled</span></button>
+  </div>
+</section>
+
+<!-- the crystals: copy src/fx/snowflake.js with the kit -->
+<script src="../src/fx/snowflake.js"></script>
+<script>
+/* ======================================================================
+   THE PLAY BUTTON'S MOTION — titlefx.js sparkle(), pressDown(), pressUp(), press()
+   ====================================================================== */
+var PlayFx = (function () {
+  var RIM_CRYSTALS = 5, GLINTS = 10, anims = [];
+  var reduced = function () { return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); };
+  function run(el, frames, opts) {
+    if (!el || !el.animate) return null;
+    try { var a = el.animate(frames, opts); anims.push(a); return a; } catch (e) { return null; }
+  }
+  function rnd(a, b) { return a + Math.random() * (b - a); }
+
+  // THE GLOW BREATHES, NOT THE BUTTON: a moving target is a target a child has to chase
+  function sparkle(host, halo, btn) {
+    var doc = host.ownerDocument, i;
+    run(halo, [
+      { transform: 'scale(.94)', opacity: 0.65 },
+      { transform: 'scale(1.08)', opacity: 1, offset: 0.5 },
+      { transform: 'scale(.94)', opacity: 0.65 }
+    ], { duration: 2400, iterations: Infinity, easing: 'ease-in-out' });
+    if (btn) run(btn, [
+      { filter: 'drop-shadow(0 10px 18px rgba(12,64,102,.45)) drop-shadow(0 0 0 rgba(255,229,150,0))' },
+      { filter: 'drop-shadow(0 10px 18px rgba(12,64,102,.45)) drop-shadow(0 0 14px rgba(255,229,150,.85))', offset: 0.5 },
+      { filter: 'drop-shadow(0 10px 18px rgba(12,64,102,.45)) drop-shadow(0 0 0 rgba(255,229,150,0))' }
+    ], { duration: 2400, iterations: Infinity, easing: 'ease-in-out' });
+
+    // crystals turning on the rim: a ring carries each round, the crystal fades on its own clock
+    for (i = 0; i < RIM_CRYSTALS; i++) {
+      var a0 = (i / RIM_CRYSTALS) * 360 + rnd(-16, 16), size = rnd(18, 32);
+      var ring = doc.createElement('div');
+      ring.style.cssText = 'position:absolute;inset:0;will-change:transform;';
+      var el = doc.createElement('div');
+      el.style.cssText = 'position:absolute;left:50%;top:-7%;width:' + size.toFixed(0) + 'px;height:' + size.toFixed(0) + 'px;' +
+        'margin-left:' + (-size / 2).toFixed(0) + 'px;opacity:0;will-change:transform,opacity;';
+      if (window.Snowflake) el.innerHTML = Snowflake.svg(size, i % 3, { weight: Math.max(1.1, size * 0.05), glow: 'rgba(255,238,186,.9)' });
+      ring.appendChild(el); host.appendChild(ring);
+      run(ring, [{ transform: 'rotate(' + a0.toFixed(0) + 'deg)' }, { transform: 'rotate(' + (a0 + 360).toFixed(0) + 'deg)' }],
+          { duration: rnd(9000, 15000), iterations: Infinity, easing: 'linear' });
+      run(el, [
+        { transform: 'scale(.25) rotate(0deg)', opacity: 0 },
+        { transform: 'scale(1) rotate(70deg)', opacity: 0.95, offset: 0.3 },
+        { transform: 'scale(.95) rotate(180deg)', opacity: 0.85, offset: 0.68 },
+        { transform: 'scale(.25) rotate(260deg)', opacity: 0 }
+      ], { duration: rnd(3000, 4600), delay: -Math.random() * 4200, iterations: Infinity, easing: 'ease-in-out' });
+    }
+    // four-point glints, firing in their own time
+    for (i = 0; i < GLINTS; i++) {
+      var s = rnd(10, 26), ang = Math.random() * Math.PI * 2, rad = rnd(38, 62);
+      var g = doc.createElement('div');
+      g.style.cssText = 'position:absolute;left:' + (50 + Math.cos(ang) * rad).toFixed(1) + '%;top:' + (50 + Math.sin(ang) * rad).toFixed(1) + '%;' +
+        'width:' + s.toFixed(0) + 'px;height:' + s.toFixed(0) + 'px;margin:' + (-s / 2).toFixed(0) + 'px 0 0 ' + (-s / 2).toFixed(0) + 'px;' +
+        'opacity:0;will-change:transform,opacity;background:' +
+        'radial-gradient(closest-side,rgba(255,255,255,.95),rgba(255,255,255,0) 70%),' +
+        'linear-gradient(0deg,transparent 46%,#fff 50%,transparent 54%),' +
+        'linear-gradient(90deg,transparent 46%,#fff 50%,transparent 54%);';
+      host.appendChild(g);
+      run(g, [
+        { transform: 'scale(.2) rotate(0deg)', opacity: 0 },
+        { transform: 'scale(.2) rotate(0deg)', opacity: 0, offset: 0.62 },
+        { transform: 'scale(1.25) rotate(50deg)', opacity: 1, offset: 0.78 },
+        { transform: 'scale(.2) rotate(100deg)', opacity: 0 }
+      ], { duration: rnd(2600, 4400), delay: -Math.random() * 4000, iterations: Infinity, easing: 'ease-in-out' });
+    }
+  }
+
+  // THE PRESS IS FELT WHILE THE FINGER IS DOWN: squash on down, a bounce back on up
+  function pressDown(img, halo) {
+    if (reduced()) return;
+    run(img, [{ transform: 'scale(1) translateY(0)' }, { transform: 'scale(.9) translateY(5px)' }],
+        { duration: 90, easing: 'cubic-bezier(.3,0,.7,1)', fill: 'forwards' });
+    run(halo, [{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(.92)', opacity: 0.6 }], { duration: 90, fill: 'forwards' });
+  }
+  function pressUp(img, halo) {
+    if (reduced()) return;
+    run(halo, [{ transform: 'scale(.92)', opacity: 0.6 }, { transform: 'scale(1)', opacity: 1 }], { duration: 160, fill: 'forwards' });
+    run(img, [{ transform: 'scale(.9) translateY(5px)' }, { transform: 'scale(1.08) translateY(-3px)' }, { transform: 'scale(1) translateY(0)' }],
+        { duration: 420, easing: 'cubic-bezier(.2,1.4,.35,1)', fill: 'forwards' });
+  }
+  // and on click, a ring of crystals knocked off it, and the glow flares
+  function press(host, halo) {
+    if (reduced()) return;
+    var doc = host.ownerDocument, n = 11;
+    for (var i = 0; i < n; i++) burstFlake(doc, host, (i / n) * 360 + rnd(-14, 14), i % 3);
+    run(halo, [{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(1.55)', opacity: 0 }], { duration: 540, easing: 'cubic-bezier(.2,.8,.3,1)' });
+  }
+  function burstFlake(doc, host, deg, seed) {
+    var size = rnd(14, 27), el = doc.createElement('div');
+    el.style.cssText = 'position:absolute;left:50%;top:50%;width:' + size.toFixed(0) + 'px;height:' + size.toFixed(0) + 'px;' +
+      'margin:' + (-size / 2).toFixed(0) + 'px 0 0 ' + (-size / 2).toFixed(0) + 'px;will-change:transform,opacity;';
+    if (window.Snowflake) el.innerHTML = Snowflake.svg(size, seed, { weight: Math.max(1, size * 0.06), glow: 'rgba(255,240,196,.95)' });
+    host.appendChild(el);
+    var a = deg * Math.PI / 180, r = rnd(72, 132);
+    var an = run(el, [
+      { transform: 'translate(0,0) scale(.25) rotate(0deg)', opacity: 1 },
+      { transform: 'translate(' + (Math.cos(a) * r).toFixed(0) + 'px,' + (Math.sin(a) * r).toFixed(0) + 'px) scale(1.1) rotate(' + (deg > 180 ? -200 : 200) + 'deg)', opacity: 0 }
+    ], { duration: rnd(520, 780), easing: 'cubic-bezier(.15,.8,.3,1)', fill: 'forwards' });
+    var drop = function () { if (el.parentNode) el.parentNode.removeChild(el); };
+    if (an && an.finished) an.finished.then(drop, drop); else setTimeout(drop, 800);
+  }
+
+  /** Wire one Play button: `wrap` holds the button, its halo and the sparks layer. */
+  function mount(wrap, onPlay) {
+    var btn = wrap.querySelector('.kit-play'), img = btn.querySelector('img');
+    var halo = wrap.querySelector('.kit-play-halo'), sparks = wrap.querySelector('.kit-play-sparks');
+    if (!reduced()) sparkle(sparks, halo, btn);
+    btn.addEventListener('pointerdown', function () { pressDown(img, halo); });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (t) { btn.addEventListener(t, function () { pressUp(img, halo); }); });
+    btn.addEventListener('click', function () { press(sparks, halo); if (onPlay) onPlay(); });
+  }
+  return { mount: mount };
+})();
+
+/* ---------- demo wiring ---------- */
+PlayFx.mount(document.getElementById('play-wrap'), function () { /* start your game here */ });
+document.getElementById('again').addEventListener('click', function () {
+  var b = document.getElementById('play');
+  b.classList.remove('enter'); void b.offsetWidth; b.classList.add('enter');
+});
+</script>
+</body>
+</html>
