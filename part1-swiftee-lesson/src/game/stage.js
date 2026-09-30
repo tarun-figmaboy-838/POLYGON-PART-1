@@ -8039,52 +8039,82 @@
         global.requestAnimationFrame ? global.requestAnimationFrame(function () { sheet.classList.add('on'); }) : sheet.classList.add('on');
         deckShown(false);
         sfx('menuWhoosh', { gain: 0.5 });
-        return fly(from, mid, TEACH.flyMs, true).then(breathe);
+        // (it arrives and holds still: the breathing that followed was one more thing moving
+        // while he explains — "remove decorative motion")
+        return fly(from, mid, TEACH.flyMs, true);
       },
+      /* ONE CONCEPT AT A TIME (the swipe / sort explanation brief: "Swiftee's spoken concept = the
+         ONLY visual concept receiving emphasis"). Each word's visual replaces the last one's —
+         what an earlier word lit fades as the next concept is named — and nothing decorative
+         runs with it: no sparkles, no breathing card, and no corner dots unless the words are
+         about a corner. A diagonal is its dashed line alone; an angle is an arc in the corner,
+         never a dot on it; a side is its solid line. */
       show: function (what) {
         if (!copy.parentNode) return;
+        var glowOn = function (sel) {
+          [].slice.call(fx.querySelectorAll(sel)).forEach(function (l) {
+            if (reduced() || !l.animate) return;
+            try { l.animate([{ filter: 'drop-shadow(0 0 1px rgba(255,255,255,0))' }, { filter: 'drop-shadow(0 0 3.5px rgba(255,255,255,.95)) brightness(1.25)', offset: 0.45 }, { filter: 'drop-shadow(0 0 1.5px rgba(255,255,255,.6))' }],
+                            { duration: 900, easing: 'ease-in-out' }); } catch (e) {}
+          });
+        };
+        // (the emphasis that goes WITH a concept already shown — "…outside", "…inside" — keeps it;
+        // every new concept clears the stage first)
+        if (what !== 'outsideGlow' && what !== 'insideGlow') [].slice.call(fx.childNodes).forEach(function (el) { fadeOut(el); });
         if (what === 'notch' && dent >= 0) {
-          // the corner that goes inward: its dot, and the two sides into it traced as lines
-          // (no shaded fill — the user: "use clear diagonal lines, not large shaded areas")
-          var a = v[(dent + n - 1) % n], b = v[(dent + 1) % n], p = v[dent];
-          grow(a, p, 0, false, false); grow(b, p, 120, false, false);   // sides: solid
-          ring(p, 0, TEACH.warm); sparkle(p); sfx('tick', { gain: 0.6 }); breathe();
+          // "This CORNER goes inward": that corner, and only it
+          ring(v[dent], 0, TEACH.warm); sfx('tick', { gain: 0.6 });
         } else if (what === 'outside' && dent >= 0) {
-          // the diagonal across the dent: out of the shape, violet
+          // "at least one DIAGONAL outside": the one across the dent, a violet dash — no dots on its ends
           var a2 = v[(dent + n - 1) % n], b2 = v[(dent + 1) % n];
-          grow(a2, b2, 0, true, true); ring(a2, 0, TEACH.out); ring(b2, 120, TEACH.out);   // a diagonal: dashed, violet
-          later(420, function () { sparkle({ x: (a2.x + b2.x) / 2, y: (a2.y + b2.y) / 2 }); });
+          grow(a2, b2, 0, true, true).setAttribute('class', 'teach-diag teach-out');
           sfx('zip', { gain: 0.5 });
+        } else if (what === 'outsideGlow') {
+          // "…OUTSIDE": the diagonal already drawn catches the light, outside the shape
+          glowOn('.teach-out');
         } else if (what === 'corners') {
-          // every corner points out: each is ringed, one after another
+          // "No CORNER goes inward": every corner, one after another
           v.forEach(function (p, i) { later(i * 110, function () { if (copy.parentNode) ring(p, 0, TEACH.warm); }); });
-          sfx('tick', { gain: 0.6 }); breathe();
+          sfx('tick', { gain: 0.6 });
         } else if (what === 'inside') {
-          // the diagonals from one corner (both, on a four-sided shape) stay inside
+          // "All DIAGONALS": the diagonals from one corner (both, on a four-sided shape), dashed
           var pairs = [];
           for (var j = 2; j <= n - 2; j++) pairs.push([0, j]);
           if (n === 4) pairs.push([1, 3]);
-          pairs.forEach(function (q, i) { grow(v[q[0]], v[q[1]], i * 260, false, true); });   // diagonals: dashed
-          later(pairs.length * 260 + 200, function () { if (copy.parentNode) sparkle(Poly.centroid(v)); });
+          pairs.forEach(function (q, i) { grow(v[q[0]], v[q[1]], i * 260, false, true).setAttribute('class', 'teach-diag teach-in'); });
           sfx('zip', { gain: 0.5 });
+        } else if (what === 'insideGlow') {
+          // "…INSIDE": those diagonals catch the light, inside the shape
+          glowOn('.teach-in');
         } else if (what === 'sides') {
-          /* THE SIDES, AS HE SAYS "SIDE(S)" (the swipe's teaching spotlight): each side traced
-             one after another — gold where it matches the others, violet where it does not
-             (marksBy: the largest set of equal lengths is the match) — and the lengths
-             printed on the card pulse with them. On a regular shape every side comes up gold. */
+          /* THE SIDES, AS HE SAYS "SIDE(S)": each side traced, solid, one after another — violet
+             where it does not match the others (marksBy: the largest set of equal lengths is the
+             match) — and the lengths printed on the card pulse with them. */
           var L = Poly.sideLengths(v), sm = marksBy(L, v.map(function (_, i) { return i; }), 15);
-          v.forEach(function (p, i) { grow(p, v[(i + 1) % n], i * 140, sm.mark[i] !== 1, false); });   // sides: solid
+          v.forEach(function (p, i) { grow(p, v[(i + 1) % n], i * 140, sm.mark[i] !== 1, false); });
           pulseHint([].slice.call(copy.querySelectorAll('.u-side')), { strong: true });
-          sfx('tick', { gain: 0.6 }); breathe();
+          sfx('tick', { gain: 0.6 });
         } else if (what === 'angles') {
-          /* THE CORNERS, AS HE SAYS "ANGLE(S)": each corner's dot, gold where its angle
-             matches the others and violet where it does not, and the arcs and degrees on the
-             card pulse with them. */
-          var am = marksBy(A, v.map(function (_, i) { return i; }), 3);
-          v.forEach(function (p, i) { later(i * 110, function () { if (copy.parentNode) ring(p, 0, am.mark[i] === 1 ? TEACH.warm : TEACH.out); }); });
+          /* THE ANGLES, AS HE SAYS "ANGLE(S)": an arc inside each corner — gold where it matches
+             the others, violet where it does not — one after another, and the arcs and degrees on
+             the card pulse with them. An arc, not a dot: an angle is the opening between two
+             sides, and a dot on the corner reads as a vertex. */
+          var am = marksBy(A, v.map(function (_, i) { return i; }), 3), c0 = Poly.centroid(v), R = 7.2, TAU = 2 * Math.PI;
+          v.forEach(function (p, i) {
+            later(i * 110, function () {
+              if (!copy.parentNode) return;
+              var qa = v[(i + n - 1) % n], qb = v[(i + 1) % n];
+              var a1 = Math.atan2(qa.y - p.y, qa.x - p.x), a3 = Math.atan2(qb.y - p.y, qb.x - p.x), bis = Math.atan2(c0.y - p.y, c0.x - p.x);
+              var d1 = ((a3 - a1) % TAU + TAU) % TAU, db = ((bis - a1) % TAU + TAU) % TAU;
+              var sweep = db < d1 ? 1 : 0, span = sweep ? d1 : TAU - d1, large = span > Math.PI ? 1 : 0;
+              var arc = mk('path', { d: 'M' + (p.x + Math.cos(a1) * R).toFixed(2) + ' ' + (p.y + Math.sin(a1) * R).toFixed(2) + ' A' + R + ' ' + R + ' 0 ' + large + ' ' + sweep + ' ' +
+                                        (p.x + Math.cos(a3) * R).toFixed(2) + ' ' + (p.y + Math.sin(a3) * R).toFixed(2),
+                                     fill: 'none', stroke: am.mark[i] === 1 ? TEACH.warm : TEACH.out, 'stroke-width': 1.5, 'stroke-linecap': 'round', 'class': 'teach-arc' }, fx);
+              if (!reduced() && arc.animate) { try { arc.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, easing: 'ease-out' }); } catch (e) {} }
+            });
+          });
           pulseHint([].slice.call(copy.querySelectorAll('.u-angle')), { strong: true });
-          later(n * 110 + 150, function () { if (copy.parentNode) sparkle(Poly.centroid(v)); });
-          sfx('tick', { gain: 0.6 }); breathe();
+          sfx('tick', { gain: 0.6 });
         }
       },
       close: function () {

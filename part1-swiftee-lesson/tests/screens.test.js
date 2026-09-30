@@ -699,6 +699,18 @@ const levelOf = (st) => { const d = RIG[st]; return d ? (d.level || 1) : 0; };
       !!arm && iLit >= 0 && iLit < iLine && iLine < iMerge && iMerge < iTap && !arm.some((x) => x.say && /Try again/.test(x.say)) && /fb54/.test(last),
       { iLit, iLine, iMerge, iTap });
   }
+  // THE SORT'S EXPLANATIONS SHOW EACH CONCEPT ON ITS OWN WORD (the explanation brief): the corner on
+  // "corner", the diagonal on "diagonal(s)", its inside / outside emphasis on "inside" / "outside"
+  {
+    const teach = Screens.byId['sort-convex-concave'].teach, bad = [];
+    const WORD = { notch: /^corner/, corners: /^corner/, outside: /^diagonal/, inside: /^diagonal/, outsideGlow: /^outside/, insideGlow: /^inside/ };
+    Object.keys(teach).forEach((k) => teach[k].forEach((ln) => {
+      const shows = ln.shows || (ln.show ? [{ what: ln.show, on: ln.on || 0 }] : []);
+      const words = ln.say.split(/\s+/).map((w) => w.replace(/[^a-z]/gi, '').toLowerCase());
+      shows.forEach((sh) => { if (!WORD[sh.what] || !WORD[sh.what].test(words[sh.on || 0] || '')) bad.push(k + ':' + sh.what + '@' + (words[sh.on || 0] || '?')); });
+    }));
+    t('the convex / concave explanations light each concept on the word that names it', bad.length === 0, bad);
+  }
   ['inside-or-outside', 'stayed-changed'].forEach((id) => {
     const s = Screens.byId[id], bs = s.beats;
     const par = bs.find((b) => b.parallel && b.parallel.some((x) => typeof x.instruction === 'string') &&

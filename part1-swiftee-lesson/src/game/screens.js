@@ -994,10 +994,13 @@
       // lesson's own two lines, in their own voices; the "Look!" line points
       // at the shape.
       teach: {
-        concave: [{ say: 'Look! This corner goes inward.', vo: 'p27c', show: 'notch' },
-                  { say: 'Atleast one diagonal outside means concave polygon.', vo: 'p25', show: 'outside', on: 2 }],
-        convex:  [{ say: 'Look! No corner goes inward.', vo: 'p27v', show: 'corners' },
-                  { say: 'All diagonals inside means convex polygon.', vo: 'p24', show: 'inside', on: 1 }]
+        // (each visual on the word that names it, and only that concept at a time — the explanation
+        // brief: "corner" the corner, "diagonal" the dashed diagonal alone, "outside" / "inside" its
+        // emphasis; stage.js teach show)
+        concave: [{ say: 'Look! This corner goes inward.', vo: 'p27c', show: 'notch', on: 2 },
+                  { say: 'Atleast one diagonal outside means concave polygon.', vo: 'p25', shows: [{ what: 'outside', on: 2 }, { what: 'outsideGlow', on: 3 }] }],
+        convex:  [{ say: 'Look! No corner goes inward.', vo: 'p27v', show: 'corners', on: 2 },
+                  { say: 'All diagonals inside means convex polygon.', vo: 'p24', shows: [{ what: 'inside', on: 1 }, { what: 'insideGlow', on: 2 }] }]
       },
       stage: {
         kind: 'sort',
