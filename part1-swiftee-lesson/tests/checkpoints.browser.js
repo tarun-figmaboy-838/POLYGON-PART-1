@@ -236,13 +236,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const after = await ev(() => ({ screen: window.Game.screen, mode: window.Input.mode() }));
     return { ok: s.bad && !s.good && s.confetti === 0 && c1.wrong - c0.wrong === 1 && !!text && after.screen === 3 && after.mode === 'polygon', extra: { ...s, wrongCues: c1.wrong - c0.wrong, text, after } };
   });
-  await step(8, 'Level 1 intermediate correct: green, "Keep going!", no "Great job!", no confetti', async () => {
+  await step(8, 'Level 1 intermediate correct: green, its own short burst of confetti, "Keep going!", no "Great job!"', async () => {
     const before = (await said()).length;
     await clickCentre(`#stage .card[data-id="${rightIds[0]}"]`); await sleep(260);
     const s = await ev((id) => ({ good: document.querySelector(`#stage .card[data-id="${id}"] .shape-card`).classList.contains('mark-good'), confetti: window.__fx.confetti }), rightIds[0]);
     await unlocked(20000); await sleep(200);
     const lines = (await said()).slice(before);
-    return { ok: s.good && s.confetti === 0 && lines.some((t) => /^Keep going!/.test(t)) && !lines.some((t) => /Great job!/.test(t)), extra: { ...s, lines } };
+    return { ok: s.good && s.confetti === 1 && lines.some((t) => /^Keep going!/.test(t)) && !lines.some((t) => /Great job!/.test(t)), extra: { ...s, lines } };
   });
   await step(9, 'Level 1 complete: exactly "Great job!", once, and the next screen only after it', async () => {
     const before = (await said()).length;

@@ -387,6 +387,9 @@
   /* A drop zone is two hundred pixels of dashed outline; a ring around
      something that big reads as a rendering fault. It still answers a press. */
   #stage .zone.touchable:hover { filter: none; translate: 0; }
+  /* AN ANSWER CARD DOES NOT MOVE UNDER THE FINGER (the user: "when I tap, the card pops a
+     little"): pressed is a light state, not a movement — the halo that follows is the answer */
+  #stage .card.touchable:hover, #stage .card.touchable:active { translate: 0; }
 
   /* WHERE TO TAP. A side or corner still waiting to be measured breathes:
      a soft warm glow that comes and goes, never a flash. The class is put
@@ -467,10 +470,8 @@
   @keyframes teachRing { 0%, 100% { transform: scale(1); opacity: .95; } 50% { transform: scale(1.4); opacity: .5; } }
   #stage .teach-spark { transform-box: fill-box; transform-origin: center; animation: teachSpark .9s ease-out both; }
   @keyframes teachSpark { 0% { transform: scale(0); opacity: 0; } 40% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(.6); opacity: 0; } }
-  #stage .teach-fade { animation: teachFade .35s ease-out both; }
-  @keyframes teachFade { from { opacity: 0; } to { opacity: 1; } }
   @media (prefers-reduced-motion: reduce) {
-    #stage .teach-ring, #stage .teach-spark, #stage .teach-fade { animation: none; }
+    #stage .teach-ring, #stage .teach-spark { animation: none; }
     #stage .teach-sheet { transition: none; }
   }
   #stage .card.card-off { opacity: .5; filter: grayscale(.55); pointer-events: none; transition: opacity .35s ease, filter .35s ease; }
@@ -665,7 +666,8 @@
   #hud .replay.show { display: inline-flex; }
   #hud .replay:active { transform: translateY(3px); box-shadow: none; filter: drop-shadow(0 0 0 rgba(140, 80, 0, 0)) brightness(.95); }
 
-  /* ---- Next: the one deliberate way to move on ----
+  /* ---- The button on to Part 2 (there is no Next: every screen, and every story scene, goes
+     on by itself once it has been said and seen). The history, for the shape of the thing: ----
      Advancing used to be a tap anywhere, so the same gesture both dismissed a
      line and poked whatever was underneath it. It is a button now. It appears
      only while the game is genuinely waiting, and it nudges itself every few
@@ -699,8 +701,8 @@
      pixel wider each side, so the joins of one layer fall on the solid
      pixels of the other at any display scaling. */
   #continue { text-decoration: none; }
-  #next, #continue, #hud .replay { isolation: isolate; }
-  #next::before, #continue::before, #hud .replay::before {
+  #continue, #hud .replay { isolation: isolate; }
+  #continue::before, #hud .replay::before {
     content: ''; position: absolute; z-index: -1; pointer-events: none;
     top: 0; bottom: 0; left: -35px; right: -35px;
     border-style: solid; border-width: 0 34px; border-image: inherit;
@@ -708,15 +710,15 @@
   #hud .replay { position: relative; }
   #hud .replay::before { left: -29px; right: -29px; border-width: 0 28px; }
   @media (max-width: 760px) {
-    #next::before, #continue::before { left: -29px; right: -29px; border-width: 0 28px; }
+    #continue::before { left: -29px; right: -29px; border-width: 0 28px; }
   }
 
   /* IT WAITS BEFORE IT NUDGES. A button that twitches from the moment it
      appears is hurrying a child who is still reading; this one first moves
      after four seconds of nothing, and then once every eight. */
-  #next.show, #continue.show { display: inline-flex; animation: nextNudge 8s ease-in-out 4s infinite; }
-  #next:active, #continue:active { transform: translateY(4px); filter: drop-shadow(0 0 0 rgba(10, 60, 120, 0)) brightness(.94); animation: none; }
-  #next .chev, #continue .chev { font-size: 1.1em; line-height: 1; }
+  #continue.show { display: inline-flex; animation: nextNudge 8s ease-in-out 4s infinite; }
+  #continue:active { transform: translateY(4px); filter: drop-shadow(0 0 0 rgba(10, 60, 120, 0)) brightness(.94); animation: none; }
+  #continue .chev { font-size: 1.1em; line-height: 1; }
   @keyframes nextNudge {
     0%, 12%, 100% { transform: translateX(0); }
     4% { transform: translateX(5px); }
@@ -889,7 +891,7 @@
   .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
   @media (prefers-reduced-motion: reduce) {
-    #bubble, #progress, #next, #continue, #hud button { transition: none; }
+    #bubble, #progress, #continue, #hud button { transition: none; }
     #next.show, #continue.show, #game.ready-scene #continue.show { animation: none; }
   }
 
@@ -1072,10 +1074,9 @@
   </div>
   
   <!-- THE STORY THAT OPENS THE GAME (src/story/story.js): five painted scenes of Momo and
-       Popo between Start and Swiftee's first screen. Over the stage, under the HUD and Next,
-       which it uses to move on; hidden the rest of the time. -->
+       Popo between Start and Swiftee's first screen. Over the stage, under the HUD; each
+       scene goes on by itself once it has been told; hidden the rest of the time. -->
   <div id="story" hidden></div>
-  <button id="next" type="button" aria-label="Next"><span>Next</span><span class="chev" aria-hidden="true">&#9654;</span></button>
   <!-- The way on to Part 2. game.js shows it on the finale, in Next's corner,
        and goes there by itself a few seconds after Swiftee's last word (goOn:
        the snow closes in, then Frozen Rush opens); pressing it just goes now.

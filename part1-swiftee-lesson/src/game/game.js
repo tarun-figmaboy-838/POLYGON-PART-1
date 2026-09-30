@@ -12,7 +12,7 @@
   'use strict';
 
   var $ = function (s) { return document.querySelector(s); };
-  var root, stageEl, hud, bubble, instruction, progress, loadEl, nextBtn, continueBtn;
+  var root, stageEl, hud, bubble, instruction, progress, loadEl, continueBtn;
   var director, current = -1, playing = false, settleTimer = null, mouthTimer = null, bubbleTimer = null;
   /* Whether Swiftee is on this screen at all. Set per screen from its
      `purpose`; when false, his lines go to the plank and his beats are
@@ -530,7 +530,6 @@
        the definition the intro gave. The card is put out after it (screens.js outAfter). */
     curved:   { t: 'Not quite. A circle is curved. A polygon has only straight sides.', vo: 'fb44' },
     open:     { t: 'Not quite. This shape is open. A polygon must be closed.', vo: 'fb45' },
-    inside:   { t: 'Try again! Follow each diagonal from corner to corner.', vo: 'fb39' },
     compare:  { t: 'Try again! Compare the sides and angles now.', vo: 'fb41' }
   };
   var nudgeN = 0, feedbackScreen = -1;
@@ -725,6 +724,9 @@
         wasAt = { pos: Swiftee.pos, size: Swiftee.size };
         try { walked = Swiftee.play('move', { to: 'teach', size: 'medium' }); } catch (e) {}
       }
+      // the copy of the card's rim that hid him behind the swipe card goes with him: left where
+      // the card was, it showed over the sheet as a second card (the user: "two layers")
+      if (rimEl) { rimEl.style.display = 'none'; rimFollow(false); }
       return Promise.all([T.open(), Promise.resolve(walked)]).then(function () {
         placeBubble();
         if (buddyOn && present && global.Swiftee && Swiftee.play) { try { Swiftee.play('present', direction()); } catch (e) {} }
@@ -751,7 +753,7 @@
         if (wasAt && buddyOn && present && global.Swiftee && Swiftee.play) {
           try { back = Promise.all([back, Swiftee.play('move', { to: wasAt.pos, size: wasAt.size })]); } catch (e) {}
         }
-        return Promise.resolve(back).then(function () { placeBubble(); });
+        return Promise.resolve(back).then(function () { placeBubble(); syncPeekRim(); });
       }
     };
   }
@@ -784,7 +786,6 @@
   // the second miss on the same card: "Try again!" too (the card is put out, and the screen's
   // reminder — what a polygon is — follows it)
   var NUDGE_STRONG = { t: 'Try again!', vo: 'fb32' };
-  var wrongSinceRight = false;        // a miss on this screen since the last right answer
   /* ONE CHEER FOR PROGRESS, ONE FOR THE LEVEL (the user's feedback rules: "all full level
      completions use 'Great job!'", "'Keep going!' only for intermediate progress", "do not
      randomly mix different success phrases"). A right answer that completes a level — the last
@@ -792,13 +793,11 @@
      that is answered in words is "Keep going!". The round of ten cheers ("Nice!", "You got
      it!", "Perfect!"…) is gone; so is "Yes! You got it!" after a miss. A screen's own words
      for a right answer — the sort's "It's convex: no corner goes inward." — still come first. */
-  var lastPraise = null, levelCheered = -1;
+  var levelCheered = -1;
   function levelEnd() { return ((global.Quest && Quest.chapters) || []).some(function (c) { return c.end === current; }); }
   function praiseFor(o) {
     var done = !!(o.final || o.last);
-    var pick = (levelEnd() && done) ? PRAISE_FOR.levelDone : done ? PRAISE_FOR.screenDone : PRAISE_FOR.keepGoing;
-    lastPraise = pick.vo;
-    return pick;
+    return (levelEnd() && done) ? PRAISE_FOR.levelDone : done ? PRAISE_FOR.screenDone : PRAISE_FOR.keepGoing;
   }
   function replyFor(kind, said, o) {
     if (o.walked) return null;
@@ -809,17 +808,16 @@
       // even on a question that cheers nothing else (praise: false, the swipe: its right cards
       // are answered by the cards themselves, and "Great job!" comes when the last one is in)
       var ends = levelEnd() && (o.final || o.last);
-      if ((o.quiet && !ends) || o.face === 'dip') { if (o.final) wrongSinceRight = false; return null; }
+      if ((o.quiet && !ends) || o.face === 'dip') return null;
       if (!o.final && !ends && inputSpec && inputSpec.praise === false) return null;
       var due = ends ? levelCheered !== current : o.final ? now - lastPraiseAt > 1500 : praisedInput !== inputSeq;
       if (!due) return null;
       praisedInput = inputSeq; lastPraiseAt = now;
       // a right answer that has words of its own says them (the sort's "Yes! It's convex: no
       // corner goes inward." — the short learning confirmation); anything else is cheered
-      if (said && said.t && !ends) { pick = said; lastPraise = said.vo; }
+      if (said && said.t && !ends) pick = said;
       else pick = praiseFor(o);
       if (pick === PRAISE_FOR.levelDone) levelCheered = current;
-      wrongSinceRight = false;
       lines.push({ t: pick.t, vo: pick.vo, mood: 'win', emote: EMOTE[pick.vo] });
     } else if (kind === 'wrong') {
       // (the question's own verdict straight after the tap's is the same miss
@@ -834,7 +832,7 @@
       // sides / angles / both)
       var set = lesson && (o.teach.kind ? lesson[o.teach.kind] : (o.teach.concave ? lesson.concave : lesson.convex));
       if (set && set.length && global.Stage && Stage.teach) {
-        wrongSinceRight = true; wrongRepliedSeq = inputSeq;
+        wrongRepliedSeq = inputSeq;
         return { lines: set.map(function (b) { return { t: b.say, vo: b.vo, mood: 'hint', show: b.show, on: b.on || 0, shows: b.shows }; }),
                  teach: o.teach };
       }
@@ -847,7 +845,7 @@
       else if (clue) pick = clue;
       else if (o.tries >= 2) pick = NUDGE_STRONG;
       else pick = NUDGE[nudgeN++ % NUDGE.length];
-      wrongSinceRight = true; wrongRepliedSeq = inputSeq;
+      wrongRepliedSeq = inputSeq;
       lines.push({ t: pick.t, vo: pick.vo, mood: 'hint', miss: true });
       var rem = (Screens.list[current] || {}).remind;
       var count = rem && rem.perCard ? (o.tries || 0) : missesHere;
@@ -1724,9 +1722,8 @@
     var cardBox = instruction && instruction.classList.contains('show')
       ? instruction.getBoundingClientRect() : null;
     var hudBox = hud.getBoundingClientRect();
-    // the finale's Part 2 button stands in the same corner, so it is kept clear the same way
-    var nextBox = nextBtn && nextBtn.classList.contains('show') ? nextBtn.getBoundingClientRect()
-      : continueBtn && continueBtn.classList.contains('show') ? continueBtn.getBoundingClientRect() : null;
+    // the finale's Part 2 button stands in the bottom-right corner, so it is kept clear
+    var nextBox = continueBtn && continueBtn.classList.contains('show') ? continueBtn.getBoundingClientRect() : null;
 
     /* ON THE LEDGE (readyScene): UP AND TO HIS RIGHT, over the gap, as the reference has
        it. The stage holds only scenery there, so the solo rule below would centre the
@@ -1842,11 +1839,15 @@
           for (var bi2 = 0; bi2 < ablocks.length; bi2++) if (hit(ablocks[bi2], 16)) return false;
           return true;
         };
+        // `lane`, when set, is the free span either side of him that the box
+        // is kept within (see BETWEEN TWO COLUMNS below); the frame otherwise
+        var lane = null;
         var tryAbove = function () {
           if (atop < f.y + GAP) return false;
           var tries = [acx - aw / 2, acx - aw * 0.78, acx - aw * 0.22];   // centred, above-left, above-right
+          var lo = lane ? lane.l : f.x + GAP, hi = lane ? lane.r - aw : f.x + f.w - GAP - aw;
           for (var ti = 0; ti < tries.length; ti++) {
-            var ax2 = Math.max(f.x + GAP, Math.min(f.x + f.w - GAP - aw, tries[ti]));
+            var ax2 = Math.max(lo, Math.min(hi, tries[ti]));
             if (acx < ax2 + 26 * K || acx > ax2 + aw - 26 * K) continue;   // his head must be under the bubble
             if (aclear(ax2, atop)) {
               bubble.style.left = ax2 + 'px';
@@ -1873,6 +1874,36 @@
             if (rowsOfLine() <= 3) {
               aw = bubble.offsetWidth; ah = bubble.offsetHeight; atop = overHead.top - ABOVE_GAP - ah;
               if (tryAbove()) return;
+            }
+          }
+        }
+        /* BETWEEN TWO COLUMNS. On the finale he stands in the open middle with
+           the collection either side of him, and "You explored all these
+           polygon ideas!" at one row was a shade wider than the gap: centred,
+           above-left and above-right each touched a column, the lesson box
+           spans both columns so the branch above did not apply, and the band
+           search put the line at the top of the screen, its tail over empty
+           sky with him far below. The free span at his head's height is
+           measured between the nearest parts left and right of him, and the
+           line is fitted to it — two rows over his head, pointing at him. */
+        if (aparts.length) {
+          var laneL = f.x + GAP, laneR = f.x + f.w - GAP;
+          var bandTop = overHead.top - ABOVE_GAP - ah * 2.4, bandBot = overHead.top;
+          for (var li = 0; li < aparts.length; li++) {
+            var lp = aparts[li];
+            if (lp.bottom + 10 < bandTop || lp.top - 10 > bandBot) continue;    // not at that height
+            if (lp.right <= acx && lp.right + 10 > laneL) laneL = lp.right + 10;
+            if (lp.left >= acx && lp.left - 10 < laneR) laneR = lp.left - 10;
+          }
+          var laneW = laneR - laneL;
+          if (laneW >= MIN_W && laneW < aw) {
+            bubble.style.maxWidth = laneW + 'px';
+            snugWidth();
+            if (rowsOfLine() <= 3) {
+              lane = { l: laneL, r: laneR };
+              aw = bubble.offsetWidth; ah = bubble.offsetHeight; atop = overHead.top - ABOVE_GAP - ah;
+              if (tryAbove()) return;
+              lane = null;
             }
           }
         }
@@ -2484,11 +2515,6 @@
     paintSkin();
   }
 
-  function showNext(on) {
-    if (!nextBtn) return;
-    nextBtn.classList.toggle('show', !!on);
-    nextBtn.disabled = !on;
-  }
 
   /* THE LESSON GOES ON BY ITSELF (the Part 1 review, section 2).
    *
@@ -3285,7 +3311,6 @@
         // NO NEXT BUTTON IN THE LESSON: the screen goes on by itself once all of it has been
         // said and seen (autoAdvance). The story before it keeps its own Next.
         if (waiting) autoAdvance(ctx, spec);
-        if (ctx && ctx.onCancel) ctx.onCancel(function () { showNext(false); });
         if (ctx && ctx.onCancel) ctx.onCancel(function () { inputLive = false; inputSpec = null; });
 
         /* WHILE THE CHILD WORKS, HE WAITS WITH THEM. The pose he asked the
@@ -3314,9 +3339,11 @@
           if (r && (r.result === 'correct' || r.result === 'wrong')) {
             verdictAt = Date.now();
             if (director) director.emit(r.result === 'correct' ? 'answer:correct' : 'answer:incorrect', { spec: spec, detail: r });
-            verdictFx(r.result, spec.type);
+            // (not for the cards that draw their own verdict — Level 1's halo, the swipe card:
+            // the generic green flash and 3px lift on the completing tap were "the card pops
+            // a little" — the user)
+            if (spec.type !== 'multi-select' && spec.type !== 'swipe') verdictFx(r.result, spec.type);
           }
-          showNext(false);
           if (waiting) say(null);
           else if (r && r.result === 'correct') {
             var earned = quest.award(current + ':' + spec.type);
@@ -3333,7 +3360,7 @@
           // by one more "Try again!" in front of it)
           } else if (r && r.result === 'wrong' && !spec.quietMiss) react('wrong', null, { face: false, final: true, reason: spec.reason });
           return r;
-        }, function (e) { showNext(false); throw e; });
+        }, function (e) { throw e; });
       },
       sfx: function (name, opts) { if (global.SFX) SFX.play(name, opts); },
       juice: function (name, target, opts) { if (global.Juice && Juice[name]) Juice[name](Stage.element(target), opts); }
@@ -3481,7 +3508,7 @@
     // from the screen before plays its stop and he rests; the new screen's
     // count of misses and its one hint start again.
     if (global.Swiftee && Swiftee.settle) Swiftee.settle();
-    missesHere = 0; hintedHere = false; inputSpec = null; wrongSinceRight = false;
+    missesHere = 0; hintedHere = false; inputSpec = null;
     // whatever he was still saying back on the screen before is over, and
     // nothing of it holds the new screen's input
     popGen++; popping = false; clearTimeout(popDue); popDue = null; riseWait = false; cheerUntil = 0; holdForReply = false; owedCheer = null;
@@ -3612,7 +3639,10 @@
       var list = s.perTap ? (s.perTap[kind] || s.perTap.any) : null;
       // (confetti for the answer that COMPLETES the question, not for every right card on the
       // way — the animation review: confetti at completions)
-      if (list && kind === 'correct' && info && info.last === false) list = list.filter(function (b) { return !(b && b.juice === 'confetti'); });
+      // (…except a card that celebrates ITSELF — target 'option', Level 1: the user, "when I tap a
+      // card only one card bursts confetti, not the other too?" — every right card gets its
+      // own burst, from its own edges, as it is pressed)
+      if (list && kind === 'correct' && info && info.last === false) list = list.filter(function (b) { return !(b && b.juice === 'confetti' && b.target !== 'option'); });
       if (list) fire(list);
       // ONE FACE PER TAP: the storyboard's, when its per-tap list gives him
       // one, and otherwise react()'s. On the side-measuring screen the walk
@@ -3814,13 +3844,9 @@
   /* NOT ANY MORE (the user, screen 30: "Swiftee should not interrupt every correct swipe"): a
      right card is answered by the card itself — its green, the chime, the flight into its zone —
      and the next one comes; he speaks for a wrong one, and says "Great job!" when the last one
-     is in (the swipe's own answer, react). */
-  function swipeHome(p) {
-    if (!p || !p.dealt) return;
-    wrongSinceRight = false;
-  }
+     is in (the swipe's own answer, react). Nothing listens for the dealt card any more. */
 
-  /* HIS REPLY — every word he says back to an answer (react(), swipeHome).
+  /* HIS REPLY — every word he says back to an answer (react()).
    *
    * The user's spec: nothing can be done while he is speaking, and a reply
    * is always heard out. So a reply is one sequence, each step waiting for
@@ -4060,7 +4086,7 @@
   }
 
   function finish() {
-    say(null); setCard(null); showNext(false);
+    say(null); setCard(null);
     if (global.Music) Music.mood('win');   // the tune lifts for the last screen
     // (no score sentence between his two lines any more: "180 XP and 5 badges." had no voice and
     // read as noise in his mouth — the user)
@@ -4110,7 +4136,6 @@
   function readyScene() {
     if (leaving || readyOn || !continueBtn) return;
     readyOn = true; readyUp = false; finaleOn = false;
-    showNext(false);
     var gen = playGen;
     var snow = global.Transition && Transition.cover ? Transition.cover() : Promise.resolve();
     snow.then(function () {
@@ -4240,7 +4265,7 @@
     // and the second run's music is the lesson's, not the finale's louder tune
     if (global.Music && Music.mood) Music.mood('play');
     flightGen++; entering = null; present = false;
-    director.abort(); playing = false; showNext(false);
+    director.abort(); playing = false;
     if (global.Swiftee && Swiftee.settle) Swiftee.settle({ now: true });
     clearTimeout(rewardTimer);
     quest = Quest.create(); say(null); snaps = [];
@@ -4264,7 +4289,7 @@
 
   function boot() {
     root = $('#game'); stageEl = $('#stage'); hud = $('#hud'); bubble = $('#bubble');
-    instruction = $('#instruction'); progress = $('#progress'); loadEl = $('#loading'); nextBtn = $('#next');
+    instruction = $('#instruction'); progress = $('#progress'); loadEl = $('#loading');
     continueBtn = $('#continue');
     // pressed on the hand-over screen, and only there (readyScene), through the snow
     if (continueBtn) continueBtn.addEventListener('click', function (e) {
@@ -4330,8 +4355,7 @@
         // behind it: the card is leaving, and the strip of its rim that hides
         // his body would be left hanging in the air where it was. HIS WORDS
         // GO WITH HIM — a bubble with nobody under it is a caption pointing
-        // at the snow — and both come back up when the next card is home
-        // (swipeHome).
+        // at the snow — and both come back up when he next has something to say.
         if (inputSpec && inputSpec.type === 'swipe' && present && !entering && global.Swiftee && Swiftee.pos === 'peek') { say(null); leave(); }
       });
       (stageEl.ownerDocument.defaultView || global).addEventListener('pointerup', function () {
@@ -4361,7 +4385,6 @@
     if (Stage.onEvent) Stage.onEvent(function (name, payload) {
       director.emit(name, payload);
       if (name === 'hint:show') hintGesture(payload);
-      if (name === 'swipe:home') swipeHome(payload);
       // A WRONG ANSWER IS GIVEN: nothing more can be done to the card until he has answered it
       // (react(): the reason, which releases the hold). Not a right one: a right card is
       // answered by the card itself and the next is dealt — held here, the next card sat
@@ -4411,22 +4434,7 @@
       if (global.VO && VO.playing) { try { VO.playing.muted = m; } catch (e) {} }
       this.classList.toggle('on', m); this.setAttribute('aria-pressed', String(m)); saveAudio();
     });
-    // on the finale, Next opens the hand-over screen; during the story it turns its page;
-    // everywhere else it reads on
-    var onNext = function () {
-      if (global.SFX) SFX.play('select');
-      if (global.Story && Story.active) { Story.next(); return; }
-      if (finaleOn) { readyScene(); return; }
-      if (global.Input) Input.advance();
-    };
-    nextBtn.addEventListener('click', onNext);
-    // Keyboard parity: a child on a laptop should not have to find the mouse.
-    document.addEventListener('keydown', function (e) {
-      if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'ArrowRight') return;
-      if (!nextBtn.classList.contains('show')) return;
-      e.preventDefault();
-      onNext();
-    });
+    // (no Next button: every screen and every story scene goes on by itself — the user)
 
     hud.querySelector('.restart').addEventListener('click', restart);
     hud.querySelector('.replay').addEventListener('click', restart);
@@ -4451,7 +4459,7 @@
     /* THE STORY BEFORE THE LESSON (src/story/story.js): its layer is built and its
        paintings start loading now, behind the title, so they are in when Start is pressed.
        It moves on with this game's own Next, at this game's own pace. */
-    if (global.Story && Story.mount) Story.mount({ root: root, next: showNext, pace: paceScale });
+    if (global.Story && Story.mount) Story.mount({ root: root, pace: paceScale });
 
     // the loading bar, in Play's place until everything is in (startLoading; Play pops in after)
     startLoading();
@@ -4618,7 +4626,6 @@
     flightGen++; entering = null;
     director.abort();
     playing = false;
-    showNext(false);
     cancelScreenLine(); clearLineTimers(); clearTimeout(bubbleTimer); say(null);
     // a jump drops whatever he was doing, at once (and anything a sequence was
     // holding for him: the rebuild below lets go of the measuring walk)

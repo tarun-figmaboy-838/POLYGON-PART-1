@@ -282,13 +282,6 @@
     /* THE STORY'S OWN (src/story/story.js). Small and soft on purpose: the story is told
        by the pictures and the words, and these are only the world they happen in. */
 
-    /** A picnic basket lifted by its handle: three dry little creaks of woven cane. */
-    wicker: function () {
-      [0, 0.07, 0.16].forEach(function (d, i) {
-        noise({ f: 2600 - i * 350, to: 1500, dur: 0.05, q: 7, gain: 0.07, delay: d });
-      });
-    },
-
     /** Wood or rope taking weight: a short, low, bowed groan. */
     creak: function (o) {
       var f = (o && o.f) || 150;

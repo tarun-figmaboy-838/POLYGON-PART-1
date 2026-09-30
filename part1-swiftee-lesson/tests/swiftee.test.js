@@ -150,8 +150,9 @@ t('the asset base path is where index.html expects it',
   t('every start/loop/stop in every state resolves to a real clip', bad.length === 0, bad);
 }
 
-t('the states without a stop clip are exactly the two documented ones',
-  Object.keys(F.states).filter((k) => !F.states[k].stop).sort().join(',') === 'driving,sleeping',
+// (sleeping went with the never-played clips: the lesson's idle is a look around, not a doze)
+t('the state without a stop clip is the one documented one (driving leaves by its own art)',
+  Object.keys(F.states).filter((k) => !F.states[k].stop).sort().join(',') === 'driving',
   Object.keys(F.states).filter((k) => !F.states[k].stop));
 
 t('the clips that leave the cell are flagged, not silently cropped',
@@ -159,8 +160,10 @@ t('the clips that leave the cell are flagged, not silently cropped',
 
 t('every standalone clip exists', F.standalone.every((n) => !!F.clips[n]),
   F.standalone.filter((n) => !F.clips[n]));
-t('the escape hatches from the stop-less states exist',
-  !!F.clips.wake && !!F.clips.drive_away && !!F.clips.reset);
+// (the escape clips — wake, drive_away, reset — were never played: the sleigh intro draws its own
+// sheets, and nothing sleeps. They are gone from the manifest and from disk, not merely unused.)
+t('no never-played escape clip is still carried',
+  !F.clips.wake && !F.clips.drive_away && !F.clips.reset && !F.clips.sleeping && !F.clips.calling && !F.clips.laptop);
 
 /* ------------------------------------------------------------------ *
  * The game's own mapping

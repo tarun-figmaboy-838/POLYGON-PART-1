@@ -260,16 +260,21 @@
         // "Keep going!" for the first polygon found, "Great job!" for the one that completes
         // the level (game.js PRAISE_FOR) — not a "Great job!" for every card
         { input: { type: 'multi-select', until: 'all-correct-selected', outAfter: 2, cheer: { more: 'keepGoing', last: 'levelDone' } } },
-        // no second burst when the last polygon is found: its own press already threw one
-        { feedback: correct([], null, { burst: false }) }
+        // no second burst when the last polygon is found: its own press already threw one — and
+        // no lift of the card either (the user: "the second correct tap pops the card"): the
+        // halo is the verdict; his face and a breath end the level
+        { feedback: [{ swiftee: 'happySmall' }, { wait: FEEDBACK_MS }] }
       ],
       /* EVERY RIGHT CARD CELEBRATES ITSELF, as it is pressed: it glows green, pops, rings and
          throws a burst of confetti from behind its own edges — one burst per card, only from
          the card that was pressed (a found card cannot be pressed again). A wrong card glows
          red and shrinks back. */
       // (no pop on the card — the user: the verdict is the glow, stage.js optionCard _mark)
+      // A SHORT THROW, FROM THIS CARD ONLY (the user: "when I tap a card, only that card should
+      // burst confetti, not the others too"): at full speed the pieces flew three or four cards
+      // away and fell across the ones below, so the burst read as coming from all of them.
       perTap: { correct: [{ sfx: 'correct' },
-                          { juice: 'confetti', target: 'option', count: 18, fromEdge: true }],
+                          { juice: 'confetti', target: 'option', count: 26, fromEdge: true, speed: 0.3 }],
                 wrong:   BUZZ }
     },
 
@@ -288,7 +293,7 @@
       // and the same X/Y"): the right-hand slab, built here and never moved or resized after it
       stage: { kind: 'polygon', sides: 5, panel: 'right' },
       beats: [
-        { stage: { kind: 'polygon', sides: 5, panel: 'right', enter: 'pop' } },
+        { stage: { kind: 'polygon', sides: 5, panel: 'right', enter: 'fade' } },   // (no card pop — the user)
         { sfx: 'pop' },
         { wait: 300 },
         // "THIS one": he presents the pentagon \u2014 a flourish toward it \u2014 and
@@ -879,7 +884,7 @@
       stage: { kind: 'polygon', sides: 4, panel: 'center', badge: { text: 'Convex', live: true } },
       beats: [
         { swiftee: 'exit', to: 'left' },
-        { stage: { kind: 'polygon', sides: 4, panel: 'center', enter: 'pop', badge: { text: 'Convex', live: true } } },
+        { stage: { kind: 'polygon', sides: 4, panel: 'center', enter: 'fade', badge: { text: 'Convex', live: true } } },
         { sfx: 'pop' },
         { instruction: 'Drag any vertex to make this polygon concave.', vo: 'p26i' },
         // (the suggested corner — the top one — is the one dot that breathes: stage.js drag-vertex)

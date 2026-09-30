@@ -319,7 +319,7 @@ const INPUTS = ['tap-anywhere', 'vertex-pick', 'draw-diagonal', 'draw-diagonals'
 const KINDS = ['vista', 'polygon', 'choice-grid', 'compare', 'sort', 'swipe-sort', 'summary'];
 const SFX = ['boing', 'correct', 'honk', 'levelUp', 'menuWhoosh', 'pop', 'select', 'slice',
              'slideWhistle', 'sparkle', 'tick', 'wrong', 'zip', 'drumroll'];
-const JUICE = ['celebrate', 'collect', 'confetti', 'pop', 'refuse', 'wobble', 'buzz', 'flash', 'squash', 'tada'];
+const JUICE = ['celebrate', 'collect', 'confetti', 'pop', 'refuse', 'wobble', 'buzz', 'flash'];
 
 const used = { swiftee: new Set(), input: new Set(), kind: new Set(), sfx: new Set(), juice: new Set() };
 S.forEach((s) => {

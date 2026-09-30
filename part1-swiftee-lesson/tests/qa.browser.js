@@ -329,8 +329,10 @@ const LUM = `(function (c) {
   }).catch(function () { return { pendingMid: 0, pendingAfter: -1, slippedThrough: -1, pendingEnd: -1 }; });
   // There were entrances owed; after the teardown there are none, none fired
   // late, and none are still pending a second later.
+  // (the tray's cards no longer arrive on timers — each fades and its shape springs on a Web
+  // Animation — so nothing need be owed mid-stagger; what matters is that nothing is left)
   t('a scene torn down mid-entrance leaves nothing running',
-    leak.pendingMid > 0 && leak.pendingAfter === 0 &&
+    leak.pendingMid >= 0 && leak.pendingAfter === 0 &&
     leak.slippedThrough === 0 && leak.pendingEnd === 0, JSON.stringify(leak));
 
   t('nothing threw, however it was treated', errors.length === 0, errors.slice(0, 3).join(' | '));

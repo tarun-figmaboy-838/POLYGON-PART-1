@@ -7,7 +7,6 @@
  *   Preload.onProgress(fn)               fn(fraction 0..1) on every step — forward only
  *   Preload.done                         settles when every file is in (or has failed)
  *   Preload.url(u)                       the blob: URL for a kept file, else u itself
- *   Preload.isDone
  *
  * STREAMED, SO THE BAR IS BYTES. Each response is read chunk by chunk. Every transfer is
  * weighed by its size on disk (PreloadList.sizes, from tools/build-preload.js) from the
@@ -136,8 +135,6 @@
     seal: function () { sealed = true; check(); },
     onProgress: function (fn) { listeners.push(fn); try { fn(shown); } catch (e) {} },
     url: function (u) { var j = jobs[u]; return (j && j.blobUrl) || u; },
-    get isDone() { return isDone; },
-    get progress() { return { fraction: shown, loaded: loaded, total: total, settled: settledN, planned: planned }; },
     done: done
   };
   global.Preload = api;

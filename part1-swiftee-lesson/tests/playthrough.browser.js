@@ -151,7 +151,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
           const open = In.mode() === 'polygon' && G.director.state === 'WAITING_FOR_USER';
           const scr = G.screen + ' ' + ((window.Screens.list[G.screen] || {}).id || '');
           if (open && speaking) note(V.openWhileSpeaking, scr + ' (' + id + ')');
-          const hinting = document.querySelector('.gesture-ghost, .hand-hint, .swipe-ghost');
+          const hinting = document.querySelector('.gesture-ghost, .hint-hand, .swipe-ghost');
           if (hinting && speaking) note(V.hintOverVoice, scr + ' (' + id + ')');
           const n = (sel) => document.querySelectorAll(sel).length;
           const d = [['.swiftee', 1], ['#bubble', 1], ['.teach-sheet', 1], ['.peek-rim', 1]].filter(([sel, max]) => n(sel) > max).map(([sel]) => sel + ' x' + n(sel));

@@ -246,22 +246,6 @@
       } catch (e) { return Promise.resolve(); }
       return a.finished;
     },
-    /* A NUDGE OF THE WHOLE SCENE on a wrong answer: five pixels, a third of a
-       second, on `translate` so it never throws away a transform the scene
-       already has. Felt more than seen. */
-    shake: function (el, o) {
-      o = o || {};
-      if (!can(el)) return Promise.resolve();
-      var d = o.distance == null ? 5 : o.distance, a;
-      try {
-        a = el.animate([
-          { translate: '0 0' }, { translate: -d + 'px 0', offset: 0.2 }, { translate: d + 'px 0', offset: 0.45 },
-          { translate: (-d * 0.5) + 'px 0', offset: 0.7 }, { translate: '0 0' }
-        ], { duration: o.duration || 320, easing: 'ease-in-out' });
-      } catch (e) { return Promise.resolve(); }
-      return a.finished;
-    },
-
     /** Accepted: a lift, a squeeze and a settle. */
     collect: function (el, o) {
       o = o || {};
@@ -390,7 +374,9 @@
     var speed = (180 + Math.random() * 300) * (o.speed || 1);   // o.speed: shorter throws keep a burst close to its card
     var dx = Math.cos(angle) * speed;
     var rise = Math.sin(angle) * speed;
-    var fall = 300 + Math.random() * 360;
+    // (the fall is scaled with the throw: a short burst that still dropped three hundred pixels
+    // landed on the cards below it, as if they had burst too)
+    var fall = (300 + Math.random() * 360) * (o.speed || 1);
     var spin = (Math.random() - 0.5) * 1400;
     var dur = 1500 + Math.random() * 900;
     var flutter = 0.25 + Math.random() * 0.35;   // how edge-on it turns mid-fall

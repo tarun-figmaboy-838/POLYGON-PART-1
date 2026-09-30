@@ -1175,7 +1175,9 @@
                    fill: 'url(#panelFace)', stroke: '#a3d4ef', 'stroke-width': 3 }, g);
     }
 
-    if (opts.enter !== false) enter(g, opts.enter || 'pop');
+    // A CARD NEVER POPS (the user, more than once): a panel slides up (rise) or simply fades in;
+    // what is drawn on it — the shape — may still spring in
+    if (opts.enter !== false) enter(g, opts.enter === 'rise' ? 'rise' : 'fade');
     return g;
   }
 
@@ -1307,6 +1309,10 @@
       // only then brings him in)
       : kind === 'intro'
       ? [{ scale: '.9', translate: '0 22px', opacity: 0 }, { scale: '1.012', translate: '0 -2px', opacity: 1, offset: .72 }, { scale: '1', translate: '0 0', opacity: 1 }]
+      // A CARD THAT IS SIMPLY THERE (the user: "the cards still pop"): it fades up in place,
+      // no size change at all — what is on it may move; the card does not
+      : kind === 'fade'
+      ? [{ opacity: 0 }, { opacity: 1 }]
       : [{ scale: '.94', translate: '0 8px', opacity: 0 }, { scale: '1', translate: '0 0', opacity: 1 }];
     el.style.transformBox = 'fill-box'; el.style.transformOrigin = 'center';
     el.animate(k, { duration: kind === 'intro' ? INTRO_MS : ENTER_MS, easing: 'cubic-bezier(.22,1,.36,1)' });
@@ -1358,7 +1364,10 @@
     // Tight to the glass. The face is already inset from the rim by the
     // artwork's own measurement, so the margin here only keeps a vertex off
     // the inner edge; more than that was shape-sized emptiness.
-    var mx = face.w * 0.02, mt = face.h * 0.02;
+    // (a clear rim of glass all round — the user, the inside/outside card: the pentagon's corners
+    // sat on the card's edge, its diagonals reaching the frame; five percent keeps the shape
+    // plainly ON the card, and still the biggest thing on it)
+    var mx = Math.max(face.w * 0.05, 22), mt = Math.max(face.h * 0.06, 22);
     // Room for what is drawn beneath it, and none when nothing is.
     // Room for a word on a plate under the shape: the plate is 38 units, so
     // a fifth of the face was more than the word needed and left the shape
@@ -1367,7 +1376,7 @@
     // Room for the tag under the shape: 13% of a full slab, and never less
     // than the tag's own height plus air (it is 40 tall, kept 32 off the
     // foot), so the word never sits on the shape's bottom edge.
-    var mb = opts.below ? Math.max(face.h * 0.13, 76) : face.h * 0.02;
+    var mb = opts.below ? Math.max(face.h * 0.13, 76) : Math.max(face.h * 0.06, 22);
     // A SHAPE THAT WILL BE MEASURED keeps a margin all round: the readings
     // sit outside its sides, and the measurer walks outside them too, and
     // both have to stay on the glass.
@@ -3396,9 +3405,6 @@
    * as the glass allows, and (once it is judged) what was found.
    * ------------------------------------------------------------------ */
 
-  /* A CARD IS NAMED FOR WHAT IT IS BY ITS SIDES, never by what the question asks: "rhombus" or
-     "rectangle" would be half the answer before the shape had been read. */
-  var POLY_NAME = { 3: 'Triangle', 4: 'Quadrilateral', 5: 'Pentagon', 6: 'Hexagon', 7: 'Heptagon', 8: 'Octagon' };
   /* THE SHORTEST SIDE OF EACH CARD, IN CENTIMETRES. Every other side is printed in proportion to
      it, so the numbers are the drawing's own. They were read off a fixed scale and rounded to the
      centimetre, which labelled a rectangle drawn 1.7 to 1 "6 cm" by "3 cm" and a hexagon's 1.27
@@ -3407,7 +3413,7 @@
   var SWIPE_CM = { pentagon: 3, rhombus: 3, triangle: 5, 'stretched-hexagon': 3, square: 4,
                    rectangle: 3, hexagon: 3, 'l-shape': 7 };
   // the type and the corner marks, at SWIPE_HALF
-  var SWF = { title: 21, side: 15.5, angle: 14, arc: 15, right: 11, tag: 15 };
+  var SWF = { side: 15.5, angle: 14, arc: 15, right: 11 };
 
   function cmText(x) {
     var t = Math.round(x * 10) / 10;
@@ -3426,7 +3432,7 @@
     var gt = -halfH + halfH * 2 * p.y, gh = halfH * 2 * p.h;
     // (no name over the figure any more — the user, screen 30 — so the glass is the figure's
     // from a few units under the rim: as big as its readings let it be, swipeFit)
-    return { halfH: halfH, titleY: gt + 23 * k,
+    return { halfH: halfH,
              l: gl + 4 * k, r: gl + gw - 4 * k, t: gt + 8 * k, b: gt + gh - 4 * k };
   }
 
@@ -3564,44 +3570,9 @@
     return g;
   }
 
-  /* WHAT WAS FOUND, hung off the card's bottom edge the moment it is judged: the two things
-     "regular" is made of, each ticked or crossed, so a right swipe says why it was right and a
-     wrong one says what to look at. It is not there before — it would be the answer. */
-  function swipeVerdict(card) {
-    if (!card || !card._verts) return null;
-    var old = card.querySelector('.swipe-verdict');
-    if (old && old.parentNode) old.parentNode.removeChild(old);
-    var verdict = verdictOf(card._verts);
-    var sidesOk = verdict === 'regular' || verdict === 'angles', anglesOk = verdict === 'regular' || verdict === 'sides';
-    var items = [[sidesOk, sidesOk ? 'Equal sides' : 'Unequal sides'], [anglesOk, anglesOk ? 'Equal angles' : 'Unequal angles']];
-    var size = SWF.tag, badge = 9, gapIn = 6, gapOut = 18, pad = 14, h = 32;
-    var widths = items.map(function (it) { return badge * 2 + gapIn + textW(it[1], size); });
-    var total = widths[0] + gapOut + widths[1] + pad * 2;
-    var y = swipeArea(SWIPE_HALF).halfH + 2;
-    var g = mk('g', { 'class': 'swipe-verdict', 'pointer-events': 'none' }, card);
-    mk('rect', { x: -total / 2, y: y - h / 2, width: total, height: h, rx: h / 2, fill: '#ffffff',
-                 stroke: '#9cc3e6', 'stroke-width': 2.5 }, g);
-    var x = -total / 2 + pad;
-    items.forEach(function (it, i) {
-      var ok = it[0], cx = x + badge, col = ok ? '#23a55a' : '#e0524a';
-      mk('circle', { cx: cx, cy: y, r: badge, fill: col }, g);
-      mk('path', { d: ok ? 'M' + (cx - 4.2) + ' ' + (y + 0.3) + ' l3 3 l5.6 -6.2'
-                         : 'M' + (cx - 3.6) + ' ' + (y - 3.6) + ' l7.2 7.2 M' + (cx + 3.6) + ' ' + (y - 3.6) + ' l-7.2 7.2',
-                   fill: 'none', stroke: '#ffffff', 'stroke-width': 2.4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g);
-      mk('text', { x: cx + badge + gapIn, y: y + size * 0.36, 'font-size': size, 'font-weight': 800,
-                   fill: ok ? '#17663a' : '#9c2a24', text: it[1] }, g);
-      x += widths[i] + gapOut;
-    });
-    if (!reduced() && g.animate) {
-      g.style.transformBox = 'fill-box'; g.style.transformOrigin = 'center';
-      g.animate([{ opacity: 0, scale: '.7' }, { opacity: 1, scale: '1.05', offset: 0.7 }, { opacity: 1, scale: '1' }],
-                { duration: 280, easing: 'cubic-bezier(.3,1.3,.5,1)' });
-    }
-    return verdict;
-  }
-  /** The card's words go as it flies: its name, its readings and its tag fade over `ms`. */
+  /** The card's readings fade over `ms` as it flies. */
   function fadeFace(card, ms) {
-    ['.swipe-name', '.units', '.swipe-verdict'].forEach(function (sel) {
+    ['.units'].forEach(function (sel) {
       var el = card && card.querySelector(sel);
       if (!el) return;
       if (reduced() || !el.animate) { el.setAttribute('opacity', 0); return; }
@@ -3747,7 +3718,8 @@
     g.style.touchAction = 'pan-y';
     sw.card = g;
     if (!reduced() && g.animate) {
-      g.animate([{ translate: '0 26px', scale: '.92', opacity: 0 }, { translate: '0 0', scale: '1', opacity: 1 }],
+      // (dealt up onto the table, at its own size — a card never pops: the user)
+      g.animate([{ translate: '0 26px', opacity: 0 }, { translate: '0 0', opacity: 1 }],
                 { duration: 300, easing: 'cubic-bezier(.22,1,.36,1)' });
     }
     return g;
@@ -3864,7 +3836,7 @@
     var v = card._verts, n = v.length;
     var L = Poly.sideLengths(v), A2 = Poly.interiorAngles(v);
     var idxs = []; for (var i = 0; i < n; i++) idxs.push(i);
-    var sideM = marksBy(L, idxs, 6), angM = marksBy(A2, idxs, 4);
+    var sideM = marksBy(L, idxs, 6);
     // WHAT MAKES THIS SHAPE WHAT IT IS — the same test the answer is judged
     // by, not a guess from the sides alone. A rhombus has four equal sides
     // and is irregular, and an explanation that only counted sides told the
@@ -4253,6 +4225,14 @@
       mk('rect', { x: -half - 2, y: -halfH - 2, width: 2 * (half + 2), height: 2 * (halfH + 2), rx: rx * 0.8, ry: rx * 0.8,
                    fill: 'none', stroke: deep, 'stroke-width': 5, 'stroke-opacity': 0.9 }, halo);
       if (!reduced() && halo.animate) { try { halo.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: 'ease-out', fill: 'backwards' }); } catch (e) {} }
+      /* AND, FOR A RIGHT ANSWER, ONE QUICK POP WITH THE BURST (the user, after seeing the halo
+         alone: "when the user taps the card, pop the card with the confetti burst"): a small,
+         fast bounce — up six percent and back in a third of a second — the same moment the
+         confetti leaves its edges. A wrong card only flushes red; it does not move. */
+      if (state === 'correct' && !reduced() && g.animate) {
+        g.style.transformBox = 'fill-box'; g.style.transformOrigin = 'center';
+        try { g.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.06)', offset: 0.45 }, { transform: 'scale(1)' }], { duration: 340, easing: 'cubic-bezier(.3,1.4,.5,1)' }); } catch (e) {}
+      }
     };
 
     g._pane = { cx: cx, cy: cy, r: r, w: paneW, h: paneH };
@@ -4265,7 +4245,18 @@
     g.setAttribute('transform', 'translate(' + x + ',' + y + ')');
     g._home = { x: x, y: y }; g._name = name;
     g._verts = shapeVerts(name, card._pane.r, card._pane.cx, card._pane.cy);
-    if (!reduced()) { g.style.opacity = 0; later(i * 90, function () { g.style.opacity = 1; enter(g, 'pop'); }); }
+    // as on Level 1 (the user): the card fades in where it stands, and the shape on it springs up
+    if (!reduced() && g.animate) {
+      try { g.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240, delay: i * 90, easing: 'ease-out', fill: 'backwards' }); } catch (e) {}
+      var shape = g.querySelector('.shape');
+      if (shape && shape.animate) {
+        shape.style.transformBox = 'fill-box'; shape.style.transformOrigin = 'center';
+        try {
+          shape.animate([{ transform: 'scale(0.2)', opacity: 0 }, { transform: 'scale(1.12)', opacity: 1, offset: 0.7 }, { transform: 'scale(1)', opacity: 1 }],
+                        { duration: 420, delay: 120 + i * 90, easing: 'cubic-bezier(.3,1.4,.5,1)', fill: 'backwards' });
+        } catch (e) {}
+      }
+    }
     return g;
   }
 
@@ -4722,6 +4713,26 @@
         st.panelEl._rect.h = nh;
         var im = st.panelEl.querySelector('image, rect');
         if (im) im.setAttribute('height', nh);
+        /* …UNLESS THE SHAPE WOULD THEN HANG OVER THE SHORTER GLASS (the user's screenshot: the
+           pentagon on the card's bottom rim, low on the card). A shape the child has not
+           touched is refitted — brought down to the room left, if it must be, and set in the
+           middle of the face. A shape they distorted sits on the measuring slab with its
+           readings' margins and clears the shorter face already, so it is left exactly where
+           they put it. */
+        var pf2 = panelFace(st.panel), v2 = st.verts;
+        if (v2 && v2.length) {
+          var lo2 = Infinity, hi2 = -Infinity;
+          v2.forEach(function (q) { if (q.y < lo2) lo2 = q.y; if (q.y > hi2) hi2 = q.y; });
+          var m2 = Math.max(pf2.h * 0.06, 22);
+          if (hi2 + VERT_PAINT > pf2.y + pf2.h - m2) {
+            var room2 = pf2.h - 2 * m2 - 2 * VERT_PAINT, k2 = Math.min(1, room2 / Math.max(1, hi2 - lo2));
+            var cx2 = st.cx != null ? st.cx : v2.reduce(function (s, q) { return s + q.x; }, 0) / v2.length;
+            var midY = (lo2 + hi2) / 2, toY = pf2.y + pf2.h / 2;
+            st.verts = v2.map(function (q) { return { x: cx2 + (q.x - cx2) * k2, y: toY + (q.y - midY) * k2 }; });
+            st.cx = cx2; st.cy = toY; if (st.r) st.r *= k2;
+            renderPoly();
+          }
+        }
       }
     }
 
@@ -5396,41 +5407,6 @@
     measurements: function (m) {
       if (m === 'live') { st.measure = { sides: 'all', angles: 'all', units: true }; renderPoly(); }
     },
-    /* "ALL DIAGONALS ARE STILL INSIDE." — SHOWN, NOT LABELLED.
-     *
-     * Once the second diagonal is in, the picture says it before the words
-     * do: each diagonal brightens in turn, then both together, and the inside
-     * of the shape glows for a moment, softly, and settles. No arrow, no
-     * "INSIDE" tag, no particles — the lines are inside, and the glow is
-     * where they are. */
-    observe: function (what) {
-      if (what !== 'diagonals' || !st.diagG || !st.polyG || reduced()) return;
-      var groups = [].slice.call(st.diagG.childNodes).filter(function (g) { return g.style.display !== 'none'; });
-      if (!groups.length) return;
-      var STEP = 420;
-      var lift = function (el, delay, dur) {
-        if (!el.animate) return;
-        try {
-          el.animate([{ filter: 'brightness(1)' },
-                      { filter: 'brightness(1.6) drop-shadow(0 0 5px rgba(191, 244, 255, .95))', offset: 0.4 },
-                      { filter: 'brightness(1)' }], { duration: dur, delay: delay, easing: 'ease-in-out' });
-        } catch (e) {}
-      };
-      groups.forEach(function (g, k) { lift(g, k * STEP, 520); });                 // one after another
-      groups.forEach(function (g) { lift(g, groups.length * STEP + 80, 640); });    // then together
-      var glow = document.createElementNS(NS, 'path');
-      glow.setAttribute('d', pathOf(st.verts)); glow.setAttribute('fill', '#e8fbff');
-      glow.setAttribute('fill-opacity', 0); glow.setAttribute('pointer-events', 'none');
-      glow.setAttribute('class', 'inside-glow');
-      st.polyG.insertBefore(glow, st.diagG);                                      // over the fill, under the lines
-      if (!glow.animate) { glow.remove(); return; }
-      try {
-        glow.animate([{ fillOpacity: 0 }, { fillOpacity: 0.34, offset: 0.45 }, { fillOpacity: 0 }],
-                     { duration: 1100, delay: groups.length * STEP + 160, easing: 'ease-in-out', fill: 'both' })
-          .finished.then(function () { glow.remove(); }, function () { glow.remove(); });
-      } catch (e) { glow.remove(); }
-    },
-
     /* THE END-GAME SUMMARY, driven by the screen's beats: `card` brings one
        in and shows its idea, `collect` puts it away, `final` gathers the
        collection. Each returns a promise the beat waits on, so no state of it
@@ -5544,7 +5520,6 @@
     if (spec.badge && !spec.kind) op.badge(spec.badge);
     if ('choices' in spec) op.choices(spec.choices, spec);
     if (spec.measurements) op.measurements(spec.measurements);
-    if (spec.observe) op.observe(spec.observe);
     if (spec.returnItem && st.sort && st.sort.dragging) returnItem(st.sort.dragging);
     /* THE DENT MADE FOR THEM (`autoConcave: { vertex }` — screen 21's second miss): the corner
        travels inward past the line between its neighbours over a second, the shape and its
@@ -7945,7 +7920,9 @@
     // touch pop once, in turn — "here". Then the idle ladder takes over: a
     // pulse (and a hand, for a tap) after 2.5s of stillness, the move itself
     // shown by a hand after 7s. Not on a retry: the child has just used them.
-    if (invite && !spec.retry) later(90, function () { var t = armTargets(spec); if (t.length) pulseHint(t, { pop: true }); });
+    // (not the answer cards of Level 1 — multi-select — which must stay still until they are
+    // touched: the user, "why do they still scale up after the VO says polygons?")
+    if (invite && !spec.retry && spec.type !== 'multi-select') later(90, function () { var t = armTargets(spec); if (t.length) pulseHint(t, { pop: true }); });
     return Promise.resolve(p).then(
       function (r) { alive(false); return r; },
       function (e) { alive(false); throw e; }

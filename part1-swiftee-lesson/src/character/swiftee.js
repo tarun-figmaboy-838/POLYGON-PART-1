@@ -216,7 +216,6 @@
     // held for the whole line: he keeps the book open while it is read
     recall:      { rig: 'reading',     hold: true, seated: 'think', level: 2, tier: 'present' },
     note:        { rig: 'writing',     hold: true, seated: 'explain', level: 2, tier: 'present' },
-    investigate: { rig: 'learning',    loops: 1, seated: 'inspect', level: 2, tier: 'present' },
     // held while the child measures the angles: the same glass, looking with them
     examine:     { rig: 'learning',    hold: true, seated: 'inspect', level: 2, tier: 'present' },
     build:       { rig: 'puzzleing',   loops: 1, seated: 'point', level: 2, tier: 'present' },
@@ -255,10 +254,10 @@
   };
 
   /**
-   * Warmed before the start button is released: the resting loop, the
+   * Decoded before the start button is released: the resting loop, the
    * greeting and the narration loop — the only clips screen 1 can reach.
-   * Everything else is fetched the first time it is asked for, which costs
-   * one 400ms grace period per expression, once per session.
+   * (Every sheet is fetched before Start, sheetUrls; these are the ones that
+   * are also decoded and pinned, so screen 1 never waits on a decode.)
    */
   var PRELOAD = ['blinking',
                  'wave_start', 'waving', 'wave_stop',
@@ -292,14 +291,9 @@
    * are the two that would otherwise be evicted and reloaded constantly.
    */
   var SHEET_BUDGET = 10;
-  /* THE RESTING LOOP WAS NOT THE ONE BEING PINNED.
-   *
-   * `blinking` is pinned here and warmed above, and nothing plays it: the
-   * state table's `idle` points at `listening`, and has since the "wings not
-   * moving" fix. So the one loop he spends most of the lesson in held no slot
-   * at all — it was evicted by the forty-odd other clips competing for ten,
-   * and every return to rest paid a fetch and a grace period, over and over,
-   * while a pinned slot sat on a sheet that is never drawn. */
+  /* THE RESTING LOOP IS PINNED. `blinking` is the state table's `idle` — the loop he spends
+     most of the lesson in — so it holds a slot for good, with the talking clips and the
+     flight, and never pays a fetch or a grace period on a return to rest. */
   var PINNED = { blinking: 1, talking: 1, talk_start: 1, talk_stop: 1, flapping: 1 };
 
   var IDLE_DAYDREAM_MS = 30000;

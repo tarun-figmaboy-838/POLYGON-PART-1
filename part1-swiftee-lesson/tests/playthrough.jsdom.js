@@ -67,11 +67,12 @@ async function act(spec){
       const usedK=new Set((s.diagonals||[]).map(q=>q.join('-')));
       const targets=P.diagonalsFrom(from,n).filter(j=>!usedK.has([Math.min(from,j),Math.max(from,j)].join('-')));
       const hnd=()=>svg().querySelectorAll('.vertex')[from];
-      // CONNECTING (sides): a neighbour is a side, not a wrong answer — one
-      // neighbour, then the other, then a diagonal, as a child exploring would
+      // CONNECTING (sides): a neighbour is a side, not a wrong answer — one neighbour, named,
+      // and then a diagonal (the other neighbour is no longer a place the line may go once a
+      // side has been named: the user, "why can the card draw the other side?")
       if(spec.sides){
         sideTries[w.Game.screen]=(sideTries[w.Game.screen]||0)+1;
-        const k=sideTries[w.Game.screen], to=k===1?(from+1)%n:k===2?(from+n-1)%n:targets[0];
+        const k=sideTries[w.Game.screen], to=k===1?(from+1)%n:targets[0];
         await drag(hnd(), lerp(V[from],V[to],5)); await sleep(60); return;
       }
       if(!spec.retry){ await drag(hnd(), lerp(V[from],V[(from+1)%n],5)); wrongTried++; await sleep(60); if(spec.type==='draw-diagonal') return; }   // wrong: adjacent
@@ -245,7 +246,7 @@ async function act(spec){
   t('the finale opens the hand-over screen by itself: his line, and the button on to Part 2',
     d.getElementById('game').classList.contains('ready-scene') && !!d.querySelector('#continue.show') && !d.querySelector('#next.show') &&
     /Play Part 2/.test(cont.textContent) && /help Momo/.test(d.getElementById('bubble').textContent),
-    JSON.stringify({ ready: d.getElementById('game').classList.contains('ready-scene'), cont: cont.className, next: d.getElementById('next').className, line: d.getElementById('bubble').textContent }));
+    JSON.stringify({ ready: d.getElementById('game').classList.contains('ready-scene'), cont: cont.className, line: d.getElementById('bubble').textContent }));
   t('nothing left for Part 2 before the hand-over screen', !!cover && !!atFinale && !leftEarly && covers===1, 'covers '+covers);
   t('Part 2\u2019s button never shows before the hand-over screen', !contBeforeReady);
   watch.disconnect();
@@ -255,7 +256,7 @@ async function act(spec){
   // 10: the storyboard no longer drags a side's loose end (drag-endpoint),
   // and the builder's stepper went with the builder
   t('all 10 interaction types were exercised', types.size===10, [...types].join(','));
-  t('the connect step went side, side, diagonal', Object.values(sideTries).some(k=>k===3), JSON.stringify(sideTries));
+  t('the connect step went side, then diagonal', Object.values(sideTries).some(k=>k===2), JSON.stringify(sideTries));
   t('the summary collected all eight ideas, in order, and reached its finale', !!SM && SM.state==='FINAL_SUMMARY' && SM.collected.join(',')==='vertex,side,angle,diagonal,convex,concave,regular,irregular',
     JSON.stringify(SM));
   // 7: the connect step judges nothing wrong (a neighbour is a side, not a

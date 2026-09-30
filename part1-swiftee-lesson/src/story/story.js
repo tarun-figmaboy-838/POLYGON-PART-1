@@ -5,11 +5,11 @@
  * lesson exactly once. game.js owns the moments either side of it — Start, and play(0) —
  * and this owns everything in between:
  *
- *   Story.mount({ root, next, pace })   once, at boot: builds the layer, starts the art loading
+ *   Story.mount({ root, pace })         once, at boot: builds the layer, starts the art loading
  *   Story.enabled()                     false with ?story=0 (the suites), or with no art
  *   Story.start({ lift, done })         Start was pressed: lift() takes the title away once the
  *                                       first painting is in; done() is called once, at the end
- *   Story.next()                        the Next button (game.js routes it here while active)
+ *   Story.next()                        on to the next scene (each goes on by itself once told; a test may press)
  *   Story.stop()                        called off from outside (the review tool): no done()
  *   Story.active / Story.state          for game.js and the suites
  *
@@ -647,7 +647,6 @@
   function next() {
     if (!st.active || !st.canAdvance || st.isTransitioning) return false;
     st.canAdvance = false; st.isTransitioning = true; st.phase = 'exiting';
-    if (o.next) o.next(false);
     hideSay();
     var n = st.scene;
     later(T.sayOut, function () {
@@ -773,7 +772,6 @@
   function stop() {
     if (!st.active) return;
     lift();
-    if (o.next) o.next(false);
     end(false);
   }
 
