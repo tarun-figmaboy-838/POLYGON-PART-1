@@ -538,6 +538,60 @@
     return out;
   }
 
+  /* NO FRAME WITH TWO OF HIM (the user: "why u add 2 swiftee layers?"). The rig was rendered
+     from Rive, and its transitions CROSS-FADE one pose into the next: the middle frames of most
+     start / stop clips (and four stretches of `excited`, the finale's) hold both poses at once,
+     half see-through — two Swiftees, one over the other, for a fifth of a second. Found by
+     measuring every cell of every sheet: on a clean frame about 3.5 per cent of his body is half-
+     transparent (its soft edge), on these 8 to 54 (and the faint frame either side of such a run).
+     Each is drawn as the nearest clean frame instead — the first half of a run holds the pose
+     before it, the second half the pose after — so a change of pose is one clean cut, and every
+     clip keeps its length, so nothing timed against it moves. */
+  var BLENDED = {
+    celebrate_start: [1,  2,  3,  4],
+    celebrate_stop: [2,  3,  4,  5,  6,  7],
+    confused_start: [1,  2,  3,  4,  5],
+    confused_stop: [1,  2,  3,  4],
+    curious_start: [1,  2,  3,  4,  5,  6],
+    curious_stop: [1,  2,  3,  4,  5,  6,  7],
+    driving: [45,  46,  47],
+    excited: [5,  6,  7,  8,  9,  10,  11,  12,  25,  26,  27,  28,  29,  30,  31,  41,  42,  43,  44,  45,  46,  63,  64,  65,  66,  67],
+    focussed_start: [1,  2,  3,  4,  5],
+    focussed_stop: [1,  2,  3,  4,  5],
+    learning_start: [1,  2,  3,  4,  5,  6,  7,  8,  9],
+    learning_stop: [0,  1,  2,  3,  4,  5,  6,  7,  8],
+    playful_start: [1,  2,  3,  4,  5,  6],
+    playful_stop: [1,  2,  3,  4,  5,  6,  7,  8],
+    proud_start: [1,  2,  3,  4,  5],
+    proud_stop: [1,  2,  3,  4,  5],
+    puzzle_start: [1,  2,  3,  4,  5],
+    puzzle_stop: [1,  2,  3,  4,  5],
+    reading_start: [1,  2,  3,  4,  5,  6],
+    reading_stop: [1,  2,  3,  4,  5,  6],
+    relieved_start: [1,  2,  3,  4,  5,  6],
+    relieved_stop: [1,  2,  3,  4,  5,  6],
+    thinking_start: [7,  8],
+    thinking_stop: [1,  2],
+    wave_start: [1,  2,  3,  4,  5],
+    wave_stop: [1,  2,  3,  4,  5],
+    write_start: [1,  2,  3,  4,  5],
+    write_stop: [1,  2,  3,  4]
+  };
+  function solidOrder(name, list) {
+    var b = BLENDED[name], c = F.clips[name], n = c && c.frames;
+    if (!b || !n) return list;
+    return list.map(function (f) {
+      if (b.indexOf(f) < 0) return f;
+      var lo = f, hi = f;
+      while (b.indexOf(lo - 1) >= 0) lo--;
+      while (b.indexOf(hi + 1) >= 0) hi++;
+      var before = lo - 1, after = hi + 1;
+      if (before < 0) return after < n ? after : f;
+      if (after >= n) return before;
+      return (f - lo) < (hi - lo + 1) / 2 ? before : after;
+    });
+  }
+
   function advance() {
     var a = active;
     a.i++;
@@ -571,7 +625,7 @@
     return awaitSheet(name).then(function () {
       return new Promise(function (resolve) {
         var a = {
-          name: name, order: frames || order(c), i: 0, passes: 0,
+          name: name, order: solidOrder(name, frames || order(c)), i: 0, passes: 0,
           repeats: repeats == null ? 1 : repeats, acc: 0, resolve: resolve
         };
         active = a;

@@ -3276,6 +3276,20 @@
         // every single-sentence screen paced by the director's word count
         // alone — and that count is short of the recording on twenty-five of
         // the thirty-six lines that have one.
+        /* ON ITS LAST WORD (`endsAt: 'words'` — the inside / outside answer, the user: "the
+           interaction not sync with vo"): "The diagonals are inside." is said by 2.0 s of a 3.0 s
+           clip, and the merged Inside waited out the silent second as well. Such a line ends
+           when the voice's own clock reaches its last word (VO.spoken); the tail plays on
+           under what comes next. */
+        if (opts && opts.endsAt === 'words' && voId && VO.spoken && VO.spoken(voId)) {
+          var saidBy = VO.spoken(voId);
+          return new Promise(function (res) {
+            var iv = setInterval(function () {
+              if (VO.id !== voId || (VO.at && VO.at() >= saidBy)) { clearInterval(iv); res(); }
+            }, 30);
+            if (ctx && ctx.onCancel) ctx.onCancel(function () { clearInterval(iv); res(); });
+          });
+        }
         var paced = new Promise(function (res) {
           var t = setTimeout(res, spoken);
           if (ctx && ctx.onCancel) ctx.onCancel(function () { clearTimeout(t); res(); });

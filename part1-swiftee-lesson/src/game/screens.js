@@ -392,7 +392,8 @@
               { say: 'This is a side of the polygon.', vo: 'p09' },
               { wait: 1200 },
               // THE SIDE STAYS, ITS CORNER IS DONE WITH (stage.js freezeSide): only its tag goes;
-              // the next try is the other neighbour, or — both sides made — a far corner
+              // the next try is any corner still open — the other neighbour (another side, named
+              // the same way) or a far corner (the diagonal)
               { stage: { side: 'done' } },
               { instruction: 'Let’s connect it to a different vertex.', vo: 'p10i' },
               { swiftee: 'point', at: 'picked' },
@@ -537,8 +538,10 @@
         { swiftee: 'step-back' },
         // Three diagonals from one hexagon vertex (n - 3). Each correct one
         // gets its own small reward; the screen completes on the third.
-        // (sidesOk — the user: a line to a NEIGHBOUR is a valid side, not a miss: it becomes the
-        // polygon's own edge, that neighbour is disabled for good, the anchor stays; stage.js)
+        // (sidesOk — a line to a NEIGHBOUR makes a side: it becomes the polygon's own edge, that
+        // neighbour is disabled for good, the anchor stays — and, the task here being diagonals, it
+        // is answered as a miss: the red glow on that corner, "Try again!" and the rule (the user:
+        // "if user drag to the side vertex why do not add wrong glow and feedback?"; stage.js)
         { input: { type: 'draw-diagonals', from: 0, count: 3, sidesOk: true } },
         // EVERY DIAGONAL FROM ONE CORNER: a milestone, and the one place his
         // jumping-for-joy clip belongs
@@ -646,8 +649,10 @@
                 // (ON THE WORD — the user: "not sync with vo?": the diagonals light gold as he says
                 // "diagonals", a quick sweep; the inside of the shape glows on "inside" — dual coding)
                 { stage: { onWord: [{ word: 'diagonals', lit: 'diagonals', each: 90 }] } },
-                { say: 'The diagonals are inside.', vo: 'fb54' },
-                { wait: 800 },
+                // (the beat ends on "inside.", not on the clip's silent tail: the one Inside comes
+                // half a second after the voice, not two and a half — the user: "not sync with vo")
+                { say: 'The diagonals are inside.', vo: 'fb54', endsAt: 'words' },
+                { wait: 500 },
                 { stage: { merge: 'Inside' } },
                 { wait: 500 },
                 { input: { type: 'choice', correct: 'Inside', 'continue': true, praise: false } }

@@ -4,7 +4,7 @@
  *   node tests/connect.test.js
  *
  * Plays the lesson in jsdom up to the pentagon, picks corner k, and then does
- * what a child exploring would: lets go on no corner and on a far corner,
+ * what a child exploring would: lets go on no corner,
  * joins it to one neighbour (a side), tries to draw while he is still talking,
  * taps his bubble while the line is being spoken, tries the used end again,
  * joins the other neighbour (the second side — for k = 0 and k = 4 that is
@@ -26,6 +26,9 @@
  *       (again) / Yay! You made a diagonal!
  *   - one voice at a time, none cut off, no stock "Nice!" over the cheer
  *   - the diagonal glows only once it is made, and it stays
+ *   - the far corners are open from the start (the user: "why diagonal vertex disable? …
+ *     revert it"): from k = 0 and k = 3 a second run goes straight to a far corner, and the
+ *     diagonal is made with no side first
  *
  * The voice is a stub with real durations (VO has no clips on disk yet), so
  * the pacing below is the pacing the recordings will get.
@@ -102,12 +105,12 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const until = async (pred, ms) => { const t0 = Date.now(); while (!pred()) { if (Date.now() - t0 > (ms || 10000)) return false; await sleep(15); } return true; };
 const lerp = (a, b, n) => { const o = []; for (let i = 1; i <= n; i++) o.push({ x: a.x + (b.x - a.x) * i / n, y: a.y + (b.y - a.y) * i / n }); return o; };
 
-async function run(k) {
+async function run(k, direct) {
   const W = world();
-  try { await play(k, W); } finally { W.w.close(); }
+  try { await play(k, W, direct); } finally { W.w.close(); }
 }
 
-async function play(k, { w, d, errors, voice }) {
+async function play(k, { w, d, errors, voice }, direct) {
   const svg = () => d.getElementById('stage').querySelector('svg');
   const St = () => w.Stage.state;
   const ev = (el, type, x, y) => el.dispatchEvent(new w.MouseEvent(type, { bubbles: true, clientX: x, clientY: y, pointerId: 1 }));
@@ -171,7 +174,7 @@ async function play(k, { w, d, errors, voice }) {
   //  1 select anchor · 2 first ghost is a side (tests/checkpoints.browser.js — it needs real
   //  time) · 3 drag to a neighbour · 4 the side is a normal dark edge · 5 its end disables ·
   //  6 the anchor stays · 7 drag to the other neighbour · 8 that side is normal · 9 its end
-  //  disables · 10 the far corners stay for the diagonal step · 11 the diagonal · 12 it locks ·
+  //  disables · 10 the far corners are open throughout · 11 the diagonal · 12 it locks ·
   //  13 a drag during dialogue does nothing · 14 no false "Try again" · 15 disabled ends never react
   const vs = () => (St().vstate || []).slice();
   const want = (m) => { const o = []; for (let q = 0; q < n; q++) o.push(m[q]); return o.join(','); };
@@ -185,15 +188,33 @@ async function play(k, { w, d, errors, voice }) {
   const statesAre = (m) => vs().join(',') === want(m);
   const FAR = 'inactive', ADJ = 'adjacent-available', USED = 'side-used-disabled', DIAG = 'diagonal-available';
 
+  // THE DIAGONAL STRAIGHT AWAY: a far corner is a place the line may go from the start
+  if (direct) {
+    const sp0 = await next();
+    t('k=' + k + ' (direct): the far corners are open before any side', sp0 && sp0.sides === true &&
+      statesAre({ [k]: 'anchor', [left]: ADJ, [right]: ADJ, [far]: DIAG, [(k + 3) % n]: DIAG }) && whiteKnob(far) && whiteKnob((k + 3) % n), vs());
+    await drag(from(), lerp(V()[k], V()[far], 6));
+    await sleep(30);
+    const dg0 = St().diagonals || [];
+    t('k=' + k + ' (direct): a far corner makes the DIAGONAL, with no side', dg0.length === 1 && dg0[0][0] === Math.min(k, far) && dg0[0][1] === Math.max(k, far) && !(St().sidesDone || []).length && !St().segment, { dg0 });
+    await until(() => w.Stage.connectState() === 'EXPLANATION', 8000);
+    const sp1 = await next();
+    t('k=' + k + ' (direct): the screen ends as before', sp1 && sp1.type === 'tap-anywhere' && w.Game.screen === connectAt);
+    const got0 = lines.slice(lines.indexOf('Select any vertex.'));
+    t('k=' + k + ' (direct): his lines — no side named', JSON.stringify(got0) === JSON.stringify(['Select any vertex.', 'Let’s connect it to another vertex.', 'Yay! You made a diagonal!']), got0);
+    t('k=' + k + ' (direct): no wrong cue, no runtime errors', noWrong() && errors.length === 0, errors.slice(0, 3));
+    return;
+  }
+
   // 1 — the first side
   let sp = await next();
   t('k=' + k + ': the connect input is the sides one', sp && sp.type === 'draw-diagonal' && sp.sides === true, sp);
   t('k=' + k + ': it is armed only after the instruction was heard out', !voice.current && lines[lines.length - 1] === 'Let’s connect it to another vertex.', { voice: voice.current && voice.current.id, last: lines[lines.length - 1] });
   t('k=' + k + ': [1] SIDE_HINT, ready for the first side', w.Stage.connectState() === 'SIDE_HINT', w.Stage.connectState());
-  t('k=' + k + ': [1] the corners\' states: anchor, the two neighbours available, the far corners inactive',
-    statesAre({ [k]: 'anchor', [left]: ADJ, [right]: ADJ, [far]: FAR, [(k + 3) % n]: FAR }), vs());
-  t('k=' + k + ': the neighbours are white points, the far corners plain and visible, their own corner green',
-    whiteKnob(left) && whiteKnob(right) && plainKnob(far) && plainKnob((k + 3) % n) && St().knobEls[k].getAttribute('fill') === '#34b4a4' && Object.keys(St().vcolor).length === 1);
+  t('k=' + k + ': [1] the corners\' states: anchor, the two neighbours available, the far corners available too',
+    statesAre({ [k]: 'anchor', [left]: ADJ, [right]: ADJ, [far]: DIAG, [(k + 3) % n]: DIAG }), vs());
+  t('k=' + k + ': the neighbours and the far corners are white points, their own corner green',
+    whiteKnob(left) && whiteKnob(right) && whiteKnob(far) && whiteKnob((k + 3) % n) && St().knobEls[k].getAttribute('fill') === '#34b4a4' && Object.keys(St().vcolor).length === 1);
   t('k=' + k + ': only the anchor takes a press', [...Array(n).keys()].every((q) => discLive(q) === (q === k)), [...Array(n).keys()].map(discLive));
 
   // [12 — the brief's INVALID DRAG] a line let go on no corner: only the preview resets
@@ -204,12 +225,6 @@ async function play(k, { w, d, errors, voice }) {
   t('k=' + k + ': a line dropped on nothing has no verdict, and the states are unchanged', noWrong() && w.Stage.connectState() === 'SIDE_HINT' && !(St().diagonals || []).length && !St().segment && vs().join(',') === before0 && pending === null,
     { sfx: sfx.slice(-3), state: w.Stage.connectState(), vs: vs() });
   t('k=' + k + ': ...nothing lights up, and the preview line is gone', [...St().knobEls].every((kn) => !kn.classList.contains('target')) && !previewShown());
-
-  // a far corner before the sides: not a side target — home, no verdict, no diagonal
-  await drag(from(), lerp(V()[k], V()[far], 6));
-  await sleep(300);
-  t('k=' + k + ': a far corner before the sides makes nothing', w.Stage.connectState() === 'SIDE_HINT' && !(St().diagonals || []).length && !St().segment && pending === null && noWrong() && vs().join(',') === before0,
-    { st: w.Stage.connectState(), dg: St().diagonals, sfx: sfx.slice(-3) });
 
   // [3–6] the neighbour on one side
   await drag(from(), lerp(V()[k], V()[right], 6));
@@ -237,8 +252,8 @@ async function play(k, { w, d, errors, voice }) {
   t('k=' + k + ': NEXT_SIDE_READY', w.Stage.connectState() === 'NEXT_SIDE_READY', w.Stage.connectState());
   t('k=' + k + ': the tag is gone before the next try, and the side stays a plain edge', !St().segment && !St().labelEl && (St().sidesDone || []).length === 1 && litSides() === 0);
   t('k=' + k + ': the retry waits for "Let’s connect it to a different vertex." to be heard', !voice.current && lines[lines.length - 1] === 'Let’s connect it to a different vertex.', { last: lines.slice(-3) });
-  t('k=' + k + ': [6] the anchor, one end used, the other neighbour still available, the far corners still inactive',
-    statesAre({ [k]: 'anchor', [right]: USED, [left]: ADJ, [far]: FAR, [(k + 3) % n]: FAR }), vs());
+  t('k=' + k + ': [6] the anchor, one end used, the other neighbour still available, the far corners still open',
+    statesAre({ [k]: 'anchor', [right]: USED, [left]: ADJ, [far]: DIAG, [(k + 3) % n]: DIAG }), vs());
   // [15] the used end never reacts: a line let go on it goes home, quietly
   const before1 = vs().join(',');
   await drag(from(), lerp(V()[k], V()[right], 6));
@@ -250,19 +265,14 @@ async function play(k, { w, d, errors, voice }) {
   ev(St().vertEls[right], 'pointerdown', V()[right].x, V()[right].y); ev(svg(), 'pointermove', c.x, c.y); ev(svg(), 'pointerup', c.x, c.y);
   await sleep(300);
   t('k=' + k + ': [15] a drag from the used end starts nothing', w.Stage.connectState() === 'NEXT_SIDE_READY' && !previewShown() && vs().join(',') === before1);
-  // [10] the far corners are not yet targets
-  await drag(from(), lerp(V()[k], V()[far], 6));
-  await sleep(300);
-  t('k=' + k + ': a far corner before the second side makes nothing', w.Stage.connectState() === 'NEXT_SIDE_READY' && !(St().diagonals || []).length && pending === null && noWrong());
-
   // [7–9] the other neighbour: the second side
   await drag(from(), lerp(V()[k], V()[left], 6));
   await sleep(30);
   t('k=' + k + ': [7] neighbour ' + left + ' is the second SIDE' + (k === 0 || k === 4 ? ' (the wrap-around)' : ''),
     w.Stage.connectState() === 'SECOND_SIDE_COMPLETE' && St().segment && St().segment[0] === k && St().segment[1] === left, { st: w.Stage.connectState(), seg: St().segment });
   t('k=' + k + ': [8] it is a normal edge too', !!St().segLine && St().segLine.getAttribute('stroke') === '#2f5fc4' && !St().segLine.getAttribute('style') && litSides() === 0 && !previewShown());
-  t('k=' + k + ': [9] its end is disabled, the anchor stays, and the far corners wait while it is named',
-    statesAre({ [k]: 'anchor', [right]: USED, [left]: USED, [far]: FAR, [(k + 3) % n]: FAR }) && plainKnob(left), vs());
+  t('k=' + k + ': [9] its end is disabled, the anchor stays, and the far corners stay open',
+    statesAre({ [k]: 'anchor', [right]: USED, [left]: USED, [far]: DIAG, [(k + 3) % n]: DIAG }) && plainKnob(left), vs());
 
   // 3 — the diagonal
   sp = await next();
@@ -323,6 +333,7 @@ async function play(k, { w, d, errors, voice }) {
 
 (async () => {
   for (let k = 0; k < 5; k++) { await run(k); }
+  for (const k of [0, 3]) { await run(k, true); }
   console.log('connect: ' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
 })();

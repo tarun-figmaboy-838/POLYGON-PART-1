@@ -1668,9 +1668,9 @@
       // vertex dots". The dot itself says it: gold, and a size up.)
       /* SCREEN 7's CORNERS EACH HAVE ONE STATE (st.vstate — the Screen 7 vertex brief; set by
          setVertexStates): 'anchor', the one corner a line is drawn from, green; a corner a line
-         may go to now ('adjacent-available' for a side, 'diagonal-available' once both sides are
-         made), a white point; and a corner a line may not go to — 'side-used-disabled', the far
-         end of a side already made, or 'inactive', a far corner before the diagonal step — which
+         may go to now ('adjacent-available' for a side, 'diagonal-available' for a far corner —
+         open from the start), a white point; and a corner a line may not go to — 'side-used-
+         disabled', the far end of a side already made, or 'inactive', once the diagonal is in — which
          is a plain corner of the polygon: the outline's own dot, full strength, never breathing,
          never lit, never touched. With no state (every other screen) a corner is drawn as before. */
       var vs = st.vstate ? st.vstate[j] : null;
@@ -6091,8 +6091,8 @@
         // "another vertex", "a different vertex": the OTHER corners; "this
         // vertex", "the same vertex": the one the lesson has marked
         var mine = relevantKnobs(), all = (st.knobEls || []).filter(function (k) { return k && k.getAttribute('opacity') !== '0'; });
-        // SCREEN 7: "a different vertex" is a corner a line may go to NOW — never a used end or
-        // a far corner before the diagonal step — each in turn, not all at once (the vertex brief)
+        // SCREEN 7: "a different vertex" is a corner a line may go to NOW — never a used end —
+        // each in turn, not all at once (the vertex brief)
         if (st.vstate && /\b(another|different|other)\s+vert/.test(line)) {
           return warmPulse(st.vstate.map(function (vs, q) { return /-available$/.test(vs) ? knobOf(q) : null; }), { gap: 240 });
         }
@@ -7602,9 +7602,9 @@
        adjacent-available   a neighbour with no side yet: where a SIDE may go
        side-used-disabled   a neighbour a side has been made to: visible, a plain corner, and
                             out of every press, hover, drop, pulse and hint
-       diagonal-available   a far corner once both sides are made: where the DIAGONAL may go
-       inactive             a far corner before that; and, once the diagonal is made
-                            (`locked`), every corner that is not the anchor or a used end
+       diagonal-available   a far corner, from the start: where the DIAGONAL may go
+       inactive             once the diagonal is made (`locked`), every corner that is not the
+                            anchor or a used end
      The side being named (st.segment) counts as made the moment it lands: its end is disabled
      on the drop. */
   function sideEnds() {
@@ -7622,9 +7622,11 @@
      way — each disabled once made — and a far corner a diagonal has already reached is
      'diagonal-used': done with, drawn and treated like a used side end. */
   function setVertexStates(from, locked, free) {
-    // (the far corners open only once both sides are MADE AND NAMED — frozen, st.sidesDone — not
-    // while the second is still being named: the diagonal step begins with its instruction)
-    var ends = sideEnds(), diag = free || (sidesLeft(from) === 0 && !st.segment), out = [];
+    // (THE FAR CORNERS ARE OPEN FROM THE START — the user: "why diagonal vertex disable? … revert
+    // it, user have to connect the vertex to make diagonal": a line may go to any corner; a
+    // neighbour makes a side, which is named and its corner disabled, and a far corner makes the
+    // diagonal, whether or not a side came first. They closed until both sides were made.)
+    var ends = sideEnds(), diag = true, out = [];
     for (var q = 0; q < st.n; q++) {
       if (q === from) out.push('anchor');
       else if (ends.indexOf(q) >= 0) out.push('side-used-disabled');
@@ -7637,21 +7639,6 @@
     evt('connect:vertices', { states: out.slice() });
     return out;
   }
-  /* THE CORNERS A DIAGONAL CAN REACH COME UP, ONE AFTER THE OTHER, when the diagonal step
-     begins (the brief: "subtle active target indication only when diagonal step begins … do
-     not pulse multiple vertices simultaneously"): each plain corner turns into a white point
-     with one small swell, a beat apart. Nothing else moves. */
-  function riseTargets() {
-    if (reduced()) return;
-    var nth = 0;
-    (st.vstate || []).forEach(function (vs, q) {
-      var k = vs === 'diagonal-available' ? knobOf(q) : null;
-      if (!k || !k.animate) return;
-      k.style.transformBox = 'fill-box'; k.style.transformOrigin = 'center';
-      try { k.animate([{ scale: '0.6' }, { scale: '1.18', offset: 0.55 }, { scale: '1' }], { duration: 420, delay: nth++ * 220, easing: 'cubic-bezier(.3,1.25,.45,1)', fill: 'backwards' }); } catch (e) {}
-    });
-  }
-
   /** The side that was named goes: its mark and its tag fade, and the shape is
       as it was before the line was drawn (the corner stays theirs). */
   /* The named side kept, frozen, and its corner spent (screens.js `side: 'done'`): only its
@@ -7667,7 +7654,8 @@
     if (st.vstate && from != null) setVertexStates(from);
     if (st.vstate) setConnect('ENDPOINT_DISABLED', { from: from });
     if (st.polyG) renderPoly();
-    if (toDiagonal) { setConnect('DIAGONAL_INSTRUCTION', { from: from }); riseTargets(); }
+    // (no rise for the far corners here any more: they have been open since the start)
+    if (toDiagonal) setConnect('DIAGONAL_INSTRUCTION', { from: from });
   }
   function fadeOut(el) {
     if (!el) return;
@@ -7745,11 +7733,11 @@
       var made = 0, active = false, hot = -1;
       var line = previewLine(from);
       var valid = function () { return Poly.diagonalsFrom(from, st.n).filter(function (j) { return !diagonalUsed(from, j); }); };
-      /* WHERE A LINE MAY GO IS WHAT THE CORNERS' STATES SAY (the Screen 7 vertex brief): SIDE
-         FIRST — both neighbours, one after the other, each a side and each done with once made —
-         and only then the DIAGONAL, to a far corner. A used end or a far corner before the
-         diagonal step is not a place a line may go: it is never snapped to, never lit, and a line
-         let go on it simply goes home (release, below). */
+      /* WHERE A LINE MAY GO IS WHAT THE CORNERS' STATES SAY (the Screen 7 vertex brief): ANY
+         CORNER — a neighbour makes a SIDE, named and then done with, and a far corner the
+         DIAGONAL (the user: "user have to connect the vertex to make diagonal"). A used end is not
+         a place a line may go: it is never snapped to, never lit, and a line let go on it simply
+         goes home (release, below). */
       var targets = function () {
         if (!sides && !sidesOk) return valid();
         return (st.vstate || []).map(function (vs, q) { return /-available$/.test(vs) ? q : -1; }).filter(function (q) { return q >= 0; });
@@ -7774,7 +7762,7 @@
           // (a side while a neighbour is still free — the FIRST ghost is always a side — and never
           // to a corner that is done with: targets() holds only the corners available now)
           var t;
-          if (sides && sidesLeft(from) > 0) { var nb = targets(); t = nb.indexOf((from + 1) % st.n) >= 0 ? (from + 1) % st.n : nb[0]; }
+          if (sides && sidesLeft(from) > 0) { var nb = targets().filter(function (q) { return Poly.isAdjacent(from, q, st.n); }); t = nb.indexOf((from + 1) % st.n) >= 0 ? (from + 1) % st.n : nb[0]; }
           else t = sides ? targets()[0] : valid()[0];
           return t == null ? null : gestureGhost(st.verts[from], st.verts[t], { line: true, target: knobOf(t) });
         }
@@ -7845,8 +7833,8 @@
           retract(line, from, function () { line = previewLine(from); });
           return;
         }
-        // (and never on a corner that is not available now — a used end, or a far corner before
-        // the diagonal step: no verdict, no flash, nothing lit; the line goes home, below)
+        // (and never on a corner that is not available now — a used end: no verdict, no flash,
+        // nothing lit; the line goes home, below)
         if (sides && j >= 0 && targets().indexOf(j) < 0) j = -1;
         // (the hexagon: a used side end takes no line and gives no feedback — it goes home quietly,
         // not as a miss: "no 'Try again' feedback" for a disabled vertex)
@@ -7873,14 +7861,27 @@
         var ok = !Poly.isAdjacent(from, j, st.n) && !diagonalUsed(from, j);
         st.lastEl = knobOf(j) || st.vertEls[j];
         if (sidesOk && !ok && Poly.isAdjacent(from, j, st.n)) {
-          // A SIDE ON THE WAY: accepted, the preview gone, the edge the polygon's own, its end
+          // A SIDE ON THE WAY: made, the preview gone, the edge the polygon's own, its end
           // disabled, the anchor still the anchor — and a fresh preview line for the next drag
           line.remove();
           st.sidesDone = (st.sidesDone || []).concat([[from, j]]);
           setVertexStates(from, false, true); renderPoly(); dressFrom(); still(true);
           line = previewLine(from);
-          sfx('pop', { gain: 0.5 });
           evt('side:made', { from: from, to: j });
+          /* AND ANSWERED AS A MISS (the user: "if user drag to the side vertex why do not add wrong
+             glow and feedback?"): the task is diagonals, so the side glows red for a moment — the
+             edge itself and its corner — and fades back to the plain edge, with the miss sound,
+             his reaction, "Try again!" and the rule (the screen's reminder) */
+          var a0 = st.verts[from], b0 = st.verts[j];
+          if (a0 && b0 && st.polyG && !reduced()) {
+            var flash = mk('line', { x1: a0.x, y1: a0.y, x2: b0.x, y2: b0.y, stroke: '#ff5a5a', 'stroke-width': 5,
+                                     'stroke-linecap': 'round', 'pointer-events': 'none' }, st.polyG);
+            flash.style.filter = 'drop-shadow(0 0 5px rgba(255, 60, 60, 0.9))';
+            if (flash.animate) { try { flash.animate([{ opacity: 0 }, { opacity: 1, offset: 0.2 }, { opacity: 1, offset: 0.55 }, { opacity: 0 }], { duration: 900, easing: 'ease-out', fill: 'forwards' }); } catch (x) {} }
+            later(950, function () { if (flash.parentNode) flash.remove(); });
+          }
+          st.lastEl = knobOf(j) || st.vertEls[j];
+          onTap('wrong');
           return;
         }
         if (sides && !ok && Poly.isAdjacent(from, j, st.n)) {

@@ -438,7 +438,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const st = (m) => { const o = []; for (let q = 0; q < n; q++) o.push(m[q]); return o.join(','); };
     const flow = {
       side1: sideOk(a) && a.connect === 'SIDE_COMPLETE', dragDuringLine: during.connect === 'SIDE_COMPLETE' && during.diags === 0,
-      ready2: restOk(a2) && a2.states === st({ [f]: 'anchor', [R]: 'side-used-disabled', [L]: 'adjacent-available', [to]: 'inactive', [(f + 3) % n]: 'inactive' }),
+      // (the far corners open from the start — the user: "why diagonal vertex disable? … revert it")
+      ready2: restOk(a2) && a2.states === st({ [f]: 'anchor', [R]: 'side-used-disabled', [L]: 'adjacent-available', [to]: 'diagonal-available', [(f + 3) % n]: 'diagonal-available' }),
       side2: sideOk(b) && b.connect === 'SECOND_SIDE_COMPLETE',
       ready3: restOk(b2) && b2.states === st({ [f]: 'anchor', [R]: 'side-used-disabled', [L]: 'side-used-disabled', [to]: 'diagonal-available', [(f + 3) % n]: 'diagonal-available' }),
       usedEndQuiet: used.connect === 'DIAGONAL_READY' && used.diags === 0 && !used.seg,
@@ -535,7 +536,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await step(20, 'inside-or-outside second wrong: locked, the diagonals lit ON "diagonals", "The diagonals are inside.", then ONE centred Inside after the voice; a tap goes on', async () => {
     const i = await ev(() => window.Game.screen);
     const before = (await said()).length, c0 = await cues();
-    await ev(() => { window.__io = { lockedAt: null, litAt: null, voAt: null, voEnd: null, oneAt: null, liveAt: null, both: false, wordAt: null }; const T0 = performance.now();
+    await ev(() => { window.__io = { lockedAt: null, litAt: null, voAt: null, voEnd: null, saidAt: null, oneAt: null, liveAt: null, both: false, wordAt: null }; const T0 = performance.now();
       const tick = () => { const n = performance.now() - T0, o = window.__io;
         if (o.lockedAt == null && window.Input.mode() === 'locked') o.lockedAt = n;
         if (o.litAt == null && document.querySelector('#stage .polygon g[data-lit]')) o.litAt = n;
@@ -544,6 +545,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         if (o.voAt != null && o.wordAt == null && /The diagonals are inside/.test(document.getElementById('bubble').textContent) &&
             [...document.querySelectorAll('#bubble .in')].some((w) => /^diagonals/i.test(w.textContent))) o.wordAt = n;
         if (o.voAt != null && o.voEnd == null && window.VO.id !== 'fb54') o.voEnd = n;
+        // (the words said: the clip's last word, not its silent tail — the one Inside follows these)
+        if (o.voAt != null && o.saidAt == null && (window.VO.id !== 'fb54' || window.VO.at() >= window.VO.spoken('fb54'))) o.saidAt = n;
         const vis = [...document.querySelectorAll('#stage .choice')].filter((c) => +getComputedStyle(c).opacity > 0.05).map((c) => c.getAttribute('data-label'));
         if (o.voAt != null && o.oneAt == null && vis.length === 1 && vis[0] === 'Inside' && document.querySelectorAll('#stage .choice').length === 1) o.oneAt = n;
         if (o.oneAt != null && o.liveAt == null && window.Game.director.state === 'WAITING_FOR_USER' && window.Input.mode() === 'polygon') o.liveAt = n;
@@ -560,7 +563,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const lines = (await said()).slice(before), c1 = await cues();
     const advanced = await ev((i) => window.Game.screen > i, i);
     // (the diagonals light ON the word "diagonals" — within 300 ms of it, not before the line)
-    const ok = io.lockedAt != null && io.litAt != null && io.voAt != null && io.wordAt != null && io.litAt >= io.voAt && Math.abs(io.litAt - io.wordAt) <= 300 && io.voEnd != null && io.oneAt != null && io.oneAt >= io.voEnd && io.liveAt >= io.voEnd &&
+    const ok = io.lockedAt != null && io.litAt != null && io.voAt != null && io.wordAt != null && io.litAt >= io.voAt && Math.abs(io.litAt - io.wordAt) <= 300 && io.voEnd != null && io.saidAt != null && io.oneAt != null && io.oneAt >= io.saidAt && io.liveAt >= io.saidAt && io.oneAt - io.saidAt < 1600 &&
       mid != null && Math.abs(mid) <= 3 && !io.both && lines.some((t) => /The diagonals are inside/.test(t)) && !lines.some((t) => /^Try again/.test(t)) &&
       advanced && c1.correct === c0.correct;
     return { ok, extra: { io, mid, lines, advanced, correctCues: c1.correct - c0.correct } };

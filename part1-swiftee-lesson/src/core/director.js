@@ -262,7 +262,7 @@
       setState(STATES.DIALOGUE_REVEAL, { text: text, type: type });
       emit('say', { text: text, vo: beat.vo, type: type });
       lastWasSpeech = true;
-      var voDone = guard(call('say', [text, { vo: beat.vo, reading: reading, parts: beat.parts, type: type, settledBy: info && info.settledBy, faces: beat.faces }, ctx]), token, cfg.beatCeilingMs)
+      var voDone = guard(call('say', [text, { vo: beat.vo, reading: reading, parts: beat.parts, type: type, settledBy: info && info.settledBy, faces: beat.faces, endsAt: beat.endsAt }, ctx]), token, cfg.beatCeilingMs)
         .then(function (r) {
           // A handler that failed or hung paced nothing: fall back to the
           // reading time, so a broken voice never turns into a flash of text.

@@ -76,9 +76,10 @@ async function act(spec){
         const k=sideTries[w.Game.screen], to=k===1?(from+1)%n:(k===2?(from+n-1)%n:targets[0]);
         await drag(hnd(), lerp(V[from],V[to],5)); await sleep(60); return;
       }
-      // (sidesOk — the hexagon: a neighbour is a SIDE, not a wrong try — made, and its end disabled)
-      if(!spec.retry && spec.sidesOk){ await drag(hnd(), lerp(V[from],V[(from+1)%n],5)); sidesOkMade++; await sleep(80);
-        hexSide={ ok: (St().vstate||[])[(from+1)%n]==='side-used-disabled' && (St().sidesDone||[]).length===1 && !(St().diagonals||[]).length, vs:(St().vstate||[]).join(',') }; }
+      // (sidesOk — the hexagon: a neighbour is a SIDE — made, its end disabled — and, the task being
+      // diagonals, answered as a miss: one wrong cue)
+      if(!spec.retry && spec.sidesOk){ const w0=cues.wrong; await drag(hnd(), lerp(V[from],V[(from+1)%n],5)); sidesOkMade++; await sleep(80);
+        hexSide={ ok: (St().vstate||[])[(from+1)%n]==='side-used-disabled' && (St().sidesDone||[]).length===1 && !(St().diagonals||[]).length && cues.wrong===w0+1, vs:(St().vstate||[]).join(','), wrong: cues.wrong-w0 }; wrongTried++; }
       else if(!spec.retry){ await drag(hnd(), lerp(V[from],V[(from+1)%n],5)); wrongTried++; await sleep(60); if(spec.type==='draw-diagonal') return; }   // wrong: adjacent
       for(let k=0;k<cnt;k++){ await free(); await drag(hnd(), lerp(V[from],V[targets[k]],5)); await sleep(60); }
       return;
@@ -272,7 +273,7 @@ async function act(spec){
   // (11: the summary's review — Next, and a tap on a card to hear it again)
   t('all 11 interaction types were exercised', types.size===11, [...types].join(','));
   // (the Screen 7 vertex brief: a side, the other side, then the diagonal — three tries)
-  t('hexagon: a line to a neighbour was taken as a side — its end disabled, no wrong cue for it', sidesOkMade>0 && hexSide.ok, JSON.stringify({ sidesOkMade, hexSide }));
+  t('hexagon: a line to a neighbour makes a side — its end disabled — and is answered as a miss (one wrong cue)', sidesOkMade>0 && hexSide.ok, JSON.stringify({ sidesOkMade, hexSide }));
   t('drag inward: a release short of the dent stays where it was let go', inwardKept.length>0 && inwardKept.every((d)=>d>3), JSON.stringify(inwardKept));
   t('the connect step went side, side, then diagonal', Object.values(sideTries).some(k=>k===3), JSON.stringify(sideTries));
   t('the summary collected all eight ideas, in order, and reached its finale', !!SM && SM.state==='FINAL_SUMMARY' && SM.collected.join(',')==='vertex,side,angle,diagonal,convex,concave,regular,irregular',
