@@ -54,15 +54,21 @@ const path = require('node:path');
         const tool = rig.querySelector('.angle-protractor');
         const index = Number(rig.dataset.angle), vertex = Stage.state.verts[index];
         const transform = tool.transform.baseVal.consolidate().matrix;
+        const body = transform.multiply(rig.querySelector('.angle-performer').transform.baseVal.consolidate().matrix);
+        if(rig.querySelector('clipPath,mask'))throw Error('The full-body pose must never be sliced');
         const previous = Stage.state.verts[(index + 4) % 5];
         const next = Stage.state.verts[(index + 1) % 5];
         const rayError = p => Math.abs(transform.a * (p.y - vertex.y) - transform.b * (p.x - vertex.x)) / Math.hypot(p.x - vertex.x, p.y - vertex.y);
         return { state: rig.dataset.state, index, same: tool === window.originalInstrument,
+          bodyRotation: Math.atan2(body.b, body.a) * 180 / Math.PI,
           positionError: Math.hypot(transform.e - vertex.x, transform.f - vertex.y),
+          scale: Math.abs(transform.a * transform.d - transform.b * transform.c),
           rayError: Math.min(rayError(previous), rayError(next)) };
       });
       if (data) {
         assert.ok(data.same, 'one continuous instrument between vertices');
+        assert.ok(Math.abs(data.bodyRotation) <= 30, 'Complete generated poses keep Swiftee near upright');
+        assert.ok(Math.abs(data.scale - 1) < 0.001, 'direction changes never flatten or squash the complete sprite');
         if (data.state === 'HOLD') {
           assert.ok(data.positionError < 0.01, 'center coincides with actual vertex');
           assert.ok(data.rayError < 0.001, 'baseline coincides with an incident ray');

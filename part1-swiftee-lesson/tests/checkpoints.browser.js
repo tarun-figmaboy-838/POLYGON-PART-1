@@ -763,21 +763,24 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         tools = Math.max(tools, document.querySelectorAll('#stage .angle-protractor').length);
         const tool = g.querySelector('.angle-protractor');
         const tt = num(tool.getAttribute('transform'), /translate\(([-\d.]+),([-\d.]+)\)/), rot = num(tool.getAttribute('transform'), /rotate\(([-\d.]+)\)/);
-        // WHERE HE IS: the whole drawing turns about the protractor's centre (stage.js angleMeasurer),
-        // so his body's place is the tool's place plus the drawn body's offset from the registration
-        // point, turned with it — the body sits about (225, 290) in the 512 cell, the anchor at (384, 320)
-        // (and mirrored when the other side of the corner turns him less: scale(-1,1) puts him on the
-        // baseline's other end. `bt` is the drawing's own side of it — the sign of the mirror — for
-        // the gap and the stand; `bv` the body as seen, mid-turn included, for the motion)
+        // WHERE HE IS: the rig draws one complete pose at a time (stage.js angleMeasurer, the v4
+        // "intact" sheet) — each pose has its own body offset from the protractor's centre, turned
+        // by the drawing's rotation less the pose's own angle — and a change of pose re-registers
+        // the drawing at the torso, so his body never moves when the drawing does. No mirror.
         const F = window.AngleMeasuringFrames, rr = ((rot && rot[0]) || 0) * Math.PI / 180;
-        const mir = num(tool.getAttribute('transform'), /scale\(([-\d.]+)/), m = mir ? mir[0] : 1;
-        const lx = (225 - F.anchor.x) * F.scale, ly = (290 - F.anchor.y) * F.scale;
-        const at = (k) => tt ? [tt[0] + Math.cos(rr) * lx * k - Math.sin(rr) * ly, tt[1] + Math.sin(rr) * lx * k + Math.cos(rr) * ly] : null;
-        const bt = at(m < 0 ? -1 : 1), bv = at(m);
+        const fr = +tool.getAttribute('data-frame'), P = F.poses ? F.poses[fr] : null;
+        const at = () => {
+          if (!tt) return null;
+          if (P) { const a = rr - P.angle * Math.PI / 180, bx = P.bodyOffset.x * F.scale, by = P.bodyOffset.y * F.scale;
+                   return [tt[0] + Math.cos(a) * bx - Math.sin(a) * by, tt[1] + Math.sin(a) * bx + Math.cos(a) * by]; }
+          const lx = (225 - F.anchor.x) * F.scale, ly = (290 - F.anchor.y) * F.scale;   // (the older single-pose sheet)
+          return [tt[0] + Math.cos(rr) * lx - Math.sin(rr) * ly, tt[1] + Math.sin(rr) * lx + Math.cos(rr) * ly];
+        };
+        const bt = at(), bv = bt;
         const st = g.getAttribute('data-state'), k = +g.getAttribute('data-angle');
         if (bv && prev && /MOVE_TO|RETURN/.test(st)) maxJump = Math.max(maxJump, Math.hypot(bv[0] - prev[0], bv[1] - prev[1]));
         prev = bv;
-        samples.push({ at: Math.round(now), st, k, bird: bt && bt.map(Math.round), tool: tt && tt.map(Math.round), rot: rot && rot[0], gap: bt && tt ? Math.round(Math.hypot(tt[0] - bt[0], tt[1] - bt[1])) : null });
+        samples.push({ at: Math.round(now), st, k, fr, bird: bt && bt.map(Math.round), tool: tt && tt.map(Math.round), rot: rot && rot[0], gap: bt && tt ? Math.round(Math.hypot(tt[0] - bt[0], tt[1] - bt[1])) : null });
         if (st === 'HOLD' && bt && tt) { const v = window.Stage.state.verts; holds[k] = { tool: tt, rot: rot && rot[0], bird: bt, verts: v.map((p) => [p.x, p.y]), inside: window.Poly.contains(v, { x: bt[0], y: bt[1] }), active: g.querySelectorAll('.active-angle *').length, others: [...document.querySelectorAll('#stage .knob')].filter((kn) => kn.getAnimations && kn.getAnimations().some((a) => a.playState === 'running')).length, confetti: window.__fx.confetti - confetti0 }; stands[k] = bt.map(Math.round); }
       } else if (samples.length && ended == null) ended = now;
       if (screenChanged == null && window.Game.screen !== window.__angleScreen) screenChanged = now;
@@ -792,11 +795,14 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     tick();
   }));
   await step(33, 'one protractor, attached to his wing while carried (a constant gap), never a second one', async () => {
-    const carried = rig.samples.filter((s) => /MOVE_TO|RETURN/.test(s.st) && s.gap != null).map((s) => s.gap);
-    const spread = carried.length ? Math.max(...carried) - Math.min(...carried) : 999;
+    // (the gap is body-centre to tool-centre. Each complete pose holds the tool in its own way, so
+    // the gap is constant WITHIN a pose — the tool never slides in his wing — and only changes when
+    // a new pose is drawn for the next corner)
+    const carriedS = rig.samples.filter((s) => /MOVE_TO|RETURN/.test(s.st) && s.gap != null), carried = carriedS.map((s) => s.gap);
+    const byPose = {}; carriedS.forEach((s) => { (byPose[s.fr] = byPose[s.fr] || []).push(s.gap); });
+    const spreads = Object.keys(byPose).map((f) => Math.max(...byPose[f]) - Math.min(...byPose[f]));
     const shotSample = rig.samples.find((s) => /MOVE_TO/.test(s.st));
-    // (the gap is body-centre to tool-centre, about 53 units in the drawing; constant while carried)
-    return { ok: rig.tools === 1 && carried.length > 3 && spread <= 3 && (carried[0] || 0) < 80, extra: { tools: rig.tools, carriedSamples: carried.length, gap: carried.length ? [Math.min(...carried), Math.max(...carried)] : null, sample: shotSample } };
+    return { ok: rig.tools === 1 && carried.length > 3 && spreads.every((d) => d <= 3) && Math.max(...carried) < 80, extra: { tools: rig.tools, carriedSamples: carried.length, spreads, gap: carried.length ? [Math.min(...carried), Math.max(...carried)] : null, sample: shotSample } };
   });
   await step(34, 'at each corner: the tool’s centre on the vertex (≤ 5 units), its edge along a side (≤ 1.5°), him outside the shape, beside it', async () => {
     const out = [];
@@ -805,12 +811,15 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       const dc = Math.hypot(h.tool[0] - p[0], h.tool[1] - p[1]);
       const ra = Math.atan2(a[1] - p[1], a[0] - p[0]) * 180 / Math.PI, rb = Math.atan2(b[1] - p[1], b[0] - p[0]) * 180 / Math.PI;
       const dd = (x, y) => Math.abs((((x - y) % 360) + 540) % 360 - 180);
-      // along a side's LINE: the mirrored drawing lays its baseline half a turn round
+      // along a side's LINE: the baseline may lie along either side, either way round
       const along = Math.min(dd(h.rot, ra), dd(h.rot, ra + 180), dd(h.rot, rb), dd(h.rot, rb + 180));
       const far = Math.hypot(h.bird[0] - p[0], h.bird[1] - p[1]);
       out.push({ k: +k, centre: +dc.toFixed(1), along: +along.toFixed(1), outside: !h.inside, far: Math.round(far) });
     });
-    const ok = out.length >= 5 && out.every((o) => o.centre <= 5 && o.along <= 1.5 && o.outside && o.far > 40 && o.far < 120);
+    // (beside it: his body's centre clear of the corner. The complete v4 poses hold the tool closer
+    // than the old cut-out sheet did — 36 to 55 units from the protractor's centre — so the floor
+    // is 30, his body never over the vertex, and the ceiling still keeps him with his tool)
+    const ok = out.length >= 5 && out.every((o) => o.centre <= 5 && o.along <= 1.5 && o.outside && o.far > 30 && o.far < 120);
     return { ok, extra: out };
   });
   await step(35, 'corner to corner: a different stand each time, continuous motion, no jump', async () => {

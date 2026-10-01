@@ -1929,16 +1929,8 @@
     else begin();
   }
 
-  /* THE DRAWING TURNS AS ONE PIECE. Codex's eight frames show Swiftee holding the protractor;
-     each was cut into a bird layer and a tool layer by pixel clipping so the tool could turn
-     about the corner while he stayed upright — and the cuts showed: the gripping wing lost
-     its edge, bits of the tool stayed on him, bits of him turned with the tool. Nothing is
-     sliced now (the user: "instead of slicing the protractor, rotate Swiftee"). The whole
-     frame is pinned by the protractor's centre — every frame is registered there by the
-     packer — and turns about that point until the baseline lies on the side, the face of
-     the tool opening into the corner, him hanging off the side's extension outside the
-     shape. At the flat bottom he stands upright; at the higher corners he leans and hangs
-     over as he flies round, which is the joke of a bird measuring with a protractor. */
+  // One continuous performance owns the character and tool for the entire
+  // demonstration. The protractor follows geometry; the bird stays upright.
   function angleMeasurer() {
     var frames = global.AngleMeasuringFrames;
     if (reduced() || !frames || !global.requestAnimationFrame) return null;
@@ -1946,15 +1938,30 @@
     var g = mk('g', { 'class': 'swiftee-angle-measuring', 'pointer-events': 'none', 'aria-hidden': 'true' }, layers.fx);
     var instrument = mk('g', { 'class': 'angle-protractor' }, g);
     var scale = frames.scale, cell = frames.cell, anchor = frames.anchor;
-    // the frame's cell, with the protractor's centre (the registration point) at the origin
-    var sprite = mk('svg', { 'class': 'angle-performer', x: -anchor.x * scale, y: -anchor.y * scale, width: cell * scale,
-      height: cell * scale, viewBox: '0 0 ' + cell + ' ' + cell, overflow: 'hidden' }, instrument);
-    // ONE FRAME AT A TIME. Two frames cross-faded read as a double exposure — a blurred,
-    // ghosted bird for most of every move. The drawings step, as a sprite does.
+    // Every image is a COMPLETE generated pose, including the wing and
+    // held tool. Only the empty rectangular atlas cell is isolated; no masks.
+    var bird = mk('g', { 'class': 'angle-performer' }, instrument);
+    var sprite = mk('svg', { x: -anchor.x * scale, y: -anchor.y * scale,
+      width: cell * scale, height: cell * scale, viewBox: '0 0 ' + cell + ' ' + cell,
+      overflow: 'hidden' }, bird);
     var sheet = mk('image', { href: frames.image, width: frames.cols * cell, height: frames.rows * cell }, sprite);
+    var activeFrame = frames.carry;
+    function norm(angle) { return ((angle % 360) + 540) % 360 - 180; }
+    function bodyOffset(frame, rotation) {
+      var local = frames.poses[frame].bodyOffset, a = (rotation - frames.poses[frame].angle) * Math.PI / 180;
+      return { x: (Math.cos(a)*local.x-Math.sin(a)*local.y)*scale,
+               y: (Math.sin(a)*local.x+Math.cos(a)*local.y)*scale };
+    }
+    function selectPose(frame, rotation) {
+      // Register the complete drawings at the torso when the wing changes
+      // pose. Swiftee keeps his position; the newly drawn tool moves with his wing.
+      var old = bodyOffset(activeFrame, pose.rotation), next = bodyOffset(frame, rotation);
+      pose.x += old.x-next.x; pose.y += old.y-next.y;
+      activeFrame = frame; pose.rotation = rotation;
+    }
     // The real interior arc stays legible over the translucent tool face.
     var highlight = mk('g', { 'class': 'active-angle' }, g);
-    var phases = frames.phases.carry, framePosition = 0, pose, raf, stopped = false, first = true;
+    var pose, raf, stopped = false, first = true;
     function home() {
       var bounds = companion && global.Swiftee.bounds && Swiftee.bounds();
       var matrix = g.getScreenCTM && g.getScreenCTM();
@@ -1966,7 +1973,7 @@
       }
       return { x: st.verts[0].x - 35, y: st.verts[0].y + 55 };
     }
-    pose = Object.assign({ rotation: 0, mirror: 1 }, home());
+    pose = Object.assign({ rotation: frames.poses[activeFrame].angle }, home());
     if (global.Swiftee && Swiftee.lock) Swiftee.lock('angle-measuring');
     g.style.opacity = '0';
     function stop() {
@@ -1977,20 +1984,19 @@
     }
     cleanup.push(stop);
     function paint() {
-      // the protractor's centre at the pose, the whole drawing turned about it
-      // (mirror: -1 draws him on the other end of the baseline — see AS UPRIGHT AS THE CORNER ALLOWS)
-      instrument.setAttribute('transform', 'translate(' + pose.x + ',' + pose.y + ') rotate(' + pose.rotation + ') scale(' + pose.mirror.toFixed(3) + ',1)');
-      var at = Math.min(phases.length - 1, framePosition);
-      var frame = phases[Math.round(at)];
-      sheet.setAttribute('x', -(frame % frames.cols) * cell); sheet.setAttribute('y', -Math.floor(frame / frames.cols) * cell);
-      instrument.setAttribute('data-frame', frame);
+      instrument.setAttribute('transform', 'translate(' + pose.x + ',' + pose.y + ') rotate(' + pose.rotation + ')');
+      // The pose already draws the wing and tool at this angle. Only the
+      // small calibration correction turns the complete drawing, never the bird alone.
+      bird.setAttribute('transform', 'rotate(' + (-frames.poses[activeFrame].angle) + ')');
+      sheet.setAttribute('x', -(activeFrame % frames.cols) * cell);
+      sheet.setAttribute('y', -Math.floor(activeFrame / frames.cols) * cell);
+      instrument.setAttribute('data-frame', activeFrame);
     }
     paint();
     function tween(state, phase, target, duration, done, progress, lift) {
       if (stopped) return;
       g.setAttribute('data-state', state);
-      var prior = phases[Math.min(phases.length - 1, Math.round(framePosition))];
-      phases = [prior].concat(frames.phases[phase]); framePosition = 0;
+
       var start = null, from = Object.assign({}, pose);
       if (target.rotation != null) target.rotation = from.rotation + ((target.rotation - from.rotation + 540) % 360 + 360) % 360 - 180;
       function tick(time) {
@@ -1999,7 +2005,7 @@
         var t = Math.min(1, (time - start) / duration), ease = t * t * (3 - 2 * t);
         Object.keys(target).forEach(function (key) { pose[key] = from[key] + (target[key] - from[key]) * ease; });
         if (lift) pose.y -= Math.sin(Math.PI * t) * lift;
-        framePosition = t * (phases.length - 1); paint();
+        paint();
         if (progress) progress(ease);
         if (t < 1) raf = global.requestAnimationFrame(tick); else done();
       }
@@ -2012,22 +2018,37 @@
       if (!Poly.contains(v, { x: p.x + Math.cos(a + sweep / 2) * 2, y: p.y + Math.sin(a + sweep / 2) * 2 })) sweep -= 2 * Math.PI;
       // The generated protractor opens above its baseline; this ray keeps
       // that semicircle inside the polygon while the bird follows its grip.
-      var base = sweep < 0 ? a : b, rotation = base * 180 / Math.PI, mirror = 1;
-      /* AS UPRIGHT AS THE CORNER ALLOWS. The baseline can lie on either side of the corner: on
-         this one the drawing turns to the side's direction and he hangs off its far end; on
-         the other side it turns half a turn further and is MIRRORED, so he hangs off that
-         side's far end instead — the face opens into the corner and he is outside the shape
-         either way. Whichever turns him less is used: at the flat bottom of the pentagon he
-         stands upright beside the corner rather than hanging head down (the rotation alone
-         put him upside down at both bottom corners). He turns round in the air on the way. */
-      var norm = function (d) { return ((d % 360) + 540) % 360 - 180; };
-      var alt = ((base === a ? b : a) * 180 / Math.PI) + 180;
-      if (Math.abs(norm(alt)) < Math.abs(norm(rotation)) - 1) { rotation = alt; mirror = -1; }
+      var base = sweep < 0 ? a : b, rotation = base * 180 / Math.PI;
+      var chosen=0, error=Infinity;
+      frames.poses.forEach(function (drawing,i) {
+        var delta=Math.abs(norm(rotation-drawing.angle));
+        if(delta<error){error=delta;chosen=i;}
+      });
+      /* HIM BESIDE THE SHAPE, NOT ON IT. The tool's baseline can lie along EITHER side of the
+         corner with its face opening into the angle: along `base`, or half a turn round along the
+         other side. Each way, each complete pose puts his body somewhere different. Of the ways
+         that keep him near upright (the drawing turned no more than 30° from how it was drawn),
+         the one with his body outside the polygon is used; the nearest pose as before otherwise.
+         (At the right-hand corner of the pentagon the first way stood him on the shape.) */
+      var other = (base === a ? b : a) * 180 / Math.PI + 180, best = null;
+      [rotation, other].forEach(function (rot) {
+        frames.poses.forEach(function (drawing, i) {
+          var delta = Math.abs(norm(rot - drawing.angle));
+          if (delta > 30) return;
+          var ang = (rot - drawing.angle) * Math.PI / 180, bo = drawing.bodyOffset;
+          var body = { x: p.x + (Math.cos(ang) * bo.x - Math.sin(ang) * bo.y) * scale, y: p.y + (Math.sin(ang) * bo.x + Math.cos(ang) * bo.y) * scale };
+          var outside = !Poly.contains(v, body);
+          var score = (outside ? 0 : 1000) + delta;
+          if (!best || score < best.score) best = { score: score, rot: rot, frame: i };
+        });
+      });
+      if (best && best.score < 1000) { rotation = norm(best.rot); chosen = best.frame; }
+      selectPose(chosen, rotation-5);
       var outward = a + sweep / 2 + Math.PI;
       var carry = { x: p.x + Math.cos(outward) * 16, y: p.y + Math.sin(outward) * 16 };
       var approach = first; first = false;
       g.setAttribute('data-angle', index); highlight.replaceChildren();
-      var flight = Object.assign({ rotation: rotation - 8 * mirror, mirror: mirror }, carry);
+      var flight = Object.assign({ rotation: rotation - 5 }, carry);
       tween('MOVE_TO_VERTEX', 'carry', flight, approach ? 750 : 600, function () {
         tween('POSITION_PROTRACTOR', 'position', { x: p.x, y: p.y }, 400, function () {
           tween('ALIGN', 'align', { rotation: rotation }, 420, function () {
@@ -2040,7 +2061,8 @@
                 tween('LIFT', 'lift', carry, 350, function () {
                   highlight.replaceChildren();
                   if (!last) { done(); return; }
-                  tween('RETURN', 'carry', Object.assign({ rotation: 0, mirror: 1 }, home()), 800, function () {
+                  selectPose(frames.carry, frames.poses[frames.carry].angle);
+                  tween('RETURN', 'carry', Object.assign({ rotation: frames.poses[frames.carry].angle }, home()), 800, function () {
                     tween('COMPLETE', 'carry', {}, 250, function () { stop(); done(); }, function (t) {
                       g.style.opacity = 1 - t;
                       if (companion) companion.style.opacity = String(t * Number(opacity || 1));
