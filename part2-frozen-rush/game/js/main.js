@@ -453,7 +453,11 @@ if (lessonPart && hosted) {
 
    Built here rather than written into index.html, so a shipped page carries none of it,
    and marked data-dev so a suite can tell a review tool from the game. */
-if (options.dev) {
+/* (NOT INSIDE THE LESSON: there the lesson's own review bar covers the whole experience — Start,
+   every screen, End — and this one, drawn inside the frame on top of it, was the bar the reviewer
+   saw and used: its picker reloaded the frame by itself and broke the opening — the user: "jump not
+   working". Opened on its own with ?dev=1, the game keeps its bar.) */
+if (options.dev && !hosted) {
   const bar = document.createElement('div');
   bar.className = 'dev-bar';
   bar.setAttribute('data-dev', '1');

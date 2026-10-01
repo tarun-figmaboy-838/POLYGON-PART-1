@@ -169,7 +169,7 @@
   }());
 
   /* ---- the messages, from either frame ---- */
-  var open = null, back = null;
+  var open = null, back = null, gen = 0;          // gen: bumped by a review jump (leave)
   var openState = { ready: false, played: false, handed: false };
   var backState = { ready: false, running: false, unlocked: false, waiters: [] };
   function onMessage(e) {
@@ -193,7 +193,15 @@
   var gate = new Promise(function (r) { gateResolve = r; });
   function release() { if (gateOpen) return; gateOpen = true; gateResolve(); }
 
+  /* THE REVIEW BAR OVER THE GAME. It lives inside #game, which is position:fixed and so a layer of
+     its own: its z-index counted only among the lesson's elements, and the game's frame lay over
+     it — the bar could not be reached while the game was up. On the page itself it is over both. */
+  function liftReviewBar() {
+    var bar = doc.getElementById('jump');
+    if (bar && bar.parentNode !== doc.body) doc.body.appendChild(bar);
+  }
   function opening() {
+    liftReviewBar();
     if (doc.documentElement) doc.documentElement.classList.add('runner-opening');
     open = frame('runner-open', url('intro', devAt === 'break' ? 'break' : ''), true);
     if (global.SwifteeVisit) SwifteeVisit.load();
@@ -218,10 +226,11 @@
   function atBreak(where) {
     if (openState.handed) return;
     openState.handed = true;
+    var g0 = gen;
     var visit = global.SwifteeVisit ? SwifteeVisit.run({ frame: open, where: where || {}, lines: OPENING_LINES, exit: 'left',
       // as he takes off, the snow comes in and the game's music goes
       onLeave: function () { flurry.start(); post(open, 'quiet'); } }) : Promise.resolve();
-    visit.then(function () { toLesson(true); });
+    visit.then(function () { if (g0 === gen) toLesson(true); });
   }
   /* THE SNOW CARRIES THE GAME AWAY. The lesson starts underneath (its first screen, its Swiftee
      already on his way to his rock), and the game fades off it under the snow. */
@@ -294,8 +303,30 @@
     return true;
   }
   function atDitch(where) {
+    var g0 = gen, f = back;
     var visit = global.SwifteeVisit ? SwifteeVisit.run({ frame: back, where: where || {}, lines: DITCH_LINES, exit: 'right' }) : Promise.resolve();
-    visit.then(function () { post(back, 'said'); });
+    visit.then(function () { if (g0 === gen && f === back) post(back, 'said'); });
+  }
+
+  /* REVIEW (?dev=1): A JUMP TO A LESSON SCREEN TAKES THE GAME OFF THE SCREEN. The lesson is under
+     the game's frame, so picking a screen while the game was up changed the lesson behind it and
+     showed nothing (the user: "jump not working"). The frames, the snow, the curtain and any visit
+     go, and nothing from before the jump carries on (gen). */
+  function leave() {
+    if (!on) return;
+    gen++;
+    openState.handed = true;
+    flurry.stop(true);
+    if (open && open.parentNode) open.parentNode.removeChild(open);
+    open = null;
+    if (back) { post(back, 'quiet'); if (back.parentNode) back.parentNode.removeChild(back); }
+    back = null; started = false;
+    backState = { ready: false, running: false, unlocked: false, waiters: [] };
+    [].forEach.call(doc.querySelectorAll('.runner-curtain, .visit'), function (el) { el.remove(); });
+    if (doc.documentElement) doc.documentElement.classList.remove('runner-opening', 'runner-back');
+    try { if (global.VO && VO.stop) VO.stop(); } catch (e) {}
+    release();
+    if (global.Lesson && Lesson.showTitle) Lesson.showTitle();
   }
 
   /* ---- review (?dev=1): the jump list's Start and End entries ---- */
@@ -306,8 +337,7 @@
     if (what === 'start2') { loc.assign(base + '?' + q + '&intro=1&devat=break'); return; }
     // the end: straight to the game's return, from the lesson's last screen or from its ditch
     if (what === 'end1' || what === 'end2') {
-      if (back && back.parentNode) back.parentNode.removeChild(back);
-      back = null; started = false;
+      leave();
       preload(what === 'end2' ? 'break' : '');
       if (global.Lesson && Lesson.devReady && what === 'end1') Lesson.devReady();
       else start();
@@ -332,6 +362,7 @@
     preload: preload,
     start: start,
     devJump: devJump,
+    leave: leave,
     _flurry: flurry,                                       // review and tests: the snow on its own
     OPENING_LINES: OPENING_LINES,
     DITCH_LINES: DITCH_LINES

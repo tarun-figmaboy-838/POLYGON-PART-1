@@ -178,7 +178,9 @@ async function play(k, { w, d, errors, voice }, direct) {
   //  13 a drag during dialogue does nothing · 14 no false "Try again" · 15 disabled ends never react
   const vs = () => (St().vstate || []).slice();
   const want = (m) => { const o = []; for (let q = 0; q < n; q++) o.push(m[q]); return o.join(','); };
-  const plainKnob = (q) => { const kn = St().knobEls[q]; return kn.getAttribute('fill') === '#2f5fc4' && kn.getAttribute('r') === '6' && kn.getAttribute('opacity') === '1' && !kn.classList.contains('breathe') && !kn.classList.contains('target'); };
+  // A SIDE'S FAR CORNER, DONE WITH (the user, screen 7: "do not change the dot style, just disable
+  // and dim it"): the same white point as an open corner, dimmed, never breathing, never a target
+  const spentKnob = (q) => { const kn = St().knobEls[q]; return kn.getAttribute('fill') === '#ffffff' && kn.getAttribute('r') === '9' && +kn.getAttribute('opacity') < 0.6 && !kn.classList.contains('breathe') && !kn.classList.contains('target'); };
   const whiteKnob = (q) => { const kn = St().knobEls[q]; return kn.getAttribute('fill') === '#ffffff' && kn.getAttribute('opacity') === '1'; };
   const discLive = (q) => St().vertEls[q].style.pointerEvents === 'all';
   // (the drag preview lives in the effects layer; the white diagonal is in the polygon's)
@@ -232,7 +234,7 @@ async function play(k, { w, d, errors, voice }, direct) {
   t('k=' + k + ': [3] neighbour ' + right + ' is a SIDE', w.Stage.connectState() === 'SIDE_COMPLETE' && St().segment && St().segment[0] === k && St().segment[1] === right, { st: w.Stage.connectState(), seg: St().segment });
   t('k=' + k + ': [4] the side is a normal edge — the outline\'s stroke and width, no glow — and the ice preview is gone',
     !!St().segLine && St().segLine.getAttribute('stroke') === '#2f5fc4' && St().segLine.getAttribute('stroke-width') === '3.5' && !St().segLine.getAttribute('style') && litSides() === 0 && !previewShown());
-  t('k=' + k + ': [5] its end is disabled on the drop', vs()[right] === USED && plainKnob(right) && !discLive(right), vs());
+  t('k=' + k + ': [5] its end is disabled on the drop', vs()[right] === USED && spentKnob(right) && !discLive(right), vs());
   t('k=' + k + ': [6] the anchor stays the anchor', vs()[k] === 'anchor' && St().picked === k && St().knobEls[k].getAttribute('fill') === '#34b4a4');
   t('k=' + k + ': a side makes no diagonal', !(St().diagonals || []).length);
 
@@ -272,7 +274,7 @@ async function play(k, { w, d, errors, voice }, direct) {
     w.Stage.connectState() === 'SECOND_SIDE_COMPLETE' && St().segment && St().segment[0] === k && St().segment[1] === left, { st: w.Stage.connectState(), seg: St().segment });
   t('k=' + k + ': [8] it is a normal edge too', !!St().segLine && St().segLine.getAttribute('stroke') === '#2f5fc4' && !St().segLine.getAttribute('style') && litSides() === 0 && !previewShown());
   t('k=' + k + ': [9] its end is disabled, the anchor stays, and the far corners stay open',
-    statesAre({ [k]: 'anchor', [right]: USED, [left]: USED, [far]: DIAG, [(k + 3) % n]: DIAG }) && plainKnob(left), vs());
+    statesAre({ [k]: 'anchor', [right]: USED, [left]: USED, [far]: DIAG, [(k + 3) % n]: DIAG }) && spentKnob(left), vs());
 
   // 3 — the diagonal
   sp = await next();
@@ -280,7 +282,7 @@ async function play(k, { w, d, errors, voice }, direct) {
   const nonAdj = w.Poly.diagonalsFrom(k, n);
   t('k=' + k + ': the far corners are ' + nonAdj.join(','), nonAdj.length === 2 && nonAdj.indexOf(left) < 0 && nonAdj.indexOf(right) < 0);
   t('k=' + k + ': [10] the far corners are diagonal-available; both used ends stay disabled',
-    statesAre({ [k]: 'anchor', [right]: USED, [left]: USED, [nonAdj[0]]: DIAG, [nonAdj[1]]: DIAG }) && whiteKnob(nonAdj[0]) && whiteKnob(nonAdj[1]) && plainKnob(left) && plainKnob(right), vs());
+    statesAre({ [k]: 'anchor', [right]: USED, [left]: USED, [nonAdj[0]]: DIAG, [nonAdj[1]]: DIAG }) && whiteKnob(nonAdj[0]) && whiteKnob(nonAdj[1]) && spentKnob(left) && spentKnob(right), vs());
   const before2 = vs().join(',');
   await drag(from(), lerp(V()[k], V()[left], 6));
   await sleep(300);

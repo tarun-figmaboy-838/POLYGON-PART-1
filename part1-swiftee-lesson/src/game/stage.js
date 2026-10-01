@@ -1421,6 +1421,10 @@
      * a card it no longer had to share. The shape is the lesson; the room
      * around it is only what the marks actually occupy. */
     if (opts.room === 'measure') { mx = Math.max(face.w * 0.045, 32); mt = Math.max(face.h * 0.04, 30); mb = Math.max(mb, face.h * 0.07, 32); }
+    // A COMPARE CARD THAT IS MEASURED (screen 29 — the user: "make the shape big, and show the
+    // side and angle like the swipe card"): the shape as big as the glass allows, with just the
+    // room its centimetre readings need off each side
+    if (opts.room === 'labels') { mx = Math.max(face.w * 0.07, 17); mt = Math.max(face.h * 0.07, 17); mb = mt; }
     var box = { x: face.x + mx, y: face.y + mt, w: face.w - mx * 2, h: face.h - mt - mb };
     /* STEPPED RIGHT, AWAY FROM HIS BUBBLE. On the measuring card the left
        side's reading ('6 cm') sits outside the shape — exactly where his
@@ -1674,15 +1678,21 @@
          is a plain corner of the polygon: the outline's own dot, full strength, never breathing,
          never lit, never touched. With no state (every other screen) a corner is drawn as before. */
       var vs = st.vstate ? st.vstate[j] : null;
-      var plain = vs === 'side-used-disabled' || vs === 'inactive' || vs === 'diagonal-used';
+      /* A CORNER THAT IS DONE WITH KEEPS ITS LOOK (the user, screen 7: "do not change the vertex
+         … just make it disabled, do not change the dot style, and dim it" — and again "after
+         creating the diagonal why the vertex point change?"): a side's far end, every corner once
+         the diagonal is made, a far corner a diagonal has already reached — the same white point
+         as the corners still open, dimmed, never breathing, out of reach of every press. They used
+         to turn into the outline's small dark dot, which read as a different kind of corner. */
+      var spent = vs === 'side-used-disabled' || vs === 'inactive' || vs === 'diagonal-used';
       var knob = mk('circle', {
         cx: v[j].x, cy: v[j].y,
-        r: col ? 10 : (plain ? 6 : (touch ? 9 : 6)),
-        fill: col || (touch && !plain ? '#ffffff' : SHAPE.edge),
-        stroke: col ? '#ffffff' : (touch && !plain ? '#0b3f7a' : 'none'),
-        'stroke-width': col ? 3 : (touch && !plain ? 3 : 2),
-        'class': 'knob' + (!plain && ((st.breathe && !col && touch) || (st.breatheAt && st.breatheAt[j])) ? ' breathe' : '') + (vs === 'side-used-disabled' ? ' spent' : ''), 'data-i': j,
-        opacity: shown ? 1 : 0,
+        r: col ? 10 : (touch ? 9 : 6),
+        fill: col || (touch ? '#ffffff' : SHAPE.edge),
+        stroke: col ? '#ffffff' : (touch ? '#0b3f7a' : 'none'),
+        'stroke-width': col ? 3 : (touch ? 3 : 2),
+        'class': 'knob' + (!spent && ((st.breathe && !col && touch) || (st.breatheAt && st.breatheAt[j])) ? ' breathe' : '') + (spent && !col ? ' spent' : ''), 'data-i': j,
+        opacity: shown ? (spent && !col ? 0.4 : 1) : 0,
         'pointer-events': 'none'
       }, g);
       if (vs) knob.setAttribute('data-state', vs);
@@ -2096,12 +2106,72 @@
      All one group (the regular card): gold, one each. More than one (the irregular card): violet,
      the counts telling the lengths apart. Drawn one after another on the card itself, so they dim
      and return with it (focus). */
+  /* ON A MEASURED CARD, THE READINGS THEMSELVES (screen 29 — the user: "show the side and angle
+     like the middle swipe card … not the lines, they look odd"): every side its length in
+     centimetres, set just off its middle, and every corner a small filled wedge with its degrees
+     on the shape's face — the swipe card's own marks (shapeMarks), in the shape's own ink. Both
+     cards are read with ONE ruler, the regular pentagon's side being 3 cm, so the irregular one's
+     numbers are measured against the same scale; a rounding that would print two different sides
+     alike gains a decimal (decimalsFor). Placed clear of each other and of the outline
+     (labelSpace), one after another as the word is said. */
+  function compareReadings(c, what, g, items) {
+    var v = c.verts, n = v.length, cen = Poly.centroid(v), ink = '#0f3f8f';
+    var ref = st.compare.left && st.compare.left.verts ? Poly.sideLengths(st.compare.left.verts) : Poly.sideLengths(v);
+    var UNIT = (ref.reduce(function (a, b) { return a + b; }, 0) / ref.length) / 3 || 30;
+    if (!c.space) c.space = labelSpace(v, (function () { var f = panelFace(c.panel); return { cx: f.x + f.w / 2, cy: f.y + f.h / 2, w: f.w, h: f.h }; })(), 13);
+    if (what === 'sides') {
+      var L = Poly.sideLengths(v), idx = v.map(function (_, i) { return i; });
+      var sd = decimalsFor(L, marksBy(L, idx, 6).mark, UNIT, 2);
+      for (var si = 0; si < n; si++) {
+        var sa = v[si], sb = v[(si + 1) % n], slen = Math.hypot(sb.x - sa.x, sb.y - sa.y) || 1;
+        var stx = (sb.x - sa.x) / slen, sty = (sb.y - sa.y) / slen, smx = (sa.x + sb.x) / 2, smy = (sa.y + sb.y) / 2;
+        var snx = -sty, sny = stx;
+        if (snx * (smx - cen.x) + sny * (smy - cen.y) < 0) { snx = -snx; sny = -sny; }
+        var t = (L[si] / UNIT).toFixed(sd);
+        if (/\.0+$/.test(t)) t = t.replace(/\.0+$/, '');
+        var text = t + ' cm', tw = text.length * 8 + 4, th = 16;
+        var base = 8 + Math.abs(snx) * tw / 2 + Math.abs(sny) * th / 2, cands = [];
+        [0, 0.18, -0.18, 0.32, -0.32].forEach(function (along) {
+          [base, base + 6].forEach(function (off) { cands.push({ x: smx + stx * slen * along + snx * off, y: smy + sty * slen * along + sny * off }); });
+        });
+        cands.push({ x: smx - snx * base, y: smy - sny * base });
+        var at = c.space.fit(cands, tw, th) || cands[0];
+        var lg = mk('g', { 'class': 'ev-length', 'data-side': si }, g);
+        mk('text', { x: at.x, y: at.y + 5, 'text-anchor': 'middle', 'font-size': 15, 'font-weight': 800,
+                     fill: ink, stroke: '#ffffff', 'stroke-width': 3.2, 'paint-order': 'stroke', 'stroke-linejoin': 'round', text: text }, lg);
+        items.push(lg);
+      }
+    } else if (what === 'angles') {
+      var A2 = Poly.interiorAngles(v);
+      for (var j = 0; j < n; j++) {
+        var p = v[j], q = v[(j + n - 1) % n], r2 = v[(j + 1) % n];
+        var a1 = Math.atan2(q.y - p.y, q.x - p.x), a2 = Math.atan2(r2.y - p.y, r2.x - p.x);
+        var sweep = ((a2 - a1) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI), large = sweep > Math.PI ? 1 : 0, mid = a1 + sweep / 2;
+        var inside = Poly.contains(v, { x: p.x + Math.cos(mid) * 6, y: p.y + Math.sin(mid) * 6 }), rr = 14;
+        var x1 = p.x + Math.cos(a1) * rr, y1 = p.y + Math.sin(a1) * rr, x2 = p.x + Math.cos(a2) * rr, y2 = p.y + Math.sin(a2) * rr;
+        var arcD = 'A' + rr + ' ' + rr + ' 0 ' + (inside ? large : (1 - large)) + ' ' + (inside ? 1 : 0) + ' ' + x2 + ' ' + y2;
+        var ag = mk('g', { 'class': 'ev-angle', 'data-angle': j }, g);
+        mk('path', { d: 'M' + p.x + ' ' + p.y + ' L' + x1 + ' ' + y1 + ' ' + arcD + ' Z', fill: '#ffffff', 'fill-opacity': 0.5,
+                     stroke: ink, 'stroke-opacity': 0.9, 'stroke-width': 2, 'stroke-linejoin': 'round' }, ag);
+        var bxl = cen.x - p.x, byl = cen.y - p.y, dt = { x: p.x + bxl * 0.3, y: p.y + byl * 0.3 };
+        var pull = Math.hypot(dt.x - p.x, dt.y - p.y);
+        if (pull < rr + 15) { var kk = (rr + 15) / (pull || 1); dt = { x: p.x + (dt.x - p.x) * kk, y: p.y + (dt.y - p.y) * kk }; }
+        var dtext = Math.round(A2[j]) + '°', dw = dtext.length * 8 + 6, dc = [dt];
+        [0.24, 0.36, 0.42, 0.18, 0.5].forEach(function (f) { dc.push({ x: p.x + bxl * f, y: p.y + byl * f }); });
+        var da = c.space.fit(dc, dw, 15) || dt;
+        mk('text', { x: da.x, y: da.y + 5, 'text-anchor': 'middle', 'font-size': 14, 'font-weight': 800,
+                     fill: '#ffffff', stroke: ink, 'stroke-width': 3, 'paint-order': 'stroke', 'stroke-linejoin': 'round', text: dtext }, ag);
+        items.push(ag);
+      }
+    }
+  }
   function compareEvidence(side, what) {
     var c = st.compare && st.compare[side];
     if (!c || !c.pg || !c.verts) return;
     var v = c.verts, n = v.length, idx = v.map(function (_, i) { return i; }), items = [];
     var g = c.evidence && c.evidence.parentNode ? c.evidence : (c.evidence = mk('g', { 'class': 'compare-evidence', 'pointer-events': 'none' }, c.pg));
-    if (what === 'sides') {
+    if (c.measured) compareReadings(c, what, g, items);
+    else if (what === 'sides') {
       var L = Poly.sideLengths(v), sm = marksBy(L, idx, 15), same = sm.groups === 1;
       for (var i = 0; i < n; i++) {
         var a = v[i], b = v[(i + 1) % n], mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
@@ -2844,7 +2914,8 @@
            reached without making it — a jump, Back past it — shows the stock
            shape. */
         var mine = cfg.made ? madeShape(cfg.made, cfg.sides || 5) : null;
-        var P = polygonIn(pnl, cfg.sides || 5, mine ? { shape: mine.verts } : { dent: cfg.dent, stretch: cfg.stretch });
+        var room = spec.measured ? 'labels' : undefined;
+        var P = polygonIn(pnl, cfg.sides || 5, mine ? { shape: mine.verts, room: room } : { dent: cfg.dent, stretch: cfg.stretch, room: room });
         var pg = mk('g', {}, layers.poly);
         mk('path', { d: pathOf(P.verts), fill: 'url(#' + candy(SHAPE.fill) + ')', stroke: SHAPE.edge, 'stroke-width': SHAPE.edgeW, 'stroke-linejoin': 'round' }, pg);
         /* THE DIAGONALS ARE KNOWN FROM THE START AND DRAWN WHEN THEY ARE
@@ -2875,7 +2946,7 @@
         ring.style.filter = 'url(#cardGlow)';                      // (inline: the stylesheet's drop-shadow would win over the attribute)
         layers.panel.insertBefore(ring, layers.panel.firstChild);  // behind every card
         if (tab) layers.ui.appendChild(tab);                       // over the ring, where the two meet
-        st.compare[s[0]] = { panel: pnl, g: g, pg: pg, dg: dg, diags: diags, verts: P.verts, tone: cfg.tone, tag: tagEl, nameTab: tab, ring: ring };
+        st.compare[s[0]] = { panel: pnl, g: g, pg: pg, dg: dg, diags: diags, verts: P.verts, tone: cfg.tone, tag: tagEl, nameTab: tab, ring: ring, measured: !!spec.measured };
       });
     },
 
@@ -5430,7 +5501,10 @@
           // vertex the vertex point not appear and sync?"): the point was hidden until the drag
           // armed, two seconds after "vertex"; now it pops in as the word is said
           if (w.knob != null && st.verts && st.verts[w.knob] && st.polyG) {
-            st.vcolor = st.vcolor || {}; st.vcolor[w.knob] = HI.picked; renderPoly();
+            st.vcolor = st.vcolor || {}; st.vcolor[w.knob] = HI.picked;
+            // (and breathing from that word on — screen 10's "this vertex")
+            if (w.breathe) { st.breatheAt = st.breatheAt || {}; st.breatheAt[w.knob] = true; }
+            renderPoly();
             var kn = knobOf(w.knob); if (kn) sumPop(kn, 0, true);
           }
           if (reduced() || !st.compare) return;
@@ -5748,6 +5822,8 @@
        the new pill arrives in its place, green — the answer shown. It takes no press until the
        input after it arms. */
     if (spec.merge && st.choiceG) {
+      var doMerge = function () {
+      if (!st.choiceG) return;
       var oldG = st.choiceG, oldEls = (st.choiceEls || []).slice();
       st.choiceG = null;                                   // (so op.choices builds beside it, not over it)
       op.choices([spec.merge], { enter: false });
@@ -5767,6 +5843,11 @@
         }
       }
       later(reduced() ? 0 : 480, function () { if (oldG.parentNode) oldG.remove(); });
+      };
+      /* ON ITS WORD (`cue` — the user, screens 12 and 28: "when the VO says inside, give the Inside
+         option green and the other option gone"): the right answer turns green and the other
+         leaves as he says it, not half a second after the line. */
+      if (!(spec.cue && onWord(spec.cue, doMerge))) doMerge();
     }
     /* THE DIAGONALS LIT, AND LEFT LIT (`lit: 'diagonals'` — a two-try question's explanation):
        each brightens in turn and stays glowing while he explains, so the lines he is talking
@@ -7379,10 +7460,10 @@
               bin._items = bin._items || [];
               bin._items.push(item);
               packBin(bin);
-              // RIGHT, AND WHY IN ONE LINE (said for the first card: game.js praises once per
-              // question): the reason the shape is in that bin
-              onTap('correct', bin._bin.id === 'convex' ? { t: 'Yes! It\u2019s convex: no corner goes inward.', vo: 'fb42' }
-                             : bin._bin.id === 'concave' ? { t: 'Yes! It\u2019s concave: one corner goes inward.', vo: 'fb43' } : null);
+              // RIGHT: the short "Keep going!" every right answer on the way gets (game.js PRAISE_FOR —
+              // the user, screen 22: no "Yes! It's convex…" line here, the same short feedback as
+              // the levels before; "Great job!" when the level is done)
+              onTap('correct', null);
               if (S.placed >= S.total) { S.done = true; endInteraction(); resolve({ result: 'correct' }); }
             } else {
               // A MISS IS THE SHAPE TAUGHT UP CLOSE — on that card's spec.teach-th miss (2 on
@@ -7600,11 +7681,11 @@
      made — never from a selected flag alone:
        anchor               the corner picked; the only place a line starts; never disabled
        adjacent-available   a neighbour with no side yet: where a SIDE may go
-       side-used-disabled   a neighbour a side has been made to: visible, a plain corner, and
-                            out of every press, hover, drop, pulse and hint
+       side-used-disabled   a neighbour a side has been made to: visible — the same white point,
+                            dimmed — and out of every press, hover, drop, pulse and hint
        diagonal-available   a far corner, from the start: where the DIAGONAL may go
        inactive             once the diagonal is made (`locked`), every corner that is not the
-                            anchor or a used end
+                            anchor or a used end (the same white point, dimmed)
      The side being named (st.segment) counts as made the moment it lands: its end is disabled
      on the drop. */
   function sideEnds() {

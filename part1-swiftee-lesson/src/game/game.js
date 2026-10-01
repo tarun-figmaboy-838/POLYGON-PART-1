@@ -1760,7 +1760,11 @@
       snugWidth();
       bubble.style.left = '50%';
       bubble.style.marginLeft = -(bubble.offsetWidth / 2) + 'px';
-      var birdTop = L.y - 256 * layout(Swiftee.pos, 'large').scale * CONTENT_FRAC;
+      /* OVER HIS HEAD AT THE SIZE HE IS (the user, screen 31: on "Let's recall" the box floated
+         far above him). This measured a LARGE bird's head whatever he was — right on the intro,
+         where he is large, and nearly a hundred pixels too high for the small bird who opens the
+         recap. L is his own mark at his own size. */
+      var birdTop = L.y - 256 * L.scale * CONTENT_FRAC;
       bubble.style.top = Math.max(hudBox.bottom + GAP, birdTop - bubble.offsetHeight - TAIL_GAP) + 'px';
       // He stands directly below on these screens, but aim it properly all the
       // same — "below" is only true once he has landed.
@@ -4928,6 +4932,8 @@
       box.appendChild(o);
     });
     if (withGame) { addOpt('end1', 'End 1. Last line, then the game'); addOpt('end2', 'End 2. Swiftee at the ditch'); }
+    // (and the picker says where the review is: the game's opening, or its break)
+    if (withGame && RunnerStage.opening) box.value = /[?&]devat=break\b/.test((global.location || {}).search || '') ? 'start2' : 'start1';
     // Before Start the title curtain is still down, and a screen played behind
     // it would be heard and not seen: so a jump from the title presses Start
     // first (inside this click, so the sound unlocks too), then jumps.
@@ -4951,12 +4957,15 @@
         return;
       }
       if (/^(start|end)[12]$/.test(box.value)) { if (global.RunnerStage) RunnerStage.devJump(box.value); return; }
+      // (the game off the screen first, if it is up: the lesson is under it — runner-stage.js leave)
+      if (global.RunnerStage && RunnerStage.leave) RunnerStage.leave();
       // The picker and the Back button change screen the same way: goTo().
       jump(+box.value);
     });
     // one screen back or on, from wherever the lesson is
     Array.prototype.forEach.call(host2.querySelectorAll('.dev-step'), function (b) {
       b.addEventListener('click', function () {
+        if (global.RunnerStage && RunnerStage.leave) RunnerStage.leave();
         jump(current + (+b.getAttribute('data-step')));   // (from the title, either way is screen 1)
       });
     });

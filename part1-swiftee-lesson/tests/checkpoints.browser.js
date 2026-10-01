@@ -383,7 +383,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       return { states: (S.vstate || []).join(','), connect: S.connect,
         seg: seg ? seg.stroke === outline.stroke && seg.strokeWidth === outline.strokeWidth && (!seg.filter || seg.filter === 'none') && seg.opacity === '1' : null,
         lit: document.querySelectorAll('#stage .segment-done').length,
-        end: { state: kn.getAttribute('data-state'), plain: getComputedStyle(kn).fill === outline.stroke, pe: getComputedStyle(disc).pointerEvents, breathe: kn.classList.contains('breathe') },
+        end: { state: kn.getAttribute('data-state'), dim: getComputedStyle(kn).fill === 'rgb(255, 255, 255)' && +kn.getAttribute('opacity') < 0.6, pe: getComputedStyle(disc).pointerEvents, breathe: kn.classList.contains('breathe') },
         preview: [...document.querySelectorAll('#stage .layer-fx line')].filter((l) => +l.getAttribute('opacity') > 0 && !l.closest('.gesture-ghost')).length };
     }, q);
     // THE SIDE AS IT LOOKS: the darkest pixel on the middle of the side made, against the same on
@@ -433,8 +433,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const c1 = await cues(), panel1 = await rect('#stage .panel');
     await shot('06-level2-valid-diagonal');
     const pair = d.d.slice().sort().join('-') === [f, to].sort().join('-');
-    const sideOk = (x) => x.seg === true && x.lit === 0 && x.preview === 0 && x.end.state === 'side-used-disabled' && x.end.plain && x.end.pe === 'none' && !x.end.breathe;
-    const restOk = (x) => x.lit === 0 && x.preview === 0 && x.end.state === 'side-used-disabled' && x.end.plain && x.end.pe === 'none' && !x.end.breathe;
+    const sideOk = (x) => x.seg === true && x.lit === 0 && x.preview === 0 && x.end.state === 'side-used-disabled' && x.end.dim && x.end.pe === 'none' && !x.end.breathe;
+    const restOk = (x) => x.lit === 0 && x.preview === 0 && x.end.state === 'side-used-disabled' && x.end.dim && x.end.pe === 'none' && !x.end.breathe;
     const st = (m) => { const o = []; for (let q = 0; q < n; q++) o.push(m[q]); return o.join(','); };
     const flow = {
       side1: sideOk(a) && a.connect === 'SIDE_COMPLETE', dragDuringLine: during.connect === 'SIDE_COMPLETE' && during.diags === 0,
@@ -521,8 +521,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   };
   // THE INSIDE / OUTSIDE QUESTION, TWO TRIES (the user's 2-wrong brief): the first miss is "Try
   // again!" with both answers kept; the second is taught — the diagonals lit, "The diagonals are
-  // inside.", then the two answers merge into ONE centred "Inside" (only after the voice), and a
-  // tap on it goes on as a continue: no third attempt, no verdict for it
+  // inside.", and ON "inside" the two answers become ONE centred green "Inside" (Outside gone),
+  // and the lesson goes on by itself — no tap, no third attempt, no verdict for it (the user, screen 12)
   await step(19, 'inside-or-outside first wrong: "Try again", both answers kept, nothing revealed, another go', async () => {
     const i = await jump('inside-or-outside'); await waiting(i); await sleep(300);
     const before = (await said()).length;
@@ -533,38 +533,38 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const ok = lines.some((t) => /^Try again/.test(t)) && !lines.some((t) => /The diagonals are inside/.test(t)) && JSON.stringify(seen) === '["Inside","Outside"]' && (await ev((i) => window.Game.screen === i, i));
     return { ok, extra: { lines, seen } };
   });
-  await step(20, 'inside-or-outside second wrong: locked, the diagonals lit ON "diagonals", "The diagonals are inside.", then ONE centred Inside after the voice; a tap goes on', async () => {
+  await step(20, 'inside-or-outside second wrong: locked, the diagonals lit ON "diagonals", "The diagonals are inside.", ONE centred green Inside ON "inside", then on by itself — no tap', async () => {
     const i = await ev(() => window.Game.screen);
     const before = (await said()).length, c0 = await cues();
-    await ev(() => { window.__io = { lockedAt: null, litAt: null, voAt: null, voEnd: null, saidAt: null, oneAt: null, liveAt: null, both: false, wordAt: null }; const T0 = performance.now();
+    await ev(() => { window.__io = { lockedAt: null, litAt: null, voAt: null, wordAt: null, insideAt: null, oneAt: null, liveAt: null, nextAt: null }; const T0 = performance.now(), screen = window.Game.screen;
       const tick = () => { const n = performance.now() - T0, o = window.__io;
         if (o.lockedAt == null && window.Input.mode() === 'locked') o.lockedAt = n;
         if (o.litAt == null && document.querySelector('#stage .polygon g[data-lit]')) o.litAt = n;
         if (o.voAt == null && window.VO.id === 'fb54') o.voAt = n;
-        // (the word itself, in THIS line's bubble: "The diagonals are inside.")
-        if (o.voAt != null && o.wordAt == null && /The diagonals are inside/.test(document.getElementById('bubble').textContent) &&
-            [...document.querySelectorAll('#bubble .in')].some((w) => /^diagonals/i.test(w.textContent))) o.wordAt = n;
-        if (o.voAt != null && o.voEnd == null && window.VO.id !== 'fb54') o.voEnd = n;
-        // (the words said: the clip's last word, not its silent tail — the one Inside follows these)
-        if (o.voAt != null && o.saidAt == null && (window.VO.id !== 'fb54' || window.VO.at() >= window.VO.spoken('fb54'))) o.saidAt = n;
+        const inLine = /The diagonals are inside/.test(document.getElementById('bubble').textContent), words = [...document.querySelectorAll('#bubble .in')];
+        // (the words themselves, in THIS line's bubble: "The diagonals are inside.")
+        if (o.voAt != null && o.wordAt == null && inLine && words.some((w) => /^diagonals/i.test(w.textContent))) o.wordAt = n;
+        if (o.voAt != null && o.insideAt == null && inLine && words.some((w) => /^inside/i.test(w.textContent))) o.insideAt = n;
         const vis = [...document.querySelectorAll('#stage .choice')].filter((c) => +getComputedStyle(c).opacity > 0.05).map((c) => c.getAttribute('data-label'));
         if (o.voAt != null && o.oneAt == null && vis.length === 1 && vis[0] === 'Inside' && document.querySelectorAll('#stage .choice').length === 1) o.oneAt = n;
-        if (o.oneAt != null && o.liveAt == null && window.Game.director.state === 'WAITING_FOR_USER' && window.Input.mode() === 'polygon') o.liveAt = n;
-        if (o.oneAt == null && vis.indexOf('Outside') >= 0 && o.voEnd != null && n > o.voEnd + 1500) o.both = true;
-        if (n < 25000 && o.liveAt == null) requestAnimationFrame(tick); };
+        if (o.oneAt != null && o.liveAt == null && window.Game.screen === screen && window.Game.director.state === 'WAITING_FOR_USER' && window.Input.mode() === 'polygon') o.liveAt = n;
+        if (o.nextAt == null && window.Game.screen > screen) o.nextAt = n;
+        if (n < 30000 && o.nextAt == null) requestAnimationFrame(tick); };
       tick(); });
     await tapChoice('Outside');
-    await waitFn(() => window.__io.liveAt != null, null, 25000).catch(() => {});
-    const io = await ev(() => window.__io);
+    await waitFn(() => window.__io.oneAt != null, null, 25000).catch(() => {});
     const mid = await ev(() => { const c = document.querySelector('#stage .choice'), p = document.querySelector('#stage .panel'); if (!c || !p) return null; const a = c.getBoundingClientRect(), b = p.getBoundingClientRect(); return Math.round((a.left + a.width / 2) - (b.left + b.width / 2)); });
     await shot('07b-inside-outside-merged');
-    await tapChoice('Inside');
+    // and NO tap: the lesson goes on by itself
     await waitFn((i) => window.Game.screen > i, i, 20000).catch(() => {});
+    const io = await ev(() => window.__io);
     const lines = (await said()).slice(before), c1 = await cues();
     const advanced = await ev((i) => window.Game.screen > i, i);
-    // (the diagonals light ON the word "diagonals" — within 300 ms of it, not before the line)
-    const ok = io.lockedAt != null && io.litAt != null && io.voAt != null && io.wordAt != null && io.litAt >= io.voAt && Math.abs(io.litAt - io.wordAt) <= 300 && io.voEnd != null && io.saidAt != null && io.oneAt != null && io.oneAt >= io.saidAt && io.liveAt >= io.saidAt && io.oneAt - io.saidAt < 1600 &&
-      mid != null && Math.abs(mid) <= 3 && !io.both && lines.some((t) => /The diagonals are inside/.test(t)) && !lines.some((t) => /^Try again/.test(t)) &&
+    // (the diagonals light ON "diagonals", within 300 ms; the one Inside is up ON "inside" — its pill
+    // fades in over the merge, so within 700 ms of the word, and never before it)
+    const ok = io.lockedAt != null && io.litAt != null && io.voAt != null && io.wordAt != null && io.litAt >= io.voAt && Math.abs(io.litAt - io.wordAt) <= 300 &&
+      io.insideAt != null && io.oneAt != null && io.oneAt >= io.insideAt - 50 && io.oneAt - io.insideAt < 700 && io.liveAt == null &&
+      mid != null && Math.abs(mid) <= 3 && lines.some((t) => /The diagonals are inside/.test(t)) && !lines.some((t) => /^Try again/.test(t)) &&
       advanced && c1.correct === c0.correct;
     return { ok, extra: { io, mid, lines, advanced, correctCues: c1.correct - c0.correct } };
   });
@@ -904,10 +904,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await shot('13-regular-irregular-comparison');
     return { ok: tags.some((t) => /^Regular/.test(t)) && tags.some((t) => /^Irregular/.test(t)) && !tags.every((t) => /^Pentagon$/.test(t)), extra: tags };
   });
-  // (the user's sync brief: the evidence itself on its words — the ticks on "sides", the arcs on
-  // "angles" — one card at a time, the second card's marks only once the focus has turned to it,
+  // (the user's sync brief: the evidence itself on its words — the side lengths on "sides", the
+  // angles on "angles" (the measured cards of screen 29 — cm and degrees, as the swipe card has
+  // them) — one card at a time, the second card's marks only once the focus has turned to it,
   // and nothing else lighting: no generic traces over the evidence, no dots, no diagonals)
-  await step(44, 'regular vs irregular sync: ticks on "sides", arcs on "angles" (≤ 500 ms), one card at a time, nothing else lit', async () => {
+  await step(44, 'regular vs irregular sync: lengths on "sides", angles on "angles" (≤ 500 ms), one card at a time, nothing else lit', async () => {
     await jump('regular-vs-irregular');
     const r = await ev(() => new Promise((res) => {
       const T0 = performance.now(), i = window.Game.screen;
@@ -923,9 +924,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
           if (angleWord == null && /^angle/.test(t)) angleWord = now;
         });
         const L = C.left && C.left.evidence, R = C.right && C.right.evidence;
-        if (sideFx == null && L && L.querySelector('.ev-tick')) sideFx = now;
-        if (angleFx == null && L && L.querySelector('.ev-arc')) angleFx = now;
-        if (R && R.querySelector('.ev-tick, .ev-arc') && window.Stage.state.compareFocus !== 'right' && window.VO.id !== 'fb58') rightEarly = true;
+        if (sideFx == null && L && L.querySelector('.ev-tick, .ev-length')) sideFx = now;
+        if (angleFx == null && L && L.querySelector('.ev-arc, .ev-angle')) angleFx = now;
+        if (R && R.querySelector('.ev-tick, .ev-arc, .ev-length, .ev-angle') && window.Stage.state.compareFocus !== 'right' && window.VO.id !== 'fb58') rightEarly = true;
         traces = Math.max(traces, document.querySelectorAll('#stage .word-sides, #stage .word-angles, #stage .dc-trace').length);
         if ((sideFx != null && angleFx != null && now > angleFx + 800) || now > 60000 || window.Game.screen !== i) { res({ sideWord, angleWord, sideFx, angleFx, rightEarly, traces }); return; }
         setTimeout(tick, 30);

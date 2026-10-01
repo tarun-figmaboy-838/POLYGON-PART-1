@@ -684,8 +684,9 @@ const levelOf = (st) => { const d = RIG[st]; return d ? (d.level || 1) : 0; };
      question's own words — the instruction and the choices in one `parallel`, each answer
      waiting for its word (`cue`) — and never from a beat before the question, nor from the
      screen-level stage (a rebuild would put them up ahead of it). */
-  // THE INSIDE / OUTSIDE SECOND MISS (the user's 2-wrong brief): "The diagonals are inside.", then
-  // the two answers merge into one "Inside", a continue tap — no third attempt, no "Try again!"
+  // THE INSIDE / OUTSIDE SECOND MISS (the user's 2-wrong brief, and screen 12's fix): "The diagonals
+  // are inside.", and ON "inside" the two answers merge into one green "Inside" — then on by itself,
+  // no tap, no third attempt, no "Try again!"
   {
     const s = Screens.byId['inside-or-outside'];
     const last = JSON.stringify(s.beats);
@@ -693,10 +694,11 @@ const levelOf = (st) => { const d = RIG[st]; return d ? (d.level || 1) : 0; };
     const iLine = arm ? arm.findIndex((x) => x.say === 'The diagonals are inside.') : -1;
     // (lit ON its word: an onWord cue set before the line)
     const iLit = arm ? arm.findIndex((x) => x.stage && [].concat(x.stage.onWord || []).some((w) => w.word === 'diagonals' && w.lit === 'diagonals')) : -1;
-    const iMerge = arm ? arm.findIndex((x) => x.stage && x.stage.merge === 'Inside') : -1;
-    const iTap = arm ? arm.findIndex((x) => x.input && x.input['continue']) : -1;
-    t('inside-or-outside second miss: diagonals lit, "The diagonals are inside.", then ONE merged Inside, then a continue tap',
-      !!arm && iLit >= 0 && iLit < iLine && iLine < iMerge && iMerge < iTap && !arm.some((x) => x.say && /Try again/.test(x.say)) && /fb54/.test(last),
+    // (the merge waits for its word — `cue: 'inside'` — so it is set before the line, like the lighting)
+    const iMerge = arm ? arm.findIndex((x) => x.stage && x.stage.merge === 'Inside' && x.stage.cue === 'inside') : -1;
+    const iTap = arm ? arm.findIndex((x) => x.input) : -1;
+    t('inside-or-outside second miss: diagonals lit, "The diagonals are inside.", ONE merged Inside on "inside", then on by itself (no tap)',
+      !!arm && iLit >= 0 && iLit < iLine && iMerge >= 0 && iMerge < iLine && iTap < 0 && !arm.some((x) => x.say && /Try again/.test(x.say)) && /fb54/.test(last),
       { iLit, iLine, iMerge, iTap });
   }
   // THE SORT'S EXPLANATIONS SHOW EACH CONCEPT ON ITS OWN WORD (the explanation brief): the corner on

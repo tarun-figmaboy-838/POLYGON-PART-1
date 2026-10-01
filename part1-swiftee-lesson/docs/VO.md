@@ -21,7 +21,7 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 | # | Scene | Speaker | File | Line | Recorded |
 |---|-------|---------|------|------|----------|
 
-## Lesson lines (64), in timeline order
+## Lesson lines (65), in timeline order
 
 | # | Screen | Screen id | File | Type | Line | Breaths | When | Delivery | Recorded |
 |---|--------|-----------|------|------|------|---------|------|----------|----------|
@@ -53,50 +53,50 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 | 26 | 19 | convex | `assets/vo/p24.mp3` | say | All diagonals inside means convex polygon. |  | screen 19 | explaining, warm and clear | yes |
 | 27 | 20 | concave | `assets/vo/p25.mp3` | say | Atleast one diagonal outside means concave polygon. | Atleast one diagonal outside / means concave polygon. | screen 20 | explaining, warm and clear | yes |
 | 28 | 21 | make-concave | `assets/vo/p26i.mp3` | instruction | Drag any vertex to make this polygon concave. |  | screen 21, the instruction | an instruction: plain, steady, every word clear | yes |
-| 29 | 21 | make-concave | `assets/vo/p26r1.mp3` | say | The diagonals are still inside the shape, so it is still convex. |  | screen 21, after a wrong answer | explaining, warm and clear | yes |
-| 30 | 21 | make-concave | `assets/vo/fb53.mp3` | say | Let me show you. Watch this corner. |  | screen 21, after a wrong answer | explaining, warm and clear | yes |
-| 31 | 21 | make-concave | `assets/vo/p26r2.mp3` | say | Now one diagonal goes outside, so the polygon is concave. |  | screen 21, after a wrong answer | explaining, warm and clear | yes |
-| 32 | 21 | make-concave | `assets/vo/fb03.mp3` | say | Great job! |  | screen 21, after the right answer | a cheer, delighted | yes |
-| 33 | 22 | sort-convex-concave | `assets/vo/p27.mp3` | say | Can you sort these polygons as convex or concave? |  | screen 22 | playful, inviting | yes |
-| 34 |  |  | `assets/vo/p27c.mp3` | say | Look! This corner goes inward. |  | screen undefined | explaining, warm and clear | yes |
-| 35 |  |  | `assets/vo/p27v.mp3` | say | Look! No corner goes inward. |  | screen undefined | explaining, warm and clear | yes |
-| 36 | 23 | suspicious | `assets/vo/p28.mp3` | say | Hmm… The sides look suspiciously alike. | Hmm… / The sides look suspiciously alike. | screen 23 | wondering aloud, a little slower | yes |
-| 37 | 24 | measure-sides | `assets/vo/p29s.mp3` | say | Let’s measure the sides. |  | screen 24 | playful, inviting | yes |
-| 38 | 25 | sides-equal | `assets/vo/p30.mp3` | say | Every side is equal. But what about the angles? | Every side is equal. / But what about the angles? | screen 25 | asking: curious, open | yes |
-| 39 | 26 | measure-angles | `assets/vo/p31m.mp3` | say | Let’s measure the angles. |  | screen 26 | playful, inviting | yes |
-| 40 | 26 | measure-angles | `assets/vo/p31.mp3` | say | The angles match too! |  | screen 26 | explaining, warm and clear | yes |
-| 41 | 27 | distort | `assets/vo/p32a.mp3` | say | Help me stretch this corner. Let’s see what happens to the sides and angles. | Help me stretch this corner. / Let’s see what happens / to the sides and angles. | screen 27 | playful, inviting | yes |
-| 42 | 27 | distort | `assets/vo/p32ai.mp3` | instruction | Drag the highlighted vertex. |  | screen 27, the instruction | an instruction: plain, steady, every word clear | yes |
-| 43 | 28 | stayed-changed | `assets/vo/p32b.mp3` | say | It’s still a pentagon. But are the sides and angles still equal? | It’s still a pentagon. / But are the sides / and angles still equal? | screen 28 | asking: curious, open | yes |
-| 44 | 28 | stayed-changed | `assets/vo/p32bi.mp3` | instruction | Are the sides and angles still equal? |  | screen 28, the instruction | an instruction: plain, steady, every word clear | yes |
-| 45 | 28 | stayed-changed | `assets/vo/p32r.mp3` | say | The sides and angles changed, so they are not equal. |  | screen 28, after a wrong answer | explaining, warm and clear | yes |
-| 46 | 29 | regular-vs-irregular | `assets/vo/fb55.mp3` | say | Let’s compare these two pentagons. |  | screen 29 | playful, inviting | yes |
-| 47 | 29 | regular-vs-irregular | `assets/vo/fb56.mp3` | say | All the sides and angles are equal in this pentagon. |  | screen 29 | explaining, warm and clear | yes |
-| 48 | 29 | regular-vs-irregular | `assets/vo/fb57.mp3` | say | But this pentagon has unequal sides and unequal angles. |  | screen 29 | explaining, warm and clear | yes |
-| 49 | 29 | regular-vs-irregular | `assets/vo/fb58.mp3` | say | All sides and angles equal means a regular polygon. Sides and angles unequal means an irregular polygon. | All sides and angles equal / means a regular polygon. / Sides and angles unequal / means an irregular polygon. | screen 29 | explaining, warm and clear | yes |
-| 50 | 30 | sort-regular | `assets/vo/p33.mp3` | say | Where does this polygon belong? |  | screen 30 | asking: curious, open | yes |
-| 51 |  |  | `assets/vo/fb48.mp3` | say | This one is regular. Every side is equal, and every angle is equal too. |  | screen undefined | explaining, warm and clear | yes |
-| 52 |  |  | `assets/vo/fb49.mp3` | say | This one is irregular. Its sides are not all the same length. |  | screen undefined | explaining, warm and clear | yes |
-| 53 |  |  | `assets/vo/fb50.mp3` | say | This one is irregular. Its sides match, but its angles are not all equal. |  | screen undefined | explaining, warm and clear | yes |
-| 54 |  |  | `assets/vo/fb51.mp3` | say | This one is irregular. Its sides are not equal, and its angles are not equal either. |  | screen undefined | explaining, warm and clear | yes |
-| 55 | 31 | summary | `assets/vo/p37o.mp3` | say | Let’s recall what we learned today. |  | screen 31 | playful, inviting | yes |
-| 56 | 31 | summary | `assets/vo/p37a.mp3` | say | A vertex is a corner where two sides meet. |  | screen 31 | explaining, warm and clear | yes |
-| 57 | 31 | summary | `assets/vo/p37b.mp3` | say | A side is a straight line joining two vertices. |  | screen 31 | explaining, warm and clear | yes |
-| 58 | 31 | summary | `assets/vo/p37c.mp3` | say | An angle is formed where two sides meet. |  | screen 31 | explaining, warm and clear | yes |
-| 59 | 31 | summary | `assets/vo/p37d.mp3` | say | A diagonal joins two non-adjacent vertices. |  | screen 31 | explaining, warm and clear | yes |
-| 60 | 31 | summary | `assets/vo/p37e.mp3` | say | In a convex polygon, all diagonals stay inside. |  | screen 31 | explaining, warm and clear | yes |
-| 61 | 31 | summary | `assets/vo/p37f.mp3` | say | In a concave polygon, atleast one diagonal goes outside. |  | screen 31 | explaining, warm and clear | yes |
-| 62 | 31 | summary | `assets/vo/p37g.mp3` | say | A regular polygon has all sides and all angles equal. |  | screen 31 | explaining, warm and clear | yes |
-| 63 | 31 | summary | `assets/vo/p37h.mp3` | say | If the sides or angles are not all equal, the polygon is irregular. |  | screen 31 | explaining, warm and clear | yes |
-| 64 | 31 | summary | `assets/vo/p37i.mp3` | say | Amazing! You explored all these polygon ideas! |  | screen 31 | explaining, warm and clear | yes |
+| 29 | 21 | make-concave | `assets/vo/fb32.mp3` | say | Try again! |  | screen 21, after a wrong answer | explaining, warm and clear | yes |
+| 30 | 21 | make-concave | `assets/vo/p26r1.mp3` | say | The diagonals are still inside the shape, so it is still convex. |  | screen 21, after a wrong answer | explaining, warm and clear | yes |
+| 31 | 21 | make-concave | `assets/vo/fb53.mp3` | say | Let me show you. Watch this corner. |  | screen 21, after a wrong answer | explaining, warm and clear | yes |
+| 32 | 21 | make-concave | `assets/vo/p26r2.mp3` | say | Now one diagonal goes outside, so the polygon is concave. |  | screen 21, after a wrong answer | explaining, warm and clear | yes |
+| 33 | 21 | make-concave | `assets/vo/fb03.mp3` | say | Great job! |  | screen 21, after the right answer | a cheer, delighted | yes |
+| 34 | 22 | sort-convex-concave | `assets/vo/p27.mp3` | say | Can you sort these polygons as convex or concave? |  | screen 22 | playful, inviting | yes |
+| 35 |  |  | `assets/vo/p27c.mp3` | say | Look! This corner goes inward. |  | screen undefined | explaining, warm and clear | yes |
+| 36 |  |  | `assets/vo/p27v.mp3` | say | Look! No corner goes inward. |  | screen undefined | explaining, warm and clear | yes |
+| 37 | 23 | suspicious | `assets/vo/p28.mp3` | say | Hmm… The sides look suspiciously alike. | Hmm… / The sides look suspiciously alike. | screen 23 | wondering aloud, a little slower | yes |
+| 38 | 24 | measure-sides | `assets/vo/p29s.mp3` | say | Let’s measure the sides. |  | screen 24 | playful, inviting | yes |
+| 39 | 25 | sides-equal | `assets/vo/p30.mp3` | say | Every side is equal. But what about the angles? | Every side is equal. / But what about the angles? | screen 25 | asking: curious, open | yes |
+| 40 | 26 | measure-angles | `assets/vo/p31m.mp3` | say | Let’s measure the angles. |  | screen 26 | playful, inviting | yes |
+| 41 | 26 | measure-angles | `assets/vo/p31.mp3` | say | The angles match too! |  | screen 26 | explaining, warm and clear | yes |
+| 42 | 27 | distort | `assets/vo/p32a.mp3` | say | Help me stretch this corner. Let’s see what happens to the sides and angles. | Help me stretch this corner. / Let’s see what happens / to the sides and angles. | screen 27 | playful, inviting | yes |
+| 43 | 27 | distort | `assets/vo/p32ai.mp3` | instruction | Drag the highlighted vertex. |  | screen 27, the instruction | an instruction: plain, steady, every word clear | yes |
+| 44 | 28 | stayed-changed | `assets/vo/p32b.mp3` | say | It’s still a pentagon. But are the sides and angles still equal? | It’s still a pentagon. / But are the sides / and angles still equal? | screen 28 | asking: curious, open | yes |
+| 45 | 28 | stayed-changed | `assets/vo/p32bi.mp3` | instruction | Are the sides and angles still equal? |  | screen 28, the instruction | an instruction: plain, steady, every word clear | yes |
+| 46 | 28 | stayed-changed | `assets/vo/p32r.mp3` | say | The sides and angles changed, so they are not equal. |  | screen 28, after a wrong answer | explaining, warm and clear | yes |
+| 47 | 29 | regular-vs-irregular | `assets/vo/fb55.mp3` | say | Let’s compare these two pentagons. |  | screen 29 | playful, inviting | yes |
+| 48 | 29 | regular-vs-irregular | `assets/vo/fb56.mp3` | say | All the sides and angles are equal in this pentagon. |  | screen 29 | explaining, warm and clear | yes |
+| 49 | 29 | regular-vs-irregular | `assets/vo/fb57.mp3` | say | But this pentagon has unequal sides and unequal angles. |  | screen 29 | explaining, warm and clear | yes |
+| 50 | 29 | regular-vs-irregular | `assets/vo/fb58.mp3` | say | All sides and angles equal means a regular polygon. Sides and angles unequal means an irregular polygon. | All sides and angles equal / means a regular polygon. / Sides and angles unequal / means an irregular polygon. | screen 29 | explaining, warm and clear | yes |
+| 51 | 30 | sort-regular | `assets/vo/p33.mp3` | say | Where does this polygon belong? |  | screen 30 | asking: curious, open | yes |
+| 52 |  |  | `assets/vo/fb48.mp3` | say | This one is regular. Every side is equal, and every angle is equal too. |  | screen undefined | explaining, warm and clear | yes |
+| 53 |  |  | `assets/vo/fb49.mp3` | say | This one is irregular. Its sides are not all the same length. |  | screen undefined | explaining, warm and clear | yes |
+| 54 |  |  | `assets/vo/fb50.mp3` | say | This one is irregular. Its sides match, but its angles are not all equal. |  | screen undefined | explaining, warm and clear | yes |
+| 55 |  |  | `assets/vo/fb51.mp3` | say | This one is irregular. Its sides are not equal, and its angles are not equal either. |  | screen undefined | explaining, warm and clear | yes |
+| 56 | 31 | summary | `assets/vo/p37o.mp3` | say | Let’s recall what we learned today. |  | screen 31 | playful, inviting | yes |
+| 57 | 31 | summary | `assets/vo/p37a.mp3` | say | A vertex is a corner where two sides meet. |  | screen 31 | explaining, warm and clear | yes |
+| 58 | 31 | summary | `assets/vo/p37b.mp3` | say | A side is a straight line joining two vertices. |  | screen 31 | explaining, warm and clear | yes |
+| 59 | 31 | summary | `assets/vo/p37c.mp3` | say | An angle is formed where two sides meet. |  | screen 31 | explaining, warm and clear | yes |
+| 60 | 31 | summary | `assets/vo/p37d.mp3` | say | A diagonal joins two non-adjacent vertices. |  | screen 31 | explaining, warm and clear | yes |
+| 61 | 31 | summary | `assets/vo/p37e.mp3` | say | In a convex polygon, all diagonals stay inside. |  | screen 31 | explaining, warm and clear | yes |
+| 62 | 31 | summary | `assets/vo/p37f.mp3` | say | In a concave polygon, atleast one diagonal goes outside. |  | screen 31 | explaining, warm and clear | yes |
+| 63 | 31 | summary | `assets/vo/p37g.mp3` | say | A regular polygon has all sides and all angles equal. |  | screen 31 | explaining, warm and clear | yes |
+| 64 | 31 | summary | `assets/vo/p37h.mp3` | say | If the sides or angles are not all equal, the polygon is irregular. |  | screen 31 | explaining, warm and clear | yes |
+| 65 | 31 | summary | `assets/vo/p37i.mp3` | say | Amazing! You explored all these polygon ideas! |  | screen 31 | explaining, warm and clear | yes |
 
-## Answers (20), said when the child answers
+## Answers (17), said when the child answers
 
 | File | Line | When | Delivery | Recorded |
 |------|------|------|----------|----------|
 | `assets/vo/fb46.mp3` | Keep going! | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/fb47.mp3` | Amazing! | a try that falls short, with the reason | explaining, warm and clear | yes |
-| `assets/vo/fb32.mp3` | Try again! | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/fb44.mp3` | Not quite. A circle is curved. A polygon has only straight sides. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/fb45.mp3` | Not quite. This shape is open. A polygon must be closed. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/fb41.mp3` | Try again! Compare the sides and angles now. | a try that falls short, with the reason | explaining, warm and clear | yes |
@@ -109,8 +109,6 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 | `assets/vo/fb36.mp3` | Try again! The sides are not all equal. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/fb37.mp3` | Try again! The angles are not all equal. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/fb38.mp3` | Try again! The sides and the angles are not all equal. | a try that falls short, with the reason | explaining, warm and clear | yes |
-| `assets/vo/fb42.mp3` | Yes! It’s convex: no corner goes inward. | a try that falls short, with the reason | a cheer, delighted | yes |
-| `assets/vo/fb43.mp3` | Yes! It’s concave: one corner goes inward. | a try that falls short, with the reason | a cheer, delighted | yes |
 | `assets/vo/sw1.mp3` | Momo needs your help. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/sw2.mp3` | But to help Momo, you need to learn about polygons. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/sw3.mp3` | Now let’s help Momo. | a try that falls short, with the reason | explaining, warm and clear | yes |

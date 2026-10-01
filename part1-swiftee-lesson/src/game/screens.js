@@ -538,8 +538,14 @@
       beats: [
         { stage: { kind: 'polygon', sides: 6, panel: 'right', enter: 'morph', label: null } },
         { sfx: 'pop' },
+        // THE CORNERS ARE THERE BEFORE HE SPEAKS (the user, screen 10: "all vertex dots present
+        // before the dialogue"), white, every one — and on "this VERTEX" the one he means changes
+        // from white to the corner colour and starts to breathe, as the word is said (onWord
+        // `knob`); the dots used to arrive only once the line was over and the drawing armed
+        { stage: { dots: true } },
         { wait: 400 },
         { swiftee: 'encourage' },
+        { stage: { onWord: [{ word: 'vertex', knob: 0, breathe: true }] } },
         { say: 'Your turn! Let’s draw all the diagonals from this vertex.', parts: ['Your turn!', 'Let’s draw all the diagonals', 'from this vertex.'], vo: 'p15' },
         // The instruction is the script's own last two bubbles, so it is not
         // said again: the line settles into the one sentence the child keeps
@@ -648,12 +654,14 @@
             { input: { type: 'choice', correct: 'Inside', retry: true, quietMiss: true } },
             { branch: true,
               on: { correct: correct() },
-              /* THE SECOND MISS IS TAUGHT, AND THE ANSWER BECOMES THE WAY ON (the user's 2-wrong
-                 brief): the answers are locked (the input is over — game.js), a short beat;
-                 "The diagonals are inside." — the diagonals light gold on "diagonals" and stay
-                 lit, still dashed, still inside the shape; a moment to look; the two buttons slide
-                 together into ONE centred green "Inside" (stage `merge`), and a tap on it goes
-                 on — a continue, not a third attempt (`continue`). No "Try again!" here. */
+              /* THE SECOND MISS IS TAUGHT, AND THEN THE LESSON GOES ON BY ITSELF (the user, screen
+                 12: "when VO says inside give the Inside option green and the other option gone …
+                 why tap after giving the answer … make it auto"): the answers are locked (the
+                 input is over — game.js), a short beat; "The diagonals are inside." — the
+                 diagonals light gold on "diagonals" and stay lit, still dashed, inside the shape;
+                 ON "inside" the two buttons become ONE centred green Inside (stage `merge` on its
+                 word); a moment to see it, and on to the next screen. No tap, no third attempt,
+                 no "Try again!" here. */
               otherwise: [
                 { sfx: 'wrong' },
                 { wait: 500 },
@@ -661,13 +669,11 @@
                 // (ON THE WORD — the user: "not sync with vo?": the diagonals light gold as he says
                 // "diagonals", a quick sweep; the inside of the shape glows on "inside" — dual coding)
                 { stage: { onWord: [{ word: 'diagonals', lit: 'diagonals', each: 90 }] } },
-                // (the beat ends on "inside.", not on the clip's silent tail: the one Inside comes
-                // half a second after the voice, not two and a half — the user: "not sync with vo")
+                { stage: { merge: 'Inside', cue: 'inside' } },
+                // (the beat ends on "inside.", not on the clip's silent tail)
                 { say: 'The diagonals are inside.', vo: 'fb54', endsAt: 'words' },
-                { wait: 500 },
-                { stage: { merge: 'Inside' } },
-                { wait: 500 },
-                { input: { type: 'choice', correct: 'Inside', 'continue': true, praise: false } }
+                // (no chime: the answer is shown to them, not given by them — no verdict for it)
+                { wait: 1400 }
               ] }
           ]) }
       ]
@@ -924,7 +930,8 @@
       // saying them. The purpose makes the screen his; he still starts off-stage.
       swiftee: { pos: 'off', size: 'medium', purpose: 'concept' },
       instruction: 'Drag any vertex to make this polygon concave.',
-      lines: ['The diagonals are still inside the shape, so it is still convex.', 'Let me show you. Watch this corner.', 'Now one diagonal goes outside, so the polygon is concave.', 'Great job!'],
+      // ("Try again!" is his, on the first miss, once he is on the screen — the user, screen 21)
+      lines: ['Try again!', 'The diagonals are still inside the shape, so it is still convex.', 'Let me show you. Watch this corner.', 'Now one diagonal goes outside, so the polygon is concave.', 'Great job!'],
       // A QUADRILATERAL (the user, screen 21), and the badge reading "Convex" during the task — a
       // live readout that flips to "Concave" the moment the shape does. TWO TRIES: a corner let
       // go short of a dent is answered with the diagonals drawn on the shape as it stands, kept,
@@ -939,15 +946,21 @@
         // (the suggested corner — the top one — is the one dot that breathes: stage.js drag-vertex)
         // (praise: false — the dent is cheered by the screen's own "Great job!" below; a stock
         // "Amazing!" in front of it was two cheers for one answer, and the second cut the first off)
-        { input: { type: 'drag-vertex', vertex: 'any', until: 'concave', live: 'badge', attempts: true, praise: false } },
+        // (quietMiss: the first miss is answered below, by him — the stock "Try again!" came up in a
+        // box while he was still off the screen: the user, screen 21)
+        { input: { type: 'drag-vertex', vertex: 'any', until: 'concave', live: 'badge', attempts: true, praise: false, quietMiss: true } },
         { branch: true,
           on: { correct: [] },
           otherwise: [
-            { stage: { diagonals: 'all', style: 'dashed', animate: 'sequential', each: 420 } },
-            // HE COMES IN TO SAY IT (the final pass: the words come from him, and the bubble is
-            // his): beside the card's lower-left corner, small, clear of the shape. He started
-            // off-stage, so the entrance names its mark — an entrance to 'off' showed nothing.
+            /* HE COMES IN FIRST, THEN HE SAYS IT (the user, screen 21: the "Try again!" box came
+               before Swiftee was on the screen): the miss is heard, he comes in beside the card's
+               lower-left corner, small, clear of the shape (he started off-stage, so the entrance
+               names its mark), and only then "Try again!" — in his own box — and the clue, with the
+               diagonals drawn on the shape as it stands. */
+            { sfx: 'wrong' },
             { swiftee: 'enter', from: 'left', to: 'left', size: 'small' },
+            { say: 'Try again!', vo: 'fb32' },
+            { stage: { diagonals: 'all', style: 'dashed', animate: 'sequential', each: 420 } },
             { say: 'The diagonals are still inside the shape, so it is still convex.', vo: 'p26r1' },
             // (a breath to look at the clue before the task comes back — the final pass)
             { wait: 600 },
@@ -1226,8 +1239,10 @@
               on: { correct: correct() },
               otherwise: [
                 { juice: 'refuse', target: 'answer' }, { sfx: 'wrong' },
+                // (ON "equal" the answer is shown, and only it: Not equal green, Still equal gone —
+                // the user, screen 28 — the same one green answer as the inside/outside question)
                 { parallel: [
-                  { stage: { reveal: 'Not equal', cue: 'equal' } },
+                  { stage: { merge: 'Not equal', cue: 'equal' } },
                   { swiftee: 'explain', at: 'polygon' },
                   { say: 'The sides and angles changed, so they are not equal.', vo: 'p32r' }
                 ] },
@@ -1260,6 +1275,10 @@
               'All sides and angles equal means a regular polygon. Sides and angles unequal means an irregular polygon.'],
       stage: {
         kind: 'compare',
+        // MEASURED CARDS (the user, screen 29): the shapes as big as the glass allows, and on their
+        // words each side's length in cm and each corner's degrees — the swipe card's own readings
+        // (stage.js compareReadings) — instead of ticks and arcs
+        measured: true,
         // each name tag on its word; the irregular one is the pentagon the
         // child stretched a screen ago (made), the stock stretch without it
         // the PROPERTY compared, not the shape's name (the user, screen 29: "Regular" and "Irregular", not "Pentagon")
