@@ -8,18 +8,26 @@
  * game's own (tools/vo-lines.js); the TEXT aligned against the take is the game's text for that
  * id, so what is on screen and what is cut are the same line. A line the take reads twice is
  * listed twice, the second time as `<id>~2`: the aligner needs it to keep its place in the
- * take, and the cutter uses the first reading only.
+ * take, and the cutter uses the first reading only. A reading the game does not use at all is
+ * an `{ id: '<x>~…', text }` entry: aligned so its neighbours stay in step, and never cut.
  *
  * `tempo` 1: these takes are cut as recorded — no stretch (the old take was slowed to 0.88).
  */
 'use strict';
 module.exports = [
   { name: 'narrator', source: 'assets/source/vo-masters/narrator.mp3', tempo: 1,
-    lines: ['st1-narrator', 'st3-narrator', 'st5-narrator'] },
+    lines: ['st1-narrator', 'st3-narrator', 'st5-narrator',
+            // (read, and no longer used: Swiftee says the hand-over now — p01b)
+            { id: 'st5-narrator~rest', text: 'But first, you’ll need to learn a little more about polygons.' }] },
   { name: 'popo', source: 'assets/source/vo-masters/popo.mp3', tempo: 1,
     lines: ['st1-popo', 'st2-popo'] },
   { name: 'swiftee-feedback', source: 'assets/source/vo-masters/swiftee-feedback.mp3', tempo: 1,
     lines: ['fb46', 'fb47', 'fb03', 'fb32'] },
+  // the hand-over and the recap's opener; the take's other three lines are not used (the user)
+  { name: 'swiftee-extra', source: 'assets/source/vo-masters/swiftee-extra.mp3', tempo: 1,
+    lines: ['p01b', 'p37o',
+            { id: 'unused~names', text: 'Polygons have different names based on their number of sides.' },
+            { id: 'unused~ending', text: 'Now you know everything about polygons. You are ready to help Momo.' }] },
   { name: 'swiftee-lesson', source: 'assets/source/vo-masters/swiftee-lesson.mp3', tempo: 1,
     lines: [
       'p01', 'p02', 'p03', 'p04', 'fb44', 'fb45', 'p05', 'p06',

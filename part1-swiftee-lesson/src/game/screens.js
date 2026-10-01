@@ -123,9 +123,18 @@
     { id: 'irregular', label: 'Irregular', text: 'If the sides or angles are not all equal, the polygon is irregular.', vo: 'p37h' }
   ];
   var SUMMARY_DONE = { text: 'Amazing! You explored all these polygon ideas!', vo: 'p37i' };
+  var SUMMARY_OPEN = { text: 'Let’s recall what we learned today.', vo: 'p37o' };
 
   function summaryBeats(list) {
     var out = [{ instruction: null }, { stage: { kind: 'summary' } }];
+    /* THE RECAP OPENS IN HIS VOICE (the user's recording: "Let's recall what we learned today."):
+       up into the open middle before the first card comes in, and back down — at his summary
+       size, small, so the first card brings him up behind it exactly as before */
+    out.push(
+      { swiftee: 'enter', from: 'below', quick: true, to: 'middle', size: 'small' },
+      { say: SUMMARY_OPEN.text, vo: SUMMARY_OPEN.vo },
+      { swiftee: 'exit', to: 'below' }
+    );
     list.forEach(function (c) {
       out.push(
         { stage: { summary: { card: c.id } } },            // in, and its idea shown (the beat waits for it)
@@ -169,6 +178,10 @@
       log: true,
       swiftee: { pos: 'left', size: 'large', purpose: 'introduce'},
       say: 'Hi! I am Swiftee.',
+      // (the story's hand-over is his now — the user: "But for that, first you need to learn about
+      // polygons." straight after his hello, and the narrator's last line trimmed to "Momo needs
+      // your help to reach Popo.")
+      lines: ['But for that, first you need to learn about polygons.'],
       stage: { kind: 'vista' },
       beats: [
         { stage: { kind: 'vista' } },
@@ -177,6 +190,7 @@
         { wait: 300 },
         { say: 'Hi! I am Swiftee.', vo: 'p01' },
         { parallel: [{ swiftee: 'wave' }, { sfx: 'pop' }] },
+        { say: 'But for that, first you need to learn about polygons.', vo: 'p01b' },
         { input: { type: 'tap-anywhere' } }
       ]
     },
@@ -1408,7 +1422,7 @@
       swiftee: { pos: 'peek', size: 'small', purpose: 'celebrate' },
       instruction: null,
       say: SUMMARY[0].text,
-      lines: SUMMARY.slice(1).map(function (c) { return c.text; }).concat([SUMMARY_DONE.text]),
+      lines: [SUMMARY_OPEN.text].concat(SUMMARY.slice(1).map(function (c) { return c.text; }), [SUMMARY_DONE.text]),
       stage: { kind: 'summary', concepts: SUMMARY.map(function (c) { return { id: c.id, label: c.label }; }) },
       beats: summaryBeats(SUMMARY)
     }

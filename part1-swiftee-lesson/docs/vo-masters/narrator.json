@@ -211,9 +211,9 @@
   },
   {
    "id": "st5-narrator",
-   "text": "Momo needs your help to reach Popo. But first, you’ll need to learn a little more about polygons.",
+   "text": "Momo needs your help to reach Popo.",
    "start": 11.98,
-   "end": 19.6,
+   "end": 14.7,
    "words": [
     {
      "text": "Momo",
@@ -249,7 +249,15 @@
      "text": "Popo.",
      "start": 14.28,
      "end": 14.7
-    },
+    }
+   ]
+  },
+  {
+   "id": "st5-narrator~rest",
+   "text": "But first, you’ll need to learn a little more about polygons.",
+   "start": 15.54,
+   "end": 19.6,
+   "words": [
     {
      "text": "But",
      "start": 15.54,

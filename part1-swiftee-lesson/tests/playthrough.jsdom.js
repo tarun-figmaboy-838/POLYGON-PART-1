@@ -194,7 +194,7 @@ async function act(spec){
     [2,'popo','I’ll go ahead and find us a nice spot.'],
     [3,'narrator','Momo wanted to get there quickly, so he took the shortest route— through Frozen Pass.'],
     [4,'momo','This path looks trickier than last time!'],
-    [5,'narrator','Momo needs your help to reach Popo. But first, you’ll need to learn a little more about polygons.']
+    [5,'narrator','Momo needs your help to reach Popo.']   // (the rest is Swiftee's now: p01b)
   ];
   let lessonDuringStory=false, screen1Starts=0;
   w.Game.director.on('start',()=>{ if(w.Story&&w.Story.active) lessonDuringStory=true; if(w.Game.screen===0) screen1Starts++; });

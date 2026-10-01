@@ -193,14 +193,15 @@
         enter: [{ move: 'momo', as: 'bob', after: 600 }],
         lines: [
           { who: 'narrator', vo: 'st5-narrator', box: { x: 66, top: 34, w1: 1440 },
-            // "your help" — a hopeful look up at the child; nothing more until the ice answers
-            // on "polygons" (the brief: the comedy stops before the hand-over to the lesson)
+            // "your help" — a hopeful look up at the child; then the ice answers as the line ends.
+            // (ONE SENTENCE NOW — the user: Swiftee says "But for that, first you need to learn
+            // about polygons." after "Hi! I am Swiftee.", so the narrator no longer does; the ice's
+            // shimmer, on "polygons." before, comes on the line's last word)
             at: [{ word: 'help', move: 'momo', as: 'perk', after: 200 },
-                 { word: 'polygons.', sheen: ['block1', 'block2', 'block3'], sfx: 'sparkle', level: 0.45,
+                 { word: 'Popo.', sheen: ['block1', 'block2', 'block3'], sfx: 'sparkle', level: 0.45, after: 250,
                    twinkle: [[820, 720, 60], [1090, 700, 260], [1200, 650, 360]] }],
-            parts: ['Momo needs your help to reach Popo.', 'But first, you’ll need to learn a little more about polygons.'],
-            key: ['help', 'polygons.'],
-            text: 'Momo needs your help to reach Popo. But first, you’ll need to learn a little more about polygons.' }
+            key: ['help', 'Popo.'],
+            text: 'Momo needs your help to reach Popo.' }
         ]
       }
     ]

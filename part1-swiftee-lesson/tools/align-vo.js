@@ -56,7 +56,10 @@ const rel = (p) => path.relative(ROOT, p).replace(/\\/g, '/');
    instructions (p…), which ends with the finale's two. */
 const byId = {}; voLines().forEach((l) => { byId[l.id] = l; });
 const lines = master
-  ? master.lines.map((id) => { const l = byId[id.split('~')[0]]; if (!l) throw new Error('no line ' + id); return { id: id, text: l.text }; })
+  ? master.lines.map((e) => {
+      if (e && typeof e === 'object') return { id: e.id, text: e.text };           // a reading not used
+      const l = byId[e.split('~')[0]]; if (!l) throw new Error('no line ' + e); return { id: e, text: l.text };
+    })
   : voLines().filter((l) => /^p\d/.test(l.id));
 /* FEEDBACK THE TAKE SAYS INSIDE A LESSON LINE: cut out as a clip of its own by
    split-vo.js (words [first, last] of that line), and known to make-vo.js as
