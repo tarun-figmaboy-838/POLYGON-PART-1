@@ -838,6 +838,23 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await step(11.1, 'angle measurement screenshot', async () => { await jump('measure-angles'); await waitFn(() => document.querySelector('#stage .swiftee-angle-measuring[data-state="HOLD"]'), null, 40000); await shot('11-angle-measurement-protractor'); return true; });
 
   // ---- the stretch (screen 27) -------------------------------------------------
+  // (the user: "when Swiftee measures … the side will change when distort": the same pentagon
+  // must read the same centimetres on the stretching card as it was measured, and a side the
+  // stretch did not touch must keep its reading)
+  await step(38.5, 'stretching: the pentagon reads as measured (6 cm) before the stretch; untouched sides keep "6 cm" after it', async () => {
+    const i = await jump('distort'); await waiting(i); await sleep(400);
+    const cms = () => ev(() => [...document.querySelectorAll('#stage .meas text')].map((t) => t.textContent.trim()).filter((t) => /cm$/.test(t)));
+    const before = await cms();
+    const k = await knobClient(0);
+    await page.mouse.move(k.x, k.y); await page.mouse.down();
+    for (let s = 1; s <= 10; s++) { await page.mouse.move(k.x + 6 * s, k.y - 9 * s); await sleep(25); }
+    await page.mouse.up(); await sleep(900);
+    const after = await cms();
+    const L = await ev(() => window.Poly.sideLengths(window.Stage.state.verts).map((x) => Math.round(x)));
+    const untouched = [1, 2, 3].map((j) => after[j]);
+    const ok = before.length === 5 && before.every((t) => t === '6 cm') && after.length === 5 && untouched.every((t) => t === '6 cm') && after[0] !== '6 cm' && after[4] !== '6 cm';
+    return { ok, extra: { before, after, L } };
+  });
   await step(39, 'stretching: the corner can never be flattened to 180°', async () => {
     const i = await jump('distort'); await waiting(i); await sleep(300);
     const info = await ev(() => { const v = window.Stage.state.verts, n = v.length, a = v[n - 1], b = v[1]; return { mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, v0: { x: v[0].x, y: v[0].y } }; });

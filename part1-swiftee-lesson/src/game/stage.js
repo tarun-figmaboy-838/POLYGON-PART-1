@@ -2216,7 +2216,13 @@
        a language the lesson never taught. A number is what a child can
        watch change. */
     var angleText = units || aMark.groups <= 1;
-    var sideDec = units ? decimalsFor(L, sMark.mark, 30, 2) : 0;
+    var cmU = st.cmUnit || 30;
+    var sideDec = units ? decimalsFor(L, sMark.mark, cmU, 2) : 0;
+    /* A SIDE THAT DID NOT CHANGE READS AS IT DID (stretching one corner moves two sides; the other
+       three were relabelled "4.9 cm" from "5 cm" because the others needed a decimal). A whole
+       number keeps its plain form — "6 cm" — and only the sides that moved show their decimals;
+       the groups still never print the same (decimalsFor). */
+    var cmText = function (len) { var t = (len / cmU).toFixed(sideDec); if (/\.0+$/.test(t)) t = t.replace(/\.0+$/, ''); return t + ' cm'; };
 
     for (var i = 0; i < n; i++) {
       if (has(st.measure.sides, i)) {
@@ -2261,7 +2267,7 @@
              their degrees. */
           // the figure outside the side, pushed out by its own size so it
           // never sits on the stroke, and kept on the glass
-          var dtext = (L[i] / 30).toFixed(sideDec) + ' cm';
+          var dtext = cmText(L[i]);
           var dtw = dtext.length * 9.5, dth = 17;
           var doff = 16 + Math.abs(ux) * (dtw / 2) + Math.abs(uy) * (dth / 2);
           var lx2 = mx + ux * doff, ly2 = my + uy * doff;
@@ -2716,6 +2722,13 @@
       panel(p, { enter: morph ? false : spec.enter });
       var P = polygonIn(p, spec.sides || 5, { below: spec.below, room: spec.room });
       st.verts = P.verts; st.cx = P.cx; st.cy = P.cy; st.r = P.r; st.n = spec.sides || 5;
+      /* ONE PENTAGON, ONE SET OF CENTIMETRES (the user: "when Swiftee measures the sides … the
+         side will change when distort"). The measuring screens draw the same regular pentagon at
+         different sizes — the stretching card is shorter, under its instruction — and the
+         readings came from a fixed scale, so the shape he had just measured as 6 cm a side read
+         5 cm the moment the stretching began. In the measuring room the scale is the shape's
+         own: its regular side is 6 cm on every screen, however large it is drawn. */
+      st.cmUnit = spec.room === 'measure' && st.verts.length > 2 ? Poly.sideLengths(st.verts)[0] / 6 : null;
       st.polyG = mk('g', { 'class': 'polygon' }, layers.poly);
       st.diagonals = [];
       renderPoly();
