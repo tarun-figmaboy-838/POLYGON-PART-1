@@ -1247,28 +1247,39 @@
         left:  { sides: 5, caption: 'Regular',   tone: 'regular', captionCue: 'regular' },
         right: { sides: 5, stretch: 0, made: 'irregular', caption: 'Irregular', tone: 'irregular', captionCue: 'irregular' }
       },
+      /* THE USER'S SYNC BRIEF ("sides + angles → regular / irregular", one card at a time): both
+         pentagons, still, no marks, while he looks at them; then the first forward — its ticks on
+         "sides", its arcs on "angles"; then the turn on "But this pentagon…" — the second's
+         unequal ticks and arcs on the same words; then the rule, the first refocused on "All
+         sides…", "Regular" on its word, the second on the second "Sides…" with its unequal marks
+         emphasised, "Irregular" on its word. Nothing else lights (quietWords): no dots, no
+         diagonals, no pulse of both cards at once, no bounce. */
       beats: [
         { instruction: null },
         { stage: { kind: 'compare', enter: 'split' } },
+        { stage: { quietWords: true } },
         { sfx: 'menuWhoosh' },
         { wait: 300 },
-        // a rule goes in the book
-        { swiftee: 'note' },
+        // he looks at the pair
+        { swiftee: 'present', at: 'compare' },
         { say: 'Let\u2019s compare these two pentagons.', vo: 'fb55' },
-        { wait: 300 },
+        { wait: 500 },
         // THE REGULAR ONE: forward, the other back; its evidence on its words
         { focus: 'compare.left', style: 'lean' },
         { stage: { onWord: [{ word: 'sides', evidence: { card: 'left', what: 'sides' } }, { word: 'angles', evidence: { card: 'left', what: 'angles' } }] } },
         { say: 'All the sides and angles are equal in this pentagon.', vo: 'fb56' },
-        { wait: 600 },
-        // THE IRREGULAR ONE: the turn to it, and its unequal marks on the same words
+        { wait: 500 },
+        // THE IRREGULAR ONE: the turn to it on "But this pentagon…", its unequal marks on the same words
         { focus: 'compare.right', style: 'lean' },
         { stage: { onWord: [{ word: 'sides', evidence: { card: 'right', what: 'sides' } }, { word: 'angles', evidence: { card: 'right', what: 'angles' } }] } },
         { say: 'But this pentagon has unequal sides and unequal angles.', vo: 'fb57' },
         { wait: 700 },
-        // THE RULE: both again, each half turning to its card; the names arrive on their words
-        { focus: 'compare', style: 'even' },
-        { stage: { onWord: [{ word: 'equal', focus: 'left', glow: 'left' }, { word: 'unequal', focus: 'right', glow: 'right' }] } },
+        // THE RULE (a rule goes in the book): the first again for "All sides and angles equal…", the
+        // second on its own "Sides and angles unequal…" — the SECOND "sides" of the line — its
+        // unequal marks catching the light; the names arrive on their words (captionCue)
+        { swiftee: 'note' },
+        { focus: 'compare.left', style: 'lean' },
+        { stage: { onWord: [{ word: 'sides', nth: 2, focus: 'right', glow: 'right' }] } },
         { say: 'All sides and angles equal means a regular polygon. Sides and angles unequal means an irregular polygon.',
           parts: ['All sides and angles equal', 'means a regular polygon.', 'Sides and angles unequal', 'means an irregular polygon.'], vo: 'fb58' },
         // (the pair, evenly, both named: the final Regular / Irregular state)

@@ -3869,7 +3869,8 @@
        box look static?"). While the walk has him, his line softly fades
        back; when he is home again it springs back in, pointing at him. */
     tailWatch = setInterval(function () {
-      var out = !!(global.Swiftee && Swiftee.locked === 'measuring');
+      // (either walk: the tape round the sides, or the protractor round the corners)
+      var out = !!(global.Swiftee && (Swiftee.locked === 'measuring' || Swiftee.locked === 'angle-measuring'));
       // the walk takes its lock a moment after the tap: step aside then
       if (out && !away) { away = true; bubble.classList.remove('back'); bubble.classList.add('away'); repaint(); }
       if (out && Date.now() - since < 20000) return;
@@ -3877,7 +3878,11 @@
       if (!away && Date.now() - since < 1500) return;
       clearInterval(tailWatch); tailWatch = null;
       bubble.classList.remove('away');
-      if (away) { void bubble.offsetWidth; bubble.classList.add('back'); setTimeout(function () { bubble.classList.remove('back'); }, 520); }
+      /* …AND IT DOES NOT COME BACK (the user: "after measuring side and angles why dialogue stay
+         and show 'Let's measure'?"). The line was said before the walk; once the measuring is
+         done it is over, so the box closes instead of springing back in with words that no
+         longer fit — the next thing he says opens it again. */
+      if (away) { say(null); return; }
       repaint();
     }, 120);
   }
@@ -4509,7 +4514,7 @@
       // answered by the card itself and the next is dealt — held here, the next card sat
       // locked until the failsafe let go three seconds later (the QA checkpoints found it)
       if (name === 'answer:selected' && popsHere() && !(payload && payload.correct)) holdInput(true);
-      if (name === 'measurement:start' && payload && payload.what === 'side') tailWhenHome();
+      if (name === 'measurement:start' && payload && (payload.what === 'side' || payload.what === 'angle')) tailWhenHome();
       // THE COMPARE PAIR TELLS HIM WHAT HAPPENED: a diagonal left the shape
       // (surprised), a card was named (the badge's `react`)
       if (name === 'compare:outside') buddyReacts('surprised');

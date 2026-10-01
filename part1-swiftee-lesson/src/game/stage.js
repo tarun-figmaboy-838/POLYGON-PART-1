@@ -1306,7 +1306,8 @@
     if (!w) return 0;
     var still = [], shown = 0;
     heldForWord.forEach(function (h) {
-      if (h.words.indexOf(w) >= 0) { showHeld(h); shown++; }
+      // (`nth`: the second "sides" of a line, not the first — the regular / irregular rule)
+      if (h.words.indexOf(w) >= 0) { h.seen = (h.seen || 0) + 1; if (!h.nth || h.seen >= h.nth) { showHeld(h); shown++; } else still.push(h); }
       else still.push(h);
     });
     heldForWord = still;
@@ -2103,16 +2104,20 @@
           var x1 = p.x + Math.cos(a1) * r, y1 = p.y + Math.sin(a1) * r, x2 = p.x + Math.cos(a2) * r, y2 = p.y + Math.sin(a2) * r;
           var d = inside ? 'M' + x1 + ' ' + y1 + ' A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2 + ' ' + y2
                          : 'M' + x1 + ' ' + y1 + ' A' + r + ' ' + r + ' 0 ' + (1 - large) + ' 0 ' + x2 + ' ' + y2;
-          mk('path', { d: d, fill: 'none', stroke: eq ? '#ffe27a' : HI.bad, 'stroke-width': 3, 'stroke-linecap': 'round',
-                       style: litGlow(eq ? '#ffb020' : HI.badLit) }, ag);
+          mk('path', { d: d, fill: 'none', stroke: eq ? '#ffe27a' : HI.badLit, 'stroke-width': 3, 'stroke-linecap': 'round',
+                       style: litGlow(eq ? '#ffb020' : 'rgba(255, 255, 255, 0.95)') }, ag);
         }
         items.push(ag);
       }
     }
+    // (each mark fades in, one after another — no pop, no bounce: the regular / irregular brief)
     items.forEach(function (it, i) {
       if (reduced()) return;
       it.style.opacity = 0;
-      later(i * 110, function () { it.style.opacity = ''; enter(it, 'ui'); });
+      later(i * 110, function () {
+        it.style.opacity = '';
+        if (it.animate) { try { it.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240, easing: 'ease-out' }); } catch (x) {} }
+      });
     });
     sfx('tick', { gain: 0.5 });
   }
@@ -5377,7 +5382,7 @@
     onWord: function (list) {
       (Array.isArray(list) ? list : [list]).forEach(function (w) {
         if (!w || !w.word) return;
-        onWord(w.word, function () {
+        var hw = onWord(w.word, function () {
           if (w.sfx) sfx(w.sfx, { gain: w.gain || 0.5 });
           // the focus moves on its word too: the line turns from one card to the other
           if (w.focus && st.compare) focus(w.focus === 'even' ? 'compare' : 'compare.' + w.focus, w.focus === 'even' ? 'even' : (w.style || 'lean'));
@@ -5403,6 +5408,7 @@
             warmPulse(ks.map(function (k) { return st.compare[k] && st.compare[k].pg; }), { together: true, peak: '1.04', ms: 560 });
           }
         });
+        if (hw && w.nth) hw.nth = w.nth;
       });
     },
     /* The small learning marks, INSIDE and OUTSIDE, popped in one after the other. */
@@ -5752,6 +5758,7 @@
 
     // the compare sequence: words that answer, diagonals that grow (a beat
     // that lasts until they have), and the small marks
+    if ('quietWords' in spec) st.quietWords = !!spec.quietWords;
     if (spec.onWord) op.onWord(spec.onWord);
     var growing = spec.grow ? op.grow(spec.grow) : null;
     if (spec.marks) op.marks(spec.marks);
@@ -6029,6 +6036,9 @@
   }
   function emphasize(term, ctx) {
     if (!svg || reduced() || dragging()) return 0;
+    // (a screen whose words are cued to their own evidence — `quietWords`: the regular / irregular
+    // pair — takes no generic lighting on top: "only the evidence that matches the words")
+    if (st.quietWords) return 0;
     var kind = st.kind, line = String((ctx && ctx.line) || '').toLowerCase();
     if (kind === 'summary') return summaryWord(term, line);
     switch (term) {
@@ -7216,9 +7226,9 @@
             if (cancelled) return;
             count++;
             st.measure[isSides ? 'sides' : 'angles'].push(at); renderPoly();
-            if (auto && !isSides && count < need && st.measG) {
-              st.measG.querySelectorAll('[data-angle]').forEach(function (el) { el.style.opacity = '0.4'; });
-            }
+            // (EVERY READING STAYS BRIGHT — the user: "why u dehighlighted the measure angle numbers,
+            // this is a bug": each angle measured was set to 40 % while the walk went on — the one
+            // just measured too — so the degrees he had read out were faded until the last corner)
             // the new reading pops in; the ones already there stay put
             var fresh = st.measG && st.measG.querySelector(isSides ? '.meas[data-side="' + i + '"]' : '[data-angle="' + at + '"]');
             if (fresh) enter(fresh, 'pop');

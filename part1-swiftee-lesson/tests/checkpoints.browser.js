@@ -875,36 +875,35 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await shot('13-regular-irregular-comparison');
     return { ok: tags.some((t) => /^Regular/.test(t)) && tags.some((t) => /^Irregular/.test(t)) && !tags.every((t) => /^Pentagon$/.test(t)), extra: tags };
   });
-  await step(44, 'regular vs irregular sync: the sides light on "side(s)", the corners on "angle(s)" (≤ 500 ms), never both at once', async () => {
+  // (the user's sync brief: the evidence itself on its words — the ticks on "sides", the arcs on
+  // "angles" — one card at a time, the second card's marks only once the focus has turned to it,
+  // and nothing else lighting: no generic traces over the evidence, no dots, no diagonals)
+  await step(44, 'regular vs irregular sync: ticks on "sides", arcs on "angles" (≤ 500 ms), one card at a time, nothing else lit', async () => {
     await jump('regular-vs-irregular');
-    // (timed from this screen's own words: a word counts only once it lights after the jump —
-    // the words already up from the screen before are set aside, nothing is waited for first)
     const r = await ev(() => new Promise((res) => {
-      const T0 = performance.now();
-      // (the words already lit when the screen opens belong to the line before: set aside)
-      let sideWord = null, angleWord = null, sideFx = null, angleFx = null, both = 0, seen = new Set([...document.querySelectorAll('#bubble .in')]);
+      const T0 = performance.now(), i = window.Game.screen;
+      let sideWord = null, angleWord = null, sideFx = null, angleFx = null, rightEarly = false, traces = 0, voSeen = false;
+      const seen = new Set([...document.querySelectorAll('#bubble .in')]);
       const tick = () => {
-        const now = performance.now() - T0;
-        [...document.querySelectorAll('#bubble .in')].forEach((w) => {
+        const now = performance.now() - T0, C = window.Stage.state.compare || {};
+        if (window.VO.id === 'fb56') voSeen = true;
+        if (voSeen) [...document.querySelectorAll('#bubble .in')].forEach((w) => {
           if (seen.has(w)) return; seen.add(w);
           const t = w.textContent.toLowerCase();
           if (sideWord == null && /^side/.test(t)) sideWord = now;
           if (angleWord == null && /^angle/.test(t)) angleWord = now;
         });
-        const s = document.querySelector('#stage .word-sides'), a = document.querySelector('#stage .word-angles');
-        if (sideFx == null && s) sideFx = now;
-        if (angleFx == null && a) angleFx = now;
-        if (s && a && parseFloat(getComputedStyle(s).opacity) > 0.3 && [...a.querySelectorAll('path')].some((p) => parseFloat(getComputedStyle(p).opacity) > 0.3)) both++;
-        if ((sideFx != null && angleFx != null && now > angleFx + 1500) || now > 60000 || window.Game.screen !== window.__rvi) { res({ sideWord, angleWord, sideFx, angleFx, both }); return; }
-        setTimeout(tick, 40);
+        const L = C.left && C.left.evidence, R = C.right && C.right.evidence;
+        if (sideFx == null && L && L.querySelector('.ev-tick')) sideFx = now;
+        if (angleFx == null && L && L.querySelector('.ev-arc')) angleFx = now;
+        if (R && R.querySelector('.ev-tick, .ev-arc') && window.Stage.state.compareFocus !== 'right' && window.VO.id !== 'fb58') rightEarly = true;
+        traces = Math.max(traces, document.querySelectorAll('#stage .word-sides, #stage .word-angles, #stage .dc-trace').length);
+        if ((sideFx != null && angleFx != null && now > angleFx + 800) || now > 60000 || window.Game.screen !== i) { res({ sideWord, angleWord, sideFx, angleFx, rightEarly, traces }); return; }
+        setTimeout(tick, 30);
       };
-      window.__rvi = window.Game.screen;
       tick();
     }));
-    // (each trace follows its own word; "sides" and "angles" a breath apart in one line means the
-    // first is still fading as the second lights — the overlap is reported, not failed: the sync
-    // of each trace to its word is the assertion)
-    const ok = r.sideFx != null && r.angleFx != null && r.sideWord != null && r.angleWord != null && Math.abs(r.sideFx - r.sideWord) <= 500 && Math.abs(r.angleFx - r.angleWord) <= 500;
+    const ok = r.sideFx != null && r.angleFx != null && r.sideWord != null && r.angleWord != null && Math.abs(r.sideFx - r.sideWord) <= 500 && Math.abs(r.angleFx - r.angleWord) <= 500 && !r.rightEarly && r.traces === 0;
     return { ok, extra: r };
   });
 
