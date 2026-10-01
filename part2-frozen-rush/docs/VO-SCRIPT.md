@@ -31,6 +31,18 @@ written here whole: change the wording and the recording, this table and
 | tut-6-use | Use the right ice piece to fix the path. | The hand sweeps across the answer's rope. |
 | tut-7-fit | Perfect fit! Keep going! | The piece has landed and the run resumes. |
 
+**The game is played in two halves now**, with Swiftee's lesson between them (the site's root
+opens `?intro=1`; the lesson's last button opens `?resume=1`):
+
+- **Before the lesson** the tutorial plays lines 1 to 5 and ends at the broken path, where
+  Swiftee flies in and says his line below. Then the page hands over to his lesson.
+- **After the lesson** the game starts again from the top, the avalanche included, and the
+  tutorial picks up at line 6 when Momo reaches the broken path.
+
+| id | line | moment |
+|---|---|---|
+| sw-help | But for that, first you need to learn about polygons. | Swiftee has flown in beside Momo at the broken path. **Recorded** — his own take (`swiftee-extra.mp3`), not a generated voice. |
+
 ## 2. The instruction sign (one per crossing, in play order)
 
 The ids are the ones the game derives from each sentence (`api.signVoId`), so the recording, the
@@ -74,14 +86,14 @@ require them.
 |---|---|---|
 | ui-play | Play | The cover button |
 | ui-loading | Loading… | The cover, while the art arrives |
-| ui-skip | Skip | The tutorial's corner button |
 | ui-paused | Paused | The pause panel's heading |
 | ui-resume | Resume | The pause panel |
 | ui-restart | Restart | The pause panel |
 | ui-sound | Sound | The pause panel |
 | ui-rotate | Rotate your device | Shown in portrait |
 | ui-play-again | Play again | The ending |
-| ui-skip-ending | Skip to ending | A review control, not for players |
+
+(The tutorial's **Skip** and the **Skip to ending** review control were removed on request.)
 
 ## 5. If the lines are ever re-recorded or re-written
 

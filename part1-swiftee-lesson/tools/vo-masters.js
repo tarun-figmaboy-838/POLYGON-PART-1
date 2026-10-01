@@ -27,7 +27,7 @@ module.exports = [
     lines: ['fb46', 'fb47', 'fb03', 'fb32'] },
   // the hand-over and the recap's opener; the take's other three lines are not used (the user)
   { name: 'swiftee-extra', source: 'assets/source/vo-masters/swiftee-extra.mp3', tempo: 1,
-    lines: ['p01b', 'p37o',
+    lines: [{ id: 'p01b~unused', text: 'But for that, first you need to learn about polygons.' }, 'p37o',
             { id: 'unused~names', text: 'Polygons have different names based on their number of sides.' },
             { id: 'unused~ending', text: 'Now you know everything about polygons. You are ready to help Momo.' }] },
   { name: 'swiftee-lesson', source: 'assets/source/vo-masters/swiftee-lesson.mp3', tempo: 1,

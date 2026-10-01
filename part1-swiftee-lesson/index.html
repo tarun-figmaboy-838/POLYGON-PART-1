@@ -12,7 +12,7 @@
 <!-- the title and the backdrop are the first things on screen; fetch them alongside
      the scripts. Everything else — the sleigh's sheets, Swiftee, the story, the voice —
      is fetched by the loading bar (src/core/preload.js) before Play appears. -->
-<link rel="preload" as="image" href="assets/ui/banner.webp?v=0f187566">
+<link rel="preload" as="image" href="assets/ui/banner.webp?v=b5109fa3">
 <link rel="preload" as="image" href="assets/bg/ice-vista.webp" fetchpriority="high">
 <style>
   :root {
@@ -814,6 +814,13 @@
      the moment the pop has played). The bar is the same family as Part 2's: an ice-bright
      fill in a dark rimmed track, over the painted title. */
   #loading:not(.ready) #start { visibility: hidden; }
+  /* STRAIGHT IN FROM FROZEN RUSH (?auto=1, game.js): no banner, no Play — the loading bar alone on
+     the snow-white Frozen Rush's hand-over fades to, and the lesson starts by itself */
+  #loading.auto { background: #eaf6ff; }
+  #loading.auto .title-art, #loading.auto .title-sheen, #loading.auto .title-scrim,
+  #loading.auto .title-snow, #loading.auto .title-play { visibility: hidden; }
+  /* (only where the browser will not play a sound without a tap — Safari: Play alone, on the snow) */
+  #loading.auto.auto-tap .title-play { visibility: visible; }
   #loading.ready #start { animation: startPop 520ms cubic-bezier(.2, 1.6, .35, 1) backwards; }
   @keyframes startPop {
     0%   { opacity: 0; transform: scale(.45); }
@@ -953,12 +960,12 @@
   <!-- NEXT, ON THE SUMMARY ONLY (the final pass): shown once its explanations are over, and the
        way on from it; the lesson's other screens go on by themselves -->
   <button id="next" type="button" aria-label="Next"><span>Next</span><span class="chev" aria-hidden="true">&#9654;</span></button>
-  <a id="continue" href="../part2-frozen-rush/game/index.html" aria-label="Continue to Part 2: Frozen Rush"><span>Part 2</span><span class="chev" aria-hidden="true">&#9654;</span></a>
+  <a id="continue" href="../part2-frozen-rush/game/index.html?resume=1" aria-label="Continue to Part 2: Frozen Rush"><span>Part 2</span><span class="chev" aria-hidden="true">&#9654;</span></a>
   <div id="progress-track"><div id="progress"></div></div>
 
   <div id="loading">
     <div class="title-stage" aria-hidden="true">
-      <img class="title-art" src="assets/ui/banner.webp?v=0f187566" alt="" draggable="false">
+      <img class="title-art" src="assets/ui/banner.webp?v=b5109fa3" alt="" draggable="false">
       <div class="title-sheen"></div>
       <div class="title-snow"></div>
       <div class="title-scrim"></div>

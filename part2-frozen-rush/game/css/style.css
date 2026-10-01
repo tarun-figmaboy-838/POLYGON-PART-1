@@ -100,22 +100,6 @@ a:hover { color: var(--ice-pale); }
 
 .hud button { pointer-events: auto; font-family: inherit; cursor: pointer; }
 
-/* TEMPORARY review control, quiet and out of the way in the bottom-left corner: the
-   same pill as the tutorial's Skip, so it reads as a control for adults, not play. */
-.btn-skip-end {
-  position: absolute;
-  left: clamp(10px, calc(1.1 * var(--u)), 44px);
-  bottom: clamp(10px, calc(1.1 * var(--u)), 44px);
-  font: 700 clamp(11px, calc(1.15 * var(--u)), 40px)/1 "Baloo 2", system-ui, sans-serif;
-  color: #EAF9FF;
-  padding: clamp(6px, calc(0.63 * var(--u)), 22px) clamp(12px, calc(1.26 * var(--u)), 44px);
-  border: 2px solid rgba(234, 249, 255, 0.55);
-  border-radius: 999px;
-  background: rgba(6, 32, 60, 0.5);
-  -webkit-tap-highlight-color: transparent;
-}
-.btn-skip-end:hover { background: rgba(6, 32, 60, 0.72); }
-
 /* Pause and Replay are styled with the rest of the button family in screens.css */
 
 /* ---------- THE JOURNEY CARD ----------

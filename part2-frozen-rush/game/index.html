@@ -31,7 +31,7 @@
 <script>
   (function () {
     if (/[?&](skip|p2)=1\b|[?&]at=/.test(location.search)) return;
-    ['assets/art/cover.webp?v=e0c7a5db', 'assets/ui/btn-play.webp?v=e75de185'].forEach(function (u) { var i = new Image(); i.src = u; });
+    ['assets/art/cover.webp?v=ff13073d', 'assets/ui/btn-play.webp?v=e75de185'].forEach(function (u) { var i = new Image(); i.src = u; });
   })();
 </script>
 <!-- No Try Again preload. That card is gone: a crash now plays its animation out and
@@ -149,10 +149,6 @@
              touch ring answers a tap wherever it lands, in every state, which is the
              feedback the button's ring used to give in one corner. -->
 
-        <!-- TEMPORARY review control: jumps to the ending so it can be checked without
-             playing seven phases. Not part of the game; remove with game.skipToEnd(). -->
-        <button class="btn-skip-end" id="btn-skip-end" type="button" hidden>Skip to ending</button>
-
         <!-- a brief mark over the crossing: cause and effect, without a modal -->
 
         <!-- shown only after a long idle: demonstrates the cut, never performs it -->
@@ -204,7 +200,6 @@
                saying "Got it". It is the supplied touch picture (touch.webp), already used for the swipe
                hint, so the two gestures are the same hand. -->
           <div class="tut-hand" id="tut-hand" aria-hidden="true" hidden></div>
-          <button class="tut-skip" id="tut-skip" type="button">Skip</button>
         </div>
 
         <div class="overlay pause-panel" id="paused" hidden>

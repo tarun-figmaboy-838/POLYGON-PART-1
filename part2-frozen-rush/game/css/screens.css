@@ -96,7 +96,7 @@
 .cover-art {
   position: absolute;
   inset: 0;
-  background: url("../assets/art/cover.webp?v=e0c7a5db") center/contain no-repeat;
+  background: url("../assets/art/cover.webp?v=ff13073d") center/contain no-repeat;
 }
 /* SNOW OVER THE BANNER — real six-armed flakes, falling and turning.
 
@@ -313,6 +313,18 @@
   overflow: hidden;
 }
 .tutorial[hidden] { display: none; }
+
+/* SWIFTEE, FLYING IN (js/swiftee-cameo.js): the lesson's bird over the held scene at the broken
+   path. Beside the tutorial's layer and one above it (41), so the blur is under him and he stays
+   sharp; below the overlay panels (45). One canvas, one frame of him at a time. */
+.sw-cameo {
+  position: absolute;
+  z-index: 41;
+  pointer-events: none;
+  transform-origin: 50% 50%;
+  filter: drop-shadow(0 7px 11px rgba(24, 52, 96, 0.24));
+}
+.sw-cameo canvas { display: block; width: 100%; height: 100%; }
 
 /* THE VEIL — a pulled focus, not a spotlight.
 
@@ -617,24 +629,6 @@
    on the thing being explained is understood by a child who cannot read the sentence
    yet, and it says WHERE to tap rather than sitting in a box claiming comprehension.
    A tap anywhere on the stage acknowledges a step now. */
-
-/* Skip sits in a corner and is deliberately quiet: findable by an adult, and never
-   competing with the thing the child is being asked to look at. */
-.tut-skip {
-  position: absolute;
-  right: clamp(10px, 1.1vw, 22px);
-  top: clamp(10px, 1.1vw, 22px);
-  font: 700 clamp(11px, 1.15vw, 20px)/1 "Baloo 2", system-ui, sans-serif;
-  color: #EAF9FF;
-  padding: clamp(6px, 0.63vw, 11px) clamp(12px, 1.26vw, 22px);
-  border: 2px solid rgba(234, 249, 255, 0.55);
-  border-radius: 999px;
-  background: rgba(6, 32, 60, 0.5);
-  cursor: pointer;
-  pointer-events: auto;
-  -webkit-tap-highlight-color: transparent;
-}
-.tut-skip:hover { background: rgba(6, 32, 60, 0.72); }
 
 @media (prefers-reduced-motion: reduce) {
   /* The flakes hold still, part way down, rather than being parked at the top of their

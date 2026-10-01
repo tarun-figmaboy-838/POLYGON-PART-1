@@ -178,10 +178,6 @@
       log: true,
       swiftee: { pos: 'left', size: 'large', purpose: 'introduce'},
       say: 'Hi! I am Swiftee.',
-      // (the story's hand-over is his now — the user: "But for that, first you need to learn about
-      // polygons." straight after his hello, and the narrator's last line trimmed to "Momo needs
-      // your help to reach Popo.")
-      lines: ['But for that, first you need to learn about polygons.'],
       stage: { kind: 'vista' },
       beats: [
         { stage: { kind: 'vista' } },
@@ -190,7 +186,9 @@
         { wait: 300 },
         { say: 'Hi! I am Swiftee.', vo: 'p01' },
         { parallel: [{ swiftee: 'wave' }, { sfx: 'pop' }] },
-        { say: 'But for that, first you need to learn about polygons.', vo: 'p01b' },
+        // ("But for that, first you need to learn about polygons." is gone from here: Swiftee says
+        // it in Frozen Rush now, flying in at the broken path just before this screen — the same
+        // recording, sw-help in that game's voice track; the user)
         { input: { type: 'tap-anywhere' } }
       ]
     },

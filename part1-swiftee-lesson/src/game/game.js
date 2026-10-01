@@ -4644,7 +4644,9 @@
       // honours the options it reads, and sparkle reads none — so the delay
       // was ignored and both landed on the same instant as one thicker pop.
       // The pop already rang on the press; this is the release on top of it.
-      if (global.SFX) { SFX.unlock(); SFX.play('sparkle'); }
+      // (not when the lesson starts by itself, ?auto=1: there was no press for it to answer)
+      if (global.SFX) { SFX.unlock(); if (!autoPress) SFX.play('sparkle'); }
+      autoPress = false;
       // THE TUNE COMES IN WITH THE GAME, not with the page: audio may only
       // start on a gesture, and this is the gesture. It is quiet and it is on
       // the music bus, so the mute button and every duck already reach it.
@@ -4679,10 +4681,43 @@
       curtain();
       setTimeout(function () { play(0); }, 430);
     });
+
+    /* STRAIGHT IN FROM FROZEN RUSH (?auto=1 — the user: "show learning section, do not add game
+       banner, make auto start"). Frozen Rush's tutorial hands over here, so the title is not shown:
+       no banner and no Play, only the loading bar on the snow-white the hand-over faded to
+       (index.html #loading.auto), and the lesson starts by itself the moment the last file is in —
+       a start asked for before then waits for it (pendingStart).
+       WHERE THE BROWSER ALLOWS THE SOUND. The tap that started Frozen Rush counts as this site's
+       gesture in Chrome, so the voice plays; Safari asks for a gesture on every page, and a lesson
+       started without one runs silent (measured: WebKit stepped through three screens with no
+       voice). So a silent sound is tried first: heard, the lesson starts by itself; refused, Play
+       alone comes up on the snow (#loading.auto-tap), and the one tap starts it with its voice. */
+    var autoLoc = global.location || {};
+    if (/[?&]auto=1\b/.test(autoLoc.search || '')) {
+      loadEl.classList.add('auto');
+      var tryStart = function () {
+        var probe = null, played = null;
+        try { probe = new Audio(SILENT_WAV); played = probe.play(); } catch (e) { played = null; }
+        var go = function () { autoPress = true; startEl.click(); };
+        if (!played || !played.then) { go(); return; }
+        played.then(function () {
+          try { probe.pause(); } catch (e) {}
+          go();
+        }, function (err) {
+          // only the browser saying "not without a tap" asks for one; any other failure starts anyway
+          if (err && err.name === 'NotAllowedError') loadEl.classList.add('auto-tap');
+          else go();
+        });
+      };
+      if (preloaded) tryStart(); else pendingStart = tryStart;
+    }
   }
   /* A jump from the title in the review tool goes straight to its screen, not through the
      story first (wireJump). */
   var storySkip = false;
+  var autoPress = false;   // the lesson starting by itself (?auto=1), not a press of Play
+  // a twentieth of a second of silence: the probe for whether this page may make a sound yet
+  var SILENT_WAV = 'data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YSADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==';
 
   /* ------------------------------------------------------------------ *
    * THE LOADING BAR — everything before Play (src/core/preload.js)

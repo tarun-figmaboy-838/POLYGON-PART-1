@@ -62,7 +62,6 @@ export class Hud {
       /* No jump button any more (see index.html): the stage is the control. The lookup
          is gone with it rather than kept guarded — a lookup with no user is how a dead
          element gets wired back up by the next person reading this file. */
-      skipEnd: root.getElementById('btn-skip-end'),   // TEMPORARY review control
       instruction: root.getElementById('instruction'),
       pill: root.getElementById('instruction-pill'),
       text: root.getElementById('instruction-text'),
@@ -679,7 +678,6 @@ export class Hud {
     // preventDefault also suppresses the browser's own :active state, so the
     // pressed look has to be driven by a class or the button never appears to move.
     // TEMPORARY review control: jump to the ending. Guarded like every other lookup.
-    if (this.el.skipEnd && handlers.onSkipEnd) this.el.skipEnd.addEventListener('click', () => handlers.onSkipEnd());
 
     /* NOTHING HERE BINDS A JUMP. The jump is a tap on the stage, which the engine reads
        off the canvas itself — there is no DOM control to press, to swap art on, to
@@ -830,7 +828,6 @@ export class Hud {
     if (this.el.hint) this.el.hint.classList.toggle('nudge', !!h.hintNudge);
 
     // TEMPORARY review control: up whenever the game is playable and not yet complete
-    if (this.el.skipEnd) { const show = !!h.skippable; if (this.el.skipEnd.hidden === show) this.el.skipEnd.hidden = !show; }
 
     if (this.el.complete.hidden === h.complete) {
       this.el.complete.hidden = !h.complete;

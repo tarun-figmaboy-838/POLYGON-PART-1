@@ -1,5 +1,8 @@
 /* Append generated Part 2 speech to the original take, preserving every old window.
- * The timing manifest was captured from SpeechSynthesizer.SpeakProgress during generation. */
+ * The timing manifest was captured from SpeechSynthesizer.SpeakProgress during generation.
+ * A row marked `recorded: true` is a real recording, already at the game's level (Swiftee's
+ * line, cut from the user's take by Part 1's tools/split-vo.js): it is appended as it is, and
+ * kept out of the level match, so adding one changes nothing about the generated lines. */
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -47,7 +50,7 @@ const original = pcm(src);
    anywhere else; the takes always live beside it. */
 const takes = rows.map(row => pcm(path.join(dir, path.win32.basename(row.file))));
 const originalLevel = voicedLevel(original);
-const generatedLevel = voicedLevel(Buffer.concat(takes));
+const generatedLevel = voicedLevel(Buffer.concat(takes.filter((t, i) => !rows[i].recorded)));
 const factor = Math.max(0.5, Math.min(1.8, originalLevel / generatedLevel));
 let samples = original.length / 2;
 const parts = [original, gap];
@@ -58,7 +61,7 @@ rows.forEach((row, index) => {
   windows.push({ id: row.id, text: row.text,
     at: +(samples / rate).toFixed(3), dur: +(take.length / 2 / rate).toFixed(3),
     words: row.words.map(word => +word.at.toFixed(3)) });
-  parts.push(gain(take, factor));
+  parts.push(rows[index].recorded ? take : gain(take, factor));
   samples += take.length / 2;
   if (index < rows.length - 1) { parts.push(gap); samples += gap.length / 2; }
 });

@@ -25,7 +25,8 @@ test.describe('the voice and the crossing order', () => {
        back to fifteen. The number here was left at fourteen and the suite has been red on it
        since; the seconds 'win-title' and 'win-sub' occupy are still in the take with no window
        pointing at them, which is what this count is really guarding. */
-    expect(r.lines.length, 'all tutorial, crossing and cheer lines').toBe(25);
+    // 26: with Swiftee's 'sw-help', the intro's hand-over to his lesson
+    expect(r.lines.length, 'all tutorial, crossing and cheer lines').toBe(26);
     const ordered = r.lines.slice().sort((a, b) => a[1][0] - b[1][0]);
     let prevEnd = 0;
     for (const [id, [at, dur]] of ordered) {
@@ -45,7 +46,7 @@ test.describe('the voice and the crossing order', () => {
     await page.evaluate(() => window.iceAgeGame.sfx('ui'));         // unlocks the context
     await page.waitForFunction(() => window.iceAgeGame._voice().ready, null, { timeout: 60_000 });
     // 15: the ending's two sentences went with the banner, and the cheer (win-yay) came back
-    expect((await page.evaluate(() => window.iceAgeGame._voice())).lines).toBe(25);
+    expect((await page.evaluate(() => window.iceAgeGame._voice())).lines).toBe(26);   // with 'sw-help'
     const r = await page.evaluate(async () => {
       const m = await import('/js/engine.js');
       /* THE SECOND SENTENCE, not the whole line. The box shows one sentence at a time now

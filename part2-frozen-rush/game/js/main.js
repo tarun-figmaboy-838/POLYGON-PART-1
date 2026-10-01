@@ -119,6 +119,28 @@ let devSel = null;       // the bar's picker, kept in step with the crossing bei
 const tutFlag = params.get('tutorial');
 const wantTutorial = tutFlag !== '0' && tutFlag !== 'false';
 
+/* THE NEW SEQUENCE (the user): the game opens HERE, on the Frozen Rush 2 cover — the site's root
+   sends players to ?intro=1 — and the tutorial plays Momo, his goal, the jump and the broken path,
+   then hands over to Swiftee's lesson (handOffToLesson). The lesson's way on comes back with
+   ?resume=1: the run starts again from the avalanche, and the tutorial says nothing until the
+   broken path, where it picks up with the cut. Opened with neither, this page plays as it always has. */
+const intro = flag('intro', false) && !flag('resume', false);
+const resume = flag('resume', false);
+const tutMode = intro ? 'intro' : resume ? 'resume' : 'full';
+function handOffToLesson() {
+  // a short fade to the snow-white of the lesson's own title, then the lesson's page
+  const veil = document.createElement('div');
+  veil.setAttribute('data-handoff', '1');
+  veil.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#eaf6ff;opacity:0;transition:opacity 600ms ease;pointer-events:all;';
+  document.body.appendChild(veil);
+  requestAnimationFrame(() => { veil.style.opacity = '1'; });
+  // ?auto=1: the lesson skips its title (no banner, no Play) and starts by itself (the user)
+  const q = new URLSearchParams({ auto: '1' });
+  if (options.dev) q.set('dev', '1');
+  const to = '../../part1-swiftee-lesson/index.html?' + q.toString();
+  setTimeout(() => { location.href = to; }, 700);
+}
+
 /* THE BACKBUFFER AT SCREEN RESOLUTION. The stage is CSS-fitted to the window; the canvas
    behind it renders at (stage CSS width x devicePixelRatio) / 1920 times its 1920x1080
    layout, rounded to a quarter and capped at 2, so a hi-DPI laptop or a 4K screen gets
@@ -243,7 +265,7 @@ setInterval(() => hud.syncVoice(game), 25);
    point, and the tutorial reads what it needs from debug() itself. */
 function startTutorial() {
   if (!wantTutorial || tut) return;
-  tut = new Tutorial(document, game);
+  tut = new Tutorial(document, game, { mode: tutMode, onHandOff: handOffToLesson });
   tut.begin();
   let last = performance.now();
   const tick = now => {
@@ -362,6 +384,9 @@ game.setOptions(options);
    reason to sit on a blank page while the sheets and sounds arrive behind it. */
 if (!flag('skip', false) && jumpAt === null) {
   front = new Frontend(document, game);
+  // (back from the lesson the run starts from its beginning, avalanche and all — the user: "after
+  // learning game, show avalanche in the momo game, do not remove it" — and the tutorial's
+  // 'resume' part says nothing until the broken path, then picks up with "Use the right ice piece…")
   front.init({ onStart: () => { game.begin(); startTutorial(); } });
   front.setLoading(true);
   game.loadProgress(f => front.setProgress(f));
@@ -433,8 +458,6 @@ if (window.Juice) {
 hud.bind({
   onPause: paused => game.setPaused(paused),
   onReplay: () => game.restart(),
-  // TEMPORARY review control: end the tutorial if it is up, then jump to the ending
-  onSkipEnd: () => { if (tut) { tut.finish(); tut = null; } game.skipToEnd(); },
   // returns the new state so the HUD can swap the glyph without asking again
   onSound: () => game.toggleSound(),
   // re-states the objective; it never reveals which chunk is the answer

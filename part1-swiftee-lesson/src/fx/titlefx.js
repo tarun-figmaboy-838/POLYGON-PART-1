@@ -334,10 +334,11 @@
    * Where the play button goes
    * ------------------------------------------------------------------ */
 
-  // A point in the PAINTING, not in the window: the open ice below the logo,
-  // clear of the sledge on the left, the deer in the middle and the dark
-  // snow mound in the bottom-right corner.
-  var PLAY_AT = { x: 0.775, y: 0.755 };
+  // A point in the PAINTING, not in the window. On the Frozen Rush 2 banner (the user's new
+  // sequence) that is the middle of the ice wall under the scene — clear of Momo on the left and
+  // the logo on the right — the same place Frozen Rush's own cover puts its Play (the user: "the
+  // play button is not centre"). It was 0.775, 0.755: the open ice under the old banner's logo.
+  var PLAY_AT = { x: 0.5, y: 0.8 };
 
   // The idle mid-point of the drift in drift(): the art is held at 1.035 and
   // pushed to 1.055, so on average it is showing at this zoom. Ignoring it

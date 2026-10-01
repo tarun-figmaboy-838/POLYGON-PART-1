@@ -21,13 +21,22 @@ from the synthesizer's SpeakProgress events and are stored in `CFG.vo.lines`.
 | 9 | `p2-9-all-convex` | Cut all the convex ones. |
 | 10 | `p2-tut-6-cut` | Cut this ice block to fix the path. |
 
-Line 10 REPLACES a tutorial line, and is the one item here that is not a question. The
-take holds `tut-6-use` — "Use the right ice piece to fix the path." — recorded when the
-tutorial ran over a row of hanging blocks. It now runs over Part 2's crossing 1, which
-has a single slab and nothing to choose between, so the step was rewritten to "Cut this
-ice block to fix the path." The old window is still in `CFG.vo.lines` and is now unused;
-until line 10 is recorded the step is silent. Do not re-record `tut-1` … `tut-5` or
-`tut-7`: those still match their steps exactly.
+Line 10 is no longer used (2026-10-01, the user's new sequence). The tutorial's "use" step
+says the take's own recorded line again — `tut-6-use`, "Use the right ice piece to fix the
+path." — so line 10's generated "Cut this ice block to fix the path." stays in the file but is
+never asked for. Do not re-record `tut-1` … `tut-7`: they match their steps exactly.
+
+## Swiftee's line, recorded (the new sequence)
+
+| id | say this |
+|----|----------|
+| `sw-help` | But for that, first you need to learn about polygons. |
+
+Not generated: Swiftee's own recording (`p01b`, cut from the user's take
+`part1-swiftee-lesson/assets/source/vo-masters/swiftee-extra.mp3`), appended last with
+`recorded: true` so it keeps its own level and the generated lines keep theirs. He flies into
+the tutorial's last held moment, at the broken path, and says it before the lesson
+(`js/swiftee-cameo.js`).
 
 Read line 3 as **"draw two diagonals"** — the numeral is how it is written on the
 board, not how it is spoken.

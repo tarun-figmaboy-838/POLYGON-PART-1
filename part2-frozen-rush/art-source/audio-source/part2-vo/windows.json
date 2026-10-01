@@ -127,5 +127,23 @@
       2.087,
       2.211
     ]
+  },
+  {
+    "id": "sw-help",
+    "text": "But for that, first you need to learn about polygons.",
+    "at": 68.028,
+    "dur": 3.79,
+    "words": [
+      0.04,
+      0.24,
+      0.42,
+      1.1,
+      1.48,
+      1.6,
+      1.88,
+      2,
+      2.32,
+      2.68
+    ]
   }
 ]

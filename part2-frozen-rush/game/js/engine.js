@@ -1469,6 +1469,9 @@ export const CFG = {
       'p2-8-all-concave': [58.385, 2.444, [0.137, 0.461, 0.812, 0.950, 1.694]], // Cut all the concave ones.
       'p2-9-all-convex': [61.479, 2.404, [0.137, 0.461, 0.812, 0.950, 1.632]], // Cut all the convex ones.
       'p2-tut-6-cut': [64.533, 2.844, [0.137, 0.454, 0.716, 1.046, 1.508, 1.666, 2.087, 2.211]], // Cut this ice block to fix the path.
+      /* SWIFTEE, flying in at the broken path (the user's new sequence): his own recording, cut
+         from his take in Part 1 (p01b) and appended last — art-source/audio-source/part2-vo. */
+      'sw-help': [68.028, 3.79, [0.04, 0.24, 0.42, 1.1, 1.48, 1.6, 1.88, 2, 2.32, 2.68]], // But for that, first you need to learn about polygons.
       /* THE ENDING SPEAKS NO MORE. 'win-title' ("You did it!") and 'win-sub' ("Momo crossed
          the Frozen Pass!") lived here and were cut with the banner that showed them: the
          ending is the dance now, the camera pushes in on it, and a voice over the top was
@@ -5912,8 +5915,8 @@ export function createGame(canvas, hooks = {}) {
   const images = {};
   let ground, obstacles, bgm, mammoth;
   let raf = 0, last = 0, destroyed = false, paused = false;
-  /* REVIEW TOOLS, off unless ?dev=1. Only the skip-to-ending control reads this;
-     see the note where skippable is published. */
+  /* REVIEW TOOLS, off unless ?dev=1 (the Skip to ending button that read this is gone — the
+     user: "remove skip and skip to end buttons"; the review bar's Ending jump still works). */
   let devTools = false;
   // simulation steps per rendered frame; 1 is normal play (see setOptions)
   let fastForward = 1;
@@ -6120,7 +6123,7 @@ export function createGame(canvas, hooks = {}) {
       // The HUD uses these measured word starts for Part 2's spoken instruction.
       // The audio clock itself is read outside the diffed HUD payload.
       voId: G.signSay
-        ? (G.signSay === 'Cut this ice block to fix the path.' ? 'p2-tut-6-cut' : '')
+        ? (G.signSay === 'Use the right ice piece to fix the path.' ? 'tut-6-use' : '')
         : G.l2 && L2_PUZZLE_STATES.includes(G.state) ? p2Cfg().voId
         : G.l1 && ['PHASE_INTRO', 'PHASE_ACTIVE', 'PHASE_WRONG', 'PHASE_SUCCESS'].includes(G.state)
           ? phaseCfg().voId : '',
@@ -6169,7 +6172,7 @@ export function createGame(canvas, hooks = {}) {
        * playing the build rather than by reading it, which is the point of playing it.
        *
        * `dev` comes from ?dev=1 and is false by default, so a shipped build has no such
-       * control. The tests that need it pass the flag (tests/skip-end.spec.mjs). */
+       * control. (Nothing on the page shows it any more: its button was removed.) */
       skippable: devTools && G.state !== 'BOOT' && G.state !== 'TITLE' && !G.complete,
       /* THE JOURNEY CARD IS NOT A DEV TOOL, and used to be gated on the flag above
          because the two happened to want the same states. Its own rule: from the moment

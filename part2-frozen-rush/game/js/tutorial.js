@@ -52,25 +52,25 @@ const clampN = (v, lo, hi) => v < lo ? lo : v > hi ? hi : v;
 
 
 import { fitBubble, BUBBLE } from './bubble.js';
+import { SwifteeCameo } from './swiftee-cameo.js';
+
+/* WHERE SWIFTEE FLIES IN FROM, AND WHERE HE HOVERS (stage px): in from beyond the top-right corner,
+   to the open sky just right of Momo's head — clear of the slab and the gaps, the bubble above */
+const SWIFTEE_FROM = { x: 2150, y: 40 }, SWIFTEE_AT = { x: 830, y: 420 };
 
 /* WHICH RECORDED LINE BELONGS TO WHICH STEP (docs/VO-SCRIPT.md, CFG.vo.lines). */
 const VO = {
   meet: 'tut-1-meet', goal: 'tut-2-goal', rock: 'tut-3-watch', jump: 'tut-4-jump',
   gap: 'tut-5-broken',
-  /* THE 'use' STEP IS SILENT UNTIL IT IS RE-RECORDED, and that is deliberate.
-   *
-   * The take says "Use the right ice piece to fix the path." The step SHOWS "Cut this ice
-   * block to fix the path.", because the tutorial now runs over Part 2's crossing 1 —
-   * one slab, nothing to choose between — so "the RIGHT piece" asks a question the level
-   * does not. The words were changed for that reason and the recording could not be.
-   *
-   * Left pointing at tut-6-use, the bubble printed one sentence while the voice spoke a
-   * different one, and the word reveal ran eight printed words against the take's nine
-   * onsets — so the highlight drifted for the whole line. A line that says the wrong
-   * thing is worse than no line: say() returns 0 for an id with no window, the bubble
-   * reveals on its own pace, and nothing else changes. The replacement is listed in
-   * docs/VO-PART2.md; dropping its window into CFG.vo.lines is all that is needed. */
-  use: 'p2-tut-6-cut', fit: 'tut-7-fit'
+  /* THE 'use' STEP SPEAKS THE TAKE'S OWN SENTENCE: "Use the right ice piece to fix the path."
+   * (the user's new sequence: "Use the right piece to fill the gap" on this crossing). It was
+   * "Cut this ice block to fix the path.", silent, because the take could not say that — and a
+   * bubble printing one sentence while the voice speaks another drifts its word highlight for
+   * the whole line. Showing the recorded words keeps the nine printed words on the take's nine
+   * onsets. (p2-tut-6-cut, the generated "Cut this ice block…", is no longer asked for.) */
+  use: 'tut-6-use', fit: 'tut-7-fit',
+  // Swiftee's own recording (p01b in the lesson), appended to this page's voice track
+  swiftee: 'sw-help'
   // 'cut' is the hand alone and says nothing: the plank's question is spoken by the engine
 };
 
@@ -79,9 +79,21 @@ export class Tutorial {
    * @param {Document} root
    * @param {object} game  the engine handle from createGame()
    */
-  constructor(root, game) {
+  constructor(root, game, opts = {}) {
     this.root = root;
     this.game = game;
+    /* WHICH PART OF THE SCRIPT (the user's new sequence: the Frozen Rush 2 cover, this tutorial,
+       then Swiftee's lesson, then back here). 'intro' plays Momo, his goal, the jump and the
+       broken path, says why the lesson comes next, and hands over (onHandOff) instead of letting
+       the run go on; 'resume' picks up after the lesson, at the broken path; 'full' is the whole
+       tutorial, as when this page is opened on its own. */
+    this.mode = opts.mode || 'full';
+    this.onHandOff = opts.onHandOff || null;
+    this.handedOff = false;
+    // the lesson's bird, for the intro's last line — his art fetched now, so it is in by then
+    this.cameo = this.mode === 'intro' ? new SwifteeCameo(root) : null;
+    if (this.cameo) this.cameo.load();
+    this._entering = false; this._entered = false;
     this.el = {
       layer: root.getElementById('tutorial'),
       veil: root.getElementById('tut-veil'),
@@ -90,8 +102,7 @@ export class Tutorial {
       bubble: root.getElementById('tut-bubble'),
       shape: root.getElementById('tut-shape'),
       text: root.getElementById('tut-text'),
-      hand: root.getElementById('tut-hand'),
-      skip: root.getElementById('tut-skip')
+      hand: root.getElementById('tut-hand')
     };
     this.step = -1;
     this.done = false;
@@ -202,7 +213,7 @@ export class Tutorial {
       const ry = 58;
       return { x: hx, y: hy + ry, rx: 86, ry, aimX: hx, world: true };
     };
-    return [
+    const all = [
       {
         id: 'meet',
         /* NOT DURING THE AVALANCHE. The opening is a wall of snow chasing Momo down
@@ -316,10 +327,13 @@ export class Tutorial {
            hanging blocks — crossing 1 is the diagonal level. The sentence changed with
            the mechanic: there is nothing to choose between here, so "use the RIGHT
            piece" would be asking a question the level does not ask. */
+        /* (the user's words for it now, in the new sequence — "Use the right piece to fill the
+           gap" — as the take already said it: the halves of the slab ARE the pieces that fill the
+           two gaps, and "right" is the cut that makes them) */
         id: 'use',
         at: g => ['PHASE_INTRO', 'PHASE_ACTIVE', 'LEVEL_2_OVERVIEW', 'LEVEL_2_FOCUS'].includes(g.state),
         spot: () => null,
-        text: 'Cut this ice block to fix the path.',
+        text: 'Use the right ice piece to fix the path.',
         sign: 99, focus: 'blocks',
         advance: 0, pause: false
       },
@@ -360,6 +374,27 @@ export class Tutorial {
         advance: 0, pause: false
       }
     ];
+    /* THE HAND-OVER (intro): straight after the broken path, in the same held moment — Swiftee
+       FLIES IN (`enter`, before a word is said) and hovers beside Momo, and says why the lesson
+       comes next, in his own recorded voice (the user: use the recording there is, not a
+       generated one). "That" is the broken path the line before has just shown. Then the page
+       goes on to his lesson (handOff). */
+    const reduced = !!(this.root && this.root.defaultView && this.root.defaultView.matchMedia &&
+                       this.root.defaultView.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const head = SwifteeCameo.headOf(SWIFTEE_AT);
+    const help = {
+      id: 'swiftee',
+      at: () => true,
+      enter: () => (this.cameo ? this.cameo.flyIn(SWIFTEE_FROM, SWIFTEE_AT, 1500, reduced) : null),
+      spot: () => ({ x: head.x, y: head.y, rx: 110, ry: 100, aimX: head.x, world: false }),
+      text: 'But for that, first you need to learn about polygons.',
+      focus: 'mammoth',
+      advance: 0, pause: true
+    };
+    const at = (id) => all.findIndex((s) => s.id === id);
+    if (this.mode === 'intro') return all.slice(0, at('gap') + 1).concat([help]);
+    if (this.mode === 'resume') return all.slice(at('use'));
+    return all;
   }
 
   /* ---- where things are ---- */
@@ -478,7 +513,7 @@ export class Tutorial {
   begin() {
     if (this._built) return;
     this._built = true;
-    if (this.el.skip) this.el.skip.addEventListener('click', () => this.finish());
+    // (no Skip button any more — the user: "remove skip and skip to end buttons")
     /* THE WHOLE STAGE IS THE BUTTON. There is no "Got it" any more: the hand taps on
        the thing being explained, and a tap anywhere acknowledges it. That is both
        simpler and more honest about what the hand is asking for — a child who cannot
@@ -487,10 +522,7 @@ export class Tutorial {
 
        Pointer events on the layer are switched off for action steps, so a real swipe
        still reaches the canvas. */
-    if (this.el.layer) this.el.layer.addEventListener('click', e => {
-      if (e.target === this.el.skip) return;
-      this.tap();
-    });
+    if (this.el.layer) this.el.layer.addEventListener('click', () => this.tap());
     this.step = 0;
     this.t = 0;
   }
@@ -611,7 +643,7 @@ export class Tutorial {
   /* NO TAP-TO-ADVANCE. A describing step moves on by itself and a tap does nothing.
      Tapping past a sentence is not something a child does deliberately — they tap
      because a finger is on the screen — so honouring it would skip the instruction
-     they were about to read. Skip is the deliberate way out, and it is a button. */
+     they were about to read. (There is no Skip button any more: the tutorial plays through.) */
   tap() { /* intentionally nothing: see above */ }
 
   /** The player did the thing an action step was waiting for. */
@@ -630,12 +662,26 @@ export class Tutorial {
     if (this.game._l2Demo) this.game._l2Demo(false);
     this.step++;
     this.t = 0;
+    this._entering = false; this._entered = false;      // a step's entrance is its own
     this.spoke = false;                                // the new step has not been read aloud yet
     this.voDur = 0; this.voWords = null; this.voId = null;
     /* AND THE WORDS STOP WITH IT. If a line is cut short — skipped, restarted, the sound
        switched off — its reveal must not carry on animating a sentence nobody is saying. */
     if (this.el.text) this.el.text.classList.remove('waiting');
-    if (this.step >= this.steps.length) this.finish();
+    if (this.step >= this.steps.length) {
+      if (this.mode === 'intro' && this.onHandOff) { this.handOff(); return; }
+      this.finish();
+    }
+  }
+
+  /* THE INTRO IS OVER: the game stays held where it is (the broken path, Momo lit) and the host
+     goes on to the lesson. Nothing more is presented, and the run never resumes underneath. */
+  handOff() {
+    if (this.handedOff || this.done) return;
+    this.handedOff = true;
+    if (this.game.saySign) this.game.saySign('');
+    this.pause();
+    try { this.onHandOff(); } catch (e) { /* the host's navigation: nothing to undo here */ }
   }
 
   finish() {
@@ -646,6 +692,7 @@ export class Tutorial {
     if (this.game._l2Demo) this.game._l2Demo(false);
     if (this.done) return;
     this.done = true;
+    if (this.cameo) this.cameo.hide();
     // the tutorial is over: the game must never be left believing a line is still up
     this._presenting = false;
     if (this.game.setDialogue) this.game.setDialogue(false);
@@ -700,7 +747,7 @@ export class Tutorial {
   static SETTLE = 0.12;
 
   update(dt) {
-    if (this.done || this.step < 0) return;
+    if (this.done || this.step < 0 || this.handedOff) return;
     const g = this.game.debug();
 
     /* THE TUTORIAL ENDS WHEN THE GAME DOES. Nothing here can teach anything once the
@@ -768,6 +815,22 @@ export class Tutorial {
     const onSignStep = typeof s.sign === 'number';
     const box = onSignStep ? null : s.spot(g);
     if (!onSignStep && !box) { this.resume(); this.show(null); return; }
+
+    /* A STEP WITH AN ENTRANCE (`enter`: Swiftee flying in) holds the moment, frozen and wordless,
+       until the entrance is over — the bubble of the line before is put away, the scene and its
+       focus stay as they were — and only then is its line said. */
+    if (s.enter && !this._entered) {
+      this.pause(false);
+      if (this.el.bubble) this.el.bubble.style.visibility = 'hidden';
+      if (!this._entering) {
+        this._entering = true;
+        let ended = false;
+        const end = () => { if (ended) return; ended = true; this._entered = true; if (this.el.bubble) this.el.bubble.style.visibility = ''; };
+        Promise.resolve().then(() => s.enter()).then(end, end);
+        setTimeout(end, 4000);                    // an entrance that never reports must not hold the line for ever
+      }
+      return;
+    }
 
     this.t += dt;
     /* A NUMBER freezes the game for that many seconds of the step, then lets it run: an ask

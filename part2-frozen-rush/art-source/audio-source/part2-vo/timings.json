@@ -1,278 +1,328 @@
 ﻿[
     {
-        "id":  "p2-1-diagonal",
-        "text":  "Cut along a diagonal.",
-        "file":  "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-1-diagonal.wav",
-        "duration":  2.144,
-        "words":  [
-                      {
-                          "word":  "Cut",
-                          "at":  0.137
-                      },
-                      {
-                          "word":  "along",
-                          "at":  0.433
-                      },
-                      {
-                          "word":  "a",
-                          "at":  0.888
-                      },
-                      {
-                          "word":  "diagonal",
-                          "at":  0.991
-                      }
-                  ]
+        "id": "p2-1-diagonal",
+        "text": "Cut along a diagonal.",
+        "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-1-diagonal.wav",
+        "duration": 2.144,
+        "words": [
+            {
+                "word": "Cut",
+                "at": 0.137
+            },
+            {
+                "word": "along",
+                "at": 0.433
+            },
+            {
+                "word": "a",
+                "at": 0.888
+            },
+            {
+                "word": "diagonal",
+                "at": 0.991
+            }
+        ]
     },
     {
-        "id":  "p2-2-diagonals",
-        "text":  "Draw all the diagonals.",
-        "file":  "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-2-diagonals.wav",
-        "duration":  2.234,
-        "words":  [
-                      {
-                          "word":  "Draw",
-                          "at":  0.137
-                      },
-                      {
-                          "word":  "all",
-                          "at":  0.454
-                      },
-                      {
-                          "word":  "the",
-                          "at":  0.798
-                      },
-                      {
-                          "word":  "diagonals",
-                          "at":  0.943
-                      }
-                  ]
+        "id": "p2-2-diagonals",
+        "text": "Draw all the diagonals.",
+        "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-2-diagonals.wav",
+        "duration": 2.234,
+        "words": [
+            {
+                "word": "Draw",
+                "at": 0.137
+            },
+            {
+                "word": "all",
+                "at": 0.454
+            },
+            {
+                "word": "the",
+                "at": 0.798
+            },
+            {
+                "word": "diagonals",
+                "at": 0.943
+            }
+        ]
     },
     {
-        "id":  "p2-3-samevertex",
-        "text":  "Draw two diagonals from the same corner.",
-        "file":  "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-3-samevertex.wav",
-        "duration":  3.228,
-        "words":  [
-                      {
-                          "word":  "Draw",
-                          "at":  0.21
-                      },
-                      {
-                          "word":  "two",
-                          "at":  0.525
-                      },
-                      {
-                          "word":  "diagonals",
-                          "at":  0.755
-                      },
-                      {
-                          "word":  "from",
-                          "at":  1.46
-                      },
-                      {
-                          "word":  "the",
-                          "at":  1.72
-                      },
-                      {
-                          "word":  "same",
-                          "at":  1.83
-                      },
-                      {
-                          "word":  "corner",
-                          "at":  2.225
-                      }
-                  ]
+        "id": "p2-3-samevertex",
+        "text": "Draw two diagonals from the same corner.",
+        "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-3-samevertex.wav",
+        "duration": 3.228,
+        "words": [
+            {
+                "word": "Draw",
+                "at": 0.21
+            },
+            {
+                "word": "two",
+                "at": 0.525
+            },
+            {
+                "word": "diagonals",
+                "at": 0.755
+            },
+            {
+                "word": "from",
+                "at": 1.46
+            },
+            {
+                "word": "the",
+                "at": 1.72
+            },
+            {
+                "word": "same",
+                "at": 1.83
+            },
+            {
+                "word": "corner",
+                "at": 2.225
+            }
+        ]
     },
     {
-        "id":  "p2-4-concave",
-        "text":  "Cut the concave polygon.",
-        "file":  "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-4-concave.wav",
-        "duration":  2.364,
-        "words":  [
-                      {
-                          "word":  "Cut",
-                          "at":  0.137
-                      },
-                      {
-                          "word":  "the",
-                          "at":  0.454
-                      },
-                      {
-                          "word":  "concave",
-                          "at":  0.571
-                      },
-                      {
-                          "word":  "polygon",
-                          "at":  1.301
-                      }
-                  ]
+        "id": "p2-4-concave",
+        "text": "Cut the concave polygon.",
+        "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-4-concave.wav",
+        "duration": 2.364,
+        "words": [
+            {
+                "word": "Cut",
+                "at": 0.137
+            },
+            {
+                "word": "the",
+                "at": 0.454
+            },
+            {
+                "word": "concave",
+                "at": 0.571
+            },
+            {
+                "word": "polygon",
+                "at": 1.301
+            }
+        ]
     },
     {
-        "id":  "p2-5-convex",
-        "text":  "Cut the convex polygon.",
-        "file":  "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-5-convex.wav",
-        "duration":  2.334,
-        "words":  [
-                      {
-                          "word":  "Cut",
-                          "at":  0.137
-                      },
-                      {
-                          "word":  "the",
-                          "at":  0.454
-                      },
-                      {
-                          "word":  "convex",
-                          "at":  0.571
-                      },
-                      {
-                          "word":  "polygon",
-                          "at":  1.26
-                      }
-                  ]
+        "id": "p2-5-convex",
+        "text": "Cut the convex polygon.",
+        "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-5-convex.wav",
+        "duration": 2.334,
+        "words": [
+            {
+                "word": "Cut",
+                "at": 0.137
+            },
+            {
+                "word": "the",
+                "at": 0.454
+            },
+            {
+                "word": "convex",
+                "at": 0.571
+            },
+            {
+                "word": "polygon",
+                "at": 1.26
+            }
+        ]
     },
     {
-        "id":  "p2-6-concave-pentagon",
-        "text":  "Cut the concave pentagon.",
-        "file":  "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-6-concave-pentagon.wav",
-        "duration":  2.384,
-        "words":  [
-                      {
-                          "word":  "Cut",
-                          "at":  0.137
-                      },
-                      {
-                          "word":  "the",
-                          "at":  0.454
-                      },
-                      {
-                          "word":  "concave",
-                          "at":  0.571
-                      },
-                      {
-                          "word":  "pentagon",
-                          "at":  1.301
-                      }
-                  ]
+        "id": "p2-6-concave-pentagon",
+        "text": "Cut the concave pentagon.",
+        "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-6-concave-pentagon.wav",
+        "duration": 2.384,
+        "words": [
+            {
+                "word": "Cut",
+                "at": 0.137
+            },
+            {
+                "word": "the",
+                "at": 0.454
+            },
+            {
+                "word": "concave",
+                "at": 0.571
+            },
+            {
+                "word": "pentagon",
+                "at": 1.301
+            }
+        ]
     },
     {
-        "id":  "p2-7-convex-hexagon",
-        "text":  "Cut the convex hexagon.",
-        "file":  "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-7-convex-hexagon.wav",
-        "duration":  2.369,
-        "words":  [
-                      {
-                          "word":  "Cut",
-                          "at":  0.137
-                      },
-                      {
-                          "word":  "the",
-                          "at":  0.454
-                      },
-                      {
-                          "word":  "convex",
-                          "at":  0.571
-                      },
-                      {
-                          "word":  "hexagon",
-                          "at":  1.26
-                      }
-                  ]
+        "id": "p2-7-convex-hexagon",
+        "text": "Cut the convex hexagon.",
+        "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-7-convex-hexagon.wav",
+        "duration": 2.369,
+        "words": [
+            {
+                "word": "Cut",
+                "at": 0.137
+            },
+            {
+                "word": "the",
+                "at": 0.454
+            },
+            {
+                "word": "convex",
+                "at": 0.571
+            },
+            {
+                "word": "hexagon",
+                "at": 1.26
+            }
+        ]
     },
     {
-        "id":  "p2-8-all-concave",
-        "text":  "Cut all the concave ones.",
-        "file":  "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-8-all-concave.wav",
-        "duration":  2.444,
-        "words":  [
-                      {
-                          "word":  "Cut",
-                          "at":  0.137
-                      },
-                      {
-                          "word":  "all",
-                          "at":  0.461
-                      },
-                      {
-                          "word":  "the",
-                          "at":  0.812
-                      },
-                      {
-                          "word":  "concave",
-                          "at":  0.95
-                      },
-                      {
-                          "word":  "ones",
-                          "at":  1.694
-                      }
-                  ]
+        "id": "p2-8-all-concave",
+        "text": "Cut all the concave ones.",
+        "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-8-all-concave.wav",
+        "duration": 2.444,
+        "words": [
+            {
+                "word": "Cut",
+                "at": 0.137
+            },
+            {
+                "word": "all",
+                "at": 0.461
+            },
+            {
+                "word": "the",
+                "at": 0.812
+            },
+            {
+                "word": "concave",
+                "at": 0.95
+            },
+            {
+                "word": "ones",
+                "at": 1.694
+            }
+        ]
     },
     {
-        "id":  "p2-9-all-convex",
-        "text":  "Cut all the convex ones.",
-        "file":  "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-9-all-convex.wav",
-        "duration":  2.404,
-        "words":  [
-                      {
-                          "word":  "Cut",
-                          "at":  0.137
-                      },
-                      {
-                          "word":  "all",
-                          "at":  0.461
-                      },
-                      {
-                          "word":  "the",
-                          "at":  0.812
-                      },
-                      {
-                          "word":  "convex",
-                          "at":  0.95
-                      },
-                      {
-                          "word":  "ones",
-                          "at":  1.632
-                      }
-                  ]
+        "id": "p2-9-all-convex",
+        "text": "Cut all the convex ones.",
+        "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-9-all-convex.wav",
+        "duration": 2.404,
+        "words": [
+            {
+                "word": "Cut",
+                "at": 0.137
+            },
+            {
+                "word": "all",
+                "at": 0.461
+            },
+            {
+                "word": "the",
+                "at": 0.812
+            },
+            {
+                "word": "convex",
+                "at": 0.95
+            },
+            {
+                "word": "ones",
+                "at": 1.632
+            }
+        ]
     },
     {
-        "id":  "p2-tut-6-cut",
-        "text":  "Cut this ice block to fix the path.",
-        "file":  "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-tut-6-cut.wav",
-        "duration":  2.844,
-        "words":  [
-                      {
-                          "word":  "Cut",
-                          "at":  0.137
-                      },
-                      {
-                          "word":  "this",
-                          "at":  0.454
-                      },
-                      {
-                          "word":  "ice",
-                          "at":  0.716
-                      },
-                      {
-                          "word":  "block",
-                          "at":  1.046
-                      },
-                      {
-                          "word":  "to",
-                          "at":  1.508
-                      },
-                      {
-                          "word":  "fix",
-                          "at":  1.666
-                      },
-                      {
-                          "word":  "the",
-                          "at":  2.087
-                      },
-                      {
-                          "word":  "path",
-                          "at":  2.211
-                      }
-                  ]
+        "id": "p2-tut-6-cut",
+        "text": "Cut this ice block to fix the path.",
+        "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-tut-6-cut.wav",
+        "duration": 2.844,
+        "words": [
+            {
+                "word": "Cut",
+                "at": 0.137
+            },
+            {
+                "word": "this",
+                "at": 0.454
+            },
+            {
+                "word": "ice",
+                "at": 0.716
+            },
+            {
+                "word": "block",
+                "at": 1.046
+            },
+            {
+                "word": "to",
+                "at": 1.508
+            },
+            {
+                "word": "fix",
+                "at": 1.666
+            },
+            {
+                "word": "the",
+                "at": 2.087
+            },
+            {
+                "word": "path",
+                "at": 2.211
+            }
+        ]
+    },
+    {
+        "id": "sw-help",
+        "text": "But for that, first you need to learn about polygons.",
+        "file": "sw-help.wav",
+        "duration": 3.84,
+        "recorded": true,
+        "source": "Swiftee's take (part1-swiftee-lesson/assets/source/vo-masters/swiftee-extra.mp3), cut as p01b",
+        "words": [
+            {
+                "word": "But",
+                "at": 0.04
+            },
+            {
+                "word": "for",
+                "at": 0.24
+            },
+            {
+                "word": "that,",
+                "at": 0.42
+            },
+            {
+                "word": "first",
+                "at": 1.1
+            },
+            {
+                "word": "you",
+                "at": 1.48
+            },
+            {
+                "word": "need",
+                "at": 1.6
+            },
+            {
+                "word": "to",
+                "at": 1.88
+            },
+            {
+                "word": "learn",
+                "at": 2.0
+            },
+            {
+                "word": "about",
+                "at": 2.32
+            },
+            {
+                "word": "polygons.",
+                "at": 2.68
+            }
+        ]
     }
 ]

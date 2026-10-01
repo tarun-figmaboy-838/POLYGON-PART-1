@@ -559,8 +559,7 @@ const levelOf = (st) => { const d = RIG[st]; return d ? (d.level || 1) : 0; };
 }
 
 /* THE ARRIVAL IS PROTECTED. The first screen is the sleigh, its landing, and
-   the greeting — exactly as it was, beat for beat; and, since the user's recording, his
-   hand-over line after the greeting ("But for that, first you need to learn about polygons."). */
+   the greeting — exactly as it was, beat for beat. */
 {
   const intro = S[0];
   t('the arrival screen is unchanged', intro.id === 'intro-hi' && JSON.stringify(intro.beats) === JSON.stringify([
@@ -570,7 +569,6 @@ const levelOf = (st) => { const d = RIG[st]; return d ? (d.level || 1) : 0; };
     { wait: 300 },
     { say: 'Hi! I am Swiftee.', vo: 'p01' },
     { parallel: [{ swiftee: 'wave' }, { sfx: 'pop' }] },
-    { say: 'But for that, first you need to learn about polygons.', vo: 'p01b' },
     { input: { type: 'tap-anywhere' } }
   ]), intro.beats);
   t('the arrival is still the move that plays the sleigh', !RIG.enter || RIG.enter.rig === 'driving');

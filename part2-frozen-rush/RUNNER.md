@@ -438,7 +438,7 @@ one place it was skipped, and the control was never introduced at all.
 **Reading time comes from the sentence**, not a constant: `1.5s + 55ms/char`, clamped
 2.6–5.2s. **There is no tap-to-advance** — a child taps because a finger is on the screen,
 not to dismiss text, so honouring it would skip the instruction they were about to read.
-Skip is the deliberate way out and it is a button.
+There is no Skip button (removed 2026-10-01, the user): the tutorial plays through.
 
 **The highlight is a blur sheet with the focus lifted over it**, never a spotlight. Three
 constructions were tried and rejected, and they are recorded because each looks more

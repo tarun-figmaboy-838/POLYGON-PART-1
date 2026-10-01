@@ -10,7 +10,7 @@
  * this folder and never the place to make a change.
  *
  * Rebuild:  node tools/build-bundle.mjs
- * In order: asset-versions.js, polygons.js, option-shapes.js, engine.js, bubble.js, hud.js, frontend.js, tutorial.js, main.js
+ * In order: asset-versions.js, polygons.js, option-shapes.js, engine.js, bubble.js, hud.js, frontend.js, swiftee-cameo.js, tutorial.js, main.js
  */
 (function () {
 'use strict';
@@ -25,7 +25,7 @@
  * fails if this is out of date. */
 const ASSET_V = {
   "assets/art/Bubble.svg": "523bce06",
-  "assets/art/cover.webp": "e0c7a5db",
+  "assets/art/cover.webp": "ff13073d",
   "assets/audio/bgm-ice-hunt.mp3": "3fdf4d24",
   "assets/audio/bgm-ice-hunt.ogg": "b21f6325",
   "assets/audio/dragon-studio-cartoon-blinking-372481.mp3": "e1ba0c6b",
@@ -44,8 +44,8 @@ const ASSET_V = {
   "assets/audio/universfield-ground-impact-352053.ogg": "5dd46c29",
   "assets/audio/universfield-sad-trumpet-278822.mp3": "318bbc84",
   "assets/audio/universfield-sad-trumpet-278822.ogg": "547e1717",
-  "assets/audio/vo-lines.mp3": "d6c85e17",
-  "assets/audio/vo-lines.ogg": "76da950a",
+  "assets/audio/vo-lines.mp3": "6201323f",
+  "assets/audio/vo-lines.ogg": "5be7df24",
   "assets/char/bear.webp": "ac7771ee",
   "assets/char/duo-celebrate.webp": "7845cb0a",
   "assets/char/hd/bear.webp": "d257b5b8",
@@ -63,6 +63,7 @@ const ASSET_V = {
   "assets/char/mammoth-run.webp": "d3ab6c72",
   "assets/char/mammoth-skid.webp": "ee6c20a7",
   "assets/char/mammoth-tremble.webp": "2f1852f5",
+  "assets/char/swiftee-flight.webp": "6afa3c49",
   "assets/env/cap-l.webp": "500443c3",
   "assets/env/cap-r.webp": "2f0a5554",
   "assets/env/obs-bone-arch.webp": "6b0db5b5",
@@ -124,7 +125,7 @@ const ASSET_V = {
 /* And each file's size in bytes, which the loading bar weighs its transfers by. */
 const ASSET_SIZE = {
   "assets/art/Bubble.svg": 719,
-  "assets/art/cover.webp": 175258,
+  "assets/art/cover.webp": 155692,
   "assets/audio/bgm-ice-hunt.mp3": 2772054,
   "assets/audio/bgm-ice-hunt.ogg": 1461742,
   "assets/audio/dragon-studio-cartoon-blinking-372481.mp3": 35108,
@@ -143,8 +144,8 @@ const ASSET_SIZE = {
   "assets/audio/universfield-ground-impact-352053.ogg": 10775,
   "assets/audio/universfield-sad-trumpet-278822.mp3": 92928,
   "assets/audio/universfield-sad-trumpet-278822.ogg": 25266,
-  "assets/audio/vo-lines.mp3": 1079213,
-  "assets/audio/vo-lines.ogg": 303609,
+  "assets/audio/vo-lines.mp3": 1150266,
+  "assets/audio/vo-lines.ogg": 324629,
   "assets/char/bear.webp": 41536,
   "assets/char/duo-celebrate.webp": 602602,
   "assets/char/hd/bear.webp": 68754,
@@ -162,6 +163,7 @@ const ASSET_SIZE = {
   "assets/char/mammoth-run.webp": 478982,
   "assets/char/mammoth-skid.webp": 438268,
   "assets/char/mammoth-tremble.webp": 179364,
+  "assets/char/swiftee-flight.webp": 146312,
   "assets/env/cap-l.webp": 13910,
   "assets/env/cap-r.webp": 12948,
   "assets/env/obs-bone-arch.webp": 54666,
@@ -2512,6 +2514,9 @@ const CFG = {
       'p2-8-all-concave': [58.385, 2.444, [0.137, 0.461, 0.812, 0.950, 1.694]], // Cut all the concave ones.
       'p2-9-all-convex': [61.479, 2.404, [0.137, 0.461, 0.812, 0.950, 1.632]], // Cut all the convex ones.
       'p2-tut-6-cut': [64.533, 2.844, [0.137, 0.454, 0.716, 1.046, 1.508, 1.666, 2.087, 2.211]], // Cut this ice block to fix the path.
+      /* SWIFTEE, flying in at the broken path (the user's new sequence): his own recording, cut
+         from his take in Part 1 (p01b) and appended last — art-source/audio-source/part2-vo. */
+      'sw-help': [68.028, 3.79, [0.04, 0.24, 0.42, 1.1, 1.48, 1.6, 1.88, 2, 2.32, 2.68]], // But for that, first you need to learn about polygons.
       /* THE ENDING SPEAKS NO MORE. 'win-title' ("You did it!") and 'win-sub' ("Momo crossed
          the Frozen Pass!") lived here and were cut with the banner that showed them: the
          ending is the dance now, the camera pushes in on it, and a voice over the top was
@@ -6955,8 +6960,8 @@ function createGame(canvas, hooks = {}) {
   const images = {};
   let ground, obstacles, bgm, mammoth;
   let raf = 0, last = 0, destroyed = false, paused = false;
-  /* REVIEW TOOLS, off unless ?dev=1. Only the skip-to-ending control reads this;
-     see the note where skippable is published. */
+  /* REVIEW TOOLS, off unless ?dev=1 (the Skip to ending button that read this is gone — the
+     user: "remove skip and skip to end buttons"; the review bar's Ending jump still works). */
   let devTools = false;
   // simulation steps per rendered frame; 1 is normal play (see setOptions)
   let fastForward = 1;
@@ -7163,7 +7168,7 @@ function createGame(canvas, hooks = {}) {
       // The HUD uses these measured word starts for Part 2's spoken instruction.
       // The audio clock itself is read outside the diffed HUD payload.
       voId: G.signSay
-        ? (G.signSay === 'Cut this ice block to fix the path.' ? 'p2-tut-6-cut' : '')
+        ? (G.signSay === 'Use the right ice piece to fix the path.' ? 'tut-6-use' : '')
         : G.l2 && L2_PUZZLE_STATES.includes(G.state) ? p2Cfg().voId
         : G.l1 && ['PHASE_INTRO', 'PHASE_ACTIVE', 'PHASE_WRONG', 'PHASE_SUCCESS'].includes(G.state)
           ? phaseCfg().voId : '',
@@ -7212,7 +7217,7 @@ function createGame(canvas, hooks = {}) {
        * playing the build rather than by reading it, which is the point of playing it.
        *
        * `dev` comes from ?dev=1 and is false by default, so a shipped build has no such
-       * control. The tests that need it pass the flag (tests/skip-end.spec.mjs). */
+       * control. (Nothing on the page shows it any more: its button was removed.) */
       skippable: devTools && G.state !== 'BOOT' && G.state !== 'TITLE' && !G.complete,
       /* THE JOURNEY CARD IS NOT A DEV TOOL, and used to be gated on the flag above
          because the two happened to want the same states. Its own rule: from the moment
@@ -14253,7 +14258,6 @@ class Hud {
       /* No jump button any more (see index.html): the stage is the control. The lookup
          is gone with it rather than kept guarded — a lookup with no user is how a dead
          element gets wired back up by the next person reading this file. */
-      skipEnd: root.getElementById('btn-skip-end'),   // TEMPORARY review control
       instruction: root.getElementById('instruction'),
       pill: root.getElementById('instruction-pill'),
       text: root.getElementById('instruction-text'),
@@ -14870,7 +14874,6 @@ class Hud {
     // preventDefault also suppresses the browser's own :active state, so the
     // pressed look has to be driven by a class or the button never appears to move.
     // TEMPORARY review control: jump to the ending. Guarded like every other lookup.
-    if (this.el.skipEnd && handlers.onSkipEnd) this.el.skipEnd.addEventListener('click', () => handlers.onSkipEnd());
 
     /* NOTHING HERE BINDS A JUMP. The jump is a tap on the stage, which the engine reads
        off the canvas itself — there is no DOM control to press, to swap art on, to
@@ -15021,7 +15024,6 @@ class Hud {
     if (this.el.hint) this.el.hint.classList.toggle('nudge', !!h.hintNudge);
 
     // TEMPORARY review control: up whenever the game is playable and not yet complete
-    if (this.el.skipEnd) { const show = !!h.skippable; if (this.el.skipEnd.hidden === show) this.el.skipEnd.hidden = !show; }
 
     if (this.el.complete.hidden === h.complete) {
       this.el.complete.hidden = !h.complete;
@@ -15165,6 +15167,141 @@ class Frontend {
 }
 
 
+/* ==================== swiftee-cameo.js ==================== */
+/* SWIFTEE, FLYING IN TO HELP (the user's new sequence: "add swiftee for helping dialogue delivery
+ * and swiftee come by flying").
+ *
+ * At the broken path, the tutorial's last held moment, the lesson's bird flies into Frozen Rush:
+ * in from the top right on one curve, wings going, and hovers in the open sky beside Momo while he
+ * says why the lesson comes next. Then the page hands over to his lesson.
+ *
+ * ONE DRAWING OF HIM AT A TIME. The art is the lesson's own flight strip (four frames,
+ * part1-swiftee-lesson/assets/swiftee/swiftee-inspect-flight.webp, copied here so this page needs
+ * nothing from the other one), drawn one frame at a time on a canvas — never two pictures
+ * cross-faded (the lesson's "two Swiftees" bug).
+ *
+ * It is a DOM layer over the stage, beside the tutorial's (not inside it — the tutorial hides its
+ * whole layer between steps), positioned in the stage's own 1920 x 1080 as percentages, the same
+ * way the tutorial places its bubble. It plays no sound of its own: the voice is the tutorial's
+ * line, through the game's one voice track, so nothing of the lesson's sound is brought here.
+ */
+
+const SW = 1920, SH = 1080;
+const FLIGHT = 'assets/char/swiftee-flight.webp';
+const FRAMES = 4, FW = 543, FH = 724;         // the strip: 2172 x 724, four frames side by side
+const STEP_MS = 110;                          // a wingbeat frame, as the lesson flies it
+const BOX_W = 250;                            // his width on the stage, in stage px (Momo is ~420 wide)
+
+const ease = (t) => 1 - Math.pow(1 - t, 3);   // in fast, settling onto the hover
+
+class SwifteeCameo {
+  constructor(root) {
+    this.root = root;
+    this.el = null; this.ctx = null; this.img = null;
+    this.ready = null; this.raf = 0; this.frame = -1; this.gone = false;
+  }
+
+  /** Fetch and decode the strip now, so it is in hand by the time he is needed. */
+  load() {
+    if (this.ready) return this.ready;
+    this.ready = new Promise((res) => {
+      const img = new Image();
+      const v = ASSET_V && ASSET_V[FLIGHT];
+      img.onload = () => {
+        const p = img.decode ? img.decode() : Promise.resolve();
+        p.then(() => res(true), () => res(true));
+      };
+      img.onerror = () => res(false);
+      img.src = FLIGHT + (v ? '?v=' + v : '');
+      this.img = img;
+    });
+    return this.ready;
+  }
+
+  _build() {
+    if (this.el) return true;
+    const layer = this.root.getElementById('tutorial');
+    const parent = layer && layer.parentElement;
+    if (!parent) return false;
+    const el = this.root.createElement('div');
+    el.className = 'sw-cameo';
+    el.setAttribute('aria-hidden', 'true');
+    const c = this.root.createElement('canvas');
+    c.width = FW; c.height = FH;
+    el.appendChild(c);
+    parent.insertBefore(el, layer.nextSibling);
+    this.el = el;
+    this.ctx = c.getContext('2d');
+    return true;
+  }
+
+  _draw(n) {
+    if (!this.ctx || !this.img || n === this.frame) return;
+    this.frame = n;
+    this.ctx.clearRect(0, 0, FW, FH);
+    this.ctx.drawImage(this.img, n * FW, 0, FW, FH, 0, 0, FW, FH);
+  }
+
+  /* his centre at (x, y) in stage px; facing -1 looks left (the strip is drawn facing right) */
+  _place(x, y, facing, tilt) {
+    const w = BOX_W, h = BOX_W * FH / FW, s = this.el.style;
+    s.left = ((x - w / 2) / SW * 100).toFixed(3) + '%';
+    s.top = ((y - h / 2) / SH * 100).toFixed(3) + '%';
+    s.width = (w / SW * 100).toFixed(3) + '%';
+    s.height = (h / SH * 100).toFixed(3) + '%';
+    s.transform = 'scaleX(' + facing + ') rotate(' + tilt.toFixed(1) + 'deg)';
+  }
+
+  /** Where his head is when he hovers at (x, y): what the tutorial's bubble points at. */
+  static headOf(at) { return { x: at.x, y: at.y - BOX_W * FH / FW * 0.22 }; }
+
+  /**
+   * In from `from` to `to` (stage px) over `ms`, then hovering there with a small wingbeat bob
+   * until hide(). Resolves when he has arrived. With reduced motion he is simply there.
+   */
+  flyIn(from, to, ms = 1500, reduced = false) {
+    return this.load().then((ok) => {
+      if (!ok || this.gone || !this._build()) return;
+      const facing = to.x < from.x ? -1 : 1;
+      // the curve bows up and over: a control point above the middle of the way
+      const cx = (from.x + to.x) / 2, cy = Math.min(from.y, to.y) - 160;
+      const t0 = performance.now();
+      return new Promise((done) => {
+        let arrived = false;
+        const tick = (now) => {
+          if (this.gone) { done(); return; }
+          const el = now - t0;
+          this._draw(Math.floor(el / STEP_MS) % FRAMES);
+          const u = reduced ? 1 : Math.min(1, el / ms), e = ease(u);
+          let x, y, tilt;
+          if (u < 1) {
+            x = (1 - e) * (1 - e) * from.x + 2 * (1 - e) * e * cx + e * e * to.x;
+            y = (1 - e) * (1 - e) * from.y + 2 * (1 - e) * e * cy + e * e * to.y;
+            tilt = 10 * (1 - e);                  // leaning into the dive, levelling as he arrives
+          } else {
+            if (!arrived) { arrived = true; done(); }
+            x = to.x; y = to.y + (reduced ? 0 : Math.sin((el - ms) / 340 * 2 * Math.PI) * 6);
+            tilt = 0;
+          }
+          this._place(x, y, facing, tilt);
+          this.raf = requestAnimationFrame(tick);
+        };
+        this.raf = requestAnimationFrame(tick);
+      });
+    });
+  }
+
+  /** Off the stage, for good (the page is handing over, or the tutorial has ended). */
+  hide() {
+    this.gone = true;
+    if (this.raf) cancelAnimationFrame(this.raf);
+    this.raf = 0;
+    if (this.el && this.el.parentNode) this.el.parentNode.removeChild(this.el);
+    this.el = null;
+  }
+}
+
+
 /* ==================== tutorial.js ==================== */
 /* THE FIRST-PLAY TUTORIAL.
  *
@@ -15220,24 +15357,23 @@ const clampN = (v, lo, hi) => v < lo ? lo : v > hi ? hi : v;
 
 
 
+/* WHERE SWIFTEE FLIES IN FROM, AND WHERE HE HOVERS (stage px): in from beyond the top-right corner,
+   to the open sky just right of Momo's head — clear of the slab and the gaps, the bubble above */
+const SWIFTEE_FROM = { x: 2150, y: 40 }, SWIFTEE_AT = { x: 830, y: 420 };
+
 /* WHICH RECORDED LINE BELONGS TO WHICH STEP (docs/VO-SCRIPT.md, CFG.vo.lines). */
 const VO = {
   meet: 'tut-1-meet', goal: 'tut-2-goal', rock: 'tut-3-watch', jump: 'tut-4-jump',
   gap: 'tut-5-broken',
-  /* THE 'use' STEP IS SILENT UNTIL IT IS RE-RECORDED, and that is deliberate.
-   *
-   * The take says "Use the right ice piece to fix the path." The step SHOWS "Cut this ice
-   * block to fix the path.", because the tutorial now runs over Part 2's crossing 1 —
-   * one slab, nothing to choose between — so "the RIGHT piece" asks a question the level
-   * does not. The words were changed for that reason and the recording could not be.
-   *
-   * Left pointing at tut-6-use, the bubble printed one sentence while the voice spoke a
-   * different one, and the word reveal ran eight printed words against the take's nine
-   * onsets — so the highlight drifted for the whole line. A line that says the wrong
-   * thing is worse than no line: say() returns 0 for an id with no window, the bubble
-   * reveals on its own pace, and nothing else changes. The replacement is listed in
-   * docs/VO-PART2.md; dropping its window into CFG.vo.lines is all that is needed. */
-  use: 'p2-tut-6-cut', fit: 'tut-7-fit'
+  /* THE 'use' STEP SPEAKS THE TAKE'S OWN SENTENCE: "Use the right ice piece to fix the path."
+   * (the user's new sequence: "Use the right piece to fill the gap" on this crossing). It was
+   * "Cut this ice block to fix the path.", silent, because the take could not say that — and a
+   * bubble printing one sentence while the voice speaks another drifts its word highlight for
+   * the whole line. Showing the recorded words keeps the nine printed words on the take's nine
+   * onsets. (p2-tut-6-cut, the generated "Cut this ice block…", is no longer asked for.) */
+  use: 'tut-6-use', fit: 'tut-7-fit',
+  // Swiftee's own recording (p01b in the lesson), appended to this page's voice track
+  swiftee: 'sw-help'
   // 'cut' is the hand alone and says nothing: the plank's question is spoken by the engine
 };
 
@@ -15246,9 +15382,21 @@ class Tutorial {
    * @param {Document} root
    * @param {object} game  the engine handle from createGame()
    */
-  constructor(root, game) {
+  constructor(root, game, opts = {}) {
     this.root = root;
     this.game = game;
+    /* WHICH PART OF THE SCRIPT (the user's new sequence: the Frozen Rush 2 cover, this tutorial,
+       then Swiftee's lesson, then back here). 'intro' plays Momo, his goal, the jump and the
+       broken path, says why the lesson comes next, and hands over (onHandOff) instead of letting
+       the run go on; 'resume' picks up after the lesson, at the broken path; 'full' is the whole
+       tutorial, as when this page is opened on its own. */
+    this.mode = opts.mode || 'full';
+    this.onHandOff = opts.onHandOff || null;
+    this.handedOff = false;
+    // the lesson's bird, for the intro's last line — his art fetched now, so it is in by then
+    this.cameo = this.mode === 'intro' ? new SwifteeCameo(root) : null;
+    if (this.cameo) this.cameo.load();
+    this._entering = false; this._entered = false;
     this.el = {
       layer: root.getElementById('tutorial'),
       veil: root.getElementById('tut-veil'),
@@ -15257,8 +15405,7 @@ class Tutorial {
       bubble: root.getElementById('tut-bubble'),
       shape: root.getElementById('tut-shape'),
       text: root.getElementById('tut-text'),
-      hand: root.getElementById('tut-hand'),
-      skip: root.getElementById('tut-skip')
+      hand: root.getElementById('tut-hand')
     };
     this.step = -1;
     this.done = false;
@@ -15369,7 +15516,7 @@ class Tutorial {
       const ry = 58;
       return { x: hx, y: hy + ry, rx: 86, ry, aimX: hx, world: true };
     };
-    return [
+    const all = [
       {
         id: 'meet',
         /* NOT DURING THE AVALANCHE. The opening is a wall of snow chasing Momo down
@@ -15483,10 +15630,13 @@ class Tutorial {
            hanging blocks — crossing 1 is the diagonal level. The sentence changed with
            the mechanic: there is nothing to choose between here, so "use the RIGHT
            piece" would be asking a question the level does not ask. */
+        /* (the user's words for it now, in the new sequence — "Use the right piece to fill the
+           gap" — as the take already said it: the halves of the slab ARE the pieces that fill the
+           two gaps, and "right" is the cut that makes them) */
         id: 'use',
         at: g => ['PHASE_INTRO', 'PHASE_ACTIVE', 'LEVEL_2_OVERVIEW', 'LEVEL_2_FOCUS'].includes(g.state),
         spot: () => null,
-        text: 'Cut this ice block to fix the path.',
+        text: 'Use the right ice piece to fix the path.',
         sign: 99, focus: 'blocks',
         advance: 0, pause: false
       },
@@ -15527,6 +15677,27 @@ class Tutorial {
         advance: 0, pause: false
       }
     ];
+    /* THE HAND-OVER (intro): straight after the broken path, in the same held moment — Swiftee
+       FLIES IN (`enter`, before a word is said) and hovers beside Momo, and says why the lesson
+       comes next, in his own recorded voice (the user: use the recording there is, not a
+       generated one). "That" is the broken path the line before has just shown. Then the page
+       goes on to his lesson (handOff). */
+    const reduced = !!(this.root && this.root.defaultView && this.root.defaultView.matchMedia &&
+                       this.root.defaultView.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const head = SwifteeCameo.headOf(SWIFTEE_AT);
+    const help = {
+      id: 'swiftee',
+      at: () => true,
+      enter: () => (this.cameo ? this.cameo.flyIn(SWIFTEE_FROM, SWIFTEE_AT, 1500, reduced) : null),
+      spot: () => ({ x: head.x, y: head.y, rx: 110, ry: 100, aimX: head.x, world: false }),
+      text: 'But for that, first you need to learn about polygons.',
+      focus: 'mammoth',
+      advance: 0, pause: true
+    };
+    const at = (id) => all.findIndex((s) => s.id === id);
+    if (this.mode === 'intro') return all.slice(0, at('gap') + 1).concat([help]);
+    if (this.mode === 'resume') return all.slice(at('use'));
+    return all;
   }
 
   /* ---- where things are ---- */
@@ -15645,7 +15816,7 @@ class Tutorial {
   begin() {
     if (this._built) return;
     this._built = true;
-    if (this.el.skip) this.el.skip.addEventListener('click', () => this.finish());
+    // (no Skip button any more — the user: "remove skip and skip to end buttons")
     /* THE WHOLE STAGE IS THE BUTTON. There is no "Got it" any more: the hand taps on
        the thing being explained, and a tap anywhere acknowledges it. That is both
        simpler and more honest about what the hand is asking for — a child who cannot
@@ -15654,10 +15825,7 @@ class Tutorial {
 
        Pointer events on the layer are switched off for action steps, so a real swipe
        still reaches the canvas. */
-    if (this.el.layer) this.el.layer.addEventListener('click', e => {
-      if (e.target === this.el.skip) return;
-      this.tap();
-    });
+    if (this.el.layer) this.el.layer.addEventListener('click', () => this.tap());
     this.step = 0;
     this.t = 0;
   }
@@ -15778,7 +15946,7 @@ class Tutorial {
   /* NO TAP-TO-ADVANCE. A describing step moves on by itself and a tap does nothing.
      Tapping past a sentence is not something a child does deliberately — they tap
      because a finger is on the screen — so honouring it would skip the instruction
-     they were about to read. Skip is the deliberate way out, and it is a button. */
+     they were about to read. (There is no Skip button any more: the tutorial plays through.) */
   tap() { /* intentionally nothing: see above */ }
 
   /** The player did the thing an action step was waiting for. */
@@ -15797,12 +15965,26 @@ class Tutorial {
     if (this.game._l2Demo) this.game._l2Demo(false);
     this.step++;
     this.t = 0;
+    this._entering = false; this._entered = false;      // a step's entrance is its own
     this.spoke = false;                                // the new step has not been read aloud yet
     this.voDur = 0; this.voWords = null; this.voId = null;
     /* AND THE WORDS STOP WITH IT. If a line is cut short — skipped, restarted, the sound
        switched off — its reveal must not carry on animating a sentence nobody is saying. */
     if (this.el.text) this.el.text.classList.remove('waiting');
-    if (this.step >= this.steps.length) this.finish();
+    if (this.step >= this.steps.length) {
+      if (this.mode === 'intro' && this.onHandOff) { this.handOff(); return; }
+      this.finish();
+    }
+  }
+
+  /* THE INTRO IS OVER: the game stays held where it is (the broken path, Momo lit) and the host
+     goes on to the lesson. Nothing more is presented, and the run never resumes underneath. */
+  handOff() {
+    if (this.handedOff || this.done) return;
+    this.handedOff = true;
+    if (this.game.saySign) this.game.saySign('');
+    this.pause();
+    try { this.onHandOff(); } catch (e) { /* the host's navigation: nothing to undo here */ }
   }
 
   finish() {
@@ -15813,6 +15995,7 @@ class Tutorial {
     if (this.game._l2Demo) this.game._l2Demo(false);
     if (this.done) return;
     this.done = true;
+    if (this.cameo) this.cameo.hide();
     // the tutorial is over: the game must never be left believing a line is still up
     this._presenting = false;
     if (this.game.setDialogue) this.game.setDialogue(false);
@@ -15867,7 +16050,7 @@ class Tutorial {
   static SETTLE = 0.12;
 
   update(dt) {
-    if (this.done || this.step < 0) return;
+    if (this.done || this.step < 0 || this.handedOff) return;
     const g = this.game.debug();
 
     /* THE TUTORIAL ENDS WHEN THE GAME DOES. Nothing here can teach anything once the
@@ -15935,6 +16118,22 @@ class Tutorial {
     const onSignStep = typeof s.sign === 'number';
     const box = onSignStep ? null : s.spot(g);
     if (!onSignStep && !box) { this.resume(); this.show(null); return; }
+
+    /* A STEP WITH AN ENTRANCE (`enter`: Swiftee flying in) holds the moment, frozen and wordless,
+       until the entrance is over — the bubble of the line before is put away, the scene and its
+       focus stay as they were — and only then is its line said. */
+    if (s.enter && !this._entered) {
+      this.pause(false);
+      if (this.el.bubble) this.el.bubble.style.visibility = 'hidden';
+      if (!this._entering) {
+        this._entering = true;
+        let ended = false;
+        const end = () => { if (ended) return; ended = true; this._entered = true; if (this.el.bubble) this.el.bubble.style.visibility = ''; };
+        Promise.resolve().then(() => s.enter()).then(end, end);
+        setTimeout(end, 4000);                    // an entrance that never reports must not hold the line for ever
+      }
+      return;
+    }
 
     this.t += dt;
     /* A NUMBER freezes the game for that many seconds of the step, then lets it run: an ask
@@ -16696,6 +16895,28 @@ let devSel = null;       // the bar's picker, kept in step with the crossing bei
 const tutFlag = params.get('tutorial');
 const wantTutorial = tutFlag !== '0' && tutFlag !== 'false';
 
+/* THE NEW SEQUENCE (the user): the game opens HERE, on the Frozen Rush 2 cover — the site's root
+   sends players to ?intro=1 — and the tutorial plays Momo, his goal, the jump and the broken path,
+   then hands over to Swiftee's lesson (handOffToLesson). The lesson's way on comes back with
+   ?resume=1: the run starts again from the avalanche, and the tutorial says nothing until the
+   broken path, where it picks up with the cut. Opened with neither, this page plays as it always has. */
+const intro = flag('intro', false) && !flag('resume', false);
+const resume = flag('resume', false);
+const tutMode = intro ? 'intro' : resume ? 'resume' : 'full';
+function handOffToLesson() {
+  // a short fade to the snow-white of the lesson's own title, then the lesson's page
+  const veil = document.createElement('div');
+  veil.setAttribute('data-handoff', '1');
+  veil.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#eaf6ff;opacity:0;transition:opacity 600ms ease;pointer-events:all;';
+  document.body.appendChild(veil);
+  requestAnimationFrame(() => { veil.style.opacity = '1'; });
+  // ?auto=1: the lesson skips its title (no banner, no Play) and starts by itself (the user)
+  const q = new URLSearchParams({ auto: '1' });
+  if (options.dev) q.set('dev', '1');
+  const to = '../../part1-swiftee-lesson/index.html?' + q.toString();
+  setTimeout(() => { location.href = to; }, 700);
+}
+
 /* THE BACKBUFFER AT SCREEN RESOLUTION. The stage is CSS-fitted to the window; the canvas
    behind it renders at (stage CSS width x devicePixelRatio) / 1920 times its 1920x1080
    layout, rounded to a quarter and capped at 2, so a hi-DPI laptop or a 4K screen gets
@@ -16820,7 +17041,7 @@ setInterval(() => hud.syncVoice(game), 25);
    point, and the tutorial reads what it needs from debug() itself. */
 function startTutorial() {
   if (!wantTutorial || tut) return;
-  tut = new Tutorial(document, game);
+  tut = new Tutorial(document, game, { mode: tutMode, onHandOff: handOffToLesson });
   tut.begin();
   let last = performance.now();
   const tick = now => {
@@ -16939,6 +17160,9 @@ game.setOptions(options);
    reason to sit on a blank page while the sheets and sounds arrive behind it. */
 if (!flag('skip', false) && jumpAt === null) {
   front = new Frontend(document, game);
+  // (back from the lesson the run starts from its beginning, avalanche and all — the user: "after
+  // learning game, show avalanche in the momo game, do not remove it" — and the tutorial's
+  // 'resume' part says nothing until the broken path, then picks up with "Use the right ice piece…")
   front.init({ onStart: () => { game.begin(); startTutorial(); } });
   front.setLoading(true);
   game.loadProgress(f => front.setProgress(f));
@@ -17010,8 +17234,6 @@ if (window.Juice) {
 hud.bind({
   onPause: paused => game.setPaused(paused),
   onReplay: () => game.restart(),
-  // TEMPORARY review control: end the tutorial if it is up, then jump to the ending
-  onSkipEnd: () => { if (tut) { tut.finish(); tut = null; } game.skipToEnd(); },
   // returns the new state so the HUD can swap the glyph without asking again
   onSound: () => game.toggleSound(),
   // re-states the objective; it never reveals which chunk is the answer
