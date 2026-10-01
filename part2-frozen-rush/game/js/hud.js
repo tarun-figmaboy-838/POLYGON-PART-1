@@ -510,7 +510,24 @@ export class Hud {
       }
       return;
     }
-    if (!game.soundOn() || performance.now() - this._voiceWaitingAt > 5000) {
+    /* AND NEVER FOR A VOICE THAT IS NOT COMING. The words used to wait up to five seconds for
+       their line whatever had become of it — and after a missed stroke the plank goes back to
+       the question, whose voice was spoken when it was first asked and is not spoken again. So
+       the plank sat on screen EMPTY for five seconds after every miss (measured on all three
+       crossings). Words wait only while their line is being spoken or held to be spoken next;
+       otherwise they come in at the silent pace, a beat after the plank (the beat is for a line
+       whose say() lands on the next tick). */
+    const waited = performance.now() - this._voiceWaitingAt;
+    const coming = !game.voComing || game.voComing(this._voId);
+    if (!coming && waited > 60 && game.soundOn()) {
+      all.forEach((s, i) => {
+        s.style.animationDelay = (i * 0.07).toFixed(3) + 's';
+        s.className = s.dataset.voiceClass;
+      });
+      this._voiceScheduled = true;
+      return;
+    }
+    if (!game.soundOn() || waited > 5000) {
       for (const s of all) {
         s.style.animationDelay = '-1s';
         s.className = s.dataset.voiceClass;

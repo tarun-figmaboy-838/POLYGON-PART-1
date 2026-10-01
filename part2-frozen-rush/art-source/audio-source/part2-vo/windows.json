@@ -25,17 +25,17 @@
   },
   {
     "id": "p2-3-samevertex",
-    "text": "Draw two diagonals from the same corner.",
+    "text": "Draw two diagonals from the same vertex.",
     "at": 42.456,
     "dur": 3.228,
     "words": [
       0.21,
-      0.525,
-      0.755,
-      1.46,
-      1.72,
+      0.51,
+      0.75,
+      1.47,
+      1.69,
       1.83,
-      2.225
+      2.17
     ]
   },
   {
@@ -131,7 +131,7 @@
   {
     "id": "sw-help",
     "text": "But for that, first you need to learn about polygons.",
-    "at": 68.028,
+    "at": 68.027,
     "dur": 3.79,
     "words": [
       0.04,

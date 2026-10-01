@@ -311,7 +311,7 @@ test.describe('Level 2 — what counts as a diagonal', () => {
     expect(after.sign.toLowerCase(), 'it asks for the cut right across').toContain('across');
   });
 
-  test('a stroke that reaches no corner is told to connect two corners', async ({ page }) => {
+  test('a stroke that reaches no corner is told to connect two vertices', async ({ page }) => {
     await boot(page, { speed: 900, fast: 4 });
     await enterLevelTwo(page);
     await page.evaluate(() => window.iceAgeGame._l2Cut(0, -1));
@@ -322,7 +322,7 @@ test.describe('Level 2 — what counts as a diagonal', () => {
     }));
     expect(after.state).toBe('LEVEL_2_WRONG_FEEDBACK');
     expect(after.badLine).toBe('corners');
-    expect(after.sign.toLowerCase()).toContain('corner');
+    expect(after.sign.toLowerCase(), 'in the lesson\'s word, vertex, not corner').toContain('vertices');
   });
 
   /* THE COST OF BEING WRONG IS NOTHING BUT THE ATTEMPT. This is the promise Level 1

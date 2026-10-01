@@ -514,6 +514,9 @@
   50%      { rotate: -0.4deg; }
 }
 .tut-bubble[hidden] { display: none; }
+/* HELD FOR ITS VOICE: the line is queued behind another, so the box waits unseen, with its pop
+   parked, and pops when the voice starts (Tutorial.update) — never an empty box on screen. */
+.tut-bubble.held { visibility: hidden; animation-play-state: paused; }
 
 /* THE SHAPE LAYER is one SVG under the words, drawn by js/bubble.js for the box the
    words need: the supplied Bubble.svg construction — a rounded body, a swept tail off

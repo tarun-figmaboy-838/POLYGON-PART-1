@@ -2182,9 +2182,9 @@ three different lines. "Wrong" alone would teach none of them apart:
 
 | what happened | the nudge |
 |---|---|
-| the stroke reached no corner | *Connect two corners.* |
+| the stroke reached no corner | *Connect two vertices.* |
 | it ran along a side | *That's a side — try a diagonal.* |
-| it was a **short** diagonal | *Cut right across, corner to opposite corner.* |
+| it was a **short** diagonal | *Cut right across, vertex to opposite vertex.* |
 
 ### Only the main diagonals complete it, and that is a decision
 

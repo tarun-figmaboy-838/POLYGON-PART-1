@@ -668,6 +668,7 @@ export class Tutorial {
     /* AND THE WORDS STOP WITH IT. If a line is cut short — skipped, restarted, the sound
        switched off — its reveal must not carry on animating a sentence nobody is saying. */
     if (this.el.text) this.el.text.classList.remove('waiting');
+    if (this.el.bubble) this.el.bubble.classList.remove('held');
     if (this.step >= this.steps.length) {
       if (this.mode === 'intro' && this.onHandOff) { this.handOff(); return; }
       this.finish();
@@ -899,7 +900,19 @@ export class Tutorial {
        what is on screen and it is allowed to run. */
     const usingVoice = !!(this.voWords && this.voId);
     const speaking = usingVoice ? this.game.voAt(this.voId) >= 0 : true;
-    if (this.el.text) this.el.text.classList.toggle('waiting', usingVoice && !speaking);
+    /* ONLY FOR A VOICE THAT IS COMING, AND NOT IN AN EMPTY BOX. A line can be held behind
+       another (the question still being spoken when the right cut lands), and the box used to
+       pop up and wait with no words in it — "Perfect fit!" sat as an empty bubble for 1.3s. So
+       until this sentence has been heard to start, the box waits hidden with its words (it pops
+       when the voice does); a pause mid-sentence still only parks the words. A line whose voice
+       is not coming at all — said already, replaced, stale — is not waited for: the words come
+       on their own timings. */
+    const coming = !usingVoice || speaking || !this.game.voComing || this.game.voComing(this.voId);
+    const waiting = usingVoice && !speaking && coming;
+    const sentence = this.step + ':' + (beat && beat.i0 != null ? beat.i0 : text);
+    if (speaking && usingVoice) this._heard = sentence;
+    if (this.el.text) this.el.text.classList.toggle('waiting', waiting);
+    if (this.el.bubble) this.el.bubble.classList.toggle('held', waiting && this._heard !== sentence);
     if (this.game.setDialogue) this.game.setDialogue(this._presenting);
 
     /* ON AN ASKING STEP THE WORDS LEAVE AND THE HAND STAYS.

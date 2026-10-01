@@ -49,7 +49,7 @@
     },
     {
         "id": "p2-3-samevertex",
-        "text": "Draw two diagonals from the same corner.",
+        "text": "Draw two diagonals from the same vertex.",
         "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-3-samevertex.wav",
         "duration": 3.228,
         "words": [
@@ -59,27 +59,27 @@
             },
             {
                 "word": "two",
-                "at": 0.525
+                "at": 0.51
             },
             {
                 "word": "diagonals",
-                "at": 0.755
+                "at": 0.75
             },
             {
                 "word": "from",
-                "at": 1.46
+                "at": 1.47
             },
             {
                 "word": "the",
-                "at": 1.72
+                "at": 1.69
             },
             {
                 "word": "same",
                 "at": 1.83
             },
             {
-                "word": "corner",
-                "at": 2.225
+                "word": "vertex",
+                "at": 2.17
             }
         ]
     },

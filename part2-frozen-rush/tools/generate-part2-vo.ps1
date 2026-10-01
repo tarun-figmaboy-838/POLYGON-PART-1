@@ -8,7 +8,7 @@ New-Item -ItemType Directory -Path $outDir -Force | Out-Null
 $lines = @(
   @{ id='p2-1-diagonal'; text='Cut along a diagonal.' },
   @{ id='p2-2-diagonals'; text='Draw all the diagonals.' },
-  @{ id='p2-3-samevertex'; text='Draw two diagonals from the same corner.' },
+  @{ id='p2-3-samevertex'; text='Draw two diagonals from the same vertex.' },
   @{ id='p2-4-concave'; text='Cut the concave polygon.' },
   @{ id='p2-5-convex'; text='Cut the convex polygon.' },
   @{ id='p2-6-concave-pentagon'; text='Cut the concave pentagon.' },

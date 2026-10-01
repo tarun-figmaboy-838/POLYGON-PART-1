@@ -44,8 +44,8 @@ const ASSET_V = {
   "assets/audio/universfield-ground-impact-352053.ogg": "5dd46c29",
   "assets/audio/universfield-sad-trumpet-278822.mp3": "318bbc84",
   "assets/audio/universfield-sad-trumpet-278822.ogg": "547e1717",
-  "assets/audio/vo-lines.mp3": "6201323f",
-  "assets/audio/vo-lines.ogg": "5be7df24",
+  "assets/audio/vo-lines.mp3": "3391d00b",
+  "assets/audio/vo-lines.ogg": "b459b772",
   "assets/char/bear.webp": "ac7771ee",
   "assets/char/duo-celebrate.webp": "7845cb0a",
   "assets/char/hd/bear.webp": "d257b5b8",
@@ -145,7 +145,7 @@ const ASSET_SIZE = {
   "assets/audio/universfield-sad-trumpet-278822.mp3": 92928,
   "assets/audio/universfield-sad-trumpet-278822.ogg": 25266,
   "assets/audio/vo-lines.mp3": 1150266,
-  "assets/audio/vo-lines.ogg": 324629,
+  "assets/audio/vo-lines.ogg": 324968,
   "assets/char/bear.webp": 41536,
   "assets/char/duo-celebrate.webp": 602602,
   "assets/char/hd/bear.webp": 68754,
@@ -2270,9 +2270,11 @@ const CFG = {
            is 3.61 and leaves real air above the apex. */
         focusK: 2.85,
         /* "the same corner", not "one corner" (asked for): SAME is the whole constraint of
-           this crossing, so the sentence says it. Voiced for now by a Mac voice (Reed), since
-           the SAPI voice the other lines use only exists on Windows; see docs/VO-PART2.md. */
-        instruction: 'Draw 2 diagonals from the same corner.',
+           this crossing, so the sentence says it. And VERTEX, not corner (the user: "where u add
+           corner use vertex") — the word the lesson teaches, so the game asks in it too. Voiced
+           for now by a Mac voice (Reed), since the SAPI voice the other lines use only exists on
+           Windows; see docs/VO-PART2.md. */
+        instruction: 'Draw 2 diagonals from the same vertex.',
         voId: 'p2-3-samevertex'
       }
     ],
@@ -2396,14 +2398,16 @@ const CFG = {
     wrongDrops: { side: true, shortDiagonal: true, corners: false },
     dropMs: 900,              // the tumble into the water
     respawnMs: 1100,          // the next slab lowering into place
+    /* VERTEX, NOT CORNER, in every line the learner reads (the user): the lesson before this
+       game teaches "vertex", so the game's nudges say it too. */
     instructions: {
-      corners: 'Connect two corners.',
+      corners: 'Connect two vertices.',
       side: "That's a side — try a diagonal.",
-      shortDiagonal: 'Cut right across, corner to opposite corner.',
+      shortDiagonal: 'Cut right across, vertex to opposite vertex.',
       // a real diagonal, drawn twice: not a mistake, so it is not treated as one
       already: 'That one is done — find another.',
       // two good diagonals, but not from one corner: the constraint, not the concept
-      sameVertex: 'Start this one at the same corner.'
+      sameVertex: 'Start this one at the same vertex.'
     },
     /* NO voId HERE, AND THAT IS DELIBERATE. It carried 'p2-1-diagonal' — crossing 1's
        own line — as a level-wide default, and p2Cfg() merges this object under the
@@ -2506,7 +2510,7 @@ const CFG = {
          synthesizer's SpeakProgress events during generation. */
       'p2-1-diagonal': [36.777, 2.144, [0.137, 0.433, 0.888, 0.991]], // Cut along a diagonal.
       'p2-2-diagonals': [39.572, 2.234, [0.137, 0.454, 0.798, 0.943]], // Draw all the diagonals.
-      'p2-3-samevertex': [42.456, 3.228, [0.210, 0.525, 0.755, 1.460, 1.720, 1.830, 2.225]], // Draw two diagonals from the same corner. (a Mac voice, Reed: see docs/VO-PART2.md)
+      'p2-3-samevertex': [42.456, 3.228, [0.210, 0.510, 0.750, 1.470, 1.690, 1.830, 2.170]], // Draw two diagonals from the same vertex. (a Mac voice, Reed: see docs/VO-PART2.md)
       'p2-4-concave': [46.334, 2.364, [0.137, 0.454, 0.571, 1.301]], // Cut the concave polygon.
       'p2-5-convex': [49.348, 2.334, [0.137, 0.454, 0.571, 1.260]], // Cut the convex polygon.
       'p2-6-concave-pentagon': [52.332, 2.384, [0.137, 0.454, 0.571, 1.301]], // Cut the concave pentagon.
@@ -3672,6 +3676,18 @@ class AudioManager {
       return Math.max(0, this.ctx.currentTime - s.startedAt);
     }
     return -1;
+  }
+  /* IS THIS LINE ON ITS WAY — being spoken now, or held to be spoken next (behind another line,
+     or until the take is in)? Words that wait for their voice wait only while this is true. A
+     line that will not be heard — said already, replaced in the queue, gone stale — is not
+     coming, and words parked for it would leave their panel on screen with nothing in it: the
+     question after a missed stroke sat as an empty plank for five seconds that way. */
+  voComing(id) {
+    if (!id) return false;
+    if (this.saying && this.saying.id === id) return true;
+    if (this.next && this.next.id === id && Date.now() - this.next.at <= 5000) return true;
+    if (this.pending && this.pending.id === id && Date.now() - this.pending.at <= 4000) return true;
+    return false;
   }
   /** Speak whatever was held while the last line ran. Stale lines are dropped: a question spoken
       five seconds after its moment is worse than one not spoken at all. */
@@ -7031,7 +7047,7 @@ function createGame(canvas, hooks = {}) {
        still published to the HUD, because removing a field from that object is a
        change every consumer has to be checked against and it buys nothing. */
     oops: false, hitFx: 0, hitObstacle: null, hitReturn: null,
-    handHint: null, idleHand: 0, dropReady: false, introT: 0, stageBeat: 0, saidQuestion: '', voDur: 0,
+    handHint: null, idleHand: 0, dropReady: false, introT: 0, stageBeat: 0, saidQuestion: '', l2Asked: false, voDur: 0,
     /* A LINE THE TUTORIAL PUTS ON THE PLANK, over the phase's own question (see api.saySign):
        the teaching sentence is shown there as a wide banner and then hands the plank back. */
     signSay: '',
@@ -7087,6 +7103,19 @@ function createGame(canvas, hooks = {}) {
        Checked every frame while a question is up, and said once per phase (G.saidQuestion). */
     if (!G.signSay && G.stageBeat >= 2 &&
         ['PHASE_INTRO', 'PHASE_ACTIVE', 'PHASE_WRONG', 'PHASE_SUCCESS'].includes(G.state)) sayPhaseQuestion();
+  }
+
+  /* AN ANSWERED QUESTION DOES NOT ARRIVE. When the tutorial's teaching line has the plank and
+     the slab is cut before the line hands it back, the plank used to flip to the crossing's
+     question at the moment of success — a question nobody would now ask, whose voice was never
+     going to play — and sat there empty while the piece landed. The question shows at success
+     only if it was on the plank before it was answered. */
+  function l2Plank(text) {
+    if (!G.l2) return text;
+    if (text && !G.signSay && text === G.instruction &&
+        ['LEVEL_2_FOCUS', 'LEVEL_2_ACTIVE', 'LEVEL_2_WRONG_FEEDBACK'].includes(G.state)) G.l2Asked = true;
+    if (G.state === 'LEVEL_2_SUCCESS' && !G.signSay && !G.l2Asked) return '';
+    return text;
   }
 
   let lastHud = '';
@@ -7158,10 +7187,10 @@ function createGame(canvas, hooks = {}) {
          has been cut. Its own wrong-answer nudges come through signSay above, which
          wins over the question for as long as they are held — the plank says one thing
          at a time. */
-      instruction: G.signSay || (((G.instrHold > 0 || (G.l1 && G.l1.unfilled && G.l1.unfilled.length > 0 &&
+      instruction: l2Plank(G.signSay || (((G.instrHold > 0 || (G.l1 && G.l1.unfilled && G.l1.unfilled.length > 0 &&
                     ['PHASE_INTRO', 'PHASE_ACTIVE', 'PHASE_WRONG', 'PHASE_SUCCESS'].includes(G.state))
                     || (G.l2 && L2_PUZZLE_STATES.includes(G.state) && G.state !== 'BRIDGE_2_COMPLETE'))
-                    && !(G.state === 'PHASE_INTRO' && G.stageBeat < 2)) ? G.instruction : ''),
+                    && !(G.state === 'PHASE_INTRO' && G.stageBeat < 2)) ? G.instruction : '')),
       /* A tutorial line is a SENTENCE, not a question: it is too long for the plank's left band,
          so the HUD widens and centres the plank for it (see .instruction.banner). */
       signBanner: !!G.signSay,
@@ -7445,7 +7474,7 @@ function createGame(canvas, hooks = {}) {
            up here, which put words on screen while he was still recoiling from the hole.
            The reaction, then the whole picture (LEVEL_2_OVERVIEW), then the question. */
         G.level = 2; G.jumpEnabled = false;
-        G.instruction = ''; G.signSay = '';
+        G.instruction = ''; G.signSay = ''; G.l2Asked = false;
         // let the tremble that started at the stop play out into the head-down look
         if (mammoth.state !== 'SHAKE') mammoth.setState('LOOK_DOWN');
         buildLevel2(); break;
@@ -13812,6 +13841,9 @@ function createGame(canvas, hooks = {}) {
         line. The reveal is corrected against this rather than trusting its own clock, so a
         pause, a resume or a late start cannot leave the words and the voice apart. */
     voAt(id) { return audio.sayingAt(id); },
+    /** Whether this line's voice is still to come (speaking, or held next): words wait for it only
+        while it is. */
+    voComing(id) { return audio.voComing(id); },
     /** The voice id for a phase's question, from its instruction ("Cut all the PENTAGONS." ->
         sign-pentagons). One source: the sentence itself, so a re-worded phase cannot drift. */
     signVoId(text) { return voIdFor(text); },
@@ -14706,7 +14738,24 @@ class Hud {
       }
       return;
     }
-    if (!game.soundOn() || performance.now() - this._voiceWaitingAt > 5000) {
+    /* AND NEVER FOR A VOICE THAT IS NOT COMING. The words used to wait up to five seconds for
+       their line whatever had become of it — and after a missed stroke the plank goes back to
+       the question, whose voice was spoken when it was first asked and is not spoken again. So
+       the plank sat on screen EMPTY for five seconds after every miss (measured on all three
+       crossings). Words wait only while their line is being spoken or held to be spoken next;
+       otherwise they come in at the silent pace, a beat after the plank (the beat is for a line
+       whose say() lands on the next tick). */
+    const waited = performance.now() - this._voiceWaitingAt;
+    const coming = !game.voComing || game.voComing(this._voId);
+    if (!coming && waited > 60 && game.soundOn()) {
+      all.forEach((s, i) => {
+        s.style.animationDelay = (i * 0.07).toFixed(3) + 's';
+        s.className = s.dataset.voiceClass;
+      });
+      this._voiceScheduled = true;
+      return;
+    }
+    if (!game.soundOn() || waited > 5000) {
       for (const s of all) {
         s.style.animationDelay = '-1s';
         s.className = s.dataset.voiceClass;
@@ -15971,6 +16020,7 @@ class Tutorial {
     /* AND THE WORDS STOP WITH IT. If a line is cut short — skipped, restarted, the sound
        switched off — its reveal must not carry on animating a sentence nobody is saying. */
     if (this.el.text) this.el.text.classList.remove('waiting');
+    if (this.el.bubble) this.el.bubble.classList.remove('held');
     if (this.step >= this.steps.length) {
       if (this.mode === 'intro' && this.onHandOff) { this.handOff(); return; }
       this.finish();
@@ -16202,7 +16252,19 @@ class Tutorial {
        what is on screen and it is allowed to run. */
     const usingVoice = !!(this.voWords && this.voId);
     const speaking = usingVoice ? this.game.voAt(this.voId) >= 0 : true;
-    if (this.el.text) this.el.text.classList.toggle('waiting', usingVoice && !speaking);
+    /* ONLY FOR A VOICE THAT IS COMING, AND NOT IN AN EMPTY BOX. A line can be held behind
+       another (the question still being spoken when the right cut lands), and the box used to
+       pop up and wait with no words in it — "Perfect fit!" sat as an empty bubble for 1.3s. So
+       until this sentence has been heard to start, the box waits hidden with its words (it pops
+       when the voice does); a pause mid-sentence still only parks the words. A line whose voice
+       is not coming at all — said already, replaced, stale — is not waited for: the words come
+       on their own timings. */
+    const coming = !usingVoice || speaking || !this.game.voComing || this.game.voComing(this.voId);
+    const waiting = usingVoice && !speaking && coming;
+    const sentence = this.step + ':' + (beat && beat.i0 != null ? beat.i0 : text);
+    if (speaking && usingVoice) this._heard = sentence;
+    if (this.el.text) this.el.text.classList.toggle('waiting', waiting);
+    if (this.el.bubble) this.el.bubble.classList.toggle('held', waiting && this._heard !== sentence);
     if (this.game.setDialogue) this.game.setDialogue(this._presenting);
 
     /* ON AN ASKING STEP THE WORDS LEAVE AND THE HAND STAYS.

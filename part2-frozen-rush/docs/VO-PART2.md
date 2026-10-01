@@ -12,7 +12,7 @@ from the synthesizer's SpeakProgress events and are stored in `CFG.vo.lines`.
 |---|----|----------|
 | 1 | `p2-1-diagonal` | Cut along a diagonal. |
 | 2 | `p2-2-diagonals` | Draw all the diagonals. |
-| 3 | `p2-3-samevertex` | Draw 2 diagonals from the same corner. |
+| 3 | `p2-3-samevertex` | Draw 2 diagonals from the same vertex. |
 | 4 | `p2-4-concave` | Cut the concave polygon. |
 | 5 | `p2-5-convex` | Cut the convex polygon. |
 | 6 | `p2-6-concave-pentagon` | Cut the concave pentagon. |
@@ -42,11 +42,14 @@ Read line 3 as **"draw two diagonals"** — the numeral is how it is written on 
 board, not how it is spoken.
 
 **Line 3 is a stopgap in a different voice.** It was reworded from "one corner" to "the
-same corner" on a Mac, where the SAPI voice the other lines use does not exist, so it
-was spoken by the macOS voice **Reed (English, US)** at pitch 0.85 (median 98 Hz,
-against 93–102 Hz for the other lines), padded to the same 0.137s lead. Its word onsets
-were measured by synthesising each prefix and suffix of the sentence and averaging where
-each word must start. Running `tools/generate-part2-vo.ps1` on Windows regenerates it in
+same corner", and then to "the same **vertex**" (2026-10-01, the user: the game says the
+lesson's word), on a Mac, where the SAPI voice the other lines use does not exist. So it
+is spoken by the macOS voice **Reed (English, US)**, lowered to 0.88 of its pitch with its
+timing kept (median 98 Hz, against 93–102 Hz for the other lines), with a 0.142 s lead,
+and cut to exactly the 3.228 s the line had before, so no later window moved. Its word
+onsets are from a wav2vec2 forced alignment of the sentence (the aligner of Part 1's
+`tools/align-vo.js`, run on this one file), which put the old take's words within 45 ms of
+the onsets it had. Running `tools/generate-part2-vo.ps1` on Windows regenerates it in
 the same voice as the rest, and the steps below then replace it.
 
 ## How to say them
