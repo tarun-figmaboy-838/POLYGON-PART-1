@@ -276,52 +276,44 @@
         ]
     },
     {
-        "id": "sw-help",
-        "text": "But for that, first you need to learn about polygons.",
-        "file": "sw-help.wav",
-        "duration": 3.84,
+        "id": "tut-6b-piece",
+        "text": "Use the right piece to fix the path.",
+        "file": "tut-6b-piece.wav",
+        "duration": 2.934,
         "recorded": true,
-        "source": "Swiftee's take (part1-swiftee-lesson/assets/source/vo-masters/swiftee-extra.mp3), cut as p01b",
+        "source": "the take's own tut-6-use, \"Use the right ice piece to fix the path.\", with \"ice\" cut out between the closures of right's t (1.615s) and piece's p (1.975s)",
         "words": [
             {
-                "word": "But",
-                "at": 0.04
+                "word": "Use",
+                "at": 0.06
             },
             {
-                "word": "for",
-                "at": 0.24
+                "word": "the",
+                "at": 0.54
             },
             {
-                "word": "that,",
-                "at": 0.42
+                "word": "right",
+                "at": 1.22
             },
             {
-                "word": "first",
-                "at": 1.1
-            },
-            {
-                "word": "you",
-                "at": 1.48
-            },
-            {
-                "word": "need",
-                "at": 1.6
+                "word": "piece",
+                "at": 1.62
             },
             {
                 "word": "to",
-                "at": 1.88
+                "at": 1.83
             },
             {
-                "word": "learn",
-                "at": 2.0
+                "word": "fix",
+                "at": 2.09
             },
             {
-                "word": "about",
-                "at": 2.32
+                "word": "the",
+                "at": 2.27
             },
             {
-                "word": "polygons.",
-                "at": 2.68
+                "word": "path.",
+                "at": 2.43
             }
         ]
     }

@@ -21,6 +21,7 @@
  *                         instructions, nested inside on/otherwise/feedback
  *   src/game/game.js      PRAISE and NUDGE, the answers to right and wrong
  *   src/game/stage.js     the reasons a particular try fell short
+ *   src/opening/runner-stage.js  Swiftee's lines over Frozen Rush, at the broken path and the ditch
  */
 'use strict';
 const fs = require('node:fs');
@@ -107,7 +108,9 @@ function lines() {
   const all = fromStory()
     .concat(fromDeck())
     .concat(fromPairs('game.js', 'said after an answer (game.js)'))
-    .concat(fromPairs('stage.js', 'said when a try falls short (stage.js)'));
+    .concat(fromPairs('stage.js', 'said when a try falls short (stage.js)'))
+    // Swiftee over Frozen Rush, before the lesson and after it (the game-lesson kit)
+    .concat(fromPairs('../opening/runner-stage.js', 'said by Swiftee over Frozen Rush (src/opening/runner-stage.js)'));
   // one row per id; keep the first place it is used and note the rest
   const byId = new Map();
   all.forEach((r) => {

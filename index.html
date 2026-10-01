@@ -5,16 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Polygon Adventure</title>
 <meta name="description" content="Learn the polygons with Swiftee, then use them to get Momo the mammoth across the ice.">
-<!-- THE GAME STARTS ON THE FROZEN RUSH 2 COVER (the user's new sequence). Opening the game
-     opens Frozen Rush with ?intro=1: its tutorial plays Momo, his goal, the jump and the broken
-     path, then hands over to Swiftee's lesson (part1-swiftee-lesson); the lesson's way on comes
-     back to Frozen Rush with ?resume=1, at the broken path. This page only points the way, and
-     keeps anything after the ? (like ?dev=1). The refresh is for a browser with scripts off;
-     with them on, replace() leaves this page out of the history so Back does not bounce the
-     player straight back in. -->
-<meta http-equiv="refresh" content="0; url=part2-frozen-rush/game/index.html?intro=1">
-<script>location.replace('part2-frozen-rush/game/index.html' + (location.search ? location.search + '&' : '?') + 'intro=1');</script>
-<style>html, body { margin: 0; height: 100%; background: #5fbdfa; }</style>
+<!-- THE EXPERIENCE IS ONE PAGE: Swiftee's lesson (part1-swiftee-lesson), which opens with Frozen
+     Rush in a frame over it — the Frozen Rush 2 cover, the avalanche and the tutorial up to the
+     broken path, where Swiftee flies in and snow carries the game away onto the lesson — and brings
+     the game back by itself after the lesson's last line (the user's game-lesson kit;
+     src/opening/runner-stage.js). This page only points the way, and keeps anything after the ?
+     (like ?dev=1). The refresh is for a browser with scripts off; with them on, replace() leaves
+     this page out of the history so Back does not bounce the player straight back in. -->
+<meta http-equiv="refresh" content="0; url=part1-swiftee-lesson/index.html">
+<script>location.replace('part1-swiftee-lesson/index.html' + location.search);</script>
+<style>html, body { margin: 0; height: 100%; background: #cfe9fb; }</style>
 </head>
 <body>
 </body>

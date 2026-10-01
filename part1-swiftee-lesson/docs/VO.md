@@ -90,7 +90,7 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 | 63 | 31 | summary | `assets/vo/p37h.mp3` | say | If the sides or angles are not all equal, the polygon is irregular. |  | screen 31 | explaining, warm and clear | yes |
 | 64 | 31 | summary | `assets/vo/p37i.mp3` | say | Amazing! You explored all these polygon ideas! |  | screen 31 | explaining, warm and clear | yes |
 
-## Answers (17), said when the child answers
+## Answers (20), said when the child answers
 
 | File | Line | When | Delivery | Recorded |
 |------|------|------|----------|----------|
@@ -101,7 +101,7 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 | `assets/vo/fb45.mp3` | Not quite. This shape is open. A polygon must be closed. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/fb41.mp3` | Try again! Compare the sides and angles now. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/p38b.mp3` | You are a polygon adventurer! | a try that falls short, with the reason | explaining, warm and clear | yes |
-| `assets/vo/p39.mp3` | You’re ready! Now let’s help Momo. | a try that falls short, with the reason | explaining, warm and clear | yes |
+| `assets/vo/p39.mp3` | Now you know everything about polygons. You are ready to help Momo. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/fb15.mp3` | Drop it on a corner! | a try that falls short, with the reason | gentle and encouraging, never disappointed | yes |
 | `assets/vo/fb11.mp3` | Pull it in more! | a try that falls short, with the reason | gentle and encouraging, never disappointed | yes |
 | `assets/vo/fb40.mp3` | Try again! Stretch the corner a little further. | a try that falls short, with the reason | explaining, warm and clear | yes |
@@ -111,6 +111,9 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 | `assets/vo/fb38.mp3` | Try again! The sides and the angles are not all equal. | a try that falls short, with the reason | explaining, warm and clear | yes |
 | `assets/vo/fb42.mp3` | Yes! It’s convex: no corner goes inward. | a try that falls short, with the reason | a cheer, delighted | yes |
 | `assets/vo/fb43.mp3` | Yes! It’s concave: one corner goes inward. | a try that falls short, with the reason | a cheer, delighted | yes |
+| `assets/vo/sw1.mp3` | Momo needs your help. | a try that falls short, with the reason | explaining, warm and clear | yes |
+| `assets/vo/sw2.mp3` | But to help Momo, you need to learn about polygons. | a try that falls short, with the reason | explaining, warm and clear | yes |
+| `assets/vo/sw3.mp3` | Now let’s help Momo. | a try that falls short, with the reason | explaining, warm and clear | yes |
 
 ## Not recorded
 

@@ -129,21 +129,19 @@
     ]
   },
   {
-    "id": "sw-help",
-    "text": "But for that, first you need to learn about polygons.",
+    "id": "tut-6b-piece",
+    "text": "Use the right piece to fix the path.",
     "at": 68.027,
-    "dur": 3.79,
+    "dur": 2.934,
     "words": [
-      0.04,
-      0.24,
-      0.42,
-      1.1,
-      1.48,
-      1.6,
-      1.88,
-      2,
-      2.32,
-      2.68
+      0.06,
+      0.54,
+      1.22,
+      1.62,
+      1.83,
+      2.09,
+      2.27,
+      2.43
     ]
   }
 ]

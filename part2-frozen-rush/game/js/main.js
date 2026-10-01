@@ -119,26 +119,35 @@ let devSel = null;       // the bar's picker, kept in step with the crossing bei
 const tutFlag = params.get('tutorial');
 const wantTutorial = tutFlag !== '0' && tutFlag !== 'false';
 
-/* THE NEW SEQUENCE (the user): the game opens HERE, on the Frozen Rush 2 cover — the site's root
-   sends players to ?intro=1 — and the tutorial plays Momo, his goal, the jump and the broken path,
-   then hands over to Swiftee's lesson (handOffToLesson). The lesson's way on comes back with
-   ?resume=1: the run starts again from the avalanche, and the tutorial says nothing until the
-   broken path, where it picks up with the cut. Opened with neither, this page plays as it always has. */
-const intro = flag('intro', false) && !flag('resume', false);
-const resume = flag('resume', false);
-const tutMode = intro ? 'intro' : resume ? 'resume' : 'full';
-function handOffToLesson() {
-  // a short fade to the snow-white of the lesson's own title, then the lesson's page
-  const veil = document.createElement('div');
-  veil.setAttribute('data-handoff', '1');
-  veil.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#eaf6ff;opacity:0;transition:opacity 600ms ease;pointer-events:all;';
-  document.body.appendChild(veil);
-  requestAnimationFrame(() => { veil.style.opacity = '1'; });
-  // ?auto=1: the lesson skips its title (no banner, no Play) and starts by itself (the user)
-  const q = new URLSearchParams({ auto: '1' });
+/* INSIDE SWIFTEE'S LESSON (the user's game-lesson kit). The lesson's page —
+   part1-swiftee-lesson/index.html, which the site's root opens — runs this page in a frame, twice:
+     ?lesson=intro  the experience opens here: the cover and Play, the avalanche, and the
+                    tutorial up to the broken path; then the world is held still and the lesson
+                    is told where Momo and the hole are ('lesson'). Its Swiftee flies in over this
+                    frame, snow blows across, and the lesson takes the screen.
+     ?lesson=end    back after the lesson: no cover and no Play — it starts on the host's 'begin'
+                    — the avalanche and the run with nothing said, and at the break the game holds
+                    still for the lesson's Swiftee ('swiftee'), until 'said'. Then the plank, the
+                    question and the praise, and the journey plays on to the friend.
+   Opened on its own, with no ?lesson, this page plays exactly as it always has. (?intro=1 and
+   ?resume=1, the earlier page-to-page hand-over, are read as intro and end.) */
+const lessonPart = params.get('lesson') || (flag('intro', false) ? 'intro' : flag('resume', false) ? 'end' : null);
+const hosted = window.parent !== window;
+const tutMode = lessonPart === 'intro' ? 'intro' : lessonPart === 'end' ? 'end' : 'full';
+// ?lesson=end in the lesson's frame has no cover: the host says when to begin
+const coverless = hosted && lessonPart === 'end';
+const devAt = options.dev ? params.get('devat') : null;       // review: ?devat=break, straight to the break
+function tellHost(word, more) {
+  if (!hosted) return;
+  try { window.parent.postMessage(Object.assign({ iceAge: word }, more || {}), '*'); } catch (e) { /* no host */ }
+}
+/* THE INTRO IS OVER. In the lesson's frame the lesson takes it from here; opened on its own (the
+   old link), the lesson's page is opened instead, going straight to its first screen. */
+function handOffToLesson(where) {
+  if (hosted) { tellHost('lesson', { where }); return; }
+  const q = new URLSearchParams({ intro: '0', auto: '1' });
   if (options.dev) q.set('dev', '1');
-  const to = '../../part1-swiftee-lesson/index.html?' + q.toString();
-  setTimeout(() => { location.href = to; }, 700);
+  location.href = '../../part1-swiftee-lesson/index.html?' + q.toString();
 }
 
 /* THE BACKBUFFER AT SCREEN RESOLUTION. The stage is CSS-fitted to the window; the canvas
@@ -210,6 +219,8 @@ const game = createGame(canvas, {
   hdArt: wantHd(),
   renderScaleForced: params.has('rs'),   // a forced scale is a request; the fps guard leaves it alone
   onReady: () => {
+    tellHost('ready');                   // the art is in: Play is live, or a hosted run can start
+    if (coverless) { readyToBegin = true; if (beginAsked) beginHosted(); return; }
     /* STRAIGHT TO PART 2. Part 2 begins after Part 1's seventh crossing — about five
        minutes of play — which is far too long a loop to review one of its levels on.
        ?p2=1 begins the run and jumps to the collapse that opens Part 2, so the whole
@@ -265,8 +276,15 @@ setInterval(() => hud.syncVoice(game), 25);
    point, and the tutorial reads what it needs from debug() itself. */
 function startTutorial() {
   if (!wantTutorial || tut) return;
-  tut = new Tutorial(document, game, { mode: tutMode, onHandOff: handOffToLesson });
+  tut = new Tutorial(document, game, {
+    mode: tutMode,
+    onHandOff: handOffToLesson,
+    // the return's break: held still for the lesson's Swiftee, who answers with 'said'
+    onHost: hosted ? (id, where) => tellHost('swiftee', { id, where }) : null
+  });
   tut.begin();
+  // review: straight to the break (the run is skipped to it by skipToPartTwo)
+  if (devAt === 'break') tut.skipTo(tutMode === 'end' ? 'host' : 'gap');
   let last = performance.now();
   const tick = now => {
     if (!tut || tut.done) { tut = null; return; }
@@ -382,14 +400,50 @@ game.setOptions(options);
 /* THE COVER SHOWS AT ONCE, with PLAY held until the art has loaded. The cover needs only
    its own picture and the PLAY art, which the stylesheet fetches on its own, so there is no
    reason to sit on a blank page while the sheets and sounds arrive behind it. */
-if (!flag('skip', false) && jumpAt === null) {
+if (!flag('skip', false) && jumpAt === null && !coverless) {
   front = new Frontend(document, game);
   // (back from the lesson the run starts from its beginning, avalanche and all — the user: "after
   // learning game, show avalanche in the momo game, do not remove it" — and the tutorial's
   // 'resume' part says nothing until the broken path, then picks up with "Use the right ice piece…")
-  front.init({ onStart: () => { game.begin(); startTutorial(); } });
+  front.init({
+    // the host's sound opens on this press (a tap in a frame is not one on its page in Safari)
+    onPress: () => {
+      tellHost('play');
+      if (hosted) { try { if (window.parent.__lessonUnlock) window.parent.__lessonUnlock(); } catch (e) { /* another origin */ } }
+    },
+    onStart: () => {
+      game.begin();
+      if (devAt === 'break') game.skipToPartTwo();
+      startTutorial();
+    }
+  });
   front.setLoading(true);
   game.loadProgress(f => front.setProgress(f));
+}
+
+/* THE HOSTED RUN (?lesson=end): it begins once, on the host's 'begin' (sent every half second
+   until it hears 'running') or window.iceAgeBegin(), and not before its art is in. */
+let readyToBegin = false, beginAsked = false, begun = false;
+function beginHosted() {
+  beginAsked = true;
+  if (!coverless || begun || !readyToBegin) return;
+  begun = true;
+  game.begin();
+  if (devAt === 'break') game.skipToPartTwo();
+  startTutorial();
+  tellHost('running');
+}
+if (lessonPart && hosted) {
+  window.iceAgeBegin = beginHosted;
+  // the lesson opens this page's sound from its own tap (Safari does not count it here otherwise)
+  window.iceAgeUnlock = () => game.unlockAudio();
+  window.addEventListener('message', (e) => {
+    if (e.source !== window.parent || !e.data || typeof e.data !== 'object') return;
+    const w = e.data.iceAge;
+    if (w === 'begin') beginHosted();
+    else if (w === 'said') { if (tut) tut.didAction('host'); }
+    else if (w === 'quiet') { game.fadeMusic(900); setTimeout(() => game.suspendAudio(), 1000); }
+  });
 }
 
 /* THE REVIEW BAR (?dev=1) — the same bar the Swiftee lesson has, so the two parts are

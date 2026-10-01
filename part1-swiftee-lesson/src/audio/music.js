@@ -106,8 +106,13 @@
     schedule();
   }
 
+  /* AND IT STOPS, when the lesson hands the screen to Frozen Rush (src/opening/runner-stage.js):
+     nothing new is scheduled, and what already is (under a second) plays out under the snow. */
+  function stop() { running = false; }
+
   global.Music = {
     start: start,
+    stop: stop,
     /** 'play' under the lesson, 'win' for a celebration. */
     mood: function (m) { if (m) mood = m; return mood; }
   };

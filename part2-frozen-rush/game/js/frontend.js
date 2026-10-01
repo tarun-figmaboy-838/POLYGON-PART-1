@@ -26,7 +26,7 @@ export class Frontend {
     this._timers = [];
   }
 
-  /** @param {{onStart:Function}} handlers */
+  /** @param {{onStart:Function, onPress?:Function}} handlers */
   init(handlers) {
     this.handlers = handlers;
     this.bind();
@@ -88,6 +88,9 @@ export class Frontend {
     if (this.state === 'READY') return;
     this.state = 'READY';
     this.sfx('ui');
+    /* INSIDE THE PRESS ITSELF, not 400ms later with onStart: a host page (the lesson, when this
+       game runs in its frame) opens its own sound on this, and only a gesture can do that. */
+    if (this.handlers && this.handlers.onPress) { try { this.handlers.onPress(); } catch (e) { /* the host's */ } }
 
     this.el.cover.classList.add('leaving');
     this.wait(400, () => {

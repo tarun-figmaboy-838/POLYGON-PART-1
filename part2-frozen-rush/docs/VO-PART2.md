@@ -26,17 +26,20 @@ says the take's own recorded line again — `tut-6-use`, "Use the right ice piec
 path." — so line 10's generated "Cut this ice block to fix the path." stays in the file but is
 never asked for. Do not re-record `tut-1` … `tut-7`: they match their steps exactly.
 
-## Swiftee's line, recorded (the new sequence)
+## The return's plank line, recorded
 
 | id | say this |
 |----|----------|
-| `sw-help` | But for that, first you need to learn about polygons. |
+| `tut-6b-piece` | Use the right piece to fix the path. |
 
-Not generated: Swiftee's own recording (`p01b`, cut from the user's take
-`part1-swiftee-lesson/assets/source/vo-masters/swiftee-extra.mp3`), appended last with
-`recorded: true` so it keeps its own level and the generated lines keep theirs. He flies into
-the tutorial's last held moment, at the broken path, and says it before the lesson
-(`js/swiftee-cameo.js`).
+Not generated: the take's own `tut-6-use`, "Use the right ice piece to fix the path.", with the
+word "ice" cut out between the closure of "right"'s t (1.615 s into the line) and of "piece"'s p
+(1.975 s), so the join is in silence. Appended last with `recorded: true`, so no other window
+moved. It is said on the plank after the lesson (`?lesson=end`), the game-lesson kit's wording;
+the game opened on its own still says the whole recorded line.
+
+(`sw-help`, Swiftee's "But for that, first you need to learn about polygons." spoken inside this
+game, is gone: Swiftee is drawn and voiced by the lesson's page now, over the game's frame.)
 
 Read line 3 as **"draw two diagonals"** — the numeral is how it is written on the
 board, not how it is spoken.

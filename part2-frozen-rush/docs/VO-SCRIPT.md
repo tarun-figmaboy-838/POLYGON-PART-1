@@ -31,17 +31,18 @@ written here whole: change the wording and the recording, this table and
 | tut-6-use | Use the right ice piece to fix the path. | The hand sweeps across the answer's rope. |
 | tut-7-fit | Perfect fit! Keep going! | The piece has landed and the run resumes. |
 
-**The game is played in two halves now**, with Swiftee's lesson between them (the site's root
-opens `?intro=1`; the lesson's last button opens `?resume=1`):
+**Inside Swiftee's lesson it is played in two halves** (the game-lesson kit: the lesson's page
+runs this game in a frame, `?lesson=intro` before the lesson and `?lesson=end` after it):
 
-- **Before the lesson** the tutorial plays lines 1 to 5 and ends at the broken path, where
-  Swiftee flies in and says his line below. Then the page hands over to his lesson.
-- **After the lesson** the game starts again from the top, the avalanche included, and the
-  tutorial picks up at line 6 when Momo reaches the broken path.
+- **Before the lesson** the tutorial plays lines 1 to 5 and the game holds still at the broken
+  path. Swiftee flies in over the frame and speaks in the lesson's own voice (those lines are the
+  lesson's clips, in part1-swiftee-lesson/assets/vo — not in this take), and the lesson takes over.
+- **After the lesson** the game starts by itself, the avalanche included, says nothing until the
+  break, holds still there for Swiftee's "Now let's help Momo.", and then the plank speaks:
 
 | id | line | moment |
 |---|---|---|
-| sw-help | But for that, first you need to learn about polygons. | Swiftee has flown in beside Momo at the broken path. **Recorded** — his own take (`swiftee-extra.mp3`), not a generated voice. |
+| tut-6b-piece | Use the right piece to fix the path. | The plank, after Swiftee's visit at the ditch. **Recorded** — `tut-6-use` with "ice" cut out (the kit's wording). |
 
 ## 2. The instruction sign (one per crossing, in play order)
 

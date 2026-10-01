@@ -817,6 +817,57 @@
   /* STRAIGHT IN FROM FROZEN RUSH (?auto=1, game.js): no banner, no Play — the loading bar alone on
      the snow-white Frozen Rush's hand-over fades to, and the lesson starts by itself */
   #loading.auto { background: #eaf6ff; }
+
+  /* ---- FROZEN RUSH AROUND THE LESSON (src/opening/runner-stage.js, the game-lesson kit) ----
+     The game's frame covers the window, above the lesson and its title, under the review bar
+     (60) and the rotate prompt (120). Swiftee's visit is over the frame, the snow over him, and
+     the curtain over all of it for the moment the game comes back. */
+  .runner-frame {
+    position: fixed; inset: 0; width: 100%; height: 100%; border: 0; margin: 0; padding: 0;
+    z-index: 50; background: #cfe9fb; opacity: 1; transition: opacity 1300ms ease;
+  }
+  .runner-frame.unseen { visibility: hidden; pointer-events: none; }
+  /* the lesson's way on is not shown when the game is coming back by itself (the kit's last screen) */
+  html.runner-on #continue { display: none !important; }
+  .runner-frame.fading { opacity: 0; pointer-events: none; }
+  /* while the game opens the experience the lesson's title is not shown under it */
+  html.runner-opening #loading .title-stage, html.runner-opening #loading .title-play { visibility: hidden; }
+  .visit { position: fixed; inset: 0; z-index: 56; pointer-events: none; overflow: hidden; }
+  .visit-bird { position: absolute; left: 0; top: 0; transform-origin: 50% 87.7%;
+    filter: drop-shadow(0 6px 10px rgba(18, 60, 96, .22)); will-change: transform; }
+  /* HIS BOX IS THE LESSON'S BOX: #bubble's paper, border, ink, type and tail, so the Swiftee who
+     visits the game is visibly the one who teaches the lesson */
+  .visit-bubble {
+    --bubble-edge: #169F99; --bubble-paper: #FFFBEA; --tail-size: 36px; --tail-x: 40%;
+    position: absolute; left: 0; top: 0; box-sizing: border-box;
+    font-size: clamp(18px, 2vw, 38px); max-width: min(440px, 30vw); min-width: 5em;
+    padding: .5em .78em; border: 4px solid var(--bubble-edge); border-radius: 26px;
+    background: var(--bubble-paper); color: var(--instruction-text, #174D59);
+    box-shadow: inset 0 2px 0 #fff, 0 0 14px 2px rgb(22 159 153 / .16), 0 8px 20px rgb(12 64 78 / .16);
+    opacity: 0; scale: .94; transition: opacity 200ms ease-out, scale 220ms cubic-bezier(.22, 1, .36, 1);
+    font-family: "Fredoka", "Baloo 2", "Arial Rounded MT Bold", sans-serif; font-weight: 700;
+    line-height: 1.3; text-align: center; text-wrap: balance;
+  }
+  .visit-bubble.show { opacity: 1; scale: 1; }
+  .visit-bubble.out { opacity: 0; scale: .96; transition: opacity 170ms ease-in, scale 170ms ease-in; }
+  .visit-bubble .w { display: inline-block; opacity: 0; translate: 0 4px;
+    transition: opacity 160ms cubic-bezier(.25, .8, .35, 1), translate 170ms cubic-bezier(.25, .8, .35, 1); }
+  .visit-bubble .w.in { opacity: 1; translate: 0 0; }
+  .visit-bubble .w.k { color: var(--instruction-accent, #B84A00); font-weight: 800; }
+  .visit-tail { position: absolute; width: var(--tail-size); height: var(--tail-size); left: var(--tail-x);
+    top: calc(100% - 5.2px); overflow: visible; pointer-events: none; }
+  .visit-tail-fill { fill: var(--bubble-paper); }
+  .visit-tail-stroke { fill: none; stroke: var(--bubble-edge); stroke-width: 6.67; stroke-linecap: round; stroke-linejoin: round; }
+  .runner-flurry { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 57; pointer-events: none; }
+  .runner-curtain { position: fixed; inset: 0; z-index: 58; pointer-events: none;
+    background: radial-gradient(120% 90% at 50% 40%, #f4fbff 0%, #d9eefc 60%, #bfe0f7 100%);
+    opacity: 0; transition: opacity 340ms ease-in; }
+  .runner-curtain.on { opacity: 1; }
+  .runner-curtain:not(.on) { transition: opacity 580ms ease-out; }
+  @media (prefers-reduced-motion: reduce) {
+    .runner-frame { transition: opacity 300ms ease; }
+    .visit-bubble, .visit-bubble .w { transition: opacity 120ms ease-out; translate: 0 0; scale: 1; }
+  }
   #loading.auto .title-art, #loading.auto .title-sheen, #loading.auto .title-scrim,
   #loading.auto .title-snow, #loading.auto .title-play { visibility: hidden; }
   /* (only where the browser will not play a sound without a tap — Safari: Play alone, on the snow) */
@@ -1023,6 +1074,9 @@
 <script src="src/game/quest.js"></script>
 <!-- (the Momo and Popo story that opened the game is parked in drafts/story — the user:
      "remove the story part and add on draft"; its README says how to bring it back) -->
+<!-- Frozen Rush around the lesson: Swiftee over the game, then the frames, the snow, the messages -->
+<script src="src/opening/swiftee-visit.js"></script>
+<script src="src/opening/runner-stage.js"></script>
 <script src="src/game/game.js"></script>
 </body>
 </html>

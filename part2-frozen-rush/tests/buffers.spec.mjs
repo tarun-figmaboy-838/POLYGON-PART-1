@@ -151,18 +151,18 @@ test.describe('the pointer, the buffers and the voice', () => {
        'win-title' and 'win-sub' were cut with the banner that showed them, taking it to
        14 — and then 'win-yay' was found in the take and wired up, which put it back to
        15. This number was left at 14 and the suite has been red on it since. */
-    /* 26: and then Swiftee's 'sw-help', the intro tutorial's last line, as he flies in at the
-       broken path to hand over to his lesson (recorded, from his own take). */
+    /* 26: and then the return's recorded 'tut-6b-piece', "Use the right piece to fix the path."
+       (it took the place of Swiftee's 'sw-help', which the lesson's page now says itself). */
     expect(r.n, 'every line the learner is shown').toBe(26);
     expect(r.bad).toEqual([]);
     expect(r.unnamed, 'every crossing names the line that will speak it').toEqual([]);
     expect(r.status, 'the recording ships').toBe(200);
     expect(r.oggStatus, 'and so does the ogg the browser prefers').toBe(200);
-    /* 71.9, the length of the take that ships (71.86s): the original 36.13s with Part 2's
-       ten lines and then Swiftee's recorded 'sw-help' appended (tools/assemble-part2-vo.mjs).
-       It was 67.4 before 'sw-help', 67.1 until line 3 became "…from the same corner." and
-       its take grew 0.36s, 36.2 before Part 2's lines were added, and 39.1 before that — a
-       bound left at an old take stops checking anything. */
-    expect(r.last, 'the last window is inside the take').toBeLessThan(71.9);
+    /* 71.0, the length of the take that ships (70.96s): the original 36.13s with Part 2's
+       ten lines and then the recorded 'tut-6b-piece' appended (tools/assemble-part2-vo.mjs).
+       It was 71.9 with Swiftee's 'sw-help' in that place, 67.4 before it, 67.1 until line 3
+       became "…from the same corner." and its take grew 0.36s, 36.2 before Part 2's lines
+       were added, and 39.1 before that — a bound left at an old take stops checking anything. */
+    expect(r.last, 'the last window is inside the take').toBeLessThan(71.0);
   });
 });

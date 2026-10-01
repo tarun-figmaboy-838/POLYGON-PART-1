@@ -782,7 +782,8 @@
   var FINALE = [{ t: 'You are a polygon adventurer!', vo: 'p38b' }];
   // the hand-over screen's one line (readyScene). Not in the recorded take, so it is
   // voiced by tools/make-vo.js in the voice matched to it, as the cheers are.
-  var READY = { t: 'You’re ready! Now let’s help Momo.', vo: 'p39' };
+  // (Swiftee's own recording now — the take's "ending" line, which the game-lesson kit puts here)
+  var READY = { t: 'Now you know everything about polygons. You are ready to help Momo.', vo: 'p39' };
   // the second miss on the same card: "Try again!" too (the card is put out, and the screen's
   // reminder — what a polygon is — follows it)
   var NUDGE_STRONG = { t: 'Try again!', vo: 'fb32' };
@@ -4286,8 +4287,18 @@
       if (gen !== playGen) return;
       readyUp = true;
       return pop([{ t: READY.t, vo: READY.vo, mood: 'win', face: 'wave' }], { keep: true });
+    }).then(function () {
+      /* AND THEN FROZEN RUSH COMES BACK BY ITSELF (the game-lesson kit): a breath after the line,
+         once the game's art is in, snow blows across and the game starts under it — no cover, no
+         Play. Its button stays, and a tap on it goes at once. Without the runner stage (the
+         suites, ?intro=0) the button is the way on, as it always was. */
+      if (gen !== playGen || !readyOn) return;
+      if (global.RunnerStage && RunnerStage.on) {
+        setTimeout(function () { if (gen === playGen && readyOn) RunnerStage.start(); }, END_READ);
+      }
     });
   }
+  var END_READ = 1300;   // the last line, read, before the game takes the screen
   /** Back out of it (or of the finale): a replay, a restart or a jump in the review tool. */
   function leaveReady() {
     finaleOn = false;
@@ -4430,6 +4441,7 @@
       e.preventDefault();
       if (!readyUp) return;
       if (global.SFX) SFX.play('select');
+      if (global.RunnerStage && RunnerStage.on) { RunnerStage.start(); return; }
       goOn();
     });
 
@@ -4520,6 +4532,10 @@
     director = Director.create(handlers(), { msPerWord: 300, sayMinMs: 900, readablePauseMs: 0, feedbackSettleMs: 900 });
     // the last screen is the summary: Part 2 starts loading behind it (warmPart2)
     director.on('start', function () { if (current === Screens.list.length - 1) warmPart2(); });
+    // the game's return, loaded unseen a screen before the end (src/opening/runner-stage.js)
+    director.on('start', function () {
+      if (current >= Screens.list.length - 2 && global.RunnerStage && RunnerStage.on) RunnerStage.preload();
+    });
     if (Stage.onEvent) Stage.onEvent(function (name, payload) {
       director.emit(name, payload);
       if (name === 'hint:show') hintGesture(payload);
@@ -4692,6 +4708,21 @@
        started without one runs silent (measured: WebKit stepped through three screens with no
        voice). So a silent sound is tried first: heard, the lesson starts by itself; refused, Play
        alone comes up on the snow (#loading.auto-tap), and the one tap starts it with its voice. */
+    /* THE GAME OPENS THE EXPERIENCE (src/opening/runner-stage.js): while its frame is up the
+       title stays out of sight (no banner, no Play under it), and the lesson starts by itself
+       when the snow carries the game away — straight to screen 1, with no sparkle for a press
+       that never happened. If the game cannot open, the title comes back as it always was. */
+    if (global.RunnerStage && RunnerStage.opening) loadEl.classList.add('auto');
+    global.Lesson = {
+      startHosted: function () { autoPress = true; storySkip = true; startEl.click(); },
+      showTitle: function () { loadEl.classList.remove('auto', 'auto-tap'); },
+      // review only (?dev=1, End 1): the hand-over screen now, from wherever the lesson is
+      devReady: function () {
+        var go = function () { try { if (director && director.abort) director.abort(); } catch (e) {} finaleOn = true; readyScene(); };
+        if (loadEl && !loadEl.classList.contains('gone')) { storySkip = true; startEl.click(); setTimeout(go, 900); }
+        else go();
+      }
+    };
     var autoLoc = global.location || {};
     if (/[?&]auto=1\b/.test(autoLoc.search || '')) {
       loadEl.classList.add('auto');
@@ -4882,12 +4913,21 @@
       so.textContent = '0. story (Momo & Popo)';
       box.appendChild(so);
     }
+    /* THE WHOLE EXPERIENCE, in order (the game-lesson kit): the game's opening before the
+       screens and its return after them — Start 1 the cover, Start 2 Swiftee at the broken path,
+       End 1 the lesson's last line and the game starting by itself, End 2 Swiftee at the ditch. */
+    var withGame = global.RunnerStage && RunnerStage.on;
+    var addOpt = function (value, label) {
+      var o = document.createElement('option'); o.value = value; o.textContent = label; box.appendChild(o);
+    };
+    if (withGame) { addOpt('start1', 'Start 1. Frozen Rush cover'); addOpt('start2', 'Start 2. Swiftee at the broken path'); }
     Screens.list.forEach(function (s, i) {
       var o = document.createElement('option');
       o.value = i;
       o.textContent = (i + 1) + '. ' + s.id;
       box.appendChild(o);
     });
+    if (withGame) { addOpt('end1', 'End 1. Last line, then the game'); addOpt('end2', 'End 2. Swiftee at the ditch'); }
     // Before Start the title curtain is still down, and a screen played behind
     // it would be heard and not seen: so a jump from the title presses Start
     // first (inside this click, so the sound unlocks too), then jumps.
@@ -4910,6 +4950,7 @@
         else restartStory();
         return;
       }
+      if (/^(start|end)[12]$/.test(box.value)) { if (global.RunnerStage) RunnerStage.devJump(box.value); return; }
       // The picker and the Back button change screen the same way: goTo().
       jump(+box.value);
     });

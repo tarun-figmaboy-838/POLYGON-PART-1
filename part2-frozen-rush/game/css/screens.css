@@ -314,18 +314,6 @@
 }
 .tutorial[hidden] { display: none; }
 
-/* SWIFTEE, FLYING IN (js/swiftee-cameo.js): the lesson's bird over the held scene at the broken
-   path. Beside the tutorial's layer and one above it (41), so the blur is under him and he stays
-   sharp; below the overlay panels (45). One canvas, one frame of him at a time. */
-.sw-cameo {
-  position: absolute;
-  z-index: 41;
-  pointer-events: none;
-  transform-origin: 50% 50%;
-  filter: drop-shadow(0 7px 11px rgba(24, 52, 96, 0.24));
-}
-.sw-cameo canvas { display: block; width: 100%; height: 100%; }
-
 /* THE VEIL — a pulled focus, not a spotlight.
 
    backdrop-filter blurs and darkens whatever is behind this element, and the mask

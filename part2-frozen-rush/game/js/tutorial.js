@@ -52,11 +52,9 @@ const clampN = (v, lo, hi) => v < lo ? lo : v > hi ? hi : v;
 
 
 import { fitBubble, BUBBLE } from './bubble.js';
-import { SwifteeCameo } from './swiftee-cameo.js';
 
 /* WHERE SWIFTEE FLIES IN FROM, AND WHERE HE HOVERS (stage px): in from beyond the top-right corner,
    to the open sky just right of Momo's head — clear of the slab and the gaps, the bubble above */
-const SWIFTEE_FROM = { x: 2150, y: 40 }, SWIFTEE_AT = { x: 830, y: 420 };
 
 /* WHICH RECORDED LINE BELONGS TO WHICH STEP (docs/VO-SCRIPT.md, CFG.vo.lines). */
 const VO = {
@@ -68,11 +66,12 @@ const VO = {
    * bubble printing one sentence while the voice speaks another drifts its word highlight for
    * the whole line. Showing the recorded words keeps the nine printed words on the take's nine
    * onsets. (p2-tut-6-cut, the generated "Cut this ice block…", is no longer asked for.) */
-  use: 'tut-6-use', fit: 'tut-7-fit',
-  // Swiftee's own recording (p01b in the lesson), appended to this page's voice track
-  swiftee: 'sw-help'
+  use: 'tut-6-use', fit: 'tut-7-fit'
   // 'cut' is the hand alone and says nothing: the plank's question is spoken by the engine
+  // (a step can name its own line with `vo` — the return's 'use' does: tut-6b-piece)
 };
+/* WHERE MOMO'S HEAD IS, from where he stands: up from his feet and forward from his drawn x. */
+const HEAD = { up: 362, right: 86 };
 
 export class Tutorial {
   /**
@@ -82,18 +81,20 @@ export class Tutorial {
   constructor(root, game, opts = {}) {
     this.root = root;
     this.game = game;
-    /* WHICH PART OF THE SCRIPT (the user's new sequence: the Frozen Rush 2 cover, this tutorial,
-       then Swiftee's lesson, then back here). 'intro' plays Momo, his goal, the jump and the
-       broken path, says why the lesson comes next, and hands over (onHandOff) instead of letting
-       the run go on; 'resume' picks up after the lesson, at the broken path; 'full' is the whole
-       tutorial, as when this page is opened on its own. */
+    /* WHICH PART OF THE SCRIPT (the user's game-lesson kit: this page runs inside Swiftee's
+       lesson, before it and after it — main.js ?lesson=).
+         'intro'  Momo, his goal, the rock, the jump and the broken path; then the world is HELD
+                  STILL at the break and the host is told where Momo and the hole are
+                  (onHandOff(where)): Swiftee flies in over the frame, and the lesson takes over.
+         'end'    after the lesson: nothing is said until the break, where the game holds still
+                  for the host's Swiftee (onHost(id, where), let go by didAction('host')), then
+                  the plank's teaching line, the question and the praise.
+         'full'   the whole tutorial, as when this page is opened on its own. */
     this.mode = opts.mode || 'full';
     this.onHandOff = opts.onHandOff || null;
+    this.onHost = opts.onHost || null;
     this.handedOff = false;
-    // the lesson's bird, for the intro's last line — his art fetched now, so it is in by then
-    this.cameo = this.mode === 'intro' ? new SwifteeCameo(root) : null;
-    if (this.cameo) this.cameo.load();
-    this._entering = false; this._entered = false;
+    this._hosted = false; this._hostT = 0;
     this.el = {
       layer: root.getElementById('tutorial'),
       veil: root.getElementById('tut-veil'),
@@ -192,7 +193,7 @@ export class Tutorial {
      *
      * The oval is small and sits UNDER the box, so the bubble lands just above his crown —
      * the tail tip touches the top of his head and the box never covers his eyes. */
-    const HEAD_UP = 362, HEAD_RIGHT = 86;
+    const HEAD_UP = HEAD.up, HEAD_RIGHT = HEAD.right;
     /* His head's x on its own, for the one line whose BOX is centred on the stage (the jump
        ask, on the owner's call) but whose tail should still lean toward him. */
     const momoHeadX = () => {
@@ -374,26 +375,17 @@ export class Tutorial {
         advance: 0, pause: false
       }
     ];
-    /* THE HAND-OVER (intro): straight after the broken path, in the same held moment — Swiftee
-       FLIES IN (`enter`, before a word is said) and hovers beside Momo, and says why the lesson
-       comes next, in his own recorded voice (the user: use the recording there is, not a
-       generated one). "That" is the broken path the line before has just shown. Then the page
-       goes on to his lesson (handOff). */
-    const reduced = !!(this.root && this.root.defaultView && this.root.defaultView.matchMedia &&
-                       this.root.defaultView.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    const head = SwifteeCameo.headOf(SWIFTEE_AT);
-    const help = {
-      id: 'swiftee',
-      at: () => true,
-      enter: () => (this.cameo ? this.cameo.flyIn(SWIFTEE_FROM, SWIFTEE_AT, 1500, reduced) : null),
-      spot: () => ({ x: head.x, y: head.y, rx: 110, ry: 100, aimX: head.x, world: false }),
-      text: 'But for that, first you need to learn about polygons.',
-      focus: 'mammoth',
-      advance: 0, pause: true
-    };
+    /* THE RETURN (end), after the lesson. The break is the same moment as 'gap' — the ice open,
+       Momo stopped and done trembling — and on it the game holds still with nothing on screen
+       for the lesson's Swiftee, who flies in over the frame and says "Now let's help Momo."
+       (onHost). Then the plank: "Use the right piece to fix the path." — the take's own line
+       with "ice" cut out of it (tut-6b-piece), the kit's wording — and the crossing's question. */
     const at = (id) => all.findIndex((s) => s.id === id);
-    if (this.mode === 'intro') return all.slice(0, at('gap') + 1).concat([help]);
-    if (this.mode === 'resume') return all.slice(at('use'));
+    const gap = all[at('gap')];
+    const host = { id: 'host', at: gap.at, host: true, advance: 'host', pause: true };
+    const usePiece = Object.assign({}, all[at('use')], { text: 'Use the right piece to fix the path.', vo: 'tut-6b-piece' });
+    if (this.mode === 'intro') return all.slice(0, at('gap') + 1);
+    if (this.mode === 'end') return [host, usePiece].concat(all.slice(at('use') + 1));
     return all;
   }
 
@@ -662,7 +654,7 @@ export class Tutorial {
     if (this.game._l2Demo) this.game._l2Demo(false);
     this.step++;
     this.t = 0;
-    this._entering = false; this._entered = false;      // a step's entrance is its own
+    this._hosted = false; this._hostT = 0;              // a host step is told once, its own
     this.spoke = false;                                // the new step has not been read aloud yet
     this.voDur = 0; this.voWords = null; this.voId = null;
     /* AND THE WORDS STOP WITH IT. If a line is cut short — skipped, restarted, the sound
@@ -682,7 +674,52 @@ export class Tutorial {
     this.handedOff = true;
     if (this.game.saySign) this.game.saySign('');
     this.pause();
-    try { this.onHandOff(); } catch (e) { /* the host's navigation: nothing to undo here */ }
+    /* THE SCENE, CLEAN AND SHARP: no veil, no box, no lit subject — the host draws Swiftee over
+       the game itself, and the picture he lands in is the broken path as it is. */
+    this.show(null);
+    if (this.game.setDialogue) this.game.setDialogue(true);
+    let where = null;
+    try { where = this.where(); } catch (e) { where = null; }
+    try { this.onHandOff(where); } catch (e) { /* the host's business: nothing to undo here */ }
+  }
+
+  /* WHERE THE HOST'S SWIFTEE GOES (the kit's `where`): the top of Momo's head and the far edge of
+     the hole, in the 1920 x 1080 stage AFTER the camera's zoom, the zoom itself, and where that
+     stage sits in this page as fractions of the window. The far edge is the last hole's: on a
+     two-hole crossing that is the ground past the second one. */
+  where() {
+    const g = this.game.debug();
+    let feet = 840, x = 430;
+    try {
+      const p = this.game._player && this.game._player();
+      if (p && typeof p.feetY === 'number') feet = p.feetY;
+      if (p && typeof p.drawX === 'number') x = p.drawX;
+    } catch (e) { /* where he stands by default */ }
+    const head = this.toView({ x: x + HEAD.right, y: feet - HEAD.up, world: true }, g);
+    const gaps = (g.gapsThisPhase || []).filter(Boolean);
+    const far = gaps.reduce((a, b) => (!a || b.x1 > a.x1 ? b : a), null);
+    const surface = 840;
+    const lip = this.toView({ x: far ? far.x1 - g.worldX : 1500, y: surface, world: true }, g);
+    const st = this.root.getElementById('stage');
+    const r = st ? st.getBoundingClientRect() : { left: 0, top: 0, width: 1, height: 1 };
+    const win = this.root.defaultView || { innerWidth: 1, innerHeight: 1 };
+    const W = win.innerWidth || 1, H = win.innerHeight || 1;
+    const k = (n) => +n.toFixed(4);
+    return {
+      head: { x: Math.round(head.x), y: Math.round(head.y) },
+      lip: { x: Math.round(lip.x), y: Math.round(lip.y) },
+      zoom: k(g.zoom || 1),
+      stage: { x: k(r.left / W), y: k(r.top / H), w: k(r.width / W), h: k(r.height / H) }
+    };
+  }
+
+  /** Review only (?dev=1): go straight to a later step — the break, from a jump past the run. */
+  skipTo(id) {
+    const i = this.steps.findIndex((s) => s.id === id);
+    if (i < 0 || i <= this.step) return false;
+    this.step = i - 1;
+    this.next();
+    return true;
   }
 
   finish() {
@@ -693,7 +730,6 @@ export class Tutorial {
     if (this.game._l2Demo) this.game._l2Demo(false);
     if (this.done) return;
     this.done = true;
-    if (this.cameo) this.cameo.hide();
     // the tutorial is over: the game must never be left believing a line is still up
     this._presenting = false;
     if (this.game.setDialogue) this.game.setDialogue(false);
@@ -810,28 +846,30 @@ export class Tutorial {
       if (s.advance === 'cut' && (g.attempts || 0) > 0) { this.next(); return; }
       this.resume(); this.show(null); return;
     }
+    /* THE HOST'S STEP (end): the world held still and nothing of this layer on screen while the
+       lesson's Swiftee visits over the frame. Told once; let go by the host's 'said'
+       (didAction('host')) or, if nobody answers, after 16 seconds — a visit can never stall
+       the run. With no host at all there is nothing to wait for. */
+    if (s.host) {
+      if (!this.onHost) { this.next(); return; }
+      this.pause(false);
+      this.show(null);
+      if (this.game.setDialogue) this.game.setDialogue(true);
+      if (!this._hosted) {
+        this._hosted = true; this._hostT = 0;
+        try { this.onHost(s.id, this.where()); } catch (e) { /* the host's own business */ }
+      }
+      this._hostT += dt;
+      if (this._hostT > 16) this.next();
+      return;
+    }
+
     /* A SIGN STEP HAS NO TARGET. Its words are on the plank, so it points at nothing — and the
        missing box used to skip it silently, which left the tutorial stuck on the line before it
        and let the question reach the plank first. */
     const onSignStep = typeof s.sign === 'number';
     const box = onSignStep ? null : s.spot(g);
     if (!onSignStep && !box) { this.resume(); this.show(null); return; }
-
-    /* A STEP WITH AN ENTRANCE (`enter`: Swiftee flying in) holds the moment, frozen and wordless,
-       until the entrance is over — the bubble of the line before is put away, the scene and its
-       focus stay as they were — and only then is its line said. */
-    if (s.enter && !this._entered) {
-      this.pause(false);
-      if (this.el.bubble) this.el.bubble.style.visibility = 'hidden';
-      if (!this._entering) {
-        this._entering = true;
-        let ended = false;
-        const end = () => { if (ended) return; ended = true; this._entered = true; if (this.el.bubble) this.el.bubble.style.visibility = ''; };
-        Promise.resolve().then(() => s.enter()).then(end, end);
-        setTimeout(end, 4000);                    // an entrance that never reports must not hold the line for ever
-      }
-      return;
-    }
 
     this.t += dt;
     /* A NUMBER freezes the game for that many seconds of the step, then lets it run: an ask
@@ -866,10 +904,10 @@ export class Tutorial {
          sentence ever appeared. Caught, the line simply has no voice and is gated on its text
          alone, which is the same path muting already takes. */
       let dur = 0;
-      try { dur = (this.game.say && this.game.say(VO[s.id] || '')) || 0; }
+      try { dur = (this.game.say && this.game.say(s.vo || VO[s.id] || '')) || 0; }
       catch (e) { dur = 0; }
       this.voDur = dur;
-      this.voId = VO[s.id] || null;
+      this.voId = s.vo || VO[s.id] || null;
       this.voWords = this.voId && this.game.voWords ? this.game.voWords(this.voId) : null;
     }
     /* ONE SENTENCE AT A TIME (see beats). `text` from here down is the sentence showing

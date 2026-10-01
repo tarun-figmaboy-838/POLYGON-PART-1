@@ -1473,9 +1473,9 @@ export const CFG = {
       'p2-8-all-concave': [58.385, 2.444, [0.137, 0.461, 0.812, 0.950, 1.694]], // Cut all the concave ones.
       'p2-9-all-convex': [61.479, 2.404, [0.137, 0.461, 0.812, 0.950, 1.632]], // Cut all the convex ones.
       'p2-tut-6-cut': [64.533, 2.844, [0.137, 0.454, 0.716, 1.046, 1.508, 1.666, 2.087, 2.211]], // Cut this ice block to fix the path.
-      /* SWIFTEE, flying in at the broken path (the user's new sequence): his own recording, cut
-         from his take in Part 1 (p01b) and appended last — art-source/audio-source/part2-vo. */
-      'sw-help': [68.028, 3.79, [0.04, 0.24, 0.42, 1.1, 1.48, 1.6, 1.88, 2, 2.32, 2.68]], // But for that, first you need to learn about polygons.
+      // "Use the right piece to fix the path." — tut-6-use with "ice" cut out (the game-lesson kit's
+      // wording, for the return after the lesson); appended last, so no other window moved
+      'tut-6b-piece': [68.027, 2.934, [0.06, 0.54, 1.22, 1.62, 1.83, 2.09, 2.27, 2.43]],
       /* THE ENDING SPEAKS NO MORE. 'win-title' ("You did it!") and 'win-sub' ("Momo crossed
          the Frozen Pass!") lived here and were cut with the banner that showed them: the
          ending is the dance now, the camera pushes in on it, and a voice over the top was
@@ -6152,7 +6152,8 @@ export function createGame(canvas, hooks = {}) {
       // The HUD uses these measured word starts for Part 2's spoken instruction.
       // The audio clock itself is read outside the diffed HUD payload.
       voId: G.signSay
-        ? (G.signSay === 'Use the right ice piece to fix the path.' ? 'tut-6-use' : '')
+        ? (G.signSay === 'Use the right ice piece to fix the path.' ? 'tut-6-use'
+          : G.signSay === 'Use the right piece to fix the path.' ? 'tut-6b-piece' : '')
         : G.l2 && L2_PUZZLE_STATES.includes(G.state) ? p2Cfg().voId
         : G.l1 && ['PHASE_INTRO', 'PHASE_ACTIVE', 'PHASE_WRONG', 'PHASE_SUCCESS'].includes(G.state)
           ? phaseCfg().voId : '',
@@ -12756,6 +12757,24 @@ export function createGame(canvas, hooks = {}) {
       if (audio.ctx && audio.ctx.state === 'running' && audio.ctx.suspend) {
         const p = audio.ctx.suspend(); if (p && p.catch) p.catch(() => {});
       }
+    },
+    /** The music bed down to silence over `ms` — the lesson taking the screen over (main.js 'quiet'). */
+    fadeMusic(ms = 900) { audio._musicTo(0, ms); },
+    /* THIS PAGE'S SOUND, OPENED FROM A TAP ON THE PAGE THAT HOSTS IT. Inside the lesson the return
+       frame is never tapped — the child taps the lesson — and WebKit lets a frame make a sound only
+       after a gesture of its own: measured, a frame made after the tap stayed silent (its context
+       suspended, its <audio> refused). Called synchronously from the lesson's own tap (same origin),
+       this creates and resumes the context and plays one silent sample inside that gesture, which
+       WebKit then counts for this page too. */
+    unlockAudio() {
+      try {
+        audio.start(); audio.resume();
+        if (audio.ctx) {
+          const b = audio.ctx.createBuffer(1, 1, 22050), src = audio.ctx.createBufferSource();
+          src.buffer = b; src.connect(audio.ctx.destination); src.start(0);
+        }
+        return !!(audio.ctx && audio.ctx.state === 'running');
+      } catch (e) { return false; }
     },
     resumeAudio() {
       if (!audio.enabled) return;

@@ -47,7 +47,6 @@ export const ORDER = [
   'bubble.js',
   'hud.js',
   'frontend.js',
-  'swiftee-cameo.js',       // Swiftee flying in at the broken path (tutorial.js imports it)
   'tutorial.js',
   'main.js'
 ];

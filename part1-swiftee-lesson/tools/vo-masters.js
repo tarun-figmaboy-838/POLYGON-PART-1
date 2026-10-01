@@ -25,11 +25,13 @@ module.exports = [
     lines: ['st1-popo', 'st2-popo'] },
   { name: 'swiftee-feedback', source: 'assets/source/vo-masters/swiftee-feedback.mp3', tempo: 1,
     lines: ['fb46', 'fb47', 'fb03', 'fb32'] },
-  // the hand-over and the recap's opener; the take's other three lines are not used (the user)
+  // the recap's opener and the lesson's last line (p39, the game-lesson kit's); the hand-over
+  // reading is not cut whole — its words are joined into Swiftee's lines over Frozen Rush
+  // (tools/vo-joins.js) — and the names line is not used (the user)
   { name: 'swiftee-extra', source: 'assets/source/vo-masters/swiftee-extra.mp3', tempo: 1,
     lines: [{ id: 'p01b~unused', text: 'But for that, first you need to learn about polygons.' }, 'p37o',
             { id: 'unused~names', text: 'Polygons have different names based on their number of sides.' },
-            { id: 'unused~ending', text: 'Now you know everything about polygons. You are ready to help Momo.' }] },
+            'p39'] },
   { name: 'swiftee-lesson', source: 'assets/source/vo-masters/swiftee-lesson.mp3', tempo: 1,
     lines: [
       'p01', 'p02', 'p03', 'p04', 'fb44', 'fb45', 'p05', 'p06',
