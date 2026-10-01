@@ -182,46 +182,17 @@ async function act(spec){
   // react to every input request the director makes
   let pending=null; w.Game.director.on('input',({spec})=>{ pending=spec; });
 
-  /* THE STORY COMES FIRST (src/story/story.js): Momo and Popo, five scenes, each moved on
-     with Next — and only once it has been told — then the lesson's screen 1, once. The
-     script is written out here on purpose: it is the approved text, and the story must
-     say exactly it, by exactly these speakers, in exactly this order. */
-  const SCRIPT=[
-    [1,'narrator','It was a great day, and Momo and Popo were deciding what to do.'],
-    [1,'momo','Popo, let’s go for a picnic!'],
-    [1,'popo','Great idea, Momo!'],
-    [2,'momo','I’ll bring the snacks!'],
-    [2,'popo','I’ll go ahead and find us a nice spot.'],
-    [3,'narrator','Momo wanted to get there quickly, so he took the shortest route— through Frozen Pass.'],
-    [4,'momo','This path looks trickier than last time!'],
-    [5,'narrator','Momo needs your help to reach Popo.']   // (the rest is Swiftee's now: p01b)
-  ];
-  let lessonDuringStory=false, screen1Starts=0;
-  w.Game.director.on('start',()=>{ if(w.Story&&w.Story.active) lessonDuringStory=true; if(w.Game.screen===0) screen1Starts++; });
-  await until(()=>w.Story&&w.Story.active, 5000);
-  const storyRan=!!(w.Story&&w.Story.active);
-  // NO NEXT BUTTON (the user: "remove the next buttons"): each scene goes on by itself once it
-  // has been told. The button must never show, and a tap that comes early (Story.next) does
-  // nothing — the scenes still arrive in order, on their own.
-  const scenesSeen=[]; let lastScene=0, nextShown=false, refused=0, acceptedEarly=0;
-  const ts=Date.now();
-  while(w.Story&&w.Story.active&&Date.now()-ts<60000){
-    const s=w.Story.state;
-    if(s.scene!==lastScene){ scenesSeen.push(s.scene); lastScene=s.scene; }
-    if(d.querySelector('#next.show')) nextShown=true;
-    // a press while a line is still being told does nothing
-    if(s.phase==='dialogue'&&!s.canAdvance){ if(w.Story.next()) acceptedEarly++; else refused++; }
-    await sleep(10);
-  }
-  const told=w.Story?w.Story.state.lines.map(l=>[l.scene,l.who,l.text]):[];
-  t('the story plays before the lesson: all five scenes, in order, each once', storyRan&&JSON.stringify(scenesSeen)==='[1,2,3,4,5]', JSON.stringify(scenesSeen));
-  t('every line of the script, word for word, by its own speaker, in order', JSON.stringify(told)===JSON.stringify(SCRIPT), JSON.stringify(told));
-  t('no Next button in the story: the scenes go on by themselves, and an early press changes nothing',
-    !nextShown&&refused>0&&acceptedEarly===0, JSON.stringify({nextShown,refused,acceptedEarly}));
-  await until(()=>w.Game.screen===0, 5000);
-  t('then the lesson, from screen 1, once, and not while the story was up',
-    !(w.Story&&w.Story.active)&&!lessonDuringStory&&w.Game.screen===0&&screen1Starts===1&&d.getElementById('story').hidden&&!d.getElementById('game').classList.contains('story-on'),
-    JSON.stringify({lessonDuringStory,screen:w.Game.screen,screen1Starts,hidden:d.getElementById('story').hidden}));
+  /* NO STORY BEFORE THE LESSON (the user: "remove the story part and add on draft" — it is parked,
+     whole, in drafts/story): Start goes straight to Swiftee's screen 1, once, and nothing of the
+     story is on the page. (The story's own checks — its five scenes, its script word for word,
+     no Next button — are in this file's history, to come back with it.) */
+  let screen1Starts=0;
+  w.Game.director.on('start',()=>{ if(w.Game.screen===0) screen1Starts++; });
+  await until(()=>w.Game.screen===0, 8000);
+  await sleep(200);
+  t('no story: Start goes straight to the lesson, screen 1, once — no story player, no story layer',
+    !w.Story&&!d.getElementById('story')&&w.Game.screen===0&&screen1Starts===1&&!d.getElementById('game').classList.contains('story-on'),
+    JSON.stringify({story:!!w.Story,layer:!!d.getElementById('story'),screen:w.Game.screen,screen1Starts}));
 
   const N=w.Screens.list.length; const t0=Date.now();
   // THE FINALE, CAUGHT AS IT BEGINS. It goes on to the hand-over screen by itself — in a few

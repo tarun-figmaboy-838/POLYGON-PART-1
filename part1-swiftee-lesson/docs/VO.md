@@ -10,7 +10,7 @@ Every line the game says — the story’s three voices first, then Swiftee’s 
 
 **Breaths:** record every line as ONE clip, read naturally, with a short breath at each `/` in the Breaths column. On screen each sentence is one bubble; the breaths are where the words pause inside it.
 
-## The story (8), before the lesson — in its own voices
+## The story (0), before the lesson — in its own voices
 
 Five painted scenes of Momo and Popo play between Start and Swiftee’s first screen. None of these lines is Swiftee’s; each speaker has a voice of their own:
 
@@ -20,14 +20,6 @@ Five painted scenes of Momo and Popo play between Start and Swiftee’s first sc
 
 | # | Scene | Speaker | File | Line | Recorded |
 |---|-------|---------|------|------|----------|
-| 1 | 1 | narrator | `assets/vo/st1-narrator.mp3` | It was a great day, and Momo and Popo were deciding what to do. | yes |
-| 2 | 1 | momo | `assets/vo/st1-momo.mp3` | Popo, let’s go for a picnic! | yes |
-| 3 | 1 | popo | `assets/vo/st1-popo.mp3` | Great idea, Momo! | yes |
-| 4 | 2 | momo | `assets/vo/st2-momo.mp3` | I’ll bring the snacks! | yes |
-| 5 | 2 | popo | `assets/vo/st2-popo.mp3` | I’ll go ahead and find us a nice spot. | yes |
-| 6 | 3 | narrator | `assets/vo/st3-narrator.mp3` | Momo wanted to get there quickly, so he took the shortest route— through Frozen Pass. | yes |
-| 7 | 4 | momo | `assets/vo/st4-momo.mp3` | This path looks trickier than last time! | yes |
-| 8 | 5 | narrator | `assets/vo/st5-narrator.mp3` | Momo needs your help to reach Popo. | yes |
 
 ## Lesson lines (65), in timeline order
 

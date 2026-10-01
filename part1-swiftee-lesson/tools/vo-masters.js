@@ -15,6 +15,8 @@
  */
 'use strict';
 module.exports = [
+  // (narrator and popo voice the story, parked in drafts/story with its clips: cut again from here
+  // only when it comes back — split-vo writes into assets/vo)
   { name: 'narrator', source: 'assets/source/vo-masters/narrator.mp3', tempo: 1,
     lines: ['st1-narrator', 'st3-narrator', 'st5-narrator',
             // (read, and no longer used: Swiftee says the hand-over now — p01b)

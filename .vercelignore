@@ -13,6 +13,7 @@ serve.ps1
 START GAME.bat
 
 # Part 1 — the site is its index.html, src/ and assets/
+/part1-swiftee-lesson/drafts
 /part1-swiftee-lesson/tests
 /part1-swiftee-lesson/tools
 /part1-swiftee-lesson/docs
