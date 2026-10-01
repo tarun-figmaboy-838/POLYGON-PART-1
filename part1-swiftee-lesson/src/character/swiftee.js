@@ -944,29 +944,19 @@
     airborne = true;
     if (shadowEl) shadowEl.style.opacity = '0';
     clip('flapping', Infinity);
+    /* ONE DRAWING OF HIM AT A TIME (the user: "why swiftee flying animation have 2 layer of
+       swiftee?"). Taking off and landing, the standing bird and the flying one were cross-faded —
+       170 ms out, 230 ms in — and for those moments both were on screen, half see-through, one
+       over the other. Now each is a clean change: to the flying drawing as he lifts (startFlightArt
+       hides the cell), and back to the standing one a sixth of a second before his feet arrive —
+       where the fade used to be half way — so the timing of the landing is as it was. */
     startFlightArt(o.look || { x: stops[0].x, y: stops[0].y });
-    /* TAKING OFF, THE DRAWING CHANGES WITH THE MOVE: from the standing bird to the flying one
-       over a sixth of a second, as he lifts — not a cut between two pictures of him. */
-    if (o.fromRest && cellEl && flightEl && flightArt) {
-      cellEl.style.visibility = 'visible'; cellEl.style.opacity = '1'; flightEl.style.opacity = '0';
-      cellEl.style.transition = 'opacity 170ms ease'; flightEl.style.transition = 'opacity 170ms ease';
-      (global.requestAnimationFrame || setTimeout)(function () {
-        if (!flightArt || stale(g)) return;
-        cellEl.style.opacity = '0'; flightEl.style.opacity = '1';
-      }, 16);
-    }
     setTimeout(function () {
       if (stale(g) || !flightArt || !cellEl || !flightEl) return;
-      cellEl.style.visibility = 'visible';
-      cellEl.style.opacity = '0';
-      cellEl.style.transition = 'opacity 230ms ease';
-      flightEl.style.transition = 'opacity 230ms ease';
-      (global.requestAnimationFrame || setTimeout)(function () {
-        if (!flightArt || stale(g)) return;
-        cellEl.style.opacity = '1';
-        flightEl.style.opacity = '0';
-      }, 16);
-    }, Math.max(0, dur - 270));
+      cellEl.style.transition = ''; flightEl.style.transition = '';
+      cellEl.style.visibility = 'visible'; cellEl.style.opacity = '1';
+      flightEl.style.opacity = '0';
+    }, Math.max(0, dur - 160));
     // the shadow comes back under him as his feet arrive, not after
     setTimeout(function () {
       if (!shadowEl || stale(g)) return;
@@ -1191,8 +1181,13 @@
     // cell's own flapping clip carries the flight, which is always there (pinned, preloaded).
     if (!flightEl || !cellEl || reduced || !flightReady) return;
     flightArt = { target: target, start: nowMs(), frame: -1 };
-    cellEl.style.visibility = 'hidden';
-    cellEl.style.opacity = '1';
+    /* HIDDEN BY ITS OPACITY, NOT ITS VISIBILITY (the user, screen 23: "why u add extra swiftee
+       sticker on flying animation?"). The cell's canvas carries visibility: visible of its own
+       (set on its first frame, paint()), and a child that says visible is shown inside a parent
+       that says hidden — so the standing bird's flapping clip flew under the flight art the whole
+       way, a second Swiftee showing at his edges. Opacity cannot be undone by a child. */
+    cellEl.style.transition = '';
+    cellEl.style.opacity = '0';
     flightEl.style.display = 'block';
     flightEl.style.opacity = '1';
   }
