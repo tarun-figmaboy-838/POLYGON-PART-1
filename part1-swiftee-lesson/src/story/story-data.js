@@ -107,9 +107,11 @@
             key: ['snacks!'],
             text: 'I’ll bring the snacks!' },
           { who: 'popo', vo: 'st2-popo', box: { cx: 1180, bottom: 372 }, tip: [1120, 404],
-            start: [{ move: 'popo', as: 'twostep' }],
-            // and Momo nods along with the plan
-            at: [{ word: 'spot.', move: 'momo', as: 'nod', after: 260 }],
+            // ON HIS WORDS (the recorded Popo, the user: "do not let Popo walk away before the relevant
+            // spoken phrase"): the little two-step that sets him off comes on "ahead", not before
+            // it; on "spot." he stands proud of the plan, and Momo nods along with it
+            at: [{ word: 'ahead', move: 'popo', as: 'twostep' },
+                 { word: 'spot.', move: 'popo', as: 'proud', after: 120 }, { word: 'spot.', move: 'momo', as: 'nod', after: 260 }],
             key: ['nice', 'spot.'],
             text: 'I’ll go ahead and find us a nice spot.' }
         ]

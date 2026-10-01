@@ -67,8 +67,10 @@ const speechEnd = (file, total) => {
   const ends = [...log.matchAll(/silence_end: ([\d.]+)/g)].map((m) => parseFloat(m[1]));
   if (!starts.length) return null;
   const last = starts[starts.length - 1];
-  // the last silence reaches the end of the clip (it has no end, or ends there)
-  const trailing = ends.length < starts.length || Math.abs(ends[ends.length - 1] - total) < 0.05;
+  // the last silence reaches the end of the clip (it has no end, or ends there — within the
+  // mp3's own encoder padding, which ffprobe's duration counts and the decoded audio does not:
+  // up to 0.05 s and a little over, so a clip whose tail ended 0.051 s "early" had no spoken end)
+  const trailing = ends.length < starts.length || Math.abs(ends[ends.length - 1] - total) < 0.08;
   return trailing && last > 0.1 ? Math.round(last * 1000) : null;
 };
 const wordMs = (() => {

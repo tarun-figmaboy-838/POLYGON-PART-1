@@ -925,7 +925,9 @@
         { sfx: 'pop' },
         { instruction: 'Drag any vertex to make this polygon concave.', vo: 'p26i' },
         // (the suggested corner — the top one — is the one dot that breathes: stage.js drag-vertex)
-        { input: { type: 'drag-vertex', vertex: 'any', until: 'concave', live: 'badge', attempts: true } },
+        // (praise: false — the dent is cheered by the screen's own "Great job!" below; a stock
+        // "Amazing!" in front of it was two cheers for one answer, and the second cut the first off)
+        { input: { type: 'drag-vertex', vertex: 'any', until: 'concave', live: 'badge', attempts: true, praise: false } },
         { branch: true,
           on: { correct: [] },
           otherwise: [
@@ -942,7 +944,7 @@
             // (the diagonals stay, and the one that leaves lights as the corner goes in: live 'both')
             // (quietMiss: this is the last try — a miss here is answered by the demonstration below,
             // not by "Try again!" for a try that is not coming)
-            { input: { type: 'drag-vertex', vertex: 'any', until: 'concave', live: 'both', attempts: true, retry: true, quietMiss: true } },
+            { input: { type: 'drag-vertex', vertex: 'any', until: 'concave', live: 'both', attempts: true, retry: true, quietMiss: true, praise: false } },
             { branch: true,
               on: { correct: [] },
               /* THE SECOND MISS IS TAUGHT, NOT GIVEN AWAY (the final pass): the input is locked

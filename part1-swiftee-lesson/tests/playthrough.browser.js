@@ -125,7 +125,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'], attributeOldValue: true });
     });
     const P = HTMLMediaElement.prototype, play = P.play, pause = P.pause;
-    const idOf = (el) => (el.currentSrc || el.src || '').split('/').pop().split('?')[0].replace(/\.(ogg|mp3)$/, '');
+    // (a clip played from its copy in memory has a blob: address with no name in it — it is the
+    // line VO has just put on air, VO.id, which is set before the element plays; without the name
+    // its spoken length is unknown and a stop in the silent tail read as a cut)
+    const idOf = (el) => { const u = el.currentSrc || el.src || ''; if (/^blob:/.test(u) && window.VO && window.VO.id) return window.VO.id;
+                           return u.split('/').pop().split('?')[0].replace(/\.(ogg|mp3)$/, ''); };
     P.play = function () {
       const rec = { id: idOf(this), at: Math.round(performance.now()), end: null, screen: window.Game && window.Game.screen };
       V.clips.push(rec); this.__rec = rec;
