@@ -24,9 +24,10 @@
  * AS THE ENGLISH IS. Part 1's clips are cut like the English ones: 0.1 s before the first word
  * (the recordings open on 0.3 s of silence) and the natural tail kept; mono mp3 at 64 kbps and
  * an Opus twin. Part 2's lines are one take with a window each, padded 60 ms before the first
- * word and 120 ms after the last, 0.65 s apart, like the English take. One gain for every
- * recording brings their median loudness to the English clips' (-21 LUFS), so the voice sits
- * over the music as the English one does, and no recording is louder than another than it was.
+ * word and 120 ms after the last, 0.65 s apart, like the English take. One gain per take
+ * (tools/vo-hindi.js `take`: the recordings made together) brings that take's median loudness to
+ * the English clips' (-21 LUFS), so the voice sits over the music as the English one does, every
+ * take as loud as the others, and no line in a take louder than another than it was.
  */
 'use strict';
 const fs = require('node:fs');
@@ -132,11 +133,15 @@ function pcm(file, from, to, gainDb) {
 const pcmIn = ['-f', 's16le', '-ar', String(RATE), '-ac', '1', '-i', '-', '-fflags', '+bitexact', '-flags:a', '+bitexact'];
 const r2 = (x) => Math.round(x * 100) / 100, r3 = (x) => Math.round(x * 1000) / 1000;
 
-// THE ONE GAIN: the recordings' median loudness to the English clips'
-const levels = recordings.map((r) => lufs(abs(r.file))).filter((x) => x != null).sort((a, b) => a - b);
-const median = levels[Math.floor(levels.length / 2)];
-const GAIN = Math.max(-12, Math.min(6, TARGET_LUFS - median));
-console.log('loudness: median ' + median.toFixed(1) + ' LUFS of ' + levels.length + ' recordings -> ' + (GAIN >= 0 ? '+' : '') + GAIN.toFixed(1) + ' dB to ' + TARGET_LUFS);
+// ONE GAIN PER TAKE: each take's median loudness to the English clips'
+const GAIN = {};
+[...new Set(recordings.map((r) => r.take || 1))].sort().forEach((tk) => {
+  const levels = recordings.filter((r) => (r.take || 1) === tk).map((r) => lufs(abs(r.file))).filter((x) => x != null).sort((a, b) => a - b);
+  const median = levels[Math.floor(levels.length / 2)];
+  GAIN[tk] = Math.max(-12, Math.min(6, TARGET_LUFS - median));
+  console.log('loudness, take ' + tk + ': median ' + median.toFixed(1) + ' LUFS of ' + levels.length + ' recordings -> ' + (GAIN[tk] >= 0 ? '+' : '') + GAIN[tk].toFixed(1) + ' dB to ' + TARGET_LUFS);
+});
+const takeOf = (id) => (recordings.find((r) => r.id === id) || {}).take || 1;
 
 /* ---- Part 1: one clip per line ---- */
 fs.mkdirSync(OUT1, { recursive: true });
@@ -148,9 +153,13 @@ for (const f of fs.readdirSync(OUT1)) {                 // a clip whose line is 
 const timings1 = {};
 recordings.filter((r) => r.plays === 1).forEach((rc) => {
   const file = abs(rc.file), r = byId[rc.id], sp = speech(file);
-  const first = Math.min(sp.start, onsets(r)[0]);
+  /* 0.1 s before the first word — or before its first sound, a soft attack just ahead of it —
+     but not a breath further ahead: the second take draws one before some lines (p37a: 0.3 s of
+     it at -53 dB), and a clip that opened on it put its first word 0.4 s after the bubble */
+  const on0 = onsets(r)[0];
+  const first = Math.max(Math.min(sp.start, on0), on0 - 0.15);
   const cut = Math.max(0, first - 0.10);
-  const raw = pcm(file, cut, null, GAIN);
+  const raw = pcm(file, cut, null, GAIN[rc.take || 1]);
   const mp3 = path.join(OUT1, rc.id + '.mp3'), ogg = path.join(OUT1, rc.id + '.ogg');
   run('ffmpeg', ['-v', 'error', '-y', ...pcmIn, '-c:a', 'libmp3lame', '-b:a', '64k', '-map_metadata', '-1', mp3], raw);
   // the Opus twin, at the first rate that is smaller than the mp3 (tools/make-opus.js)
@@ -168,21 +177,21 @@ execFileSync(process.execPath, [path.join(__dirname, 'build-vo-index.js'), '--la
 const lines2 = recordings.filter((r) => r.plays === 2).map((rc) => {
   const file = abs(rc.file), r = byId[rc.id], sp = speech(file), on = onsets(r);
   const from = Math.max(0, Math.min(sp.start, on[0]) - 0.06), to = Math.min(sp.dur, sp.end + 0.12);
-  return { id: rc.id, text: r.text, file, from, to, words: on.map((t) => t - from) };
+  return { id: rc.id, text: r.text, file, from, to, take: rc.take || 1, words: on.map((t) => t - from) };
 }).concat(derived.filter((d) => d.plays === 2).map((d) => {
   const r = byId[d.from], file = abs(r.file), sp = speech(file), on = onsets(r);
   const from = Math.max(0, Math.min(sp.start, on[0]) - 0.06);
   // up to the pause after its words: the first pause that starts after the last of them has begun
   const after = sp.pauses.find((p) => p[0] > on[d.words - 1]);
   const to = after ? Math.min(after[0] + 0.12, after[1]) : sp.end + 0.12;
-  return { id: d.id, text: r.words.slice(0, d.words).map((w) => w.w).join(' '), file, from, to, words: on.slice(0, d.words).map((t) => t - from) };
+  return { id: d.id, text: r.words.slice(0, d.words).map((w) => w.w).join(' '), file, from, to, take: takeOf(d.from), words: on.slice(0, d.words).map((t) => t - from) };
 }));
 const GAP = Buffer.alloc(Math.round(RATE * 0.65) * 2);
 const parts = [], windows = [];
 let samples = 0;
 lines2.forEach((ln, i) => {
   if (i) { parts.push(GAP); samples += GAP.length / 2; }
-  const raw = pcm(ln.file, ln.from, ln.to, GAIN);
+  const raw = pcm(ln.file, ln.from, ln.to, GAIN[ln.take]);
   const dur = raw.length / 2 / RATE;
   let prev = -1;
   const words = ln.words.map((t) => { const v = Math.max(prev, r2(t), 0); prev = v; return v; });
@@ -232,9 +241,10 @@ fs.writeFileSync(DOC,
     cell(textOf(r.id)) + ' | ' + cell(plain(EN[r.id])) + ' |').join('\n') + '\n' +
   derived.map((d) => '| — | — | `' + d.id + '` | Part ' + d.plays + ' | ' + cell(lines2.find((l) => l.id === d.id).text) + ' (the opening of `' + d.from + '`) | (the ending\'s cheer) |').join('\n') + '\n\n' +
   '## Not recorded yet (' + missing.length + ')\n\n' +
+  (!missing.length ? 'None: every line the game says has its Hindi recording.\n' :
   'In Hindi these lines are shown and not heard (the English voice is never played over Hindi words). To record one, save it as ' +
   '`assets/vo-part-1-hindi/<File>` — the numbers carry on from the recordings already there, in the same order — and add its ' +
   'id to `tools/vo-hindi.js`.\n\n' +
   '| File | Line | Hindi (to record) | English |\n|---|---|---|---|\n' +
-  missing.map((id, i) => '| ' + (next1 + i) + '.wav | `' + id + '` | ' + cell(textOf(id)) + ' | ' + cell(plain(EN[id])) + ' |').join('\n') + '\n');
+  missing.map((id, i) => '| ' + (next1 + i) + '.wav | `' + id + '` | ' + cell(textOf(id)) + ' | ' + cell(plain(EN[id])) + ' |').join('\n') + '\n'));
 console.log('docs/VO-HINDI.md  ' + recordings.length + ' recorded, ' + missing.length + ' not yet');

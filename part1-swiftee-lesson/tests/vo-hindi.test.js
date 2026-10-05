@@ -59,6 +59,10 @@ idx.clips.forEach((id) => {
   t(id + ': the first word is said at once (no long silence before it)', on[0] <= 400, on[0]);
   if (idx.spoken[id]) t(id + ': the last word starts before the speech ends', on[on.length - 1] < idx.spoken[id], [on[on.length - 1], idx.spoken[id]]);
 });
+// EVERY LINE IS VOICED: each line the lesson has an English clip and a Hindi text for has its Hindi
+// clip too (a new line needs its recording — docs/VO-HINDI.md lists any that have none)
+const unvoiced = en.clips.filter((id) => typeof DATA.en[id] === 'string' && typeof DATA.hi[id] === 'string' && idx.clips.indexOf(id) < 0);
+t('every line the lesson says has its Hindi clip (docs/VO-HINDI.md)', unvoiced.length === 0, unvoiced);
 // Swiftee's lines over Frozen Rush are said by the lesson's page (runner-stage.js), so they are Part 1's
 ['sw1', 'sw2', 'sw3'].forEach((id) => t(id + ' (over the game) is a Part 1 clip', idx.clips.indexOf(id) >= 0));
 

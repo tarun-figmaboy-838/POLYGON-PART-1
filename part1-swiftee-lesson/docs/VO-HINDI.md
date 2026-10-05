@@ -6,7 +6,7 @@ With `?lan=hi` both halves speak Hindi: the lesson plays `assets/vo/hi/<id>.ogg`
 
 **Recordings:** `assets/vo-part-1-hindi/<n>.wav` and `../part2-frozen-rush/game/assets/vo-part-2-hindi/<n>.wav`, one line each, numbered in the order the lines stand in `polygon-locales.json`. To add one: put the file in the folder, add its id to `tools/vo-hindi.js`, then `PYTHON=<python with torch> node tools/build-vo-hindi.js --align` and, in `part2-frozen-rush`, `node tools/build-bundle.mjs`.
 
-## Recorded (75)
+## Recorded (104)
 
 | Folder | # | Line | Played by | Hindi (on screen and spoken) | English |
 |---|---|---|---|---|---|
@@ -60,6 +60,35 @@ With `?lan=hi` both halves speak Hindi: the lesson plays `assets/vo/hi/<id>.ogg`
 | Part 1 | 48 | `fb56` | Part 1 | इस पंचभुज की सभी भुजाएँ और सभी कोण बराबर हैं। | All the sides and angles are equal in this pentagon. |
 | Part 1 | 49 | `fb57` | Part 1 | लेकिन इस पंचभुज की भुजाएँ और कोण असमान हैं। | But this pentagon has unequal sides and unequal angles. |
 | Part 1 | 50 | `fb58` | Part 1 | सभी भुजाएँ और कोण बराबर हों, तो वह नियमित बहुभुज है। भुजाएँ और कोण असमान हों, तो वह अनियमित बहुभुज है। | All sides and angles equal means a regular polygon. Sides and angles unequal means an irregular polygon. |
+| Part 1 | 51 | `p33` | Part 1 | यह बहुभुज किस ओर जाएगा? | Where does this polygon belong? |
+| Part 1 | 52 | `fb48` | Part 1 | यह नियमित है। हर भुजा बराबर है, और हर कोण भी बराबर है। | This one is regular. Every side is equal, and every angle is equal too. |
+| Part 1 | 53 | `fb49` | Part 1 | यह अनियमित है। इसकी सभी भुजाएँ एक जितनी लंबी नहीं हैं। | This one is irregular. Its sides are not all the same length. |
+| Part 1 | 54 | `fb50` | Part 1 | यह अनियमित है। इसकी भुजाएँ बराबर हैं, लेकिन सभी कोण बराबर नहीं हैं। | This one is irregular. Its sides match, but its angles are not all equal. |
+| Part 1 | 55 | `fb51` | Part 1 | यह अनियमित है। इसकी भुजाएँ बराबर नहीं हैं, और कोण भी बराबर नहीं हैं। | This one is irregular. Its sides are not equal, and its angles are not equal either. |
+| Part 1 | 56 | `p37o` | Part 1 | चलिए, याद करते हैं कि आज हमने क्या सीखा। | Let’s recall what we learned today. |
+| Part 1 | 57 | `p37a` | Part 1 | शीर्ष वह कोना है जहाँ दो भुजाएँ मिलती हैं। | A vertex is a corner where two sides meet. |
+| Part 1 | 58 | `p37b` | Part 1 | भुजा दो शीर्षों को जोड़ने वाली एक सीधी रेखा है। | A side is a straight line joining two vertices. |
+| Part 1 | 59 | `p37c` | Part 1 | जहाँ दो भुजाएँ मिलती हैं, वहाँ कोण बनता है। | An angle is formed where two sides meet. |
+| Part 1 | 60 | `p37d` | Part 1 | विकर्ण दो अनासन्न शीर्षों को जोड़ता है। | A diagonal joins two non-adjacent vertices. |
+| Part 1 | 61 | `p37e` | Part 1 | उत्तल बहुभुज में सभी विकर्ण अंदर रहते हैं। | In a convex polygon, all diagonals stay inside. |
+| Part 1 | 62 | `p37f` | Part 1 | अवतल बहुभुज में कम से कम एक विकर्ण बाहर जाता है। | In a concave polygon, atleast one diagonal goes outside. |
+| Part 1 | 63 | `p37g` | Part 1 | नियमित बहुभुज की सभी भुजाएँ और सभी कोण बराबर होते हैं। | A regular polygon has all sides and all angles equal. |
+| Part 1 | 64 | `p37h` | Part 1 | अगर सभी भुजाएँ या कोण बराबर नहीं हैं, तो बहुभुज अनियमित है। | If the sides or angles are not all equal, the polygon is irregular. |
+| Part 1 | 65 | `p37i` | Part 1 | अद्भुत! आपने बहुभुज की ये सारी बातें खोज लीं! | Amazing! You explored all these polygon ideas! |
+| Part 1 | 66 | `p39` | Part 1 | अब आप बहुभुजों के बारे में सब कुछ जानते हैं। आप मोमो की मदद के लिए तैयार हैं। | Now you know everything about polygons. You are ready to help Momo. |
+| Part 1 | 67 | `fb46` | Part 1 | ऐसे ही आगे बढ़ते रहें! | Keep going! |
+| Part 1 | 68 | `fb47` | Part 1 | अद्भुत! | Amazing! |
+| Part 1 | 69 | `fb44` | Part 1 | पूरी तरह से सही नहीं। वृत्त घुमावदार होता है। बहुभुज की सभी भुजाएँ सीधी होती हैं। | Not quite. A circle is curved. A polygon has only straight sides. |
+| Part 1 | 70 | `fb45` | Part 1 | पूरी तरह से सही नहीं। यह आकृति खुली है। बहुभुज बंद होना चाहिए। | Not quite. This shape is open. A polygon must be closed. |
+| Part 1 | 71 | `fb41` | Part 1 | फिर से प्रयास करें! अब भुजाओं और कोणों की तुलना करें। | Try again! Compare the sides and angles now. |
+| Part 1 | 72 | `p38b` | Part 1 | आप एक बहुभुज खोजी हैं! | You are a polygon adventurer! |
+| Part 1 | 73 | `fb15` | Part 1 | इसे किसी कोने पर छोड़ें! | Drop it on a corner! |
+| Part 1 | 74 | `fb11` | Part 1 | इसे और अंदर खींचें! | Pull it in more! |
+| Part 1 | 75 | `fb40` | Part 1 | फिर से प्रयास करें! कोने को थोड़ा और खींचें। | Try again! Stretch the corner a little further. |
+| Part 1 | 76 | `fb35` | Part 1 | फिर से प्रयास करें! हर भुजा और हर कोण बराबर है। | Try again! Every side and every angle is equal. |
+| Part 1 | 77 | `fb36` | Part 1 | फिर से प्रयास करें! सभी भुजाएँ बराबर नहीं हैं। | Try again! The sides are not all equal. |
+| Part 1 | 78 | `fb37` | Part 1 | फिर से प्रयास करें! सभी कोण बराबर नहीं हैं। | Try again! The angles are not all equal. |
+| Part 1 | 79 | `fb38` | Part 1 | फिर से प्रयास करें! सभी भुजाएँ और कोण बराबर नहीं हैं। | Try again! The sides and the angles are not all equal. |
 | Part 2 | 1 | `tut-1-meet` | Part 2 | यह मोमो है। उसे अपने दोस्त को ढूँढना है। | This is Momo. He needs to find his friend. |
 | Part 2 | 2 | `tut-2-goal` | Part 2 | मोमो को बर्फ़ीला दर्रा पार करने में मदद करें! | Help Momo cross the Frozen Pass! |
 | Part 2 | 3 | `tut-3-watch` | Part 2 | सावधान! | Watch out! |
@@ -87,38 +116,6 @@ With `?lan=hi` both halves speak Hindi: the lesson plays `assets/vo/hi/<id>.ogg`
 | Part 2 | 25 | `sw3` | Part 1 | अब चलिए, मोमो की मदद करते हैं। | Now let’s help Momo. |
 | — | — | `win-yay` | Part 2 | वाह! (the opening of `p12`) | (the ending's cheer) |
 
-## Not recorded yet (29)
+## Not recorded yet (0)
 
-In Hindi these lines are shown and not heard (the English voice is never played over Hindi words). To record one, save it as `assets/vo-part-1-hindi/<File>` — the numbers carry on from the recordings already there, in the same order — and add its id to `tools/vo-hindi.js`.
-
-| File | Line | Hindi (to record) | English |
-|---|---|---|---|
-| 51.wav | `p33` | यह बहुभुज किस ओर जाएगा? | Where does this polygon belong? |
-| 52.wav | `fb48` | यह नियमित है। हर भुजा बराबर है, और हर कोण भी बराबर है। | This one is regular. Every side is equal, and every angle is equal too. |
-| 53.wav | `fb49` | यह अनियमित है। इसकी सभी भुजाएँ एक जितनी लंबी नहीं हैं। | This one is irregular. Its sides are not all the same length. |
-| 54.wav | `fb50` | यह अनियमित है। इसकी भुजाएँ बराबर हैं, लेकिन सभी कोण बराबर नहीं हैं। | This one is irregular. Its sides match, but its angles are not all equal. |
-| 55.wav | `fb51` | यह अनियमित है। इसकी भुजाएँ बराबर नहीं हैं, और कोण भी बराबर नहीं हैं। | This one is irregular. Its sides are not equal, and its angles are not equal either. |
-| 56.wav | `p37o` | चलिए, याद करते हैं कि आज हमने क्या सीखा। | Let’s recall what we learned today. |
-| 57.wav | `p37a` | शीर्ष वह कोना है जहाँ दो भुजाएँ मिलती हैं। | A vertex is a corner where two sides meet. |
-| 58.wav | `p37b` | भुजा दो शीर्षों को जोड़ने वाली एक सीधी रेखा है। | A side is a straight line joining two vertices. |
-| 59.wav | `p37c` | जहाँ दो भुजाएँ मिलती हैं, वहाँ कोण बनता है। | An angle is formed where two sides meet. |
-| 60.wav | `p37d` | विकर्ण दो अनासन्न शीर्षों को जोड़ता है। | A diagonal joins two non-adjacent vertices. |
-| 61.wav | `p37e` | उत्तल बहुभुज में सभी विकर्ण अंदर रहते हैं। | In a convex polygon, all diagonals stay inside. |
-| 62.wav | `p37f` | अवतल बहुभुज में कम से कम एक विकर्ण बाहर जाता है। | In a concave polygon, atleast one diagonal goes outside. |
-| 63.wav | `p37g` | नियमित बहुभुज की सभी भुजाएँ और सभी कोण बराबर होते हैं। | A regular polygon has all sides and all angles equal. |
-| 64.wav | `p37h` | अगर सभी भुजाएँ या कोण बराबर नहीं हैं, तो बहुभुज अनियमित है। | If the sides or angles are not all equal, the polygon is irregular. |
-| 65.wav | `p37i` | अद्भुत! आपने बहुभुज की ये सारी बातें खोज लीं! | Amazing! You explored all these polygon ideas! |
-| 66.wav | `p39` | अब आप बहुभुजों के बारे में सब कुछ जानते हैं। आप मोमो की मदद के लिए तैयार हैं। | Now you know everything about polygons. You are ready to help Momo. |
-| 67.wav | `fb46` | ऐसे ही आगे बढ़ते रहें! | Keep going! |
-| 68.wav | `fb47` | अद्भुत! | Amazing! |
-| 69.wav | `fb44` | पूरी तरह से सही नहीं। वृत्त घुमावदार होता है। बहुभुज की सभी भुजाएँ सीधी होती हैं। | Not quite. A circle is curved. A polygon has only straight sides. |
-| 70.wav | `fb45` | पूरी तरह से सही नहीं। यह आकृति खुली है। बहुभुज बंद होना चाहिए। | Not quite. This shape is open. A polygon must be closed. |
-| 71.wav | `fb41` | फिर से प्रयास करें! अब भुजाओं और कोणों की तुलना करें। | Try again! Compare the sides and angles now. |
-| 72.wav | `p38b` | आप एक बहुभुज खोजी हैं! | You are a polygon adventurer! |
-| 73.wav | `fb15` | इसे किसी कोने पर छोड़ें! | Drop it on a corner! |
-| 74.wav | `fb11` | इसे और अंदर खींचें! | Pull it in more! |
-| 75.wav | `fb40` | फिर से प्रयास करें! कोने को थोड़ा और खींचें। | Try again! Stretch the corner a little further. |
-| 76.wav | `fb35` | फिर से प्रयास करें! हर भुजा और हर कोण बराबर है। | Try again! Every side and every angle is equal. |
-| 77.wav | `fb36` | फिर से प्रयास करें! सभी भुजाएँ बराबर नहीं हैं। | Try again! The sides are not all equal. |
-| 78.wav | `fb37` | फिर से प्रयास करें! सभी कोण बराबर नहीं हैं। | Try again! The angles are not all equal. |
-| 79.wav | `fb38` | फिर से प्रयास करें! सभी भुजाएँ और कोण बराबर नहीं हैं। | Try again! The sides and the angles are not all equal. |
+None: every line the game says has its Hindi recording.
