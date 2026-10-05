@@ -2,276 +2,414 @@
     {
         "id": "p2-1-diagonal",
         "text": "Cut along a diagonal.",
-        "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-1-diagonal.wav",
-        "duration": 2.144,
+        "file": "p2-1-diagonal.wav",
+        "duration": 1.95,
+        "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
             {
                 "word": "Cut",
-                "at": 0.137
+                "at": 0.12
             },
             {
                 "word": "along",
-                "at": 0.433
+                "at": 0.38
             },
             {
                 "word": "a",
-                "at": 0.888
+                "at": 0.74
             },
             {
-                "word": "diagonal",
-                "at": 0.991
+                "word": "diagonal.",
+                "at": 0.82
             }
         ]
     },
     {
         "id": "p2-2-diagonals",
         "text": "Draw all the diagonals.",
-        "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-2-diagonals.wav",
-        "duration": 2.234,
+        "file": "p2-2-diagonals.wav",
+        "duration": 2.55,
+        "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
             {
                 "word": "Draw",
-                "at": 0.137
+                "at": 0.2
             },
             {
                 "word": "all",
-                "at": 0.454
+                "at": 0.88
             },
             {
                 "word": "the",
-                "at": 0.798
+                "at": 1.16
             },
             {
-                "word": "diagonals",
-                "at": 0.943
+                "word": "diagonals.",
+                "at": 1.28
             }
         ]
     },
     {
         "id": "p2-3-samevertex",
         "text": "Draw two diagonals from the same vertex.",
-        "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-3-samevertex.wav",
-        "duration": 3.228,
+        "file": "p2-3-samevertex.wav",
+        "duration": 3.4,
+        "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
             {
                 "word": "Draw",
-                "at": 0.21
+                "at": 0.18
             },
             {
                 "word": "two",
-                "at": 0.51
+                "at": 0.54
             },
             {
                 "word": "diagonals",
-                "at": 0.75
+                "at": 0.8
             },
             {
                 "word": "from",
-                "at": 1.47
+                "at": 1.58
             },
             {
                 "word": "the",
-                "at": 1.69
+                "at": 1.74
             },
             {
                 "word": "same",
-                "at": 1.83
+                "at": 1.88
             },
             {
-                "word": "vertex",
-                "at": 2.17
+                "word": "vertex.",
+                "at": 2.24
             }
         ]
     },
     {
         "id": "p2-4-concave",
         "text": "Cut the concave polygon.",
-        "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-4-concave.wav",
-        "duration": 2.364,
+        "file": "p2-4-concave.wav",
+        "duration": 2.53,
+        "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
             {
                 "word": "Cut",
-                "at": 0.137
+                "at": 0.18
             },
             {
                 "word": "the",
-                "at": 0.454
+                "at": 0.54
             },
             {
                 "word": "concave",
-                "at": 0.571
+                "at": 0.68
             },
             {
-                "word": "polygon",
-                "at": 1.301
+                "word": "polygon.",
+                "at": 1.36
             }
         ]
     },
     {
         "id": "p2-5-convex",
         "text": "Cut the convex polygon.",
-        "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-5-convex.wav",
-        "duration": 2.334,
+        "file": "p2-5-convex.wav",
+        "duration": 2.62,
+        "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
             {
                 "word": "Cut",
-                "at": 0.137
+                "at": 0.2
             },
             {
                 "word": "the",
-                "at": 0.454
+                "at": 0.6
             },
             {
                 "word": "convex",
-                "at": 0.571
+                "at": 0.76
             },
             {
-                "word": "polygon",
-                "at": 1.26
+                "word": "polygon.",
+                "at": 1.48
             }
         ]
     },
     {
         "id": "p2-6-concave-pentagon",
         "text": "Cut the concave pentagon.",
-        "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-6-concave-pentagon.wav",
-        "duration": 2.384,
+        "file": "p2-6-concave-pentagon.wav",
+        "duration": 2.54,
+        "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
             {
                 "word": "Cut",
-                "at": 0.137
+                "at": 0.18
             },
             {
                 "word": "the",
-                "at": 0.454
+                "at": 0.52
             },
             {
                 "word": "concave",
-                "at": 0.571
+                "at": 0.68
             },
             {
-                "word": "pentagon",
-                "at": 1.301
+                "word": "pentagon.",
+                "at": 1.38
             }
         ]
     },
     {
         "id": "p2-7-convex-hexagon",
         "text": "Cut the convex hexagon.",
-        "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-7-convex-hexagon.wav",
-        "duration": 2.369,
+        "file": "p2-7-convex-hexagon.wav",
+        "duration": 2.6,
+        "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
             {
                 "word": "Cut",
-                "at": 0.137
+                "at": 0.18
             },
             {
                 "word": "the",
-                "at": 0.454
+                "at": 0.54
             },
             {
                 "word": "convex",
-                "at": 0.571
+                "at": 0.7
             },
             {
-                "word": "hexagon",
-                "at": 1.26
+                "word": "hexagon.",
+                "at": 1.4
             }
         ]
     },
     {
         "id": "p2-8-all-concave",
         "text": "Cut all the concave ones.",
-        "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-8-all-concave.wav",
-        "duration": 2.444,
+        "file": "p2-8-all-concave.wav",
+        "duration": 2.58,
+        "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
             {
                 "word": "Cut",
-                "at": 0.137
+                "at": 0.18
             },
             {
                 "word": "all",
-                "at": 0.461
+                "at": 0.66
             },
             {
                 "word": "the",
-                "at": 0.812
+                "at": 0.86
             },
             {
                 "word": "concave",
-                "at": 0.95
+                "at": 0.98
             },
             {
-                "word": "ones",
-                "at": 1.694
+                "word": "ones.",
+                "at": 1.68
             }
         ]
     },
     {
         "id": "p2-9-all-convex",
         "text": "Cut all the convex ones.",
-        "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-9-all-convex.wav",
-        "duration": 2.404,
+        "file": "p2-9-all-convex.wav",
+        "duration": 2.54,
+        "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
             {
                 "word": "Cut",
-                "at": 0.137
+                "at": 0.18
             },
             {
                 "word": "all",
-                "at": 0.461
+                "at": 0.62
             },
             {
                 "word": "the",
-                "at": 0.812
+                "at": 0.86
             },
             {
                 "word": "convex",
-                "at": 0.95
+                "at": 0.98
             },
             {
-                "word": "ones",
-                "at": 1.632
+                "word": "ones.",
+                "at": 1.72
             }
         ]
     },
     {
-        "id": "p2-tut-6-cut",
-        "text": "Cut this ice block to fix the path.",
-        "file": "C:\\Users\\Tarun Diwedi\\Downloads\\POLYGON-PART-1\\part2-frozen-rush\\art-source\\audio-source\\part2-vo\\p2-tut-6-cut.wav",
-        "duration": 2.844,
+        "id": "hint-corners",
+        "text": "Connect two vertices.",
+        "file": "hint-corners.wav",
+        "duration": 2.15,
+        "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
+        "words": [
+            {
+                "word": "Connect",
+                "at": 0.1
+            },
+            {
+                "word": "two",
+                "at": 0.64
+            },
+            {
+                "word": "vertices.",
+                "at": 0.94
+            }
+        ]
+    },
+    {
+        "id": "hint-side",
+        "text": "That's a side — try a diagonal.",
+        "file": "hint-side.wav",
+        "duration": 3.3,
+        "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
+        "words": [
+            {
+                "word": "That's",
+                "at": 0.16
+            },
+            {
+                "word": "a",
+                "at": 0.5
+            },
+            {
+                "word": "side",
+                "at": 0.58
+            },
+            {
+                "word": "—",
+                "at": 1.62
+            },
+            {
+                "word": "try",
+                "at": 1.62
+            },
+            {
+                "word": "a",
+                "at": 2.08
+            },
+            {
+                "word": "diagonal.",
+                "at": 2.16
+            }
+        ]
+    },
+    {
+        "id": "hint-short",
+        "text": "Cut right across, vertex to opposite vertex.",
+        "file": "hint-short.wav",
+        "duration": 4.5,
+        "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
             {
                 "word": "Cut",
-                "at": 0.137
+                "at": 0.14
             },
             {
-                "word": "this",
-                "at": 0.454
+                "word": "right",
+                "at": 0.62
             },
             {
-                "word": "ice",
-                "at": 0.716
+                "word": "across,",
+                "at": 0.9
             },
             {
-                "word": "block",
-                "at": 1.046
+                "word": "vertex",
+                "at": 1.9
             },
             {
                 "word": "to",
-                "at": 1.508
+                "at": 2.7
             },
             {
-                "word": "fix",
-                "at": 1.666
+                "word": "opposite",
+                "at": 2.96
+            },
+            {
+                "word": "vertex.",
+                "at": 3.4
+            }
+        ]
+    },
+    {
+        "id": "hint-already",
+        "text": "That one is done — find another.",
+        "file": "hint-already.wav",
+        "duration": 2.9,
+        "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
+        "words": [
+            {
+                "word": "That",
+                "at": 0.18
+            },
+            {
+                "word": "one",
+                "at": 0.48
+            },
+            {
+                "word": "is",
+                "at": 0.64
+            },
+            {
+                "word": "done",
+                "at": 0.76
+            },
+            {
+                "word": "—",
+                "at": 1.7
+            },
+            {
+                "word": "find",
+                "at": 1.7
+            },
+            {
+                "word": "another.",
+                "at": 2.04
+            }
+        ]
+    },
+    {
+        "id": "hint-samevertex",
+        "text": "Start this one at the same vertex.",
+        "file": "hint-samevertex.wav",
+        "duration": 2.88,
+        "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
+        "words": [
+            {
+                "word": "Start",
+                "at": 0.18
+            },
+            {
+                "word": "this",
+                "at": 0.52
+            },
+            {
+                "word": "one",
+                "at": 0.88
+            },
+            {
+                "word": "at",
+                "at": 1.12
             },
             {
                 "word": "the",
-                "at": 2.087
+                "at": 1.22
             },
             {
-                "word": "path",
-                "at": 2.211
+                "word": "same",
+                "at": 1.36
+            },
+            {
+                "word": "vertex.",
+                "at": 1.74
             }
         ]
     },

@@ -36,9 +36,9 @@
   'use strict';
 
   var GAME_URL = '../part2-frozen-rush/game/index.html';
-  /* SWIFTEE'S LINES over the game. Every one has its clip in assets/vo (tools/vo-lines.js reads
-     these pairs): sw2 and sw3 are joined from his recorded words (tools/vo-joins.js); sw1 is
-     generated until it is recorded — "needs" is in none of his takes. */
+  /* SWIFTEE'S LINES over the game. Every one is his own recording — the user's take of the three,
+     assets/source/vo-masters/swiftee-visit.mp3, cut by tools/split-vo.js --master swiftee-visit
+     (tools/vo-lines.js reads these pairs for the texts). */
   var OPENING_LINES = [
     { t: 'Momo needs your help.', vo: 'sw1' },
     { t: 'But to help Momo, you need to learn about polygons.', vo: 'sw2' }
@@ -204,6 +204,7 @@
     liftReviewBar();
     if (doc.documentElement) doc.documentElement.classList.add('runner-opening');
     open = frame('runner-open', url('intro', devAt === 'break' ? 'break' : ''), true);
+    open.addEventListener('load', function () { focusFrame(open); });
     if (global.SwifteeVisit) SwifteeVisit.load();
     // a game that never shows its cover is not waited for: the lesson's own title comes up
     setTimeout(function () { if (!openState.ready && !openState.played) giveUp(); }, OPENING_LOAD_CAP);
@@ -286,6 +287,7 @@
         try { if (global.VO && VO.stop) VO.stop(); } catch (e) {}
         if (doc.documentElement) doc.documentElement.classList.add('runner-back');
         back.classList.remove('unseen');
+        focusFrame(back);
         var tries = 0;
         (function begin() {
           if (backState.running || tries++ > 40) return;
@@ -344,11 +346,28 @@
     }
   }
 
+  /* A KEY MEANT FOR THE GAME REACHES IT. Space, the up arrow and W jump in Frozen Rush, but a key
+     goes to whichever document has the focus — and the lesson's page has it until the frame is
+     clicked, or again after anything on the page takes it. So while a game frame is on the screen,
+     those keys on the page are handed to the frame ('jump'; main.js), and the frame is given the
+     focus whenever it is shown, so the next key lands there by itself. */
+  function keyToGame(e) {
+    var f = open || (back && !back.classList.contains('unseen') ? back : null);
+    if (!f) return;
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+      if (e.repeat) return;
+      e.preventDefault();
+      post(f, 'jump');
+      try { f.contentWindow.focus(); } catch (x) {}
+    }
+  }
+  function focusFrame(f) { try { f.focus(); if (f.contentWindow) f.contentWindow.focus(); } catch (e) {} }
   if (on) {
     if (doc.documentElement) doc.documentElement.classList.add('runner-on');
     global.addEventListener('message', onMessage);
     doc.addEventListener('pointerdown', unlockBack, true);
     doc.addEventListener('keydown', unlockBack, true);
+    doc.addEventListener('keydown', keyToGame);
     if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', opening); else opening();
   } else {
     release();

@@ -4,13 +4,14 @@ import { boot } from './helpers.mjs';
 test.describe('Part 2 voice', () => {
   test.setTimeout(120_000);
 
-  test('all ten new lines have audio windows and one onset per displayed word', async ({ page }) => {
+  test('all fourteen recorded Part 2 lines have audio windows and one onset per displayed word', async ({ page }) => {
     await boot(page);
     const lines = await page.evaluate(async () => {
       const { CFG } = await import('/js/engine.js');
       const prompts = [...CFG.levelOne.phases, ...CFG.levelTwo.levels]
         .map(p => ({ id: p.voId, text: p.instruction }));
-      prompts.push({ id: 'p2-tut-6-cut', text: 'Cut this ice block to fix the path.' });
+      // and Level 2's five nudges, said on the plank after a wrong stroke (CFG.levelTwo.hintVo)
+      for (const k in CFG.levelTwo.hintVo) prompts.push({ id: CFG.levelTwo.hintVo[k], text: CFG.levelTwo.instructions[k] });
       const audio = new AudioContext();
       const decoded = await audio.decodeAudioData(await (await fetch('/assets/audio/vo-lines.mp3')).arrayBuffer());
       await audio.close();
@@ -18,17 +19,19 @@ test.describe('Part 2 voice', () => {
         ...p, window: CFG.vo.lines[p.id]
       })) };
     });
-    expect(lines.prompts).toHaveLength(10);
+    expect(lines.prompts).toHaveLength(14);
     for (const { id, text, window: w } of lines.prompts) {
       expect(w, `${id} has speech`).toBeDefined();
       const [at, dur, onsets] = w;
       expect(at, `${id} follows the original take`).toBeGreaterThan(36);
       expect(at + dur, `${id} fits in the audio`).toBeLessThanOrEqual(lines.duration + 0.02);
-      expect(onsets, `${id} has one timestamp per word`).toHaveLength(text.split(/\s+/).length);
+      const words = text.split(/\s+/);
+      expect(onsets, `${id} has one timestamp per word`).toHaveLength(words.length);
       for (let i = 0; i < onsets.length; i++) {
         expect(onsets[i], `${id} word ${i + 1} is inside the line`).toBeGreaterThanOrEqual(0);
         expect(onsets[i]).toBeLessThan(dur);
-        if (i) expect(onsets[i]).toBeGreaterThan(onsets[i - 1]);
+        // (an em dash is shown as a word and is not spoken: it shares the onset of the word after it)
+        if (i) { if (words[i - 1] === '—') expect(onsets[i]).toBeGreaterThanOrEqual(onsets[i - 1]); else expect(onsets[i]).toBeGreaterThan(onsets[i - 1]); }
       }
     }
   });

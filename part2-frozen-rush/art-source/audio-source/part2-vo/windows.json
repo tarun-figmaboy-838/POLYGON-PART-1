@@ -3,135 +3,190 @@
     "id": "p2-1-diagonal",
     "text": "Cut along a diagonal.",
     "at": 36.777,
-    "dur": 2.144,
+    "dur": 1.95,
     "words": [
-      0.137,
-      0.433,
-      0.888,
-      0.991
+      0.12,
+      0.38,
+      0.74,
+      0.82
     ]
   },
   {
     "id": "p2-2-diagonals",
     "text": "Draw all the diagonals.",
-    "at": 39.572,
-    "dur": 2.234,
+    "at": 39.377,
+    "dur": 2.55,
     "words": [
-      0.137,
-      0.454,
-      0.798,
-      0.943
+      0.2,
+      0.88,
+      1.16,
+      1.28
     ]
   },
   {
     "id": "p2-3-samevertex",
     "text": "Draw two diagonals from the same vertex.",
-    "at": 42.456,
-    "dur": 3.228,
+    "at": 42.577,
+    "dur": 3.4,
     "words": [
-      0.21,
-      0.51,
-      0.75,
-      1.47,
-      1.69,
-      1.83,
-      2.17
+      0.18,
+      0.54,
+      0.8,
+      1.58,
+      1.74,
+      1.88,
+      2.24
     ]
   },
   {
     "id": "p2-4-concave",
     "text": "Cut the concave polygon.",
-    "at": 46.334,
-    "dur": 2.364,
+    "at": 46.627,
+    "dur": 2.53,
     "words": [
-      0.137,
-      0.454,
-      0.571,
-      1.301
+      0.18,
+      0.54,
+      0.68,
+      1.36
     ]
   },
   {
     "id": "p2-5-convex",
     "text": "Cut the convex polygon.",
-    "at": 49.348,
-    "dur": 2.334,
+    "at": 49.807,
+    "dur": 2.62,
     "words": [
-      0.137,
-      0.454,
-      0.571,
-      1.26
+      0.2,
+      0.6,
+      0.76,
+      1.48
     ]
   },
   {
     "id": "p2-6-concave-pentagon",
     "text": "Cut the concave pentagon.",
-    "at": 52.332,
-    "dur": 2.384,
+    "at": 53.077,
+    "dur": 2.54,
     "words": [
-      0.137,
-      0.454,
-      0.571,
-      1.301
+      0.18,
+      0.52,
+      0.68,
+      1.38
     ]
   },
   {
     "id": "p2-7-convex-hexagon",
     "text": "Cut the convex hexagon.",
-    "at": 55.366,
-    "dur": 2.369,
+    "at": 56.267,
+    "dur": 2.6,
     "words": [
-      0.137,
-      0.454,
-      0.571,
-      1.26
+      0.18,
+      0.54,
+      0.7,
+      1.4
     ]
   },
   {
     "id": "p2-8-all-concave",
     "text": "Cut all the concave ones.",
-    "at": 58.385,
-    "dur": 2.444,
+    "at": 59.517,
+    "dur": 2.58,
     "words": [
-      0.137,
-      0.461,
-      0.812,
-      0.95,
-      1.694
+      0.18,
+      0.66,
+      0.86,
+      0.98,
+      1.68
     ]
   },
   {
     "id": "p2-9-all-convex",
     "text": "Cut all the convex ones.",
-    "at": 61.479,
-    "dur": 2.404,
+    "at": 62.747,
+    "dur": 2.54,
     "words": [
-      0.137,
-      0.461,
-      0.812,
-      0.95,
-      1.632
+      0.18,
+      0.62,
+      0.86,
+      0.98,
+      1.72
     ]
   },
   {
-    "id": "p2-tut-6-cut",
-    "text": "Cut this ice block to fix the path.",
-    "at": 64.533,
-    "dur": 2.844,
+    "id": "hint-corners",
+    "text": "Connect two vertices.",
+    "at": 65.937,
+    "dur": 2.15,
     "words": [
-      0.137,
-      0.454,
-      0.716,
-      1.046,
-      1.508,
-      1.666,
-      2.087,
-      2.211
+      0.1,
+      0.64,
+      0.94
+    ]
+  },
+  {
+    "id": "hint-side",
+    "text": "That's a side — try a diagonal.",
+    "at": 68.737,
+    "dur": 3.3,
+    "words": [
+      0.16,
+      0.5,
+      0.58,
+      1.62,
+      1.62,
+      2.08,
+      2.16
+    ]
+  },
+  {
+    "id": "hint-short",
+    "text": "Cut right across, vertex to opposite vertex.",
+    "at": 72.687,
+    "dur": 4.5,
+    "words": [
+      0.14,
+      0.62,
+      0.9,
+      1.9,
+      2.7,
+      2.96,
+      3.4
+    ]
+  },
+  {
+    "id": "hint-already",
+    "text": "That one is done — find another.",
+    "at": 77.837,
+    "dur": 2.9,
+    "words": [
+      0.18,
+      0.48,
+      0.64,
+      0.76,
+      1.7,
+      1.7,
+      2.04
+    ]
+  },
+  {
+    "id": "hint-samevertex",
+    "text": "Start this one at the same vertex.",
+    "at": 81.387,
+    "dur": 2.88,
+    "words": [
+      0.18,
+      0.52,
+      0.88,
+      1.12,
+      1.22,
+      1.36,
+      1.74
     ]
   },
   {
     "id": "tut-6b-piece",
     "text": "Use the right piece to fix the path.",
-    "at": 68.027,
+    "at": 84.917,
     "dur": 2.934,
     "words": [
       0.06,

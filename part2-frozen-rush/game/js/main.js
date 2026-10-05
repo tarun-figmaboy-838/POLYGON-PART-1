@@ -441,6 +441,8 @@ if (lessonPart && hosted) {
     if (e.source !== window.parent || !e.data || typeof e.data !== 'object') return;
     const w = e.data.iceAge;
     if (w === 'begin') beginHosted();
+    // a jump key pressed on the lesson's page while this frame is up (runner-stage.js keyToGame)
+    else if (w === 'jump') game.jump();
     else if (w === 'said') { if (tut) tut.didAction('host'); }
     else if (w === 'quiet') { game.fadeMusic(900); setTimeout(() => game.suspendAudio(), 1000); }
   });

@@ -1364,6 +1364,10 @@ export const CFG = {
       // two good diagonals, but not from one corner: the constraint, not the concept
       sameVertex: 'Start this one at the same vertex.'
     },
+    /* AND EACH NUDGE IS SPOKEN (the user's recording of the five, 2026-10-05): the line's clip in the
+       voice track (CFG.vo.lines), said as the plank shows it (rejectCut), its words revealed on
+       their onsets like the questions'. */
+    hintVo: { corners: 'hint-corners', side: 'hint-side', shortDiagonal: 'hint-short', already: 'hint-already', sameVertex: 'hint-samevertex' },
     /* NO voId HERE, AND THAT IS DELIBERATE. It carried 'p2-1-diagonal' — crossing 1's
        own line — as a level-wide default, and p2Cfg() merges this object under the
        crossing being played. All three crossings name their own line, so the default
@@ -1463,19 +1467,29 @@ export const CFG = {
       'win-yay':            [34.70, 1.08, [0.06]],
       /* Part 2 speech, appended to the original take. Word starts came from the
          synthesizer's SpeakProgress events during generation. */
-      'p2-1-diagonal': [36.777, 2.144, [0.137, 0.433, 0.888, 0.991]], // Cut along a diagonal.
-      'p2-2-diagonals': [39.572, 2.234, [0.137, 0.454, 0.798, 0.943]], // Draw all the diagonals.
-      'p2-3-samevertex': [42.456, 3.228, [0.210, 0.510, 0.750, 1.470, 1.690, 1.830, 2.170]], // Draw two diagonals from the same vertex. (a Mac voice, Reed: see docs/VO-PART2.md)
-      'p2-4-concave': [46.334, 2.364, [0.137, 0.454, 0.571, 1.301]], // Cut the concave polygon.
-      'p2-5-convex': [49.348, 2.334, [0.137, 0.454, 0.571, 1.260]], // Cut the convex polygon.
-      'p2-6-concave-pentagon': [52.332, 2.384, [0.137, 0.454, 0.571, 1.301]], // Cut the concave pentagon.
-      'p2-7-convex-hexagon': [55.366, 2.369, [0.137, 0.454, 0.571, 1.260]], // Cut the convex hexagon.
-      'p2-8-all-concave': [58.385, 2.444, [0.137, 0.461, 0.812, 0.950, 1.694]], // Cut all the concave ones.
-      'p2-9-all-convex': [61.479, 2.404, [0.137, 0.461, 0.812, 0.950, 1.632]], // Cut all the convex ones.
-      'p2-tut-6-cut': [64.533, 2.844, [0.137, 0.454, 0.716, 1.046, 1.508, 1.666, 2.087, 2.211]], // Cut this ice block to fix the path.
+      /* PART 2's LINES, RECORDED (the owner's take of 2026-10-05, vo/1 (1).mp3): the nine crossing
+         questions, then Level 2's five nudges — cut at the take's own silences, matched to the
+         original take's level and appended after it (tools/assemble-part2-vo.mjs; the windows and
+         word onsets below are what it reports). The onsets are forced alignments of each line
+         against its own words; a nudge's em dash shows as a word and takes the onset of the word
+         after it, so the plank's seven spans and the seven onsets stay one to one. */
+      'p2-1-diagonal': [36.777, 1.95, [0.12, 0.38, 0.74, 0.82]], // Cut along a diagonal.
+      'p2-2-diagonals': [39.377, 2.55, [0.2, 0.88, 1.16, 1.28]], // Draw all the diagonals.
+      'p2-3-samevertex': [42.577, 3.4, [0.18, 0.54, 0.8, 1.58, 1.74, 1.88, 2.24]], // Draw two diagonals from the same vertex.
+      'p2-4-concave': [46.627, 2.53, [0.18, 0.54, 0.68, 1.36]], // Cut the concave polygon.
+      'p2-5-convex': [49.807, 2.62, [0.2, 0.6, 0.76, 1.48]], // Cut the convex polygon.
+      'p2-6-concave-pentagon': [53.077, 2.54, [0.18, 0.52, 0.68, 1.38]], // Cut the concave pentagon.
+      'p2-7-convex-hexagon': [56.267, 2.6, [0.18, 0.54, 0.7, 1.4]], // Cut the convex hexagon.
+      'p2-8-all-concave': [59.517, 2.58, [0.18, 0.66, 0.86, 0.98, 1.68]], // Cut all the concave ones.
+      'p2-9-all-convex': [62.747, 2.54, [0.18, 0.62, 0.86, 0.98, 1.72]], // Cut all the convex ones.
+      'hint-corners': [65.937, 2.15, [0.1, 0.64, 0.94]], // Connect two vertices.
+      'hint-side': [68.737, 3.3, [0.16, 0.5, 0.58, 1.62, 1.62, 2.08, 2.16]], // That's a side — try a diagonal.
+      'hint-short': [72.687, 4.5, [0.14, 0.62, 0.9, 1.9, 2.7, 2.96, 3.4]], // Cut right across, vertex to opposite vertex.
+      'hint-already': [77.837, 2.9, [0.18, 0.48, 0.64, 0.76, 1.7, 1.7, 2.04]], // That one is done — find another.
+      'hint-samevertex': [81.387, 2.88, [0.18, 0.52, 0.88, 1.12, 1.22, 1.36, 1.74]], // Start this one at the same vertex.
       // "Use the right piece to fix the path." — tut-6-use with "ice" cut out (the game-lesson kit's
-      // wording, for the return after the lesson); appended last, so no other window moved
-      'tut-6b-piece': [68.027, 2.934, [0.06, 0.54, 1.22, 1.62, 1.83, 2.09, 2.27, 2.43]],
+      // wording, for the return after the lesson)
+      'tut-6b-piece': [84.917, 2.934, [0.06, 0.54, 1.22, 1.62, 1.83, 2.09, 2.27, 2.43]],
       /* THE ENDING SPEAKS NO MORE. 'win-title' ("You did it!") and 'win-sub' ("Momo crossed
          the Frozen Pass!") lived here and were cut with the banner that showed them: the
          ending is the dance now, the camera pushes in on it, and a voice over the top was
@@ -6073,6 +6087,17 @@ export function createGame(canvas, hooks = {}) {
     return text;
   }
 
+  /* WHICH CLIP SAYS A LINE ON THE PLANK: the tutorial's two teaching sentences, and Level 2's five
+     nudges (CFG.levelTwo.hintVo, by the sentence the plank shows). '' for a line with no clip. */
+  function signVoFor(text) {
+    if (!text) return '';
+    if (text === 'Use the right ice piece to fix the path.') return 'tut-6-use';
+    if (text === 'Use the right piece to fix the path.') return 'tut-6b-piece';
+    const ins = (CFG.levelTwo && CFG.levelTwo.instructions) || {}, hv = (CFG.levelTwo && CFG.levelTwo.hintVo) || {};
+    for (const k in ins) if (ins[k] === text && hv[k]) return hv[k];
+    return '';
+  }
+
   let lastHud = '';
   /* WHAT THE HUD IS TOLD — and nothing else.
 
@@ -6152,8 +6177,7 @@ export function createGame(canvas, hooks = {}) {
       // The HUD uses these measured word starts for Part 2's spoken instruction.
       // The audio clock itself is read outside the diffed HUD payload.
       voId: G.signSay
-        ? (G.signSay === 'Use the right ice piece to fix the path.' ? 'tut-6-use'
-          : G.signSay === 'Use the right piece to fix the path.' ? 'tut-6b-piece' : '')
+        ? signVoFor(G.signSay)
         : G.l2 && L2_PUZZLE_STATES.includes(G.state) ? p2Cfg().voId
         : G.l1 && ['PHASE_INTRO', 'PHASE_ACTIVE', 'PHASE_WRONG', 'PHASE_SUCCESS'].includes(G.state)
           ? phaseCfg().voId : '',
@@ -11204,6 +11228,8 @@ export function createGame(canvas, hooks = {}) {
     L.wrong++;
     L.badLine = { a, b, t: 0, kind };
     G.signSay = L2.instructions[kind] || '';
+    // the nudge, in the game's voice — after the question if that is still being said (say queues)
+    { const hv = (L2.hintVo || {})[kind]; if (hv) G.voDur = audio.say(hv) || 0; }
     audio.reject();
     if ((L2.wrongDrops || {})[kind]) loseSlab(a, b, ci, cj);
     else {

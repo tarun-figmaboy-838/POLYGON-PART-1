@@ -104,9 +104,11 @@ nowhere else, and a test holds that each one names the shape its slots are cut f
 sentence in the config and the sign, the highlighted word and this script must all move
 together.
 
-## 6. Part 2 — generated lines
+## 6. Part 2 — the crossings, recorded
 
-These ten lines follow the original take. See [VO-PART2.md](VO-PART2.md) for delivery and build details.
+The nine crossing questions, recorded by the owner (2026-10-05) and appended to the original take
+after its lines; see [VO-PART2.md](VO-PART2.md) for the build. The plank shows each word on its
+measured onset.
 
 | # | id | say this |
 |---|----|----------|
@@ -119,5 +121,16 @@ These ten lines follow the original take. See [VO-PART2.md](VO-PART2.md) for del
 | 7 | `p2-7-convex-hexagon` | Cut the convex hexagon. |
 | 8 | `p2-8-all-concave` | Cut all the concave ones. |
 | 9 | `p2-9-all-convex` | Cut all the convex ones. |
-| 10 | `p2-tut-6-cut` | Cut this ice block to fix the path. |
 
+## 7. Level 2's nudges, recorded
+
+Said on the plank after a wrong stroke on a drawing crossing (`CFG.levelTwo.instructions`, by what
+the stroke made), in the same take as the crossings above.
+
+| id | line | after |
+|----|------|-------|
+| `hint-corners` | Connect two vertices. | a stroke that reached no corner |
+| `hint-side` | That's a side — try a diagonal. | a line between two neighbours |
+| `hint-short` | Cut right across, vertex to opposite vertex. | a short diagonal, on the halving crossing |
+| `hint-already` | That one is done — find another. | a diagonal drawn twice |
+| `hint-samevertex` | Start this one at the same vertex. | a second diagonal from another corner |
