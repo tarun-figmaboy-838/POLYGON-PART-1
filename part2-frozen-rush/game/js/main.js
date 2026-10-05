@@ -428,6 +428,7 @@ function beginHosted() {
   beginAsked = true;
   if (!coverless || begun || !readyToBegin) return;
   begun = true;
+  game.holdAudio(false);                // its sound comes up with it
   game.begin();
   if (devAt === 'break') game.skipToPartTwo();
   startTutorial();
@@ -502,6 +503,9 @@ if (options.dev && !hosted) {
   window.addEventListener('resize', refit);
   window.addEventListener('orientationchange', refit);
 }
+// (the lesson's return frame waits unseen from the lesson's second-last screen: not a sound out of
+// it — no music bed, no wind — until the hosted run begins, beginHosted; the user)
+if (coverless) game.holdAudio(true);
 // decode the recordings now, not on the first tap: a cue that is still loading when it is
 // first needed falls back to a different sound, which is what made the fit sound vary
 game.warmAudio();

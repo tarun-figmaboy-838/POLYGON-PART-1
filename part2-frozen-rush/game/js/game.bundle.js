@@ -3211,7 +3211,7 @@ class AudioManager {
     /* 0.7, from 0.5: the six recordings carry gains of 0.42-0.62 and sat under the kit
        (master 0.85) so far that a footfall or the whoosh barely registered next to a boing.
        The compressor below is what keeps a hot master from clipping. */
-    this.master = this.ctx.createGain(); this.master.gain.value = 0.7;
+    this.master = this.ctx.createGain(); this.master.gain.value = this.held ? 0 : 0.7;
     // the bytes are already here (fetchVo, during preload): decode them now the context exists
     setTimeout(() => this.loadVo(), 0);
 
@@ -3288,7 +3288,7 @@ class AudioManager {
           if (k > 0 && chain[k - 1].startsWith('blob:')) { try { URL.revokeObjectURL(chain[k - 1]); } catch (e) { /* gone */ } }
           if (k >= chain.length) { el.removeEventListener('error', next); return; }
           el.src = chain[k++]; el.preload = 'auto';
-          if (this.enabled) play();             // refused until a gesture, as before; resume() retries
+          if (this.enabled && !this.held) play();   // refused until a gesture, as before; resume() retries
         };
         el.addEventListener('error', next);
         next();
@@ -3484,7 +3484,7 @@ class AudioManager {
 
   resume() {
     if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
-    if (this.music && this.music.el.paused && this.enabled) {
+    if (this.music && this.music.el.paused && this.enabled && !this.held) {
       const p = this.music.el.play();
       if (p && p.catch) p.catch(() => {});
     }
@@ -13842,8 +13842,32 @@ function createGame(canvas, hooks = {}) {
           const b = audio.ctx.createBuffer(1, 1, 22050), src = audio.ctx.createBufferSource();
           src.buffer = b; src.connect(audio.ctx.destination); src.start(0);
         }
+        /* AND THE BED, BLESSED BUT NOT HEARD: WebKit lets a media element play later only if it has
+           played inside a gesture, so while the sound is held it is played muted here and paused
+           again at once — the music still waits for holdAudio(false). */
+        if (audio.held && audio.music && audio.music.el.paused) {
+          const el = audio.music.el; el.muted = true;
+          const q = el.play();
+          const back = () => { if (audio.held) el.pause(); el.muted = false; };
+          if (q && q.then) q.then(back, back); else back();
+        }
         return !!(audio.ctx && audio.ctx.state === 'running');
       } catch (e) { return false; }
+    },
+    /* HELD SILENT WHILE THE PAGE WAITS UNSEEN (the lesson's return frame, ?lesson=end: it loads a
+       screen before the lesson ends, and its music, wind and voice were heard over the lesson's
+       screen 30 — the user). While held: the bus is at 0 and the music bed does not play, whatever
+       starts the audio. Released when the hosted run begins: the bus comes up, the bed starts. */
+    holdAudio(on) {
+      audio.held = !!on;
+      try {
+        if (audio.master && audio.ctx) audio.master.gain.setTargetAtTime(on ? 0 : (audio.enabled ? 0.7 : 0), audio.ctx.currentTime, on ? 0.01 : 0.12);
+        if (on) { if (audio.music) audio.music.el.pause(); }
+        else if (audio.enabled) {
+          if (audio.ctx && !audio.music) audio.startMusic();
+          if (audio.music && audio.music.el.paused) { const q = audio.music.el.play(); if (q && q.catch) q.catch(() => {}); }
+        }
+      } catch (e) { /* no audio here */ }
     },
     resumeAudio() {
       if (!audio.enabled) return;
@@ -17216,6 +17240,7 @@ function beginHosted() {
   beginAsked = true;
   if (!coverless || begun || !readyToBegin) return;
   begun = true;
+  game.holdAudio(false);                // its sound comes up with it
   game.begin();
   if (devAt === 'break') game.skipToPartTwo();
   startTutorial();
@@ -17290,6 +17315,9 @@ if (options.dev && !hosted) {
   window.addEventListener('resize', refit);
   window.addEventListener('orientationchange', refit);
 }
+// (the lesson's return frame waits unseen from the lesson's second-last screen: not a sound out of
+// it — no music bed, no wind — until the hosted run begins, beginHosted; the user)
+if (coverless) game.holdAudio(true);
 // decode the recordings now, not on the first tap: a cue that is still loading when it is
 // first needed falls back to a different sound, which is what made the fit sound vary
 game.warmAudio();
