@@ -151,9 +151,9 @@ test.describe('the pointer, the buffers and the voice', () => {
        'win-title' and 'win-sub' were cut with the banner that showed them, taking it to
        14 — and then 'win-yay' was found in the take and wired up, which put it back to
        15. This number was left at 14 and the suite has been red on it since. */
-    /* 31: seven tutorial lines, seven old signs, the cheer, nine crossing lines, the return's
+    /* 30: seven tutorial lines, seven old signs, the cheer, nine crossing lines, the return's
        'tut-6b-piece', and Level 2's five nudges ("Connect two vertices." …), recorded 2026-10-05. */
-    expect(r.n, 'every line the learner is shown').toBe(31);
+    expect(r.n, 'every line the learner is shown').toBe(30);
     expect(r.bad).toEqual([]);
     expect(r.unnamed, 'every crossing names the line that will speak it').toEqual([]);
     expect(r.status, 'the recording ships').toBe(200);
