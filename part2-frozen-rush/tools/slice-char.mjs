@@ -121,7 +121,7 @@ const SHEETS = [
      intermediates and there is now exactly one per slot. */
   { src: 'skid-new-gif.png',  slot: 'skid',  bob: false },
   /* THE TRAMPLE AT THE EDGE — the delivered 36-frame loop the brief called
-     'Tribbling/Trampling' (art-source/gif/trample-new.gif): the character rears up and
+     'Tribbling/Trampling' (art-source/gif/trample-new.webp): the character rears up and
      stamps a front foot down, then settles and shifts his weight. LOOK_DOWN plays it for
      as long as the learner thinks. bob is KEPT: the rear-up lifts the whole body off the
      ice, and flattening every frame onto the footline would delete the stamp. The stomp
@@ -131,7 +131,7 @@ const SHEETS = [
      the trample has no moment left. Still measured, so the shared scale does not move. */
   { src: 'trample-gif.png', slot: 'trample', bob: true, shelved: true },
   /* THE TREMBLE AT THE EDGE — the owner's 12-frame sheet (4x3, art-source/char-sheets/
-     tremble-src.png, re-guttered and pre-scaled by tools/sheet-to-grid.mjs). Notices the
+     tremble-src.webp, re-guttered and pre-scaled by tools/sheet-to-grid.mjs). Notices the
      drop, looks down, trembles, looks to the player, settles. bob is OFF: every pose stands
      on four feet, and the delivery floats its rows at three different heights inside their
      cells (45px apart) — that is not a bob, it is the generator's layout, and flattening
@@ -170,7 +170,7 @@ const SHEETS = [
      this pose for minutes". So for most of the runtime the character was a still
      image. 36 frames of breathing and a slight sway fix that with no gameplay
      change at all. */
-  /* THE IDLE, redelivered as a 12-pose sheet (idle-src.png, 2026-09-07): blink, trunk sway,
+  /* THE IDLE, redelivered as a 12-pose sheet (idle-src.webp, 2026-09-07): blink, trunk sway,
      weight shift. Built like the tremble, through tools/sheet-to-grid.mjs. The engine
      crossfades consecutive frames at CFG.sprite.idleFps so twelve poses read as one
      smooth breath. The 36-frame GIF take (idle-new-gif.png) is superseded. */

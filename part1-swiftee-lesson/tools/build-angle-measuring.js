@@ -8,9 +8,9 @@ const root = path.join(__dirname, '..');
   const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined });
   try {
     const page = await browser.newPage();
-    const source = fs.readFileSync(path.join(root, 'assets/source/swiftee-angle-intact-v4.png')).toString('base64');
+    const source = fs.readFileSync(path.join(root, 'assets/source/swiftee-angle-intact-v4.webp')).toString('base64');
     const result = await page.evaluate(async source => {
-      const image = new Image(); image.src = 'data:image/png;base64,' + source; await image.decode();
+      const image = new Image(); image.src = 'data:image/webp;base64,' + source; await image.decode();
       const canvas = document.createElement('canvas'); canvas.width = image.width; canvas.height = image.height;
       const ctx = canvas.getContext('2d'); ctx.drawImage(image, 0, 0);
       const pixels = ctx.getImageData(0, 0, image.width, image.height).data;

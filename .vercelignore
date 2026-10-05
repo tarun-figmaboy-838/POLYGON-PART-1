@@ -33,6 +33,7 @@ START GAME.bat
 /part1-swiftee-lesson/assets/vo-part-1-hindi
 /part1-swiftee-lesson/swiftee-in-use
 /part1-swiftee-lesson/preview
+/part1-swiftee-lesson/previews
 /part1-swiftee-lesson/review
 /part1-swiftee-lesson/vercel.json
 /part1-swiftee-lesson/.vercelignore
@@ -55,3 +56,4 @@ START GAME.bat
 /part2-frozen-rush/game/.vercelignore
 /part2-frozen-rush/game/README.md
 /part2-frozen-rush/game/assets/vo-part-2-hindi
+/part2-frozen-rush/previews

@@ -41,8 +41,8 @@ const PART2 = ['tut-1-meet', 'tut-2-goal', 'tut-3-watch', 'tut-4-jump', 'tut-5-b
   'hint-corners', 'hint-side', 'hint-short', 'hint-already', 'hint-samevertex', 'sw1', 'sw2', 'sw3'];
 
 const recordings = [].concat(
-  PART1.map((id, i) => ({ id, file: 'assets/vo-part-1-hindi/' + (i + 1) + '.wav', plays: 1, take: i < FIRST_TAKE ? 1 : 2 })),
-  PART2.map((id, i) => ({ id, file: '../part2-frozen-rush/game/assets/vo-part-2-hindi/' + (i + 1) + '.wav', plays: /^sw\d$/.test(id) ? 1 : 2, take: 1 }))
+  PART1.map((id, i) => ({ id, file: 'assets/vo-part-1-hindi/' + (i + 1) + '.opus', plays: 1, take: i < FIRST_TAKE ? 1 : 2 })),
+  PART2.map((id, i) => ({ id, file: '../part2-frozen-rush/game/assets/vo-part-2-hindi/' + (i + 1) + '.opus', plays: /^sw\d$/.test(id) ? 1 : 2, take: 1 }))
 );
 
 /* cut from another line's recording: its first `words` words, up to the pause after them */

@@ -36,12 +36,12 @@ const MOMO = 150;        // the marker that walks the trail
 const PANEL = 1100;
 
 const JOBS = [
-  { file: 'step-locked.png', out: 'step-locked.webp', w: STONE },
-  { file: 'step-now.png', out: 'step-now.webp', w: STONE },
-  { file: 'step-done.png', out: 'step-done.webp', w: STONE },
-  { file: 'step-goal.png', out: 'step-goal.webp', w: GOAL },
-  { file: 'step-momo.png', out: 'step-momo.webp', w: MOMO },
-  { file: 'panel.png', out: 'panel.webp', w: PANEL }
+  { file: 'step-locked.webp', out: 'step-locked.webp', w: STONE },
+  { file: 'step-now.webp', out: 'step-now.webp', w: STONE },
+  { file: 'step-done.webp', out: 'step-done.webp', w: STONE },
+  { file: 'step-goal.webp', out: 'step-goal.webp', w: GOAL },
+  { file: 'step-momo.webp', out: 'step-momo.webp', w: MOMO },
+  { file: 'panel.webp', out: 'panel.webp', w: PANEL }
 ];
 
 await mkdir(OUT, { recursive: true });

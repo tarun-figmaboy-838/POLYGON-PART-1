@@ -2,7 +2,7 @@
  *
  * WHY THIS EXISTS. The ending now pushes the camera in on Momo and his friend dancing
  * (CFG.ending.zoomK), and at that size both of them grew a dotted black outline. It is not
- * a bug in the zoom: the sheet is cut from art-source/gif/celebrate-duo.gif, and a GIF has
+ * a bug in the zoom: the sheet is cut from art-source/gif/celebrate-duo.webp (the delivered GIF, kept lossless), and a GIF has
  * no alpha channel at all — only one palette index marked transparent. So every pixel is
  * either fully opaque or fully gone, the silhouette is a 1-bit stencil, and it was measured
  * that way: 3,347,789 opaque, 6,357,523 clear, and not one semi-transparent pixel in

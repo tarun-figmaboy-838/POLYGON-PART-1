@@ -4,7 +4,7 @@
  *
  *   node tools/build-story.js
  *
- *   reads   assets/source/story/scene1-friends.png … scene5-the-way.png   (the supplied art)
+ *   reads   assets/source/story/scene1-friends.avif … scene5-the-way.avif   (the supplied art)
  *   writes  assets/story/scene-<n>.webp        the painting, at its own 1672 x 941
  *           assets/story/scene-<n>-around.webp the painting mirrored out past its edges and
  *                                              blurred, small: what the band shows (below)
@@ -67,7 +67,7 @@ const hash = (file) => crypto.createHash('md5').update(fs.readFileSync(file)).di
   const list = [];
   let w = 0, h = 0;
   for (let i = 0; i < SCENES.length; i++) {
-    const src = path.join(SRC, SCENES[i] + '.png');
+    const src = path.join(SRC, SCENES[i] + '.avif');
     const meta = await sharp(src).metadata();
     if (!w) { w = meta.width; h = meta.height; }
     if (meta.width !== w || meta.height !== h) throw new Error(SCENES[i] + ' is ' + meta.width + 'x' + meta.height + ', not ' + w + 'x' + h);

@@ -35,7 +35,7 @@ const BUTTONS = {
      outW 900: the button is drawn up to about 460px on a 4K stage, and twice that is as
      much resolution as a 2x display can show. */
   play: {
-    normal: 'art-source/btn-play-raw.png',
+    normal: 'art-source/btn-play-raw.webp',
     outNormal: 'game/assets/ui/btn-play.webp',
     outW: 900
   },
@@ -45,7 +45,7 @@ const BUTTONS = {
      button makes for the same reason, and it is why the family's rule is "the press is
      in the art WHERE THERE IS pressed art". */
   tryagain: {
-    normal: 'art-source/btn-tryagain-raw.png',
+    normal: 'art-source/btn-tryagain-raw.webp',
     outNormal: 'game/assets/ui/btn-tryagain.webp',
     outW: 760
   },
@@ -56,8 +56,8 @@ const BUTTONS = {
      leave two raw PNGs in art-source with nothing that knows what they are for. Running
      this writes files the site does not use; that is the cost of keeping the recipe. */
   jump: {
-    normal: 'art-source/btn-jump-normal-raw.png',
-    pressed: 'art-source/btn-jump-pressed-raw.png',
+    normal: 'art-source/btn-jump-normal-raw.webp',
+    pressed: 'art-source/btn-jump-pressed-raw.webp',
     outNormal: 'game/assets/ui/btn-normal.webp',
     outPressed: 'game/assets/ui/btn-pressed.webp',
     outW: 420

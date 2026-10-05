@@ -4,7 +4,7 @@
  "recordings": [
   {
    "id": "p01",
-   "file": "assets/vo-part-1-hindi/1.wav",
+   "file": "assets/vo-part-1-hindi/1.opus",
    "text": "नमस्ते! मैं स्विफ्टी हूँ।",
    "seconds": 2.76,
    "words": [
@@ -32,7 +32,7 @@
   },
   {
    "id": "p02",
-   "file": "assets/vo-part-1-hindi/2.wav",
+   "file": "assets/vo-part-1-hindi/2.opus",
    "text": "याद है, हमने पहले बहुभुजों के बारे में सीखा था।",
    "seconds": 3.76,
    "words": [
@@ -90,7 +90,7 @@
   },
   {
    "id": "p03",
-   "file": "assets/vo-part-1-hindi/3.wav",
+   "file": "assets/vo-part-1-hindi/3.opus",
    "text": "बहुभुज सीधी रेखाओं से बनी बंद आकृतियाँ हैं।",
    "seconds": 3.88,
    "words": [
@@ -138,7 +138,7 @@
   },
   {
    "id": "p04",
-   "file": "assets/vo-part-1-hindi/4.wav",
+   "file": "assets/vo-part-1-hindi/4.opus",
    "text": "इनमें से कौन-से बहुभुज हैं?",
    "seconds": 2.6,
    "words": [
@@ -171,7 +171,7 @@
   },
   {
    "id": "p05",
-   "file": "assets/vo-part-1-hindi/5.wav",
+   "file": "assets/vo-part-1-hindi/5.opus",
    "text": "चलिए, इसके साथ खेलते हैं।",
    "seconds": 2.64,
    "words": [
@@ -204,7 +204,7 @@
   },
   {
    "id": "p06",
-   "file": "assets/vo-part-1-hindi/6.wav",
+   "file": "assets/vo-part-1-hindi/6.opus",
    "text": "कोई भी शीर्ष चुनें।",
    "seconds": 1.88,
    "words": [
@@ -232,7 +232,7 @@
   },
   {
    "id": "p07i",
-   "file": "assets/vo-part-1-hindi/7.wav",
+   "file": "assets/vo-part-1-hindi/7.opus",
    "text": "चलिए, इसे किसी दूसरे शीर्ष से जोड़ते हैं।",
    "seconds": 3.44,
    "words": [
@@ -280,7 +280,7 @@
   },
   {
    "id": "p09",
-   "file": "assets/vo-part-1-hindi/8.wav",
+   "file": "assets/vo-part-1-hindi/8.opus",
    "text": "यह बहुभुज की एक भुजा है।",
    "seconds": 3.56,
    "words": [
@@ -318,7 +318,7 @@
   },
   {
    "id": "p10i",
-   "file": "assets/vo-part-1-hindi/9.wav",
+   "file": "assets/vo-part-1-hindi/9.opus",
    "text": "चलिए, इसे किसी अलग शीर्ष से जोड़ते हैं।",
    "seconds": 3.32,
    "words": [
@@ -366,7 +366,7 @@
   },
   {
    "id": "p12",
-   "file": "assets/vo-part-1-hindi/10.wav",
+   "file": "assets/vo-part-1-hindi/10.opus",
    "text": "वाह! आपने एक विकर्ण बना दिया!",
    "seconds": 3.44,
    "words": [
@@ -404,7 +404,7 @@
   },
   {
    "id": "p13",
-   "file": "assets/vo-part-1-hindi/11.wav",
+   "file": "assets/vo-part-1-hindi/11.opus",
    "text": "दो अनासन्न शीर्षों को जोड़ने वाला रेखाखंड विकर्ण कहलाता है।",
    "seconds": 5.4,
    "words": [
@@ -462,7 +462,7 @@
   },
   {
    "id": "p14i",
-   "file": "assets/vo-part-1-hindi/12.wav",
+   "file": "assets/vo-part-1-hindi/12.opus",
    "text": "चलिए, उसी शीर्ष से एक और विकर्ण खींचते हैं।",
    "seconds": 3.52,
    "words": [
@@ -515,7 +515,7 @@
   },
   {
    "id": "p14r",
-   "file": "assets/vo-part-1-hindi/13.wav",
+   "file": "assets/vo-part-1-hindi/13.opus",
    "text": "विकर्ण अनासन्न शीर्षों को जोड़ता है।",
    "seconds": 3.32,
    "words": [
@@ -553,7 +553,7 @@
   },
   {
    "id": "p15",
-   "file": "assets/vo-part-1-hindi/14.wav",
+   "file": "assets/vo-part-1-hindi/14.opus",
    "text": "अब आपकी बारी! चलिए, इस शीर्ष से सभी विकर्ण खींचते हैं।",
    "seconds": 4.92,
    "words": [
@@ -616,7 +616,7 @@
   },
   {
    "id": "p15i",
-   "file": "assets/vo-part-1-hindi/15.wav",
+   "file": "assets/vo-part-1-hindi/15.opus",
    "text": "चलिए, इस शीर्ष से सभी विकर्ण खींचते हैं।",
    "seconds": 3.76,
    "words": [
@@ -664,7 +664,7 @@
   },
   {
    "id": "p16b",
-   "file": "assets/vo-part-1-hindi/16.wav",
+   "file": "assets/vo-part-1-hindi/16.opus",
    "text": "चलिए, इस पंचभुज के विकर्णों को देखते हैं।",
    "seconds": 3.32,
    "words": [
@@ -712,7 +712,7 @@
   },
   {
    "id": "p17i",
-   "file": "assets/vo-part-1-hindi/17.wav",
+   "file": "assets/vo-part-1-hindi/17.opus",
    "text": "विकर्ण अंदर हैं या बाहर?",
    "seconds": 2.68,
    "words": [
@@ -745,7 +745,7 @@
   },
   {
    "id": "fb54",
-   "file": "assets/vo-part-1-hindi/18.wav",
+   "file": "assets/vo-part-1-hindi/18.opus",
    "text": "विकर्ण अंदर हैं।",
    "seconds": 1.96,
    "words": [
@@ -768,7 +768,7 @@
   },
   {
    "id": "p18",
-   "file": "assets/vo-part-1-hindi/19.wav",
+   "file": "assets/vo-part-1-hindi/19.opus",
    "text": "चलिए, कुछ बदलाव करते हैं।",
    "seconds": 2.2,
    "words": [
@@ -801,7 +801,7 @@
   },
   {
    "id": "p19i",
-   "file": "assets/vo-part-1-hindi/20.wav",
+   "file": "assets/vo-part-1-hindi/20.opus",
    "text": "इस शीर्ष को अंदर खींचने में मेरी मदद करें।",
    "seconds": 3.28,
    "words": [
@@ -854,7 +854,7 @@
   },
   {
    "id": "p20",
-   "file": "assets/vo-part-1-hindi/21.wav",
+   "file": "assets/vo-part-1-hindi/21.opus",
    "text": "अरे वाह! एक विकर्ण बाहर चला गया।",
    "seconds": 3.64,
    "words": [
@@ -897,7 +897,7 @@
   },
   {
    "id": "fb52",
-   "file": "assets/vo-part-1-hindi/22.wav",
+   "file": "assets/vo-part-1-hindi/22.opus",
    "text": "अरे वाह! कुछ विकर्ण बाहर चले गए।",
    "seconds": 3.64,
    "words": [
@@ -940,7 +940,7 @@
   },
   {
    "id": "p21",
-   "file": "assets/vo-part-1-hindi/23.wav",
+   "file": "assets/vo-part-1-hindi/23.opus",
    "text": "चलिए, दोनों पंचभुजों के विकर्णों की तुलना करते हैं।",
    "seconds": 4.08,
    "words": [
@@ -993,7 +993,7 @@
   },
   {
    "id": "p22",
-   "file": "assets/vo-part-1-hindi/24.wav",
+   "file": "assets/vo-part-1-hindi/24.opus",
    "text": "इसके सभी विकर्ण अंदर हैं।",
    "seconds": 2.72,
    "words": [
@@ -1026,7 +1026,7 @@
   },
   {
    "id": "p23",
-   "file": "assets/vo-part-1-hindi/25.wav",
+   "file": "assets/vo-part-1-hindi/25.opus",
    "text": "लेकिन इसका कम से कम एक विकर्ण बाहर है।",
    "seconds": 3.4,
    "words": [
@@ -1079,7 +1079,7 @@
   },
   {
    "id": "p24",
-   "file": "assets/vo-part-1-hindi/26.wav",
+   "file": "assets/vo-part-1-hindi/26.opus",
    "text": "सभी विकर्ण अंदर हों, तो वह उत्तल बहुभुज है।",
    "seconds": 4.24,
    "words": [
@@ -1132,7 +1132,7 @@
   },
   {
    "id": "p25",
-   "file": "assets/vo-part-1-hindi/27.wav",
+   "file": "assets/vo-part-1-hindi/27.opus",
    "text": "कम से कम एक विकर्ण बाहर हो, तो वह अवतल बहुभुज है।",
    "seconds": 4.68,
    "words": [
@@ -1200,7 +1200,7 @@
   },
   {
    "id": "p26i",
-   "file": "assets/vo-part-1-hindi/28.wav",
+   "file": "assets/vo-part-1-hindi/28.opus",
    "text": "इस बहुभुज को अवतल बनाने के लिए कोई भी शीर्ष खींचें।",
    "seconds": 4.52,
    "words": [
@@ -1263,7 +1263,7 @@
   },
   {
    "id": "fb32",
-   "file": "assets/vo-part-1-hindi/29.wav",
+   "file": "assets/vo-part-1-hindi/29.opus",
    "text": "फिर से प्रयास करें!",
    "seconds": 1.84,
    "words": [
@@ -1291,7 +1291,7 @@
   },
   {
    "id": "p26r1",
-   "file": "assets/vo-part-1-hindi/30.wav",
+   "file": "assets/vo-part-1-hindi/30.opus",
    "text": "विकर्ण अभी भी आकृति के अंदर हैं, इसलिए यह अब भी उत्तल है।",
    "seconds": 4.88,
    "words": [
@@ -1364,7 +1364,7 @@
   },
   {
    "id": "fb53",
-   "file": "assets/vo-part-1-hindi/31.wav",
+   "file": "assets/vo-part-1-hindi/31.opus",
    "text": "आइए, मैं आपको दिखाऊँ। इस कोने को देखें।",
    "seconds": 3.6,
    "words": [
@@ -1412,7 +1412,7 @@
   },
   {
    "id": "p26r2",
-   "file": "assets/vo-part-1-hindi/32.wav",
+   "file": "assets/vo-part-1-hindi/32.opus",
    "text": "अब एक विकर्ण बाहर जाता है, इसलिए यह बहुभुज अवतल है।",
    "seconds": 5.04,
    "words": [
@@ -1475,7 +1475,7 @@
   },
   {
    "id": "fb03",
-   "file": "assets/vo-part-1-hindi/33.wav",
+   "file": "assets/vo-part-1-hindi/33.opus",
    "text": "बहुत बढ़िया!",
    "seconds": 1.76,
    "words": [
@@ -1493,7 +1493,7 @@
   },
   {
    "id": "p27",
-   "file": "assets/vo-part-1-hindi/34.wav",
+   "file": "assets/vo-part-1-hindi/34.opus",
    "text": "क्या आप इन बहुभुजों को उत्तल और अवतल में छाँट सकते हैं?",
    "seconds": 4.28,
    "words": [
@@ -1561,7 +1561,7 @@
   },
   {
    "id": "p27c",
-   "file": "assets/vo-part-1-hindi/35.wav",
+   "file": "assets/vo-part-1-hindi/35.opus",
    "text": "देखिए! यह कोना अंदर की ओर जाता है।",
    "seconds": 3.44,
    "words": [
@@ -1609,7 +1609,7 @@
   },
   {
    "id": "p27v",
-   "file": "assets/vo-part-1-hindi/36.wav",
+   "file": "assets/vo-part-1-hindi/36.opus",
    "text": "देखिए! कोई भी कोना अंदर की ओर नहीं जाता।",
    "seconds": 3.88,
    "words": [
@@ -1662,7 +1662,7 @@
   },
   {
    "id": "p28",
-   "file": "assets/vo-part-1-hindi/37.wav",
+   "file": "assets/vo-part-1-hindi/37.opus",
    "text": "हम्म… सभी भुजाएँ कुछ ज़्यादा ही एक जैसी लग रही हैं।",
    "seconds": 4.56,
    "words": [
@@ -1725,7 +1725,7 @@
   },
   {
    "id": "p29s",
-   "file": "assets/vo-part-1-hindi/38.wav",
+   "file": "assets/vo-part-1-hindi/38.opus",
    "text": "चलिए, भुजाओं को मापते हैं।",
    "seconds": 2.36,
    "words": [
@@ -1758,7 +1758,7 @@
   },
   {
    "id": "p30",
-   "file": "assets/vo-part-1-hindi/39.wav",
+   "file": "assets/vo-part-1-hindi/39.opus",
    "text": "हर भुजा बराबर है। लेकिन कोणों का क्या?",
    "seconds": 4,
    "words": [
@@ -1806,7 +1806,7 @@
   },
   {
    "id": "p31m",
-   "file": "assets/vo-part-1-hindi/40.wav",
+   "file": "assets/vo-part-1-hindi/40.opus",
    "text": "चलिए, कोणों को मापते हैं।",
    "seconds": 2.36,
    "words": [
@@ -1839,7 +1839,7 @@
   },
   {
    "id": "p31",
-   "file": "assets/vo-part-1-hindi/41.wav",
+   "file": "assets/vo-part-1-hindi/41.opus",
    "text": "कोण भी बराबर हैं!",
    "seconds": 1.92,
    "words": [
@@ -1867,7 +1867,7 @@
   },
   {
    "id": "p32a",
-   "file": "assets/vo-part-1-hindi/42.wav",
+   "file": "assets/vo-part-1-hindi/42.opus",
    "text": "इस कोने को खींचने में मेरी मदद करें। चलिए देखते हैं, भुजाओं और कोणों का क्या होता है।",
    "seconds": 6.56,
    "words": [
@@ -1965,7 +1965,7 @@
   },
   {
    "id": "p32ai",
-   "file": "assets/vo-part-1-hindi/43.wav",
+   "file": "assets/vo-part-1-hindi/43.opus",
    "text": "चमकते हुए शीर्ष को खींचें।",
    "seconds": 2.64,
    "words": [
@@ -1998,7 +1998,7 @@
   },
   {
    "id": "p32b",
-   "file": "assets/vo-part-1-hindi/44.wav",
+   "file": "assets/vo-part-1-hindi/44.opus",
    "text": "यह अब भी एक पंचभुज है। लेकिन क्या भुजाएँ और कोण अब भी बराबर हैं?",
    "seconds": 5.8,
    "words": [
@@ -2081,7 +2081,7 @@
   },
   {
    "id": "p32bi",
-   "file": "assets/vo-part-1-hindi/45.wav",
+   "file": "assets/vo-part-1-hindi/45.opus",
    "text": "क्या भुजाएँ और कोण अब भी बराबर हैं?",
    "seconds": 3.08,
    "words": [
@@ -2129,7 +2129,7 @@
   },
   {
    "id": "p32r",
-   "file": "assets/vo-part-1-hindi/46.wav",
+   "file": "assets/vo-part-1-hindi/46.opus",
    "text": "भुजाएँ और कोण बदल गए, इसलिए वे बराबर नहीं हैं।",
    "seconds": 4.44,
    "words": [
@@ -2187,7 +2187,7 @@
   },
   {
    "id": "fb55",
-   "file": "assets/vo-part-1-hindi/47.wav",
+   "file": "assets/vo-part-1-hindi/47.opus",
    "text": "चलिए, इन दोनों पंचभुजों की तुलना करते हैं।",
    "seconds": 3.64,
    "words": [
@@ -2235,7 +2235,7 @@
   },
   {
    "id": "fb56",
-   "file": "assets/vo-part-1-hindi/48.wav",
+   "file": "assets/vo-part-1-hindi/48.opus",
    "text": "इस पंचभुज की सभी भुजाएँ और सभी कोण बराबर हैं।",
    "seconds": 4.28,
    "words": [
@@ -2293,7 +2293,7 @@
   },
   {
    "id": "fb57",
-   "file": "assets/vo-part-1-hindi/49.wav",
+   "file": "assets/vo-part-1-hindi/49.opus",
    "text": "लेकिन इस पंचभुज की भुजाएँ और कोण असमान हैं।",
    "seconds": 4.28,
    "words": [
@@ -2346,7 +2346,7 @@
   },
   {
    "id": "fb58",
-   "file": "assets/vo-part-1-hindi/50.wav",
+   "file": "assets/vo-part-1-hindi/50.opus",
    "text": "सभी भुजाएँ और कोण बराबर हों, तो वह नियमित बहुभुज है। भुजाएँ और कोण असमान हों, तो वह अनियमित बहुभुज है।",
    "seconds": 9.64,
    "words": [
@@ -2459,7 +2459,7 @@
   },
   {
    "id": "p33",
-   "file": "assets/vo-part-1-hindi/51.wav",
+   "file": "assets/vo-part-1-hindi/51.opus",
    "text": "यह बहुभुज किस ओर जाएगा?",
    "seconds": 2.335,
    "words": [
@@ -2492,7 +2492,7 @@
   },
   {
    "id": "fb48",
-   "file": "assets/vo-part-1-hindi/52.wav",
+   "file": "assets/vo-part-1-hindi/52.opus",
    "text": "यह नियमित है। हर भुजा बराबर है, और हर कोण भी बराबर है।",
    "seconds": 4.916,
    "words": [
@@ -2565,7 +2565,7 @@
   },
   {
    "id": "fb49",
-   "file": "assets/vo-part-1-hindi/53.wav",
+   "file": "assets/vo-part-1-hindi/53.opus",
    "text": "यह अनियमित है। इसकी सभी भुजाएँ एक जितनी लंबी नहीं हैं।",
    "seconds": 4.696,
    "words": [
@@ -2628,7 +2628,7 @@
   },
   {
    "id": "fb50",
-   "file": "assets/vo-part-1-hindi/54.wav",
+   "file": "assets/vo-part-1-hindi/54.opus",
    "text": "यह अनियमित है। इसकी भुजाएँ बराबर हैं, लेकिन सभी कोण बराबर नहीं हैं।",
    "seconds": 5.566,
    "words": [
@@ -2701,7 +2701,7 @@
   },
   {
    "id": "fb51",
-   "file": "assets/vo-part-1-hindi/55.wav",
+   "file": "assets/vo-part-1-hindi/55.opus",
    "text": "यह अनियमित है। इसकी भुजाएँ बराबर नहीं हैं, और कोण भी बराबर नहीं हैं।",
    "seconds": 5.511,
    "words": [
@@ -2779,7 +2779,7 @@
   },
   {
    "id": "p37o",
-   "file": "assets/vo-part-1-hindi/56.wav",
+   "file": "assets/vo-part-1-hindi/56.opus",
    "text": "चलिए, याद करते हैं कि आज हमने क्या सीखा।",
    "seconds": 3.096,
    "words": [
@@ -2832,7 +2832,7 @@
   },
   {
    "id": "p37a",
-   "file": "assets/vo-part-1-hindi/57.wav",
+   "file": "assets/vo-part-1-hindi/57.opus",
    "text": "शीर्ष वह कोना है जहाँ दो भुजाएँ मिलती हैं।",
    "seconds": 3.296,
    "words": [
@@ -2885,7 +2885,7 @@
   },
   {
    "id": "p37b",
-   "file": "assets/vo-part-1-hindi/58.wav",
+   "file": "assets/vo-part-1-hindi/58.opus",
    "text": "भुजा दो शीर्षों को जोड़ने वाली एक सीधी रेखा है।",
    "seconds": 3.88,
    "words": [
@@ -2943,7 +2943,7 @@
   },
   {
    "id": "p37c",
-   "file": "assets/vo-part-1-hindi/59.wav",
+   "file": "assets/vo-part-1-hindi/59.opus",
    "text": "जहाँ दो भुजाएँ मिलती हैं, वहाँ कोण बनता है।",
    "seconds": 3.241,
    "words": [
@@ -2996,7 +2996,7 @@
   },
   {
    "id": "p37d",
-   "file": "assets/vo-part-1-hindi/60.wav",
+   "file": "assets/vo-part-1-hindi/60.opus",
    "text": "विकर्ण दो अनासन्न शीर्षों को जोड़ता है।",
    "seconds": 3.176,
    "words": [
@@ -3039,7 +3039,7 @@
   },
   {
    "id": "p37e",
-   "file": "assets/vo-part-1-hindi/61.wav",
+   "file": "assets/vo-part-1-hindi/61.opus",
    "text": "उत्तल बहुभुज में सभी विकर्ण अंदर रहते हैं।",
    "seconds": 3.19,
    "words": [
@@ -3087,7 +3087,7 @@
   },
   {
    "id": "p37f",
-   "file": "assets/vo-part-1-hindi/62.wav",
+   "file": "assets/vo-part-1-hindi/62.opus",
    "text": "अवतल बहुभुज में कम से कम एक विकर्ण बाहर जाता है।",
    "seconds": 3.766,
    "words": [
@@ -3150,7 +3150,7 @@
   },
   {
    "id": "p37g",
-   "file": "assets/vo-part-1-hindi/63.wav",
+   "file": "assets/vo-part-1-hindi/63.opus",
    "text": "नियमित बहुभुज की सभी भुजाएँ और सभी कोण बराबर होते हैं।",
    "seconds": 4.086,
    "words": [
@@ -3213,7 +3213,7 @@
   },
   {
    "id": "p37h",
-   "file": "assets/vo-part-1-hindi/64.wav",
+   "file": "assets/vo-part-1-hindi/64.opus",
    "text": "अगर सभी भुजाएँ या कोण बराबर नहीं हैं, तो बहुभुज अनियमित है।",
    "seconds": 4.581,
    "words": [
@@ -3281,7 +3281,7 @@
   },
   {
    "id": "p37i",
-   "file": "assets/vo-part-1-hindi/65.wav",
+   "file": "assets/vo-part-1-hindi/65.opus",
    "text": "अद्भुत! आपने बहुभुज की ये सारी बातें खोज लीं!",
    "seconds": 3.37,
    "words": [
@@ -3334,7 +3334,7 @@
   },
   {
    "id": "p39",
-   "file": "assets/vo-part-1-hindi/66.wav",
+   "file": "assets/vo-part-1-hindi/66.opus",
    "text": "अब आप बहुभुजों के बारे में सब कुछ जानते हैं। आप मोमो की मदद के लिए तैयार हैं।",
    "seconds": 5.246,
    "words": [
@@ -3432,7 +3432,7 @@
   },
   {
    "id": "fb46",
-   "file": "assets/vo-part-1-hindi/67.wav",
+   "file": "assets/vo-part-1-hindi/67.opus",
    "text": "ऐसे ही आगे बढ़ते रहें!",
    "seconds": 1.981,
    "words": [
@@ -3465,7 +3465,7 @@
   },
   {
    "id": "fb47",
-   "file": "assets/vo-part-1-hindi/68.wav",
+   "file": "assets/vo-part-1-hindi/68.opus",
    "text": "अद्भुत!",
    "seconds": 1.05,
    "words": [
@@ -3478,7 +3478,7 @@
   },
   {
    "id": "fb44",
-   "file": "assets/vo-part-1-hindi/69.wav",
+   "file": "assets/vo-part-1-hindi/69.opus",
    "text": "पूरी तरह से सही नहीं। वृत्त घुमावदार होता है। बहुभुज की सभी भुजाएँ सीधी होती हैं।",
    "seconds": 5.981,
    "words": [
@@ -3566,7 +3566,7 @@
   },
   {
    "id": "fb45",
-   "file": "assets/vo-part-1-hindi/70.wav",
+   "file": "assets/vo-part-1-hindi/70.opus",
    "text": "पूरी तरह से सही नहीं। यह आकृति खुली है। बहुभुज बंद होना चाहिए।",
    "seconds": 4.906,
    "words": [
@@ -3639,7 +3639,7 @@
   },
   {
    "id": "fb41",
-   "file": "assets/vo-part-1-hindi/71.wav",
+   "file": "assets/vo-part-1-hindi/71.opus",
    "text": "फिर से प्रयास करें! अब भुजाओं और कोणों की तुलना करें।",
    "seconds": 3.481,
    "words": [
@@ -3702,7 +3702,7 @@
   },
   {
    "id": "p38b",
-   "file": "assets/vo-part-1-hindi/72.wav",
+   "file": "assets/vo-part-1-hindi/72.opus",
    "text": "आप एक बहुभुज खोजी हैं!",
    "seconds": 2.04,
    "words": [
@@ -3735,7 +3735,7 @@
   },
   {
    "id": "fb15",
-   "file": "assets/vo-part-1-hindi/73.wav",
+   "file": "assets/vo-part-1-hindi/73.opus",
    "text": "इसे किसी कोने पर छोड़ें!",
    "seconds": 1.845,
    "words": [
@@ -3768,7 +3768,7 @@
   },
   {
    "id": "fb11",
-   "file": "assets/vo-part-1-hindi/74.wav",
+   "file": "assets/vo-part-1-hindi/74.opus",
    "text": "इसे और अंदर खींचें!",
    "seconds": 1.696,
    "words": [
@@ -3796,7 +3796,7 @@
   },
   {
    "id": "fb40",
-   "file": "assets/vo-part-1-hindi/75.wav",
+   "file": "assets/vo-part-1-hindi/75.opus",
    "text": "फिर से प्रयास करें! कोने को थोड़ा और खींचें।",
    "seconds": 3.13,
    "words": [
@@ -3849,7 +3849,7 @@
   },
   {
    "id": "fb35",
-   "file": "assets/vo-part-1-hindi/76.wav",
+   "file": "assets/vo-part-1-hindi/76.opus",
    "text": "फिर से प्रयास करें! हर भुजा और हर कोण बराबर है।",
    "seconds": 3.591,
    "words": [
@@ -3912,7 +3912,7 @@
   },
   {
    "id": "fb36",
-   "file": "assets/vo-part-1-hindi/77.wav",
+   "file": "assets/vo-part-1-hindi/77.opus",
    "text": "फिर से प्रयास करें! सभी भुजाएँ बराबर नहीं हैं।",
    "seconds": 3.181,
    "words": [
@@ -3965,7 +3965,7 @@
   },
   {
    "id": "fb37",
-   "file": "assets/vo-part-1-hindi/78.wav",
+   "file": "assets/vo-part-1-hindi/78.opus",
    "text": "फिर से प्रयास करें! सभी कोण बराबर नहीं हैं।",
    "seconds": 3.07,
    "words": [
@@ -4018,7 +4018,7 @@
   },
   {
    "id": "fb38",
-   "file": "assets/vo-part-1-hindi/79.wav",
+   "file": "assets/vo-part-1-hindi/79.opus",
    "text": "फिर से प्रयास करें! सभी भुजाएँ और कोण बराबर नहीं हैं।",
    "seconds": 3.656,
    "words": [
@@ -4081,7 +4081,7 @@
   },
   {
    "id": "tut-1-meet",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/1.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/1.opus",
    "text": "यह मोमो है। उसे अपने दोस्त को ढूँढना है।",
    "seconds": 3.72,
    "words": [
@@ -4134,7 +4134,7 @@
   },
   {
    "id": "tut-2-goal",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/2.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/2.opus",
    "text": "मोमो को बर्फ़ीला दर्रा पार करने में मदद करें!",
    "seconds": 3.72,
    "words": [
@@ -4187,7 +4187,7 @@
   },
   {
    "id": "tut-3-watch",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/3.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/3.opus",
    "text": "सावधान!",
    "seconds": 1.56,
    "words": [
@@ -4200,7 +4200,7 @@
   },
   {
    "id": "tut-4-jump",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/4.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/4.opus",
    "text": "बाधाओं के ऊपर से कूदने के लिए टैप करें।",
    "seconds": 3.56,
    "words": [
@@ -4253,7 +4253,7 @@
   },
   {
    "id": "tut-5-broken",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/5.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/5.opus",
    "text": "अरे नहीं! रास्ता टूट गया है।",
    "seconds": 3.16,
    "words": [
@@ -4291,7 +4291,7 @@
   },
   {
    "id": "tut-6-use",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/6.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/6.opus",
    "text": "रास्ता ठीक करने के लिए सही बर्फ़ का टुकड़ा इस्तेमाल करें।",
    "seconds": 4.08,
    "words": [
@@ -4354,7 +4354,7 @@
   },
   {
    "id": "tut-6b-piece",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/7.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/7.opus",
    "text": "रास्ता ठीक करने के लिए सही टुकड़ा इस्तेमाल करें।",
    "seconds": 3.72,
    "words": [
@@ -4407,7 +4407,7 @@
   },
   {
    "id": "tut-7-fit",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/8.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/8.opus",
    "text": "एकदम सही फिट! ऐसे ही आगे बढ़ते रहें!",
    "seconds": 3.56,
    "words": [
@@ -4455,7 +4455,7 @@
   },
   {
    "id": "p2-1-diagonal",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/9.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/9.opus",
    "text": "एक विकर्ण पर काटें।",
    "seconds": 2.32,
    "words": [
@@ -4483,7 +4483,7 @@
   },
   {
    "id": "p2-2-diagonals",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/10.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/10.opus",
    "text": "सभी विकर्ण खींचें।",
    "seconds": 2.2,
    "words": [
@@ -4506,7 +4506,7 @@
   },
   {
    "id": "p2-3-samevertex",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/11.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/11.opus",
    "text": "एक ही शीर्ष से 2 विकर्ण खींचें।",
    "seconds": 3.04,
    "words": [
@@ -4549,7 +4549,7 @@
   },
   {
    "id": "p2-4-concave",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/12.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/12.opus",
    "text": "अवतल बहुभुज को काटें।",
    "seconds": 2.36,
    "words": [
@@ -4577,7 +4577,7 @@
   },
   {
    "id": "p2-5-convex",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/13.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/13.opus",
    "text": "उत्तल बहुभुज को काटें।",
    "seconds": 2.16,
    "words": [
@@ -4605,7 +4605,7 @@
   },
   {
    "id": "p2-6-concave-pentagon",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/14.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/14.opus",
    "text": "अवतल पंचभुज को काटें।",
    "seconds": 2.56,
    "words": [
@@ -4633,7 +4633,7 @@
   },
   {
    "id": "p2-7-convex-hexagon",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/15.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/15.opus",
    "text": "उत्तल षट्भुज को काटें।",
    "seconds": 2.32,
    "words": [
@@ -4661,7 +4661,7 @@
   },
   {
    "id": "p2-8-all-concave",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/16.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/16.opus",
    "text": "सभी अवतल बहुभुज काटें।",
    "seconds": 2.64,
    "words": [
@@ -4689,7 +4689,7 @@
   },
   {
    "id": "p2-9-all-convex",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/17.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/17.opus",
    "text": "सभी उत्तल बहुभुज काटें।",
    "seconds": 2.6,
    "words": [
@@ -4717,7 +4717,7 @@
   },
   {
    "id": "hint-corners",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/18.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/18.opus",
    "text": "दो शीर्षों को जोड़ें।",
    "seconds": 2.28,
    "words": [
@@ -4745,7 +4745,7 @@
   },
   {
    "id": "hint-side",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/19.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/19.opus",
    "text": "यह एक भुजा है — विकर्ण बनाकर देखें।",
    "seconds": 3.6,
    "words": [
@@ -4793,7 +4793,7 @@
   },
   {
    "id": "hint-short",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/20.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/20.opus",
    "text": "ठीक आर-पार काटें, एक शीर्ष से सामने वाले शीर्ष तक।",
    "seconds": 5.12,
    "words": [
@@ -4851,7 +4851,7 @@
   },
   {
    "id": "hint-already",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/21.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/21.opus",
    "text": "वह तो बन गया — कोई दूसरा ढूँढें।",
    "seconds": 2.96,
    "words": [
@@ -4899,7 +4899,7 @@
   },
   {
    "id": "hint-samevertex",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/22.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/22.opus",
    "text": "इसे भी उसी शीर्ष से शुरू करें।",
    "seconds": 2.84,
    "words": [
@@ -4942,7 +4942,7 @@
   },
   {
    "id": "sw1",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/23.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/23.opus",
    "text": "मोमो को आपकी मदद चाहिए।",
    "seconds": 2.6,
    "words": [
@@ -4975,7 +4975,7 @@
   },
   {
    "id": "sw2",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/24.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/24.opus",
    "text": "लेकिन मोमो की मदद करने के लिए, आपको बहुभुजों के बारे में सीखना होगा।",
    "seconds": 5.2,
    "words": [
@@ -5053,7 +5053,7 @@
   },
   {
    "id": "sw3",
-   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/25.wav",
+   "file": "../part2-frozen-rush/game/assets/vo-part-2-hindi/25.opus",
    "text": "अब चलिए, मोमो की मदद करते हैं।",
    "seconds": 2.68,
    "words": [

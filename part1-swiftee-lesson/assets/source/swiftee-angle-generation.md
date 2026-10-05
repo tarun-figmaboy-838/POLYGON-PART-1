@@ -9,7 +9,7 @@ Generate a delightful NEW 8-frame sprite animation of this exact Swiftee bird US
 
 ## Intact pose replacement (v4)
 
-Generated with the built-in image_gen tool. Source: `swiftee-angle-intact-v4.png`. Packed runtime asset: `../swiftee/swiftee-angle-intact-v4.webp`. Every frame is the full generated bird AND held protractor. There are no body masks, tool extraction, feather segmentation, or separate character/tool image layers. The packer registers whole source cells with uniform scale and padding. Runtime selects a complete pose for each angle and applies the measured baseline correction.
+Generated with the built-in image_gen tool. Source: `swiftee-angle-intact-v4.webp`. Packed runtime asset: `../swiftee/swiftee-angle-intact-v4.webp`. Every frame is the full generated bird AND held protractor. There are no body masks, tool extraction, feather segmentation, or separate character/tool image layers. The packer registers whole source cells with uniform scale and padding. Runtime selects a complete pose for each angle and applies the measured baseline correction.
 
 Final generation prompt:
 

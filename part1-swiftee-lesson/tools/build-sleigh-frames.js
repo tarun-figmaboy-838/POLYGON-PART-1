@@ -37,13 +37,13 @@ const OUT = path.join(ROOT, 'src/character/sleigh-frames.js');
 /* `file` is the PNG master that is measured; `serve` is the WebP the game loads, made from
    it by tools/encode-sprites.js (near-lossless, so every measurement here holds for it). */
 const SHEETS = [
-  { key: 'ride',      file: 'assets/source/intro/sheet1.png', serve: 'assets/swiftee/intro/sheet1.webp', cols: 4, rows: 2 },
-  { key: 'dismount',  file: 'assets/source/intro/sheet2.png', serve: 'assets/swiftee/intro/sheet2.webp', cols: 5, rows: 2 },
-  { key: 'departure', file: 'assets/source/intro/sheet3.png', serve: 'assets/swiftee/intro/sheet3.webp', cols: 4, rows: 2 }
+  { key: 'ride',      file: 'assets/source/intro/sheet1.avif', serve: 'assets/swiftee/intro/sheet1.webp', cols: 4, rows: 2 },
+  { key: 'dismount',  file: 'assets/source/intro/sheet2.avif', serve: 'assets/swiftee/intro/sheet2.webp', cols: 5, rows: 2 },
+  { key: 'departure', file: 'assets/source/intro/sheet3.avif', serve: 'assets/swiftee/intro/sheet3.webp', cols: 4, rows: 2 }
 ];
 
 function serve() {
-  const TY = { '.html': 'text/html', '.png': 'image/png' };
+  const TY = { '.html': 'text/html', '.png': 'image/png', '.avif': 'image/avif' };
   const srv = http.createServer((q, r) => {
     let p = decodeURIComponent(q.url.split('?')[0]);
     if (p === '/') { r.writeHead(200, { 'Content-Type': 'text/html' }); return r.end('<!doctype html><title>x</title>'); }

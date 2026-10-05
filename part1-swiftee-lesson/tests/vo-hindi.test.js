@@ -76,7 +76,7 @@ t('Part 2 plays the Hindi take', VO_HI.src === 'assets/audio/vo-lines-hi.mp3' &&
 t('Part 2 has its Hindi lines', lines.length >= 22, lines.length);
 const versions = fs.readFileSync(path.join(GAME, 'js', 'asset-versions.js'), 'utf8');
 t('the Hindi take is versioned (tools/build-bundle.mjs)', /"assets\/audio\/vo-lines-hi\.ogg": "[0-9a-f]{8}"/.test(versions));
-t('no .wav recording is listed as a game asset', !/\.wav"/.test(versions));
+t('no recording (.wav or .opus) is listed as a game asset', !/\.(wav|opus)"/.test(versions));
 const bundle = fs.readFileSync(path.join(GAME, 'js', 'game.bundle.js'), 'utf8');
 t('the bundle carries the Hindi take (tools/build-bundle.mjs)', bundle.indexOf(JSON.stringify(VO_HI.lines['p2-1-diagonal'])) > 0 || bundle.indexOf(JSON.stringify(VO_HI.lines['p2-1-diagonal']).replace(/,/g, ', ')) > 0);
 let end = 0;

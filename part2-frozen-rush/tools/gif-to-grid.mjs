@@ -32,7 +32,7 @@ const CHAR = join(ROOT, 'art-source', 'char-sheets');
    serves every animation delivered this way:
      node tools/gif-to-grid.mjs <gif under assets/GIF> <name under assets/char> */
 const GIF = join(ROOT, 'art-source', 'gif',
-  process.argv[2] || 'sprite-max-px-frames-36-rows-6-cols-6.gif');
+  process.argv[2] || 'sprite-max-px-frames-36-rows-6-cols-6.webp');
 const OUT = join(CHAR, process.argv[3] || 'run-gif.png');
 const GUTTER = 48;
 const ALPHA = 40;

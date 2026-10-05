@@ -15,7 +15,7 @@ romanized text, so each word is spelled out in Latin letters first (roman() belo
 Devanagari transliteration — the aligner is forgiving of spelling, it only needs the sounds in
 order). A word with no sound (an em dash) gets null, and the builder gives it the next word's time.
 
-  request: [{"file": "...wav", "words": ["नमस्ते!", "मैं", ...]}]
+  request: [{"file": "...opus",  (any format torchaudio reads: the recordings are Ogg Opus) "words": ["नमस्ते!", "मैं", ...]}]
   result:  {"<file>": {"dur": s, "words": [[start, end] | null, ...], "roman": [...]}}
 """
 import json, sys, re

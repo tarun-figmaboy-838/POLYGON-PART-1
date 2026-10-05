@@ -38,11 +38,11 @@ const INNER = 6;
 /* Which donor supplies the interior. Chosen for a big uninterrupted face, so the crop
    is all interior and none of it is the donor's own frame. */
 const WANT = [
-  { id: 'regularHexagon',  donor: 'regularOctagon.png' },
-  { id: 'concavePentagon', donor: 'regularPentagon.png' },
-  { id: 'concaveHexagon',  donor: 'regularHeptagon.png' },
+  { id: 'regularHexagon',  donor: 'regularOctagon.avif' },
+  { id: 'concavePentagon', donor: 'regularPentagon.avif' },
+  { id: 'concaveHexagon',  donor: 'regularHeptagon.avif' },
   // the second concave pentagon: a different donor, so the pair are not twins
-  { id: 'concavePentagon2', donor: 'irregularPentagon.png' }
+  { id: 'concavePentagon2', donor: 'irregularPentagon.avif' }
 ];
 
 /** The verified ring, fitted into an S x S canvas with a little padding. */
@@ -122,13 +122,13 @@ for (const { id, donor } of WANT) {
              stroke-width="${OUTLINE}" stroke-linejoin="miter"/>`)).png().toBuffer();
 
   /* AND IT WRITES SOURCE ART, not a served asset. What this makes is a delivered-style
-     PNG that build-option-shapes.mjs then traces and turns into the webp the game
+     picture that build-option-shapes.mjs then traces and turns into the webp the game
      loads — so it belongs beside the other inputs in art-source/, and writing it into
      game/assets/ put a 1254px PNG in the deploy folder that no URL ever asks for. */
-  const out = join(SRC_DIR, id + '.png');
+  const out = join(SRC_DIR, id + '.avif');
   await sharp({ create: { width: S, height: S, channels: 4,
                           background: { r: 0, g: 0, b: 0, alpha: 0 } } })
     .composite([{ input: base }, { input: texture }, { input: frame }])
-    .png().toFile(out);
-  console.log(`built ${id}.png  (${pointsOf(id).length} sides, interior from ${donor})`);
+    .avif({ quality: 95, effort: 6, chromaSubsampling: '4:4:4' }).toFile(out);   // as the delivered blocks are kept
+  console.log(`built ${id}.avif  (${pointsOf(id).length} sides, interior from ${donor})`);
 }

@@ -41,9 +41,9 @@ function walk(dir) {
 const rel = (p) => path.relative(ROOT, p).split(path.sep).join('/');
 
 // every file the site serves under assets/ (assets/source is the masters, never deployed — nor are
-// the Hindi recordings, assets/vo-part-1-hindi/*.wav, which tools/build-vo-hindi.js cuts into assets/vo/hi)
+// the Hindi recordings, assets/vo-part-1-hindi/*.opus, which tools/build-vo-hindi.js cuts into assets/vo/hi)
 const sizes = {};
-walk(path.join(ROOT, 'assets')).map(rel).filter((f) => !/^assets\/source\//.test(f) && !/\.wav$/i.test(f) && !/(^|\/)\.[^/]+$/.test(f)).sort()
+walk(path.join(ROOT, 'assets')).map(rel).filter((f) => !/^assets\/source\//.test(f) && !/\.(wav|opus)$/i.test(f) && !/(^|\/)\.[^/]+$/.test(f)).sort()
   .forEach((f) => { sizes[f] = fs.statSync(path.join(ROOT, f)).size; });
 
 // every literal asset URL in the scripts and the page, quoted or inside url(...)

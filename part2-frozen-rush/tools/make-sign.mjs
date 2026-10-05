@@ -1,6 +1,6 @@
 /* THE INSTRUCTION PLANK, from the delivered board.
  *
- *   consumes  art-source/sign-plank-src.png    (2172x724, the owner's delivery)
+ *   consumes  art-source/sign-plank-src.webp    (2172x724, the owner's delivery)
  *   writes    game/assets/ui/plank-l.webp
  *             game/assets/ui/plank-m.webp
  *             game/assets/ui/plank-r.webp
@@ -33,7 +33,7 @@
 import sharp from 'sharp';
 import { mkdir } from 'node:fs/promises';
 
-const SRC = 'art-source/sign-plank-src.png';
+const SRC = 'art-source/sign-plank-src.webp';
 const OUT = 'game/assets/ui/';
 
 const src = sharp(SRC).ensureAlpha();

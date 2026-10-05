@@ -2,7 +2,7 @@
     {
         "id": "p2-1-diagonal",
         "text": "Cut along a diagonal.",
-        "file": "p2-1-diagonal.wav",
+        "file": "p2-1-diagonal.opus",
         "duration": 1.95,
         "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
@@ -27,7 +27,7 @@
     {
         "id": "p2-2-diagonals",
         "text": "Draw all the diagonals.",
-        "file": "p2-2-diagonals.wav",
+        "file": "p2-2-diagonals.opus",
         "duration": 2.55,
         "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
@@ -52,7 +52,7 @@
     {
         "id": "p2-3-samevertex",
         "text": "Draw two diagonals from the same vertex.",
-        "file": "p2-3-samevertex.wav",
+        "file": "p2-3-samevertex.opus",
         "duration": 3.4,
         "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
@@ -89,7 +89,7 @@
     {
         "id": "p2-4-concave",
         "text": "Cut the concave polygon.",
-        "file": "p2-4-concave.wav",
+        "file": "p2-4-concave.opus",
         "duration": 2.53,
         "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
@@ -114,7 +114,7 @@
     {
         "id": "p2-5-convex",
         "text": "Cut the convex polygon.",
-        "file": "p2-5-convex.wav",
+        "file": "p2-5-convex.opus",
         "duration": 2.62,
         "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
@@ -139,7 +139,7 @@
     {
         "id": "p2-6-concave-pentagon",
         "text": "Cut the concave pentagon.",
-        "file": "p2-6-concave-pentagon.wav",
+        "file": "p2-6-concave-pentagon.opus",
         "duration": 2.54,
         "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
@@ -164,7 +164,7 @@
     {
         "id": "p2-7-convex-hexagon",
         "text": "Cut the convex hexagon.",
-        "file": "p2-7-convex-hexagon.wav",
+        "file": "p2-7-convex-hexagon.opus",
         "duration": 2.6,
         "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
@@ -189,7 +189,7 @@
     {
         "id": "p2-8-all-concave",
         "text": "Cut all the concave ones.",
-        "file": "p2-8-all-concave.wav",
+        "file": "p2-8-all-concave.opus",
         "duration": 2.58,
         "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
@@ -218,7 +218,7 @@
     {
         "id": "p2-9-all-convex",
         "text": "Cut all the convex ones.",
-        "file": "p2-9-all-convex.wav",
+        "file": "p2-9-all-convex.opus",
         "duration": 2.54,
         "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
@@ -247,7 +247,7 @@
     {
         "id": "hint-corners",
         "text": "Connect two vertices.",
-        "file": "hint-corners.wav",
+        "file": "hint-corners.opus",
         "duration": 2.15,
         "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
@@ -268,7 +268,7 @@
     {
         "id": "hint-side",
         "text": "That's a side — try a diagonal.",
-        "file": "hint-side.wav",
+        "file": "hint-side.opus",
         "duration": 3.3,
         "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
@@ -305,7 +305,7 @@
     {
         "id": "hint-short",
         "text": "Cut right across, vertex to opposite vertex.",
-        "file": "hint-short.wav",
+        "file": "hint-short.opus",
         "duration": 4.5,
         "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
@@ -342,7 +342,7 @@
     {
         "id": "hint-already",
         "text": "That one is done — find another.",
-        "file": "hint-already.wav",
+        "file": "hint-already.opus",
         "duration": 2.9,
         "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
@@ -379,7 +379,7 @@
     {
         "id": "hint-samevertex",
         "text": "Start this one at the same vertex.",
-        "file": "hint-samevertex.wav",
+        "file": "hint-samevertex.opus",
         "duration": 2.88,
         "source": "the user's recording of 2026-10-05 (vo/1 (1).mp3), cut at the take's own silences; word onsets by forced alignment",
         "words": [
@@ -416,7 +416,7 @@
     {
         "id": "tut-6b-piece",
         "text": "Use the right piece to fix the path.",
-        "file": "tut-6b-piece.wav",
+        "file": "tut-6b-piece.opus",
         "duration": 2.934,
         "recorded": true,
         "source": "the take's own tut-6-use, \"Use the right ice piece to fix the path.\", with \"ice\" cut out between the closures of right's t (1.615s) and piece's p (1.975s)",

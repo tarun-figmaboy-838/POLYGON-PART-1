@@ -544,7 +544,7 @@ export const CFG = {
            long as the learner thinks; before this the fright ended on a held frame, and a
            character who stands stone still at a hole for a minute reads as a hung game. */
         /* THE TREMBLE AT THE EDGE — the owner's 12-frame sheet (art-source/char-sheets/
-           tremble-src.png -> tools/sheet-to-grid.mjs -> tools/slice-char.mjs). He notices
+           tremble-src.webp -> tools/sheet-to-grid.mjs -> tools/slice-char.mjs). He notices
            the drop, looks down, trembles, looks to the player, settles. Played by the timing
            plan in CFG.sprite.tremble, not at one rate. It replaces the trample, which is
            shelved beside the fright in art-source/shelved/: with the wait handed to the idle
@@ -1424,7 +1424,7 @@ export const CFG = {
      duck is how far it drops when the ice gives way, so the rumble owns that moment. */
   /* THE ROPE ART (asked for: the thread should look like the block is really tied to a
      rope, with a knot at the attachment and a slight natural curve). One 96px-wide strip
-     cut from the owner's rope (art-source/rope/rope-tied-src.png): an eye and a knot at the
+     cut from the owner's rope (art-source/rope/rope-tied-src.avif): an eye and a knot at the
      top, twisted cord, and at the bottom a knot with a frayed tail. Row numbers are in the
      strip's own pixels: `cord` is the tileable twist (1120 rows, `seg` divides it), `knot`
      the knot-and-fray cap that sits on the block, `fray` the frayed end alone (a cut rope's
@@ -5482,7 +5482,7 @@ class GroundManager {
      even once a bridge spans them.
 
      THE LIP IS A PIECE OF THE PLATFORM ART, NOT A DRAWN SHAPE. The supplied
-     pathui.png is a set of finished ice platforms, and every one of them ENDS: a
+     pathui.avif is a set of finished ice platforms, and every one of them ENDS: a
      vertical carved face of blue ice with icicles under the snow and the dark rock
      showing below. That end is exactly what the walking surface should look like
      where it stops at a crevasse — the same snow, the same ice band, the same rock,
@@ -6371,7 +6371,7 @@ export function createGame(canvas, hooks = {}) {
     /* THE VOICE COMES DOWN WITH THE ART. It is not waited on — PLAY must not be held for it —
        but starting the fetch here means the take is in hand before the first line is spoken. */
     audio.fetchVo();
-    // the carved ends of a platform, cut from the supplied pathui.png — see GroundManager.drawCap
+    // the carved ends of a platform, cut from the supplied pathui.avif — see GroundManager.drawCap
     jobs.push(loadImg('assets/env/cap-l.webp').then(i => { images.capL = i; }));
     jobs.push(loadImg('assets/env/cap-r.webp').then(i => { images.capR = i; }));
     // the platform's own stone base, cut from the same sheet: the crevasse walls are tiled from it

@@ -29,9 +29,9 @@ try { sharp = require('sharp'); }
 catch (e) { sharp = require(path.join(ROOT, '..', 'part2-frozen-rush', 'node_modules', 'sharp')); }
 
 const PAIRS = [
-  ['assets/source/intro/sheet1.png', 'assets/swiftee/intro/sheet1.webp'],
-  ['assets/source/intro/sheet2.png', 'assets/swiftee/intro/sheet2.webp'],
-  ['assets/source/intro/sheet3.png', 'assets/swiftee/intro/sheet3.webp'],
+  ['assets/source/intro/sheet1.avif', 'assets/swiftee/intro/sheet1.webp'],
+  ['assets/source/intro/sheet2.avif', 'assets/swiftee/intro/sheet2.webp'],
+  ['assets/source/intro/sheet3.avif', 'assets/swiftee/intro/sheet3.webp'],
   ['assets/source/swiftee-measuring.png', 'assets/swiftee/swiftee-measuring.webp']
 ];
 const LEVEL = 40;   // near-lossless preprocessing: 100 is lossless, 0 the most

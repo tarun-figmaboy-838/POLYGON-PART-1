@@ -19,6 +19,7 @@
 *.gif   binary
 *.webp  binary
 *.avif  binary
+*.opus  binary
 *.ico   binary
 *.mp3   binary
 *.ogg   binary

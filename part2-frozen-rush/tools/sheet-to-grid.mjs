@@ -35,7 +35,7 @@ const arg = (name, dflt) => {
   return a ? Number(a.slice(name.length + 3)) : dflt;
 };
 const where = p => (isAbsolute(p) || p.includes('/') || p.includes('\\')) ? p : join(SRC, p);
-const IN = where(process.argv[2] || 'tremble-src.png');
+const IN = where(process.argv[2] || 'tremble-src.webp');
 const OUT = where(process.argv[3] || 'tremble-new.png');
 const ROWS = arg('rows', 3), COLS_IN = arg('cols', 4);
 const REF = arg('ref', 340);

@@ -54,14 +54,12 @@ const ASSET_V = {
   "assets/char/hd/mammoth-hurt.webp": "c32cf9bc",
   "assets/char/hd/mammoth-idle.webp": "db0e5422",
   "assets/char/hd/mammoth-jump-v2.webp": "84955cd0",
-  "assets/char/hd/mammoth-jump.webp": "9b67b6a2",
   "assets/char/hd/mammoth-run.webp": "97f41757",
   "assets/char/hd/mammoth-skid.webp": "820a18a1",
   "assets/char/hd/mammoth-tremble.webp": "889e9461",
   "assets/char/mammoth-hurt.webp": "8a886c8e",
   "assets/char/mammoth-idle.webp": "f1bbf762",
   "assets/char/mammoth-jump-v2.webp": "be4c78d2",
-  "assets/char/mammoth-jump.webp": "6b17e847",
   "assets/char/mammoth-run.webp": "d3ab6c72",
   "assets/char/mammoth-skid.webp": "ee6c20a7",
   "assets/char/mammoth-tremble.webp": "2f1852f5",
@@ -102,12 +100,6 @@ const ASSET_V = {
   "assets/option-shape/regularPentagon.webp": "04a3a89a",
   "assets/option-shape/regularQuadrilateral.webp": "63fa2bf0",
   "assets/option-shape/regularTriangle.webp": "b16acb47",
-  "assets/progress/panel.webp": "ccf5fac1",
-  "assets/progress/step-done.webp": "f8eb3ea6",
-  "assets/progress/step-goal.webp": "7cdbdd5c",
-  "assets/progress/step-locked.webp": "b769b557",
-  "assets/progress/step-momo.webp": "4aa77d0f",
-  "assets/progress/step-now.webp": "48a85a24",
   "assets/sky/01-dawn.webp": "7dbf9fd1",
   "assets/sky/02-early-morning.webp": "08988173",
   "assets/sky/03-morning.webp": "aae081ec",
@@ -164,14 +156,12 @@ const ASSET_SIZE = {
   "assets/char/hd/mammoth-hurt.webp": 718394,
   "assets/char/hd/mammoth-idle.webp": 298662,
   "assets/char/hd/mammoth-jump-v2.webp": 465586,
-  "assets/char/hd/mammoth-jump.webp": 204976,
   "assets/char/hd/mammoth-run.webp": 741534,
   "assets/char/hd/mammoth-skid.webp": 678824,
   "assets/char/hd/mammoth-tremble.webp": 316400,
   "assets/char/mammoth-hurt.webp": 465002,
   "assets/char/mammoth-idle.webp": 169790,
   "assets/char/mammoth-jump-v2.webp": 302054,
-  "assets/char/mammoth-jump.webp": 131238,
   "assets/char/mammoth-run.webp": 478982,
   "assets/char/mammoth-skid.webp": 438268,
   "assets/char/mammoth-tremble.webp": 179364,
@@ -212,12 +202,6 @@ const ASSET_SIZE = {
   "assets/option-shape/regularPentagon.webp": 91072,
   "assets/option-shape/regularQuadrilateral.webp": 97964,
   "assets/option-shape/regularTriangle.webp": 60244,
-  "assets/progress/panel.webp": 62144,
-  "assets/progress/step-done.webp": 8542,
-  "assets/progress/step-goal.webp": 16006,
-  "assets/progress/step-locked.webp": 6380,
-  "assets/progress/step-momo.webp": 9592,
-  "assets/progress/step-now.webp": 11036,
   "assets/sky/01-dawn.webp": 40764,
   "assets/sky/02-early-morning.webp": 49628,
   "assets/sky/03-morning.webp": 42062,
@@ -1645,7 +1629,7 @@ const CFG = {
            long as the learner thinks; before this the fright ended on a held frame, and a
            character who stands stone still at a hole for a minute reads as a hung game. */
         /* THE TREMBLE AT THE EDGE — the owner's 12-frame sheet (art-source/char-sheets/
-           tremble-src.png -> tools/sheet-to-grid.mjs -> tools/slice-char.mjs). He notices
+           tremble-src.webp -> tools/sheet-to-grid.mjs -> tools/slice-char.mjs). He notices
            the drop, looks down, trembles, looks to the player, settles. Played by the timing
            plan in CFG.sprite.tremble, not at one rate. It replaces the trample, which is
            shelved beside the fright in art-source/shelved/: with the wait handed to the idle
@@ -2525,7 +2509,7 @@ const CFG = {
      duck is how far it drops when the ice gives way, so the rumble owns that moment. */
   /* THE ROPE ART (asked for: the thread should look like the block is really tied to a
      rope, with a knot at the attachment and a slight natural curve). One 96px-wide strip
-     cut from the owner's rope (art-source/rope/rope-tied-src.png): an eye and a knot at the
+     cut from the owner's rope (art-source/rope/rope-tied-src.avif): an eye and a knot at the
      top, twisted cord, and at the bottom a knot with a frayed tail. Row numbers are in the
      strip's own pixels: `cord` is the tileable twist (1120 rows, `seg` divides it), `knot`
      the knot-and-fray cap that sits on the block, `fray` the frayed end alone (a cut rope's
@@ -6583,7 +6567,7 @@ class GroundManager {
      even once a bridge spans them.
 
      THE LIP IS A PIECE OF THE PLATFORM ART, NOT A DRAWN SHAPE. The supplied
-     pathui.png is a set of finished ice platforms, and every one of them ENDS: a
+     pathui.avif is a set of finished ice platforms, and every one of them ENDS: a
      vertical carved face of blue ice with icicles under the snow and the dark rock
      showing below. That end is exactly what the walking surface should look like
      where it stops at a crevasse — the same snow, the same ice band, the same rock,
@@ -7472,7 +7456,7 @@ function createGame(canvas, hooks = {}) {
     /* THE VOICE COMES DOWN WITH THE ART. It is not waited on — PLAY must not be held for it —
        but starting the fetch here means the take is in hand before the first line is spoken. */
     audio.fetchVo();
-    // the carved ends of a platform, cut from the supplied pathui.png — see GroundManager.drawCap
+    // the carved ends of a platform, cut from the supplied pathui.avif — see GroundManager.drawCap
     jobs.push(loadImg('assets/env/cap-l.webp').then(i => { images.capL = i; }));
     jobs.push(loadImg('assets/env/cap-r.webp').then(i => { images.capR = i; }));
     // the platform's own stone base, cut from the same sheet: the crevasse walls are tiled from it
@@ -14914,10 +14898,10 @@ class Hud {
      * The entrance animation is still only restarted for a genuinely NEW line, so a
      * re-assert does not make the pill flash. */
     /* NO PROGRESS TRAIL (the user: "remove the left side progress bar"). The journey card
-       that sat in the sky at the top left — Momo, the stones and the cave — is never shown:
-       it stays `hidden`, as the markup leaves it, and nothing is built into it, so none of
-       its art is fetched either. (setTrail is left in place, unused; the question board
-       that shared the left band with it now has the band to itself.) */
+       that sat in the sky at the top left — Momo, the stones and the cave — was taken out:
+       its markup, its code, its styles and its art are gone (tools/make-progress.mjs still makes
+       the art from art-source/progress, and the rest is in the history if it is ever wanted back), and
+       the question board that shared the left band with it has the band to itself. */
 
     const el = this.el.instruction;
     this._voDur = h.voDur || 0;          // paces the fallback reveal
@@ -16663,39 +16647,6 @@ const options = {
   // review tools (the skip-to-ending control). Off in a shipped build.
   dev: flag('dev', false)
 };
-
-/* ?panel=1 — THE PROGRESS PANEL'S ALIGNMENT, VISIBLE, IN THE REAL GAME.
- *
- * The card's frame is a nine-sliced picture and the journey inside it is a percentage
- * safe area, so "is it aligned?" is a question about two things that are drawn by
- * different mechanisms and cannot be compared by eye. The overlay draws the boundaries
- * the numbers actually describe — the card, the safe area, where the art's own cavity
- * is, the stones' shared baseline and each stone's centre — so a misalignment is
- * something you can see and measure rather than something you suspect.
- *
- * A query flag rather than a build switch: it costs nothing when it is off, and it is
- * the same way every other review control here is reached. Shift+P toggles it too, so
- * it can be turned on in the middle of a crossing without reloading and losing the run. */
-if (flag('panel', false) && hud.el && hud.el.trail) hud.el.trail.classList.add('debug');
-window.addEventListener('keydown', e => {
-  if (e.key === 'P' && e.shiftKey && hud.el && hud.el.trail) hud.el.trail.classList.toggle('debug');
-});
-
-/* ...AND THE GUIDES ALONE WERE NOT ENOUGH. Shift+P draws the boundaries but nothing can
-   be moved, which is the wrong half of the job: seeing that the row sits 68px inside the
-   cavity does not tell you what it should be instead. The editor makes the same parts
-   draggable, in the running game — where Momo is walking, the crossings are arriving and
-   the card slides away for a question, none of which a still mock-up shows.
-
-   Imported dynamically so it costs a shipped build nothing: the file is never fetched
-   unless ?panel=1 is on the URL. It fails quietly if it is not there — over file:// a
-   module cannot be fetched at all, which is a limitation of the scheme, not a fault. */
-if (flag('panel', false)) {
-  import('./panel-edit.js')
-    .then(m => { if (hud.el && hud.el.trail) m.startPanelEditor(hud.el.trail); })
-    .catch(() => { /* not served, or file:// — the guides still work */ });
-}
-
 
 let front = null;
 

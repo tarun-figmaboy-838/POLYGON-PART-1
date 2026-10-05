@@ -7,7 +7,7 @@ import sharp from 'sharp';
 import { join } from 'node:path';
 
 const root = join(import.meta.dirname, '..');
-const gif = join(root, 'art-source', 'gif', 'sprite-max-px-frames-36-rows-6-cols-6-2.gif');
+const gif = join(root, 'art-source', 'gif', 'sprite-max-px-frames-36-rows-6-cols-6-2.webp');   // the delivered GIF, kept as a lossless animated WebP
 const frames = Array.from({ length: 14 }, (_, i) => i + 14);
 const cols = 6;
 
@@ -31,10 +31,11 @@ const source = new Map();
 for (const i of frames) source.set(i, await pixels(await sharp(gif, { page: i }).png().toBuffer()));
 
 for (const set of [
-  { dir: join(root, 'game', 'assets', 'char'), cw: 420, ch: 320, quality: 82 },
-  { dir: join(root, 'game', 'assets', 'char', 'hd'), cw: 630, ch: 480, quality: 80 }
+  { dir: join(root, 'game', 'assets', 'char'), old: join(root, 'art-source', 'char-sheets', 'mammoth-jump.webp'), cw: 420, ch: 320, quality: 82 },
+  { dir: join(root, 'game', 'assets', 'char', 'hd'), old: join(root, 'art-source', 'char-sheets', 'hd', 'mammoth-jump.webp'), cw: 630, ch: 480, quality: 80 }
 ]) {
-  const old = join(set.dir, 'mammoth-jump.webp');
+  // the first jump take's sheet, whose first ten cells are the named reaction poses: a build input, kept in art-source
+  const old = set.old;
   const base = sharp(old);
   const oldCells = [];
   for (let i = 0; i < 10; i++) oldCells.push(await base.clone().extract({

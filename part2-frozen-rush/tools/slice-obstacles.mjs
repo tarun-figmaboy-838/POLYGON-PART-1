@@ -19,7 +19,7 @@
  */
 import sharp from 'sharp';
 
-const SHEETS = ['obsticals.png', 'obstical1.png'];
+const SHEETS = ['obsticals.webp', 'obstical1.webp'];
 const SRC = 'art-source/sheets/';   // the delivered sheets live with the other source art
 const DIR = 'game/assets/env/';    // the sliced pieces the game loads
 const ALPHA = 40;          // a pixel counts as content above this
@@ -28,8 +28,8 @@ const MIN_AREA = 4000;     // below this it is a stray speck, not an obstacle
 /* Names are assigned by reading order — left to right, top to bottom — so the output is
    stable across runs and a re-slice does not silently reshuffle which art is which. */
 const NAMES = {
-  'obsticals.png': ['log-fallen', 'log-arch', 'log-crossed', 'log-stump'],
-  'obstical1.png': ['bone-ribs', 'bone-cage', 'bone-tusk', 'bone-arch']
+  'obsticals.webp': ['log-fallen', 'log-arch', 'log-crossed', 'log-stump'],
+  'obstical1.webp': ['bone-ribs', 'bone-cage', 'bone-tusk', 'bone-arch']
 };
 
 for (const file of SHEETS) {

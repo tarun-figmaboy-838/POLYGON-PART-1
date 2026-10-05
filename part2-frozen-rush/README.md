@@ -61,7 +61,7 @@ nothing else is. That is what makes it safe to point a static host straight at i
 Vercel's Root Directory is set to `game` (see [docs/DEPLOY.md](docs/DEPLOY.md)).
 
 **2. Anything a *tool* reads but the *game* never fetches lives in `art-source/`.**
-Delivered artwork, un-sliced sprite sheets, GIFs, raw button renders. It stays in the
+Delivered artwork, un-sliced sprite sheets, the delivered animations, raw button renders. It stays in the
 repo because the builds need it, and it stays out of `game/` so it cannot ship.
 
 ```
@@ -75,11 +75,11 @@ game/                 THE SITE — only what a URL fetches
   assets/             audio · char · env · option-shape · sky · ui  (15MB, all served)
 
 art-source/           BUILD INPUTS — never deployed (78MB)
-  option-shape/       the 14 delivered blocks, as PNG  -> game/assets/option-shape/*.webp
+  option-shape/       the 14 delivered blocks, as AVIF -> game/assets/option-shape/*.webp
   char-sheets/        un-sliced character sheets       -> game/assets/char/mammoth-*.webp
-  gif/                the delivered GIFs               -> char-sheets/
+  gif/                the delivered GIFs, as lossless animated WebP -> char-sheets/
   original-upload/    everything as it first arrived
-  *-raw.png           button art before tools/make-buttons.mjs
+  *-raw.webp          button art before tools/make-buttons.mjs
 
 tools/                one-shot generators and the dev server. Every file says at the
                       top what it consumes and what it writes.
@@ -91,7 +91,7 @@ RUNNER.md             THE CONTRACT. Read this before changing gameplay.
 ```
 
 Not in git: `node_modules/`, `test-results/`, `playwright-report/`, `qa-report/`, and
-`art-source/char-sheets/*-gif.png` (regenerable from the GIFs — the command is in
+`art-source/char-sheets/*-gif.png` (regenerable from the animations — the command is in
 `.gitignore`).
 
 ## The generated files
@@ -101,7 +101,7 @@ None is edited by hand, and a test fails if any drifts from its source.
 | generated | from | rebuild |
 |---|---|---|
 | `game/js/game.bundle.js` | the modules in `game/js/` | `node tools/build-bundle.mjs` |
-| `game/js/option-shapes.js` | `art-source/option-shape/*.png` | `node tools/build-option-shapes.mjs` |
+| `game/js/option-shapes.js` | `art-source/option-shape/*.avif` | `node tools/build-option-shapes.mjs` |
 | `game/assets/**/*.avif` | the `.webp` beside each | `node tools/build-avif.mjs`, then `node tools/build-bundle.mjs` |
 
 The AVIF files are twins: the same picture in fewer bytes, for the browsers that show AVIF

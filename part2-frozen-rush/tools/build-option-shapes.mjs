@@ -43,29 +43,29 @@ const OUT_MAX = 560;              // a chunk never renders wider than ~280px
    side count, so these names are the measurement. The three built by
    tools/make-option-shapes.mjs fill the gaps the delivered set left. */
 const MAP = {
-  regularTriangle:         'regularTriangle.png',
-  regularQuadrilateral:    'regularQuadrilateral.png',
-  regularPentagon:         'regularPentagon.png',
-  regularHexagon:          'regularHexagon.png',        // built
-  regularHeptagon:         'regularHeptagon.png',
-  regularOctagon:          'regularOctagon.png',
-  irregularPentagon:       'irregularPentagon.png',
-  irregularConvexPentagon: 'irregularPentagon-2.png',
-  irregularHexagon:        'irregularHexagon.png',
-  irregularConvexHexagon:  'irregularHexagon-2.png',
-  irregularConvexOctagon:  'irregularOctagon.png',
-  concavePentagon:         'concavePentagon.png',       // built
-  concaveHexagon:          'concaveHexagon.png',        // built
-  concaveHeptagon:         'concaveHeptagon.png',
+  regularTriangle:         'regularTriangle.avif',
+  regularQuadrilateral:    'regularQuadrilateral.avif',
+  regularPentagon:         'regularPentagon.avif',
+  regularHexagon:          'regularHexagon.avif',        // built
+  regularHeptagon:         'regularHeptagon.avif',
+  regularOctagon:          'regularOctagon.avif',
+  irregularPentagon:       'irregularPentagon.avif',
+  irregularConvexPentagon: 'irregularPentagon-2.avif',
+  irregularHexagon:        'irregularHexagon.avif',
+  irregularConvexHexagon:  'irregularHexagon-2.avif',
+  irregularConvexOctagon:  'irregularOctagon.avif',
+  concavePentagon:         'concavePentagon.avif',       // built
+  concaveHexagon:          'concaveHexagon.avif',        // built
+  concaveHeptagon:         'concaveHeptagon.avif',
   /* A SECOND CONCAVE PENTAGON (built). "Cut the concave pentagon" wants two answers,
      and the delivered set has one — so this fills the gap the same way the three above
      do, from the verified ring and a donor's own material. */
-  concavePentagon2:        'concavePentagon2.png',
+  concavePentagon2:        'concavePentagon2.avif',
   /* PART 2's DRAWING SLAB, delivered as 1.png and renamed for what it measures as —
      the way every other name in this table was arrived at (see the note above). Four
      sides, irregular, convex, and therefore exactly two diagonals, which is the whole
      subject of the level it belongs to. */
-  iceQuadrilateral:        'iceQuadrilateral.png'
+  iceQuadrilateral:        'iceQuadrilateral.avif'
 };
 
 /* What each id has to be, so a wrong picture cannot pass silently. */

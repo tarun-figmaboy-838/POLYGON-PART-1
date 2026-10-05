@@ -30,7 +30,7 @@
  *   sfx.sparkle  with the denser flurry at the midpoint
  *
  * Every flake is the supplied artwork (assets/ui/snowflake.webp, built from
- * snowflake-src.png by tools/build-snowflake.js): pale ice arms with a blue
+ * snowflake-src.webp by tools/build-snowflake.js): pale ice arms with a blue
  * rim and a gem at the heart, drawn at every size and depth.
  *
  * Reduced motion: the transition does nothing at all, and the game simply

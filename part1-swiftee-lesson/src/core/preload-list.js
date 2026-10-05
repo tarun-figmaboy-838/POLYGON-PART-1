@@ -163,7 +163,6 @@ window.PreloadList = {
   "assets/swiftee/swiftee-angle-intact-v4.avif": 207361,
   "assets/swiftee/swiftee-angle-intact-v4.webp": 337410,
   "assets/swiftee/swiftee-angle-measuring.json": 1999,
-  "assets/swiftee/swiftee-angle-protractor-v3.webp": 229954,
   "assets/swiftee/swiftee-inspect-flight.avif": 85893,
   "assets/swiftee/swiftee-inspect-flight.webp": 146312,
   "assets/swiftee/swiftee-measuring.avif": 106026,

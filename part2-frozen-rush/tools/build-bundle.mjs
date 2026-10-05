@@ -123,10 +123,10 @@ async function walk(dir) {
   }
   return out;
 }
-/* The files the game is served — not the user's .wav recordings (assets/vo-part-2-hindi), which
+/* The files the game is served — not the user's recordings (assets/vo-part-2-hindi, Ogg Opus), which
    are the source of the Hindi take and never fetched (and not deployed: .vercelignore). */
 async function served() {
-  return (await walk(ASSETS)).filter(p => !/\.wav$/i.test(p)).sort();
+  return (await walk(ASSETS)).filter(p => !/\.(wav|opus)$/i.test(p)).sort();
 }
 
 /** { 'assets/char/mammoth-run.webp': 'a1b2c3d4', ... } — md5 of the bytes, 8 hex. */

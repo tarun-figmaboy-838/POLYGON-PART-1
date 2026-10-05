@@ -70,7 +70,8 @@ function problems() {
     if (md5(fs.readFileSync(w)) !== t.webp) bad.push(twinOf(webp) + ': made from an older ' + webp);
     if (md5(fs.readFileSync(a)) !== t.avif) bad.push(twinOf(webp) + ': not the file the list made');
   });
-  walk(path.join(ROOT, 'assets')).filter((p) => p.endsWith('.avif')).forEach((p) => {
+  // (not assets/source: the masters there are AVIF in their own right, not twins of a .webp)
+  walk(path.join(ROOT, 'assets')).filter((p) => p.endsWith('.avif') && !/^assets\/source\//.test(rel(p))).forEach((p) => {
     if (!list[rel(p).replace(/\.avif$/, '.webp')]) bad.push(rel(p) + ': not in tools/avif-twins.json');
   });
   return bad;

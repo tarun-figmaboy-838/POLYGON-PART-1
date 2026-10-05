@@ -706,7 +706,7 @@
    * cap's top surface — in front of its back edge, well above its front — so the whole of him
    * shows, sitting on the log, and his shadow lands on the snow under him.
  */
-  /* THE PERCH IS THE USER'S OWN STONE (assets/source/stone-snowy.png → assets/bg/stone-snowy.webp,
+  /* THE PERCH IS THE USER'S OWN STONE (assets/source/stone-snowy.avif → assets/bg/stone-snowy.webp,
      trimmed to its opaque box and brought to 720 wide; the user: "add this stone for Swiftee to
      stand on instead of the log"): a long blue boulder under a deep cap of snow, drifts at both
      feet. Placed by what touches: its lowest opaque row (`foot`, the drifts) on the snow line;
@@ -4526,7 +4526,7 @@
     concave:   { face: '#f2a222', deep: '#95590a', wash: '#fff3dd', ink: '#6d4100' },
     /* REGULAR IS ORANGE EVERYWHERE (the user: "the swipe's colours do not match the Regular and
        Irregular collection cards"): the Regular pile on the swipe screen is the supplied orange
-       card (assets/source/reg.png) and the Irregular pile the supplied violet one, but "regular"
+       card (assets/source/reg.webp) and the Irregular pile the supplied violet one, but "regular"
        wore teal everywhere else — the Regular tag on the comparison, the Regular card in the
        collection — so the same idea had two colours. One now: the pile's orange, with a deep
        burnt-orange for type on it (white on `deep` still clears 4.5:1, `ink` on `wash` 7:1). */
@@ -4677,7 +4677,7 @@
   /**
    * A button.
    *
-   * THE ARTWORK, IN THREE PIECES. assets/source/image.png is a sheet of
+   * THE ARTWORK, IN THREE PIECES. assets/source/image.avif is a sheet of
    * finished buttons; tools/build-buttons.js cuts the ones this lesson draws
    * out of it and measures where each round end finishes.
    *
