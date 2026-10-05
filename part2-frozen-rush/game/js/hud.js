@@ -526,8 +526,8 @@ export class Hud {
      * re-assert does not make the pill flash. */
     /* NO PROGRESS TRAIL (the user: "remove the left side progress bar"). The journey card
        that sat in the sky at the top left — Momo, the stones and the cave — was taken out:
-       its markup, its code, its styles and its art are gone (tools/make-progress.mjs still makes
-       the art from art-source/progress, and the rest is in the history if it is ever wanted back), and
+       its markup, its code, its styles, its art and the tool that made it are gone (all in the
+       history, at the tag sources-before-compression, if it is ever wanted back), and
        the question board that shared the left band with it has the band to itself. */
 
     const el = this.el.instruction;

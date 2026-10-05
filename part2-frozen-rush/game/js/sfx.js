@@ -1009,7 +1009,6 @@
     duck: duck,
     /** Duck for an exact span on the audio clock. For a clip of known length. */
     duckFor: duckFor,
-    isDucked: function () { return ctx ? ducking() : false; },
 
     /* --- routing ---------------------------------------------------- */
 
@@ -1019,8 +1018,6 @@
     voiceBus: function () { ensure(); return voiceBus; },
     /** Music bus. Ducks harder than effects. */
     musicBus: function () { ensure(); return musicBus; },
-    /** Post-fader, pre-limiter. Only if you know why you want it. */
-    masterBus: function () { ensure(); return master; },
     analyser: function () { ensure(); return scope; },
 
     /* --- state ------------------------------------------------------ */

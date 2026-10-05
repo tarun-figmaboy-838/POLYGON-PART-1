@@ -79,7 +79,7 @@ art-source/           BUILD INPUTS — never deployed (78MB)
   char-sheets/        un-sliced character sheets       -> game/assets/char/mammoth-*.webp
   gif/                the delivered GIFs, as lossless animated WebP -> char-sheets/
   original-upload/    everything as it first arrived
-  *-raw.webp          button art before tools/make-buttons.mjs
+  btn-play-raw.webp   the PLAY button's art before tools/make-buttons.mjs
 
 tools/                one-shot generators and the dev server. Every file says at the
                       top what it consumes and what it writes.

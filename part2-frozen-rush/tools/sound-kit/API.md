@@ -236,11 +236,9 @@ plain scripts and completes `SFX.` and `Pack.`:
 | `SFX.list()` | string[] | All registered names |
 | `SFX.duck()` | function | Ducks until you call the returned release |
 | `SFX.duckFor(seconds)` | — | Ducks for an exact span on the audio clock |
-| `SFX.isDucked()` | boolean | |
 | `SFX.bus()` | GainNode | Effects. Ducked under speech |
 | `SFX.voiceBus()` | GainNode | Speech. Never ducked; triggers the duck |
 | `SFX.musicBus()` | GainNode | Music. Ducks harder than effects |
-| `SFX.masterBus()` | GainNode | Post-fader, pre-clip |
 | `SFX.analyser()` | AnalyserNode | Post-clip, for meters |
 | `SFX.state()` | object | `{volume, muted}` — for your save file |
 | `SFX.restore(state)` | — | Apply a saved state at boot |

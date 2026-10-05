@@ -38,30 +38,9 @@ const BUTTONS = {
     normal: 'art-source/btn-play-raw.webp',
     outNormal: 'game/assets/ui/btn-play.webp',
     outW: 900
-  },
-  /* TRY AGAIN came as a SINGLE take — there is no pressed version of it. So it has
-     no `pressed` entry, the builder just trims and scales the one image, and the press
-     is done in CSS as a darkening plus a squash. That is the same call the round jump
-     button makes for the same reason, and it is why the family's rule is "the press is
-     in the art WHERE THERE IS pressed art". */
-  tryagain: {
-    normal: 'art-source/btn-tryagain-raw.webp',
-    outNormal: 'game/assets/ui/btn-tryagain.webp',
-    outW: 760
-  },
-  /* THE JUMP PAIR IS NO LONGER SHIPPED. The button was removed on request — a tap
-     anywhere jumps, so the stage is the control — and nothing in the game fetches
-     btn-normal/btn-pressed any more. The entry stays because the delivered art stays: if
-     a control ever comes back this is how it is built, and deleting the recipe would
-     leave two raw PNGs in art-source with nothing that knows what they are for. Running
-     this writes files the site does not use; that is the cost of keeping the recipe. */
-  jump: {
-    normal: 'art-source/btn-jump-normal-raw.webp',
-    pressed: 'art-source/btn-jump-pressed-raw.webp',
-    outNormal: 'game/assets/ui/btn-normal.webp',
-    outPressed: 'game/assets/ui/btn-pressed.webp',
-    outW: 420
   }
+  /* TRY AGAIN and the JUMP pair are gone: the Ouch card and the jump button were removed from the
+     game, and their raw art and recipes went with them (history: tag sources-before-compression). */
 };
 
 /** Opaque bounds of an image, alpha > 8. */
@@ -129,15 +108,9 @@ async function build(name, cfg) {
  * So a bare run builds only what the game loads. Name one explicitly to rebuild it
  * (`node tools/make-buttons.mjs jump`), and remember that writes into game/assets/ui
  * are exactly what --strict is there to catch. */
-const SHELVED = new Set(['tryagain', 'jump']);
-
 const only = process.argv[2];
 for (const [name, cfg] of Object.entries(BUTTONS)) {
   if (only && only !== name) continue;
-  if (!only && SHELVED.has(name)) {
-    console.log(`${name}: SHELVED — the control is gone; run \`node tools/make-buttons.mjs ${name}\` to rebuild it anyway`);
-    continue;
-  }
   console.log(name + ':');
   await build(name, cfg);
 }
