@@ -15,7 +15,7 @@
  */
 'use strict';
 module.exports = [
-  // (narrator and popo voice the story, parked in drafts/story with its clips: cut again from here
+  // (narrator and popo voice the story, kept outside the repository in POLYGON-1/story-draft, with its clips: cut again from here
   // only when it comes back — split-vo writes into assets/vo)
   { name: 'narrator', source: 'assets/source/vo-masters/narrator.mp3', tempo: 1,
     lines: ['st1-narrator', 'st3-narrator', 'st5-narrator',

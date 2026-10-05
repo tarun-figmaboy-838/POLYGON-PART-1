@@ -87,7 +87,7 @@ function fromPairs(file, where) {
    (tools/make-vo.js STORY). Run the same way as the deck: a plain script over window. */
 function fromStory() {
   const g = {};
-  // (the story is parked in drafts/story — the user: "remove the story part and add on draft" —
+  // (the story is kept outside the repository, in POLYGON-1/story-draft (its README says how to bring it back) — the user: "remove the story part and add on draft" —
   // and while it is, the game says none of its lines)
   const file = path.join(ROOT, 'src', 'story', 'story-data.js');
   if (!fs.existsSync(file)) return [];

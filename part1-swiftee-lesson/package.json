@@ -35,8 +35,7 @@
     "vo:check": "node tools/vo-check.js",
     "vo:script": "node tools/vo-script.js",
     "vo:align": "node tools/align-vo.js",
-    "build:hand": "node tools/build-hand.js",
-    "build:story": "node tools/build-story.js"
+    "build:hand": "node tools/build-hand.js"
   },
   "devDependencies": {
     "jsdom": "^24.0.0",

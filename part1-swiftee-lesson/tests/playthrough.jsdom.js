@@ -183,7 +183,7 @@ async function act(spec){
   let pending=null; w.Game.director.on('input',({spec})=>{ pending=spec; });
 
   /* NO STORY BEFORE THE LESSON (the user: "remove the story part and add on draft" — it is parked,
-     whole, in drafts/story): Start goes straight to Swiftee's screen 1, once, and nothing of the
+     whole, outside the repository in POLYGON-1/story-draft): Start goes straight to Swiftee's screen 1, once, and nothing of the
      story is on the page. (The story's own checks — its five scenes, its script word for word,
      no Next button — are in this file's history, to come back with it.) */
   let screen1Starts=0;
