@@ -10,15 +10,16 @@
  * lesson's voice — nothing of his is added to the game, which only stops and says where Momo and
  * the hole are (`where`, from the game's tutorial: in its 1920 x 1080 stage, after its zoom).
  *
- *   flight   from the top right, on one curve, wings going (flapping)   FLY_IN
+ *   flight   from the top right, on one curve, wings going              FLY_IN
  *   hover    IN THE AIR beside Momo, wings going, a moment to arrive     WATCH
  *            (the user: "Swiftee delivers the dialogue in the air, flying — not on the path")
  *   lines    in the box over his head, each word as it is spoken        + HOLD after each
- *   exit     off to the side the next thing is on (flapping)            FLY_OUT
+ *   exit     off to the side the next thing is on                       FLY_OUT
  *
- * ONE DRAWING OF HIM AT A TIME, AND ALWAYS IN THE AIR. One canvas, one cell of the wingbeat
- * sheet (flapping) per frame — never two cells cross-faded, the lesson's "two Swiftees" bug —
- * from the moment he flies in to the moment he flies off. He hovers while he speaks.
+ * ONE DRAWING OF HIM AT A TIME, AND ALWAYS IN THE AIR. One canvas, one frame of the lesson's
+ * flight strip (swiftee-inspect-flight.webp) at a time — never two frames cross-faded, the
+ * lesson's "two Swiftees" bug — from the moment he flies in to the moment he flies off. He
+ * hovers while he speaks, looking at Momo.
  *
  * Every step has a backstop on the wall clock: a voice that never starts is heard silently after
  * START_WAIT, a line ends by its length plus 0.6 s whatever the audio does, and the whole visit
@@ -29,62 +30,47 @@
 
   var FLY_IN = 1400, FLY_OUT = 950, WATCH = 700, HOLD = 1000, BETWEEN = 260;
   var WORD = 320, START_WAIT = 1200, CAP = 20000;
-  /* HIS SIZE AND HIS PERCH, in the game's stage px (times its zoom): the cell he is drawn in, and
-     how far past the hole's far lip he lands — on the ground there, facing back at Momo. */
-  /* HOVER: where he holds in the air — in the open sky beside Momo, AHEAD (to his right, over the
-     broken path) by AHEAD and his feet LIFT below the top of Momo's head, so he is a little above
-     Momo and looking at him; LEAN tilts him toward Momo (the sprite faces the viewer). */
-  var SIZE = 300, AHEAD = 320, LIFT = 40, LEAN = -6, BASELINE = 0.877, HEAD_TOP = 0.16;
+  /* HIS ART: the lesson's own flight strip (the user: "use swiftee-inspect-flight.webp") — four
+     wingbeat frames side by side, 543 x 724 each, drawn one frame at a time, a frame every STEP ms as
+     the lesson flies it. Every frame registers the same: the top of his head at TOP, his feet at
+     FEET, of the frame's height. The strip looks to the right; FACE mirrors it to look left. */
+  var STRIP = 'assets/swiftee/swiftee-inspect-flight.webp', FRAMES = 4, FW = 543, FH = 724, STEP = 110;
+  var TOP = 0.185, FEET = 0.776;
+  /* HIS SIZE, in the game's stage px (times its zoom): the bird BIRD tall, head to feet; and WHERE
+     HE HOVERS — in the open sky beside Momo, AHEAD of him (to his right, over the broken path),
+     his feet LIFT below the top of Momo's head, so he is a little above Momo, looking at him;
+     LEAN tilts him toward Momo. */
+  var BIRD = 220, FRAME_H = BIRD / (FEET - TOP), FRAME_W = FRAME_H * FW / FH;
+  var AHEAD = 320, LIFT = 40, LEAN = -4;
   var SW = 1920, SH = 1080;
   /* THE WORDS THAT ARE THE POINT, in the lesson's key-word ink. */
   var KEY = /^(momo|polygons)[.,!?]*$/i;
 
-  function F() { return global.SwifteeFrames; }
   function now() { return (global.performance && performance.now) ? performance.now() : Date.now(); }
   function reducedMotion() {
     try { return !!(global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; }
   }
 
-  /* ---- the sheets ---- */
-  // (he is in the air for the whole visit: the wingbeat is the only clip he needs)
-  var CLIPS = ['flapping'];
-  var imgs = {};
-  function res() { return (global.devicePixelRatio || 1) > 1.25 ? '2x' : '1x'; }
-  function sheetOf(name) {
-    var f = F(), c = f && f.clips && f.clips[name];
-    var s = c && c.sheets && (c.sheets[res()] || c.sheets['1x']);
-    return s && s[0] ? { clip: c, sheet: s[0], cell: f.cell[c.sheets[res()] ? res() : '1x'] } : null;
-  }
-  /** Fetch and decode his sheets now, so they are in hand when he is needed. */
+  /* ---- the strip ---- */
+  var strip = null;
+  /** Fetch and decode his flight strip now, so it is in hand when he is needed (the lesson loads
+      the same file, so it is usually in the cache already). */
   function load() {
-    var f = F();
-    if (!f) return Promise.resolve(false);
-    return Promise.all(CLIPS.map(function (name) {
-      var s = sheetOf(name);
-      if (!s) return Promise.resolve(false);
-      var url = f.base + s.sheet.image;
-      if (imgs[url]) return imgs[url].ready;
-      var img = new global.Image();
-      var ready = new Promise(function (res2) {
-        img.onload = function () { var d = img.decode ? img.decode() : Promise.resolve(); d.then(function () { res2(true); }, function () { res2(true); }); };
-        img.onerror = function () { res2(false); };
-      });
-      img.src = url;
-      imgs[url] = { img: img, ready: ready };
-      return ready;
-    }));
+    if (strip) return strip.ready;
+    var img = new global.Image();
+    var ready = new Promise(function (res) {
+      img.onload = function () { var d = img.decode ? img.decode() : Promise.resolve(); d.then(function () { res(true); }, function () { res(true); }); };
+      img.onerror = function () { res(false); };
+    });
+    img.src = STRIP;
+    strip = { img: img, ready: ready };
+    return ready;
   }
-  function drawCell(ctx, name, i, px) {
-    var f = F(), s = sheetOf(name);
-    if (!s) return;
-    var rec = imgs[f.base + s.sheet.image];
-    if (!rec || !rec.img.complete || !rec.img.naturalWidth) return;
-    var n = s.sheet.first + (i % s.sheet.frames), cols = s.sheet.cols, cell = s.cell;
-    ctx.clearRect(0, 0, px, px);
-    ctx.drawImage(rec.img, (n % cols) * cell, Math.floor(n / cols) * cell, cell, cell, 0, 0, px, px);
+  function drawFrame(ctx, n, w, h) {
+    if (!strip || !strip.img.complete || !strip.img.naturalWidth) return;
+    ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(strip.img, (n % FRAMES) * FW, 0, FW, FH, 0, 0, w, h);
   }
-  function frames(name) { var s = sheetOf(name); return s ? s.sheet.frames : 1; }
-  function fps(name) { var s = sheetOf(name); return (s && s.clip.fps) || 20; }
 
   /* ---- the box: the lesson's own (index.html .visit-bubble, the look of #bubble) ---- */
   function bubble(doc) {
@@ -137,38 +123,40 @@
        watching Momo, and gives the dialogue"): in the open sky over the broken path, a little above
        Momo's head and to his right, leaning toward him. Never off the stage, never down on the ice. */
     var head = where.head || { x: 520, y: 480 };
-    var perch = { x: Math.max(SIZE * zoom * 0.5, Math.min(head.x + AHEAD * zoom, SW - SIZE * zoom * 0.5)),
-                  y: Math.min(head.y + LIFT * zoom, lip.y - SIZE * zoom * 0.75) };
+    var perch = { x: Math.max(FRAME_W * zoom * 0.5, Math.min(head.x + AHEAD * zoom, SW - FRAME_W * zoom * 0.5)),
+                  y: Math.min(head.y + LIFT * zoom, lip.y - BIRD * zoom * 0.6) };
     function geo() {
       var r = o.frame ? o.frame.getBoundingClientRect() : { left: 0, top: 0, width: global.innerWidth, height: global.innerHeight };
       var k = st.w * r.width / SW;                                   // page px per stage px
       return {
-        k: k, cell: SIZE * zoom * k,
+        k: k, fh: FRAME_H * zoom * k, fw: FRAME_W * zoom * k,
         page: function (sx, sy) { return { x: r.left + st.x * r.width + sx * k, y: r.top + st.y * r.height + sy * (st.h * r.height / SH) }; },
         W: global.innerWidth, H: global.innerHeight
       };
     }
-    var g0 = geo();
-    var px = Math.max(64, Math.round(g0.cell * Math.min(2, global.devicePixelRatio || 1)));
-    canvas.width = px; canvas.height = px;
+    var g0 = geo(), dpr = Math.min(2, global.devicePixelRatio || 1);
+    var cw = Math.max(48, Math.round(g0.fw * dpr)), ch = Math.max(64, Math.round(g0.fh * dpr));
+    canvas.width = cw; canvas.height = ch;
+    canvas.style.transformOrigin = '50% ' + (FEET * 100).toFixed(1) + '%';
 
-    var anim = { name: 'flapping', t0: now() };
-    var pos = null, tilt = 0, bob = true, raf = 0, gone = false;
+    var t0 = now();
+    // face: -1 looks left (the strip mirrored) — at Momo while he hovers; in flight, where he is going
+    var pos = null, tilt = 0, face = -1, bob = true, raf = 0, gone = false;
 
     function place() {
-      var g = geo(), c = g.cell;
+      var g = geo(), fw = g.fw, fh = g.fh;
       var feet = pos || g.page(perch.x, perch.y);
       // a hover: a slow rise and fall with the wingbeat, and a little sway (not while he flies in or out)
       var hov = bob && !reduced && !pos;
-      var left = feet.x - c / 2, top = feet.y - c * BASELINE + (hov ? Math.sin(now() / 230) * c * 0.04 : 0);
-      if (hov) tilt = LEAN + Math.sin(now() / 610) * 3;                // leaning toward Momo, swaying
+      var left = feet.x - fw / 2, top = feet.y - fh * FEET + (hov ? Math.sin(now() / 230) * fh * 0.025 : 0);
+      if (hov) { face = -1; tilt = LEAN + Math.sin(now() / 610) * 3; }      // looking at Momo, swaying
       var s = canvas.style;
-      s.width = c + 'px'; s.height = c + 'px';
-      s.transform = 'translate(' + left.toFixed(1) + 'px,' + top.toFixed(1) + 'px) rotate(' + tilt.toFixed(1) + 'deg)';
+      s.width = fw + 'px'; s.height = fh + 'px';
+      s.transform = 'translate(' + left.toFixed(1) + 'px,' + top.toFixed(1) + 'px) rotate(' + tilt.toFixed(1) + 'deg) scaleX(' + face + ')';
       // the box over his head, inside the window, its tail on him
       if (box.classList.contains('show')) {
         var bw = box.offsetWidth, bh = box.offsetHeight, m = 12;
-        var headY = top + c * HEAD_TOP;
+        var headY = top + fh * TOP;
         var bx = Math.max(m, Math.min(g.W - bw - m, feet.x - bw * 0.62));
         var by = Math.max(m, headY - bh - 22);
         box.style.transform = 'translate(' + bx.toFixed(1) + 'px,' + by.toFixed(1) + 'px)';
@@ -177,8 +165,8 @@
     }
     function tick() {
       if (gone) return;
-      var a = anim, n = Math.floor((now() - a.t0) * fps(a.name) / 1000);
-      drawCell(ctx, a.name, n, px);
+      // the wingbeat: one frame every STEP ms, round and round, from the moment he appears
+      drawFrame(ctx, reduced ? 1 : Math.floor((now() - t0) / STEP) % FRAMES, cw, ch);
       place();
       raf = global.requestAnimationFrame(tick);
     }
@@ -195,7 +183,8 @@
           var u = Math.min(1, (now() - t0) / ms), e = ease(u);
           pos = { x: (1 - e) * (1 - e) * a.x + 2 * (1 - e) * e * cx + e * e * b.x,
                   y: (1 - e) * (1 - e) * a.y + 2 * (1 - e) * e * cy + e * e * b.y };
-          tilt = (b.x < a.x ? -1 : 1) * 9 * Math.sin(Math.PI * u);
+          face = b.x < a.x ? -1 : 1;
+          tilt = face * 9 * Math.sin(Math.PI * u);
           if (u >= 1) { tilt = 0; done(); return; }
           global.requestAnimationFrame(step);
         })();
@@ -252,8 +241,8 @@
       cap = setTimeout(end, CAP);                               // a visit can never hold the game for good
       load().then(function () {
         if (gone) return;
-        var g = geo(), c = g.cell, home = g.page(perch.x, perch.y);
-        var from = { x: g.W + c * 0.6, y: -c * 0.25 };
+        var g = geo(), home = g.page(perch.x, perch.y);
+        var from = { x: g.W + g.fw * 0.8, y: -g.fh * 0.15 };
         pos = from;
         tick();
         whoosh();
@@ -270,8 +259,8 @@
           box.classList.add('out');
           if (o.onLeave) { try { o.onLeave(); } catch (e) {} }
           whoosh();
-          var g2 = geo(), c2 = g2.cell, at = g2.page(perch.x, perch.y);
-          var to = o.exit === 'left' ? { x: -c2 * 0.7, y: -c2 * 0.2 } : { x: g2.W + c2 * 0.7, y: -c2 * 0.2 };
+          var g2 = geo(), at = g2.page(perch.x, perch.y);
+          var to = o.exit === 'left' ? { x: -g2.fw * 0.8, y: -g2.fh * 0.15 } : { x: g2.W + g2.fw * 0.8, y: -g2.fh * 0.15 };
           return fly(at, to, FLY_OUT, inn);
         });
       }).then(end, end);
