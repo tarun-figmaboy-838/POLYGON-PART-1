@@ -2,6 +2,7 @@
 # part2-frozen-rush/.gitignore) for its generated files and test output. These are
 # the ones that apply to the whole repository.
 
+node_modules
 node_modules/
 .vercel/
 
