@@ -129,6 +129,8 @@ const SHEETS = [
   /* SHELVED in turn: the arrival at the edge is now the delivered 12-frame tremble
      (tremble-new.png, below), which ends on a settle, and the wait is the idle loop — so
      the trample has no moment left. Still measured, so the shared scale does not move. */
+  /* (trample-new.webp and ditch-new.webp are kept with their alpha exact and their colour lossy:
+     only their frame bounds take part — in the shared scale — and no sheet is cut from them) */
   { src: 'trample-gif.png', slot: 'trample', bob: true, shelved: true },
   /* THE TREMBLE AT THE EDGE — the owner's 12-frame sheet (4x3, art-source/char-sheets/
      tremble-src.webp, re-guttered and pre-scaled by tools/sheet-to-grid.mjs). Notices the
