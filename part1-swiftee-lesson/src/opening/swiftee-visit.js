@@ -11,14 +11,14 @@
  * the hole are (`where`, from the game's tutorial: in its 1920 x 1080 stage, after its zoom).
  *
  *   flight   from the top right, on one curve, wings going (flapping)   FLY_IN
- *   look     at the broken path (curious)                               WATCH
+ *   hover    IN THE AIR beside Momo, wings going, a moment to arrive     WATCH
+ *            (the user: "Swiftee delivers the dialogue in the air, flying — not on the path")
  *   lines    in the box over his head, each word as it is spoken        + HOLD after each
  *   exit     off to the side the next thing is on (flapping)            FLY_OUT
  *
- * ONE DRAWING OF HIM AT A TIME. One canvas, one cell of one sheet per frame, and only the clips
- * with no cross-faded cells in them (swiftee.js BLENDED): the start/stop clips of most poses are
- * dissolves between two poses, which is two Swiftees at once — the bug this lesson has already
- * fixed once. So he flaps, looks, talks and blinks, and cuts between those.
+ * ONE DRAWING OF HIM AT A TIME, AND ALWAYS IN THE AIR. One canvas, one cell of the wingbeat
+ * sheet (flapping) per frame — never two cells cross-faded, the lesson's "two Swiftees" bug —
+ * from the moment he flies in to the moment he flies off. He hovers while he speaks.
  *
  * Every step has a backstop on the wall clock: a voice that never starts is heard silently after
  * START_WAIT, a line ends by its length plus 0.6 s whatever the audio does, and the whole visit
@@ -27,11 +27,14 @@
 (function (global) {
   'use strict';
 
-  var FLY_IN = 1400, FLY_OUT = 950, WATCH = 1700, HOLD = 1000, BETWEEN = 260;
+  var FLY_IN = 1400, FLY_OUT = 950, WATCH = 700, HOLD = 1000, BETWEEN = 260;
   var WORD = 320, START_WAIT = 1200, CAP = 20000;
   /* HIS SIZE AND HIS PERCH, in the game's stage px (times its zoom): the cell he is drawn in, and
      how far past the hole's far lip he lands — on the ground there, facing back at Momo. */
-  var SIZE = 300, PERCH = 150, BASELINE = 0.877, HEAD_TOP = 0.16;
+  /* HOVER: where he holds in the air — in the open sky beside Momo, AHEAD (to his right, over the
+     broken path) by AHEAD and his feet LIFT below the top of Momo's head, so he is a little above
+     Momo and looking at him; LEAN tilts him toward Momo (the sprite faces the viewer). */
+  var SIZE = 300, AHEAD = 320, LIFT = 40, LEAN = -6, BASELINE = 0.877, HEAD_TOP = 0.16;
   var SW = 1920, SH = 1080;
   /* THE WORDS THAT ARE THE POINT, in the lesson's key-word ink. */
   var KEY = /^(momo|polygons)[.,!?]*$/i;
@@ -43,7 +46,8 @@
   }
 
   /* ---- the sheets ---- */
-  var CLIPS = ['flapping', 'curious', 'talk_start', 'talking', 'talk_stop', 'blinking'];
+  // (he is in the air for the whole visit: the wingbeat is the only clip he needs)
+  var CLIPS = ['flapping'];
   var imgs = {};
   function res() { return (global.devicePixelRatio || 1) > 1.25 ? '2x' : '1x'; }
   function sheetOf(name) {
@@ -129,8 +133,12 @@
 
     var zoom = where.zoom || 1, st = where.stage || { x: 0, y: 0, w: 1, h: 1 };
     var lip = where.lip || { x: 1500, y: 840 };
-    /* the perch: past the far lip, on the ground, and never hanging off the stage */
-    var perch = { x: Math.min(lip.x + PERCH * zoom, SW - SIZE * zoom * 0.36), y: lip.y };
+    /* WHERE HE HOVERS — IN THE AIR BESIDE MOMO, WATCHING HIM (the user: "Swiftee on air, flying,
+       watching Momo, and gives the dialogue"): in the open sky over the broken path, a little above
+       Momo's head and to his right, leaning toward him. Never off the stage, never down on the ice. */
+    var head = where.head || { x: 520, y: 480 };
+    var perch = { x: Math.max(SIZE * zoom * 0.5, Math.min(head.x + AHEAD * zoom, SW - SIZE * zoom * 0.5)),
+                  y: Math.min(head.y + LIFT * zoom, lip.y - SIZE * zoom * 0.75) };
     function geo() {
       var r = o.frame ? o.frame.getBoundingClientRect() : { left: 0, top: 0, width: global.innerWidth, height: global.innerHeight };
       var k = st.w * r.width / SW;                                   // page px per stage px
@@ -145,13 +153,15 @@
     canvas.width = px; canvas.height = px;
 
     var anim = { name: 'flapping', t0: now() };
-    function pose(name) { if (anim.name !== name) anim = { name: name, t0: now() }; }
     var pos = null, tilt = 0, bob = true, raf = 0, gone = false;
 
     function place() {
       var g = geo(), c = g.cell;
       var feet = pos || g.page(perch.x, perch.y);
-      var left = feet.x - c / 2, top = feet.y - c * BASELINE + (bob && !reduced ? Math.sin(now() / 260) * c * 0.012 : 0);
+      // a hover: a slow rise and fall with the wingbeat, and a little sway (not while he flies in or out)
+      var hov = bob && !reduced && !pos;
+      var left = feet.x - c / 2, top = feet.y - c * BASELINE + (hov ? Math.sin(now() / 230) * c * 0.04 : 0);
+      if (hov) tilt = LEAN + Math.sin(now() / 610) * 3;                // leaning toward Momo, swaying
       var s = canvas.style;
       s.width = c + 'px'; s.height = c + 'px';
       s.transform = 'translate(' + left.toFixed(1) + 'px,' + top.toFixed(1) + 'px) rotate(' + tilt.toFixed(1) + 'deg)';
@@ -168,9 +178,6 @@
     function tick() {
       if (gone) return;
       var a = anim, n = Math.floor((now() - a.t0) * fps(a.name) / 1000);
-      var last = frames(a.name) - 1;
-      // the one-shot clips hold on their last cell; the loops go round
-      if (a.name === 'talk_start' || a.name === 'talk_stop') n = Math.min(n, last);
       drawCell(ctx, a.name, n, px);
       place();
       raf = global.requestAnimationFrame(tick);
@@ -206,7 +213,6 @@
       var len = (V && V.seconds && V.seconds(id) * 1000) || (onsets[onsets.length - 1] + 700);
       box.classList.remove('out');
       box.classList.add('show');
-      pose('talk_start');
       var a = null;
       try { a = V && V.play ? V.play(id) : null; } catch (e) { a = null; }
       var t0 = now(), heard = false, last = onsets[onsets.length - 1];
@@ -214,7 +220,6 @@
         (function step() {
           if (gone) { done(); return; }
           var t = now() - t0;
-          if (anim.name === 'talk_start' && t > 150) pose('talking');
           /* THE CLOCK THE WORDS FOLLOW: the voice's own while this line is on air; once it has been
              heard and is off, every word is in; never heard — no clip, muted, refused — the wall's,
              after START_WAIT if a voice was asked for and simply has not begun. */
@@ -225,8 +230,6 @@
           var over = (heard && on == null) || (!heard && clock >= last + 700) || t > len + 600 + START_WAIT;
           if (over) {
             spans.forEach(function (s) { s.classList.add('in'); });
-            pose('talk_stop');
-            setTimeout(function () { if (!gone) pose('blinking'); }, 260);
             done();
             return;
           }
@@ -255,12 +258,10 @@
         tick();
         whoosh();
         return fly(from, home, FLY_IN, out).then(function () {
-          // landed: he looks at the broken path, then speaks
-          pos = null; bob = false;
-          pose('curious');
+          // arrived: he holds there in the air, wings going, a moment before he speaks
+          pos = null; bob = true;
           return wait(WATCH);
         }).then(function () {
-          bob = true;
           return lines.reduce(function (p, l, i) {
             return p.then(function () { return i ? wait(BETWEEN) : null; }).then(function () { return say(l); });
           }, Promise.resolve());
@@ -268,7 +269,6 @@
           // the box goes, and so does he — to the side the next thing is on
           box.classList.add('out');
           if (o.onLeave) { try { o.onLeave(); } catch (e) {} }
-          pose('flapping');
           whoosh();
           var g2 = geo(), c2 = g2.cell, at = g2.page(perch.x, perch.y);
           var to = o.exit === 'left' ? { x: -c2 * 0.7, y: -c2 * 0.2 } : { x: g2.W + c2 * 0.7, y: -c2 * 0.2 };
