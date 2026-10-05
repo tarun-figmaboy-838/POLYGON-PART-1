@@ -71,10 +71,16 @@
    * DOM helpers
    * ------------------------------------------------------------------ */
 
+  /* THE WORDS ON THE BOARD IN THE LESSON'S LANGUAGE (src/core/i18n.js, ?lan=): every label, tag,
+     answer and reading is drawn through mk(), so it is turned here — "Inside", "Convex", "6 cm".
+     What a thing IS stays English (data-label, the answers, the cue words), so nothing that
+     decides anything changes; only the letters drawn do. */
+  function inLang(text) { return (global.I18N && I18N.on) ? I18N.tr(text) : text; }
+
   function mk(tag, attrs, parent) {
     var e = document.createElementNS(NS, tag);
     for (var k in (attrs || {})) {
-      if (k === 'text') e.textContent = attrs[k];
+      if (k === 'text') e.textContent = inLang(attrs[k]);
       else if (attrs[k] != null) e.setAttribute(k, attrs[k]);
     }
     (parent || layers.ui).appendChild(e);
@@ -4611,6 +4617,7 @@
   function renameTag(g, text, tone) {
     if (!g || !g._text || !g._face || !g._rect) return;
     var c = CONCEPT[tone] || null, t = g._text;
+    text = inLang(text);
     t.textContent = text;
     var fs = parseFloat(t.getAttribute('font-size')) || 17;
     var w = 0; try { w = t.getComputedTextLength ? t.getComputedTextLength() : 0; } catch (e) { w = 0; }
@@ -5785,7 +5792,7 @@
           updatePoly();
           if (st.liveBadge) {
             var cc = isDented(st.verts, ai);
-            st.liveBadge._text.textContent = cc ? 'Concave' : 'Convex';
+            st.liveBadge._text.textContent = inLang(cc ? 'Concave' : 'Convex');
             if (st.liveBadge._retint) st.liveBadge._retint(cc ? 'concave' : 'convex');
           }
           if (k < 1 && global.requestAnimationFrame) global.requestAnimationFrame(step);
@@ -6703,7 +6710,7 @@
               // same depth the answer is judged by. A shape concave by a hair
               // that still reads convex must not be called concave.
               var cc = isDented(st.verts, i);
-              st.liveBadge._text.textContent = cc ? 'Concave' : 'Convex';
+              st.liveBadge._text.textContent = inLang(cc ? 'Concave' : 'Convex');
               if (st.liveBadge._retint) st.liveBadge._retint(cc ? 'concave' : 'convex');
             }
           }, function (p, i, how) {

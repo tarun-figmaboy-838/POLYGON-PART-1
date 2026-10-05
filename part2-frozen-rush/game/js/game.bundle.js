@@ -1060,6 +1060,12 @@ const verifiedSides = sidesOf;
    count or convexity disagrees with what the curriculum calls that shape — so the
    number a learner counts on screen is the number the game is checking. */
 
+/* ANOTHER LANGUAGE, NO VOICE (js/i18n.js, ?lan=hi and the rest). The take is English: spoken over
+   translated words it would say one thing while the screen says another, and pace the words by
+   its own syllables. So no line has a window, the take is never fetched, and every line is timed
+   by its words — the path a muted run has always taken. The music and the effects play as ever. */
+const SILENT_VO = typeof globalThis !== 'undefined' && !!(globalThis.I18N && globalThis.I18N.on && !globalThis.I18N.voice);
+
 /* EVERY ASSET URL GOES THROUGH HERE. The deployment caches game/assets as immutable for a
    year; the sheets were rebuilt under the same names and every returning browser drew from
    the stale strips it had — no character at all. The file's content hash on the URL is what
@@ -3530,7 +3536,7 @@ class AudioManager {
       network. Nothing here can fail loudly: no bytes means the game plays silent-voiced. */
   fetchVo() {
     const V = CFG.vo;
-    if (!V || !V.src || this.voBytes) return Promise.resolve();
+    if (!V || !V.src || this.voBytes || SILENT_VO) return Promise.resolve();
     if (typeof location !== 'undefined' && location.protocol === 'file:') return Promise.resolve();
     /* THE PROMISE IS SHARED, not a flag. A second caller used to see a "fetching" flag and return
        at once, so the decode ran before the bytes had landed and gave up with nothing — measured:
@@ -3552,7 +3558,7 @@ class AudioManager {
   }
   async loadVo() {
     const V = CFG.vo;
-    if (!V || !V.src || this.voLoading) return;
+    if (!V || !V.src || this.voLoading || SILENT_VO) return;
     this.voLoading = true;
     const direct = typeof location !== 'undefined' && location.protocol === 'file:';
     try {
@@ -3599,6 +3605,7 @@ class AudioManager {
      instead of at an even rate that matches no delivery. A take with no offsets baked is
      still valid: the reveal falls back to spreading the words evenly. */
   voLine(id) {
+    if (SILENT_VO) return null;
     const L = CFG.vo && CFG.vo.lines && CFG.vo.lines[id];
     return L ? { at: L[0], dur: L[1], words: L[2] || null } : null;
   }
@@ -7342,7 +7349,7 @@ function createGame(canvas, hooks = {}) {
        when sound is on — a muted run (?sound=0, hooks.sound false) does not download the soundtrack. */
     if (audio.enabled && hooks.sound !== false) {
       for (const cue of Object.values(CFG.sfx || {})) if (cue && cue.src) NET.plan(assetUrl(cue.src));
-      if (CFG.vo && CFG.vo.src) NET.plan(assetUrl(CFG.vo.src));
+      if (CFG.vo && CFG.vo.src && !SILENT_VO) NET.plan(assetUrl(CFG.vo.src));
       if (CFG.music && CFG.music.src) NET.plan(assetUrl(CFG.music.src));
     }
     const jobs = CFG.phases.map(p => loadImg(p.src).then(i => { images[p.key] = i; }));
@@ -14317,6 +14324,17 @@ function fitBubble(svg, box, tail) {
  * key-word treatment is for questions. */
 const KEY_WORD = /^(.*?\bthe\s+(?:[a-z]+\s+)*)([a-z]+?)(s?)([.!]?)$/i;
 
+/* THE GAME'S LANGUAGE (js/i18n.js, ?lan=hi and the rest), or null in English — when every word
+   below is the one it always was. The engine keeps telling the HUD its English; the HUD shows it
+   in the language. A translated question carries its own key word, marked <strong>, because no
+   English pattern can find a noun in Hindi: "अवतल <strong>बहुभुज</strong> को काटें।" */
+const HUD_LANG = (typeof globalThis !== 'undefined' && globalThis.I18N && globalThis.I18N.on) ? globalThis.I18N : null;
+/** A translated question's parts, as KEY_WORD's: [, before, key, '', after]. */
+function keyWordOf(marked) {
+  const m = /^([\s\S]*?)<strong>([\s\S]*?)<\/strong>([\s\S]*)$/.exec(marked || '');
+  return m ? [m[0], m[1], m[2], '', m[3]] : null;
+}
+
 /* WHERE EVERY MARKER STANDS, AS A PERCENTAGE OF THE PANEL.
  *
  * Measured off the reference panel (1362 x 464) and written down ONCE: the CSS places
@@ -14660,7 +14678,7 @@ class Hud {
   /** Pause and Resume are one control, so it swaps glyph rather than moving. */
   pauseLabel(isPaused) {
     this.setGlyph(this.el.pause, isPaused ? 'play' : 'pause');
-    if (this.el.pause) this.el.pause.setAttribute('aria-label', isPaused ? 'Resume' : 'Pause');
+    if (this.el.pause) this.el.pause.setAttribute('aria-label', HUD_LANG ? HUD_LANG.t(isPaused ? 'resumeButton' : 'pauseButton') : (isPaused ? 'Resume' : 'Pause'));
   }
 
   /** Sound state on both copies of the control, HUD and pause panel. */
@@ -14669,7 +14687,7 @@ class Hud {
       if (!b) continue;
       this.setGlyph(b, on ? 'sound-on' : 'sound-off');
       b.setAttribute('aria-pressed', String(on));
-      b.setAttribute('aria-label', on ? 'Sound on' : 'Sound off');
+      b.setAttribute('aria-label', HUD_LANG ? HUD_LANG.t(on ? 'soundOn' : 'soundOff') : (on ? 'Sound on' : 'Sound off'));
     }
   }
 
@@ -14731,7 +14749,10 @@ class Hud {
   setInstruction(message) {
     const el = this.el.text;
     if (!el) return;
-    const m = this._plain ? null : KEY_WORD.exec((message || '').trim());
+    // in the game's language, the key word the translation marks; in English, the pattern's
+    const marked = HUD_LANG && message ? HUD_LANG.html(message) : null;
+    if (marked != null) message = String(marked).replace(/<\/?strong>/g, '');
+    const m = this._plain ? null : marked != null ? keyWordOf(String(marked).trim()) : KEY_WORD.exec((message || '').trim());
     el.textContent = '';
     this._voiceSpans = [];
     this._voiceTail = null;
@@ -14775,6 +14796,13 @@ class Hud {
     }
     for (const w of m[1].trim().split(/\s+/)) word(w, 'iw', true);
     word((m[2] + m[3]).toUpperCase(), 'iw key', true);
+    if (marked != null) {
+      /* A TRANSLATION GOES ON AFTER ITS KEY WORD: a case ending joined to it (Odia's
+         "ବହୁଭୁଜ" + "କୁ") without a space, then the rest of the sentence word by word */
+      m[4].split(/(\s+)/).filter(Boolean).reduce((gap, w) => { if (/^\s+$/.test(w)) return true; word(w, 'iw', gap); return true; }, false);
+      this.fitInstruction();
+      return;
+    }
     word(m[4], 'iw', false);                                  // the sentence keeps its full stop
     this.fitInstruction();
   }
@@ -14889,7 +14917,8 @@ class Hud {
      the same type size rather than one being shrunk to the other's constraint.
      @param {{band?: string[], centered?: string[]}} sets */
   setQuestions(sets) {
-    const clean = a => (a || []).filter(s => typeof s === 'string' && s.trim());
+    // (measured in the words the board will show: the game's language, when it has one)
+    const clean = a => (a || []).filter(s => typeof s === 'string' && s.trim()).map(s => HUD_LANG ? HUD_LANG.tr(s) : s);
     this._questions = { band: clean(sets && sets.band), centered: clean(sets && sets.centered) };
     this._fit = null;
     this.fitInstruction();
@@ -15214,7 +15243,9 @@ class Frontend {
     this._progress = Math.max(this._progress || 0, Math.min(1, f || 0));
     const pct = Math.floor(this._progress * 100);
     if (this.el.loadingFill) this.el.loadingFill.style.width = pct + '%';
-    if (this.el.loadingLabel) this.el.loadingLabel.textContent = 'Loading… ' + pct + '%';
+    // (in the game's language, js/i18n.js ?lan=, when it has one)
+    const lan = typeof globalThis !== 'undefined' && globalThis.I18N && globalThis.I18N.on ? globalThis.I18N : null;
+    if (this.el.loadingLabel) this.el.loadingLabel.textContent = lan ? lan.t('loadingPercent', { percent: pct }) : 'Loading… ' + pct + '%';
     if (this.el.loadingNote) this.el.loadingNote.setAttribute('aria-valuenow', String(pct));
   }
 
@@ -15360,6 +15391,11 @@ const VO = {
 };
 /* WHERE MOMO'S HEAD IS, from where he stands: up from his feet and forward from his drawn x. */
 const HEAD = { up: 362, right: 86 };
+/* THE GAME'S LANGUAGE (js/i18n.js, ?lan=), or null in English. Each step keeps its English (the
+   step logic and the voice table are keyed by it); the sentences are cut and shown in the
+   language, and the word each one leans on is found by that language's list (tutKeyWords, and
+   his name, nameMomo) the way KEY and NAME find it in English. */
+const TUT_LANG = (typeof globalThis !== 'undefined' && globalThis.I18N && globalThis.I18N.on) ? globalThis.I18N : null;
 
 class Tutorial {
   /**
@@ -15835,9 +15871,11 @@ class Tutorial {
   beats(text) {
     const key = (text || '') + '|' + (this.voDur || 0);
     if (this._beatKey === key) return this._beatPlan;
+    if (TUT_LANG && text) text = TUT_LANG.tr(text);
     /* Split on the punctuation and KEEP it: "Oh no!" is a beat BECAUSE of the "!", and a
-       sentence that arrives without its full stop reads as unfinished. */
-    const parts = String(text || '').match(/[^.!?]+[.!?]*/g) || [];
+       sentence that arrives without its full stop reads as unfinished. (The danda is the full
+       stop of Hindi, Marathi and Odia.) */
+    const parts = String(text || '').match(/[^.!?\u0964\u0965]+[.!?\u0964\u0965]*/g) || [];
     const lines = parts.map(t => t.trim()).filter(Boolean);
     let plan;
     if (!lines.length) plan = [];
@@ -16421,12 +16459,12 @@ class Tutorial {
     const NAME = /^(momo|frozen)[!.,?]*$/i;
     const parts = (text || '').split(/(\s+)/);
     const list = parts.filter(p => p && !/^\s+$/.test(p));       // the words alone, without the gaps
-    const loudAt = w => (w.length > 2 && w === w.toUpperCase() && /[A-Z]/.test(w)) || KEY.test(w);
+    const loudAt = w => (w.length > 2 && w === w.toUpperCase() && /[A-Z]/.test(w)) || (TUT_LANG ? TUT_LANG.isWord(w, 'tutKeyWords') : KEY.test(w));
     /* Decided BEFORE anything is written, because the fallback has to know whether a real
        key word turns up later in the sentence — marking as it went would accent the name
        and then find the verb two words further on. */
     let pow = list.findIndex(loudAt);
-    if (pow < 0) pow = list.findIndex(w => NAME.test(w));
+    if (pow < 0) pow = list.findIndex(w => TUT_LANG ? TUT_LANG.isWord(w, 'nameMomo') : NAME.test(w));
     let i = 0, n = 0;
     el.textContent = '';
     for (const p of parts) {
@@ -16959,6 +16997,8 @@ function handOffToLesson(where) {
   if (hosted) { tellHost('lesson', { where }); return; }
   const q = new URLSearchParams({ intro: '0', auto: '1' });
   if (options.dev) q.set('dev', '1');
+  const lan = globalThis.I18N && globalThis.I18N.on ? globalThis.I18N.lang : '';
+  if (lan) q.set('lan', lan);                                // the lesson in the game's language
   location.href = '../../part1-swiftee-lesson/index.html?' + q.toString();
 }
 
@@ -17280,7 +17320,7 @@ if (options.dev && !hosted) {
   tag.className = 'dev-tag'; tag.textContent = 'DEV';
   const back = document.createElement('a');
   back.className = 'dev-go';
-  back.href = '../../part1-swiftee-lesson/index.html?dev=1';
+  back.href = '../../part1-swiftee-lesson/index.html?dev=1' + (globalThis.I18N && globalThis.I18N.on ? '&lan=' + globalThis.I18N.lang : '');
   back.textContent = '◀ Part 1';
   const sel = document.createElement('select');
   sel.setAttribute('aria-label', 'Jump to screen');

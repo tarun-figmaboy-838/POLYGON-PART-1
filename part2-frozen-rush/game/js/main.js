@@ -147,6 +147,8 @@ function handOffToLesson(where) {
   if (hosted) { tellHost('lesson', { where }); return; }
   const q = new URLSearchParams({ intro: '0', auto: '1' });
   if (options.dev) q.set('dev', '1');
+  const lan = globalThis.I18N && globalThis.I18N.on ? globalThis.I18N.lang : '';
+  if (lan) q.set('lan', lan);                                // the lesson in the game's language
   location.href = '../../part1-swiftee-lesson/index.html?' + q.toString();
 }
 
@@ -468,7 +470,7 @@ if (options.dev && !hosted) {
   tag.className = 'dev-tag'; tag.textContent = 'DEV';
   const back = document.createElement('a');
   back.className = 'dev-go';
-  back.href = '../../part1-swiftee-lesson/index.html?dev=1';
+  back.href = '../../part1-swiftee-lesson/index.html?dev=1' + (globalThis.I18N && globalThis.I18N.on ? '&lan=' + globalThis.I18N.lang : '');
   back.textContent = '◀ Part 1';
   const sel = document.createElement('select');
   sel.setAttribute('aria-label', 'Jump to screen');

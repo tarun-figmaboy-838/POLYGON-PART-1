@@ -84,7 +84,7 @@
 @keyframes coverLoadSheen { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
 .cover-loading-label {
   margin: 0;
-  font: 800 clamp(13px, calc(1.45 * var(--u)), 50px)/1 "Baloo 2", system-ui, sans-serif;
+  font: 800 clamp(13px, calc(1.45 * var(--u)), 50px)/1 var(--script-font, "Baloo 2"), system-ui, sans-serif;
   color: #eaf9ff;
   letter-spacing: 0.04em;
   text-shadow: 0 2px 0 rgba(6, 32, 60, 0.55), 0 3px 10px rgba(6, 32, 60, 0.6);
@@ -546,7 +546,7 @@
      in the game; the size is up a step and the lines airier, and the box's max-width
      keeps a line to about 30 characters, which is what a new reader can hold. The comedy
      is in the shape, the pop and the wobble — not in the letters. */
-  font: 800 clamp(22px, calc(2.35 * var(--u)), 88px)/1.32 "Baloo 2", system-ui, sans-serif;
+  font: 800 clamp(22px, calc(2.35 * var(--u)), 88px)/1.32 var(--script-font, "Baloo 2"), system-ui, sans-serif;
   color: #0C3352;                       /* the navy the ice is inked with: about 11:1 on frost */
   text-wrap: balance;
   letter-spacing: .004em;

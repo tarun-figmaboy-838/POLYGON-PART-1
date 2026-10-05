@@ -3,13 +3,16 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Ice Age Mammoth Runner</title>
+<title data-i18n="gamePageTitle">Ice Age Mammoth Runner</title>
 <meta name="description" content="A 2D Ice Age runner where geometry repairs the broken ice path." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800;900&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/style.css" />
 <link rel="stylesheet" href="css/screens.css" />
+<!-- ANOTHER LANGUAGE (?lan=hi, mr, te, gu or od — js/i18n.js): the page's own words wait, unseen,
+     until they are in that language, so the English is never what flashes up first -->
+<script>if (/[?&]lang?=(?!en\b)[a-z]/i.test(location.search)) { document.documentElement.className += ' i18n-wait'; setTimeout(function () { document.documentElement.classList.remove('i18n-wait'); }, 4000); }</script>
 <!-- THE PRESSED BUTTON ART, FETCHED UP FRONT.
 
      For both picture buttons the press IS a different image, and a background-image
@@ -41,7 +44,7 @@
 <body>
   <div class="stage-wrap">
     <div class="stage" id="stage">
-      <canvas id="game-canvas" aria-label="Ice Age mammoth runner game"></canvas>
+      <canvas id="game-canvas" aria-label="Ice Age mammoth runner game" data-i18n-aria="gameCanvasLabel"></canvas>
 
       <!-- THE PART 2 FOCUS LAYER.
 
@@ -204,17 +207,17 @@
 
         <div class="overlay pause-panel" id="paused" hidden>
           <div class="card">
-            <h1>Paused</h1>
+            <h1 data-i18n="pausedTitle">Paused</h1>
             <div class="pause-row">
-              <button class="icon-btn" id="btn-restart" type="button" aria-label="Start over" data-icon="restart">
+              <button class="icon-btn" id="btn-restart" type="button" aria-label="Start over" data-i18n-aria="startOverButton" data-icon="restart">
                 <span class="icon-btn-face"></span><span class="icon-btn-glyph"></span>
               </button>
-              <button class="icon-btn" id="btn-sound2" type="button" aria-label="Sound" aria-pressed="true" data-icon="sound-on">
+              <button class="icon-btn" id="btn-sound2" type="button" aria-label="Sound" data-i18n-aria="soundButton" aria-pressed="true" data-icon="sound-on">
                 <span class="icon-btn-face"></span><span class="icon-btn-glyph"></span>
               </button>
             </div>
             <button class="btn-chunky btn-resume" id="btn-resume" type="button">
-              <span class="btn-chunky-face"><span class="btn-chunky-label">Resume</span></span>
+              <span class="btn-chunky-face"><span class="btn-chunky-label" data-i18n="resumeButton">Resume</span></span>
             </button>
           </div>
         </div>
@@ -268,7 +271,7 @@
           <!-- Play again stands ON the ice to the right of the friends, like a signpost at
                the end of the road — the only thing to do, in the empty half of the stage. -->
           <button class="btn-chunky btn-replay" id="btn-replay" type="button">
-            <span class="btn-chunky-face"><span class="btn-chunky-label">Play again</span></span>
+            <span class="btn-chunky-face"><span class="btn-chunky-label" data-i18n="playAgainButton">Play again</span></span>
           </button>
         </div>
 
@@ -278,7 +281,7 @@
             <path d="M10 40 A16 16 0 0 0 38 40" stroke="#A9E7FA" stroke-width="2.6" stroke-linecap="round" />
             <path d="M34 36 L38 40 L34 44" stroke="#A9E7FA" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
-          <p>Rotate your device</p>
+          <p data-i18n="rotateDevice">Rotate your device</p>
         </div>
 
         <!-- Cover: the supplied FROZEN RUSH banner, with drifting snow and a PLAY button -->
@@ -300,13 +303,13 @@
                with the radius zeroed for the art, drew a hard RECTANGLE around the
                button. Overriding state by state is whack-a-mole; the fix is that the
                picture buttons are their own family. -->
-          <button class="btn-art btn-play" id="btn-play" type="button" aria-label="Play"><span class="btn-play-face" aria-hidden="true"></span></button>
+          <button class="btn-art btn-play" id="btn-play" type="button" aria-label="Play" data-i18n-aria="playButton"><span class="btn-play-face" aria-hidden="true"></span></button>
           <!-- THE LOADING BAR, in PLAY's place until every file the game needs is in (engine.js NET:
                real bytes, forward only); then it goes and PLAY pops in where it stood -->
-          <div class="cover-loading" id="cover-loading" role="progressbar" aria-label="Loading"
+          <div class="cover-loading" id="cover-loading" role="progressbar" aria-label="Loading" data-i18n-aria="loadingLabel"
                aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden>
             <div class="cover-loading-track"><div class="cover-loading-fill" id="cover-loading-fill"></div></div>
-            <p class="cover-loading-label" id="cover-loading-label">Loading…</p>
+            <p class="cover-loading-label" id="cover-loading-label" data-i18n="loadingLabel">Loading…</p>
           </div>
         </div>
 
@@ -339,6 +342,11 @@
        key. It has no imports and loads the same way on file:// and http://, so it
        sits outside the module/bundle switch below. The engine reaches it through
        AudioManager.kit() and keeps its own palette as the fallback. -->
+  <!-- THE WORDS, in the language the address asks for (?lan=): polygon-locales.json as a script, and
+       the code that reads it — the lesson's own (part1-swiftee-lesson/tools/build-locales.js copies
+       both). Classic scripts, before the game's modules, which ask them what to show. -->
+  <script src="js/locales.js"></script>
+  <script src="js/i18n.js"></script>
   <script src="js/sfx.js"></script>
   <!-- game feel for the DOM controls (supplied juice.js): additive Web Animations, so it
        never fights the CSS or the canvas. Sound and its own particles are off — the

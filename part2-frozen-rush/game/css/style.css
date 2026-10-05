@@ -30,8 +30,15 @@ html, body {
   overscroll-behavior: none;
 }
 
+/* ANOTHER LANGUAGE (js/i18n.js, ?lan=): Baloo 2 has Devanagari already; Telugu, Gujarati and Odia
+   letters are drawn in the Baloo face made for each script, named after it so Latin keeps its own */
+html[data-font="telu"] { --script-font: 'Baloo 2', 'Baloo Tammudu 2'; }
+html[data-font="gujr"] { --script-font: 'Baloo 2', 'Baloo Bhai 2'; }
+html[data-font="orya"] { --script-font: 'Baloo 2', 'Baloo Bhaina 2'; }
+html.i18n-wait [data-i18n] { visibility: hidden; }
+
 body {
-  font-family: 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
+  font-family: var(--script-font, 'Baloo 2'), 'Trebuchet MS', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }

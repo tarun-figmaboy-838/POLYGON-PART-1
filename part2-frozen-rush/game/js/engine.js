@@ -17,6 +17,12 @@ import { pointsOf as verifiedPoints, sidesOf as verifiedSides } from './polygons
 import { optionShapes } from './option-shapes.js';
 import { ASSET_V, ASSET_SIZE } from './asset-versions.js';
 
+/* ANOTHER LANGUAGE, NO VOICE (js/i18n.js, ?lan=hi and the rest). The take is English: spoken over
+   translated words it would say one thing while the screen says another, and pace the words by
+   its own syllables. So no line has a window, the take is never fetched, and every line is timed
+   by its words — the path a muted run has always taken. The music and the effects play as ever. */
+const SILENT_VO = typeof globalThis !== 'undefined' && !!(globalThis.I18N && globalThis.I18N.on && !globalThis.I18N.voice);
+
 /* EVERY ASSET URL GOES THROUGH HERE. The deployment caches game/assets as immutable for a
    year; the sheets were rebuilt under the same names and every returning browser drew from
    the stale strips it had — no character at all. The file's content hash on the URL is what
@@ -2487,7 +2493,7 @@ class AudioManager {
       network. Nothing here can fail loudly: no bytes means the game plays silent-voiced. */
   fetchVo() {
     const V = CFG.vo;
-    if (!V || !V.src || this.voBytes) return Promise.resolve();
+    if (!V || !V.src || this.voBytes || SILENT_VO) return Promise.resolve();
     if (typeof location !== 'undefined' && location.protocol === 'file:') return Promise.resolve();
     /* THE PROMISE IS SHARED, not a flag. A second caller used to see a "fetching" flag and return
        at once, so the decode ran before the bytes had landed and gave up with nothing — measured:
@@ -2509,7 +2515,7 @@ class AudioManager {
   }
   async loadVo() {
     const V = CFG.vo;
-    if (!V || !V.src || this.voLoading) return;
+    if (!V || !V.src || this.voLoading || SILENT_VO) return;
     this.voLoading = true;
     const direct = typeof location !== 'undefined' && location.protocol === 'file:';
     try {
@@ -2556,6 +2562,7 @@ class AudioManager {
      instead of at an even rate that matches no delivery. A take with no offsets baked is
      still valid: the reveal falls back to spreading the words evenly. */
   voLine(id) {
+    if (SILENT_VO) return null;
     const L = CFG.vo && CFG.vo.lines && CFG.vo.lines[id];
     return L ? { at: L[0], dur: L[1], words: L[2] || null } : null;
   }
@@ -6299,7 +6306,7 @@ export function createGame(canvas, hooks = {}) {
        when sound is on — a muted run (?sound=0, hooks.sound false) does not download the soundtrack. */
     if (audio.enabled && hooks.sound !== false) {
       for (const cue of Object.values(CFG.sfx || {})) if (cue && cue.src) NET.plan(assetUrl(cue.src));
-      if (CFG.vo && CFG.vo.src) NET.plan(assetUrl(CFG.vo.src));
+      if (CFG.vo && CFG.vo.src && !SILENT_VO) NET.plan(assetUrl(CFG.vo.src));
       if (CFG.music && CFG.music.src) NET.plan(assetUrl(CFG.music.src));
     }
     const jobs = CFG.phases.map(p => loadImg(p.src).then(i => { images[p.key] = i; }));

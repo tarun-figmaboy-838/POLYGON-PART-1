@@ -75,7 +75,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   const { server, port } = await serve();
   // ?story=0: this plays the lesson; the story before it is played by tests/playthrough.jsdom.js
-  const URL = `http://127.0.0.1:${port}/index.html?story=0`;
+  // LAN=hi (mr, te, gu, od): the same lesson in that language (src/core/i18n.js)
+  const URL = `http://127.0.0.1:${port}/index.html?story=0` + (process.env.LAN ? '&lan=' + process.env.LAN : '');
 
   const browser = await chromium.launch({
     channel: 'chrome',
@@ -395,11 +396,18 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       // place as it arrives, and a client rect includes that travel — so a
       // line sampled half way through its reveal reported twice the rows it
       // lays out on. offsetTop is the row the word is actually in.
+      // AND A WORD BELONGS TO THE ROW ITS MIDDLE IS IN (game.js lineRows): a key word sits a
+      // pixel or two off the plain words beside it, and bucketing tops counted one row as two —
+      // the taller letters of Telugu put "అది క్రమ బహుభుజి." at 0, 1, 33, 34, 67 and 68.
       const kids = [].slice.call(line.childNodes).filter((n) => n.nodeType === 1 && n.offsetWidth);
       if (!kids.length) return;
-      const tops = {};
-      kids.forEach((n) => { tops[Math.round(n.offsetTop / 2) * 2] = 1; });
-      const n = Object.keys(tops).length;
+      const rows = [];
+      kids.forEach((k) => {
+        const top = k.offsetTop, bottom = top + k.offsetHeight, mid = (top + bottom) / 2;
+        const row = rows.find((r) => mid > r.top && mid < r.bottom);
+        if (row) { row.top = Math.min(row.top, top); row.bottom = Math.max(row.bottom, bottom); } else rows.push({ top, bottom });
+      });
+      const n = rows.length;
       const s = window.Game.screen;
       window.__rows[s] = Math.max(window.__rows[s] || 0, n);
     };

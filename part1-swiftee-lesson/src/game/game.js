@@ -12,6 +12,11 @@
   'use strict';
 
   var $ = function (s) { return document.querySelector(s); };
+  /* THE LESSON'S LANGUAGE (src/core/i18n.js, ?lan=), or null in English — when every line below
+     is exactly the English it always was. Lines are turned as they come in to be shown and
+     timed (handlerSay, handlerInstruction, popLine), so a bubble is laid out and paced by the
+     words the child reads; what the lesson decides by stays English. */
+  var LANG = global.I18N && global.I18N.on ? global.I18N : null;
   var root, stageEl, hud, bubble, instruction, progress, loadEl, continueBtn, nextBtn;
   var director, current = -1, playing = false, settleTimer = null, mouthTimer = null, bubbleTimer = null;
   /* Whether Swiftee is on this screen at all. Set per screen from its
@@ -234,7 +239,7 @@
     // a closing call to action ("Let's find out!") gets its own.
     if (!text || text.length <= 32) return [text];
     var sentences = [], rest = text, m;
-    while ((m = /^(.{3,}?[.!?\u2026])\s+(\S.*)$/.exec(rest))) { sentences.push(m[1]); rest = m[2]; }
+    while ((m = /^(.{3,}?[.!?\u2026\u0964\u0965])\s+(\S.*)$/.exec(rest))) { sentences.push(m[1]); rest = m[2]; }
     sentences.push(rest);
     if (sentences.length < 2) return [text];
     var BUDGET = 44;
@@ -1280,7 +1285,10 @@
     if (u.term && global.DualCode) {
       // the sentence it is in, so "another vertex" and "this vertex" can mean what they say
       var inLine = u.el.closest ? u.el.closest('.bubble-line') : null;
-      var lit = DualCode.cueTerm(u.term, { line: inLine ? inLine.textContent : '' });
+      // (in another language, the English it came from: "another vertex" is read off the words)
+      var lineText = inLine ? inLine.textContent : '';
+      if (lineText && global.I18N && I18N.on) lineText = I18N.english(lineText) || lineText;
+      var lit = DualCode.cueTerm(u.term, { line: lineText });
       // AND HE GLANCES AT IT — once a line, a small lean toward the board,
       // never a gesture: the thing on the board is the lesson, he only looks
       if (lit && !glanced && present && !entering && global.Swiftee && Swiftee.lookAt && !Swiftee.busy && !Swiftee.locked) {
@@ -1292,7 +1300,12 @@
     // AND WHATEVER THE WORD NAMES COMES IN WITH IT: an answer, a name tag,
     // a bin, the stepper (stage.js holdForWord) — the word and the thing in
     // the same frame
-    if (global.Stage && Stage.said) { try { Stage.said(u.el.textContent); } catch (e) {} }
+    // (in another language a word is told by the English it stands for: "अंदर" is "inside" —
+    // src/core/i18n.js cues — so the Inside button still arrives on its word)
+    if (global.Stage && Stage.said) {
+      if (global.I18N && I18N.on) I18N.cues(u.el.textContent).forEach(function (w) { try { Stage.said(w); } catch (e) {} });
+      else { try { Stage.said(u.el.textContent); } catch (e) {} }
+    }
   }
 
   /* THE FIRST TAP FINISHES THE SENTENCE. Every word still on its way lands at
@@ -1452,6 +1465,7 @@
   if (global.Timing) { T_PANEL_LEAD = Timing.PANEL_LEAD; T_SWAP_OUT = Timing.SWAP_OUT; T_SWAP_LEAD = Timing.SWAP_LEAD; }
   function say(text, mood, ms, clock, cues, o) {
     o = o || {};
+    if (text && global.I18N && I18N.on) text = I18N.tr(text);
     stopReveal(); revealUnits = null; revealDone = null;
     clearTimeout(swapTimer); swapTimer = null; pendingPut = null;
     if (!text) {
@@ -2991,6 +3005,16 @@
         return false;
       },
       say: function handlerSay(text, opts, ctx) {
+        // IN THE LESSON'S LANGUAGE before anything is timed: the line, the script's breaks in it
+        // (its own, as the translation breaks it) and the instruction that will repeat it. Once.
+        if (LANG && text && !(opts && opts.inLang)) {
+          opts = Object.assign({}, opts, {
+            inLang: true,
+            parts: opts && opts.parts ? LANG.trParts(text, opts.parts) : null,
+            settledBy: opts && opts.settledBy ? LANG.tr(opts.settledBy) : (opts && opts.settledBy)
+          });
+          text = LANG.tr(text);
+        }
         // The index is fetched asynchronously. Without this gate the first
         // line can reach play() while the list is still empty and become the
         // only line on a run that is silently skipped.
@@ -3303,6 +3327,7 @@
         return Promise.all([paced, heard]);
       },
       instruction: function handlerInstruction(text, opts, ctx) {
+        if (LANG && text) text = LANG.tr(text);       // (in the lesson's language, as handlerSay)
         // (and, like a line, not over his reply to the answer just given)
         if (text && replying() && !(opts && opts.afterReply)) {
           return untilReplied(ctx).then(function () {
@@ -3423,7 +3448,7 @@
             // the else, replaying a screen — or solving one whose XP was
             // already banked — got no reaction at all, which is the same
             // desync as a wrong answer getting none.
-            if (earned) reward('+' + earned + ' XP. Challenge complete.', false);
+            if (earned) reward(LANG ? LANG.t('rewardXp', { xp: earned }) : '+' + earned + ' XP. Challenge complete.', false);
             // and he says so, whether or not there was XP in it: react() is
             // the one place his word on an answer comes from. His FACE is the
             // screen's own feedback beat, a moment later — one reaction, not two.
@@ -3868,7 +3893,7 @@
       // "Nice!" was being cut off by the ice; the lesson waits for it.
       if (replying()) { await untilReplied(); if (gen !== playGen) return; }
       var badge = quest.complete(i);
-      if (badge) { reward('Badge unlocked: ' + badge.name + '.', true); }
+      if (badge) { reward(LANG ? LANG.t('badgeUnlocked', { badge: LANG.tr(badge.name) }) : 'Badge unlocked: ' + badge.name + '.', true); }
     }
     playing = false;
     finish();
@@ -4017,6 +4042,9 @@
   }
   function popLine(ln, hooks) {
     var text = ln.t, k = paceScale(), T = global.Timing || {};
+    // in the lesson's language — and each `show` then waits for its word where the translation says it
+    var enText = text;
+    if (LANG && text) text = LANG.tr(text);
     var vid = (global.VO && ln.vo && VO.play && VO.play(ln.vo)) ? ln.vo : null;
     var clock = vid ? function () { return (global.VO && VO.id === vid && VO.at) ? VO.at() : null; } : null;
     var cues = null;
@@ -4040,6 +4068,7 @@
     // (one `show` on its `on` word, or several — `shows: [{ what, on }]` — for a line that
     // names two things: the swipe's "every side is equal, and every angle is equal too")
     var shows = ln.shows ? ln.shows.slice() : ln.show ? [{ what: ln.show, on: ln.on || 0 }] : [];
+    if (LANG && text !== enText) shows = shows.map(function (sh) { return { what: sh.what, on: LANG.wordIndex(enText, text, sh.on || 0) }; });
     if (hooks && hooks.cue) shows.forEach(function (sh) {
       var g = popGen, cueMs = cues && cues[sh.on || 0] != null ? cues[sh.on || 0] : 0, t0 = Date.now(), fired = false;
       var fire = function () { if (!fired && g === popGen) { fired = true; hooks.cue(sh.what); } };
@@ -4282,7 +4311,7 @@
       Stage.apply({ kind: 'ready' });
       root.classList.add('ready-scene');
       var label = continueBtn.querySelector('span');
-      if (label) { if (continueLabel == null) continueLabel = label.textContent; label.textContent = 'Play Part 2'; }
+      if (label) { if (continueLabel == null) continueLabel = label.textContent; label.textContent = LANG ? LANG.t('playPartTwoButton') : 'Play Part 2'; }
       continueBtn.classList.add('show');
       Swiftee.place('ledge', 'large');
       if (Swiftee.visible) Swiftee.visible(true);
@@ -4367,6 +4396,7 @@
         // the hd character sheets replace the base ones on a big sharp screen, never both
         if (/\/hd\//.test(p) ? !hd : hd && /^assets\/char\/[^/]+$/.test(p) && v[p.replace('assets/char/', 'assets/char/hd/')]) return;
         if (/\.(mp3|ogg)$/.test(p)) {
+          if (LANG && /\/vo-lines\./.test(p)) return;              // (its voice is English: not played in another language)
           var twin = /\.mp3$/.test(p) ? p.replace(/\.mp3$/, '.ogg') : p.replace(/\.ogg$/, '.mp3');
           if (v[twin] && (/\.ogg$/.test(p) !== ogg)) return;   // only the one it will play
           sound.push(p);
@@ -4374,7 +4404,7 @@
       });
       // the code first (it revalidates, so this spares the download), then the
       // art that gates PLAY, then the sounds, the music bed last
-      var queue = ['index.html', 'css/style.css', 'css/screens.css', 'js/main.js', 'js/engine.js',
+      var queue = ['index.html', 'css/style.css', 'css/screens.css', 'js/locales.js', 'js/i18n.js', 'js/main.js', 'js/engine.js',
                    'js/hud.js', 'js/tutorial.js'].map(function (f) { return base + f; })
         .concat(art.concat(sound.sort(function (a, b) { return /bgm/.test(a) - /bgm/.test(b); }))
           .map(function (p) { return base + p + '?v=' + v[p]; }));
@@ -4439,6 +4469,8 @@
     root = $('#game'); stageEl = $('#stage'); hud = $('#hud'); bubble = $('#bubble');
     instruction = $('#instruction'); progress = $('#progress'); loadEl = $('#loading');
     continueBtn = $('#continue');
+    // on to Part 2 in the same language (and the review bar's link to it)
+    if (LANG) [continueBtn, $('#jump .dev-go')].forEach(function (a) { if (a && a.getAttribute('href')) a.setAttribute('href', LANG.keep(a.getAttribute('href'))); });
     nextBtn = $('#next');
     // pressed on the hand-over screen, and only there (readyScene), through the snow
     if (continueBtn) continueBtn.addEventListener('click', function (e) {
@@ -4780,13 +4812,15 @@
     P.onProgress(function (f) {
       var pct = Math.floor(f * 100);
       if (fill) fill.style.width = pct + '%';
-      if (label) label.textContent = 'Loading\u2026 ' + pct + '%';
+      if (label) label.textContent = LANG ? LANG.t('loadingPercent', { percent: pct }) : 'Loading\u2026 ' + pct + '%';
       if (bar) bar.setAttribute('aria-valuenow', String(pct));
     });
     var keep = /^assets\/(vo|story)\//;
     P.want((global.PreloadList && PreloadList.urls) || [], { keep: keep });
     if (global.Swiftee && Swiftee.sheetUrls) P.want(Swiftee.sheetUrls());
     FACES.forEach(function (f) { P.font(f); });
+    // and the letters of the lesson's language, in its own face, once that face's sheet is in
+    if (LANG && LANG.font && LANG.fontReady) [600, 700, 800].forEach(function (w) { P.font(w + ' 1em "' + LANG.font + '"', LANG.t('lessonTitle'), LANG.fontReady()); });
     var voice = (global.VO && VO.ready) ? VO.ready() : Promise.resolve();
     // the story's music, in the one format this browser plays (src/story/story.js MUSIC_SRC)
     if (global.StoryMusic && StoryMusic.ext) P.want(['assets/story/story-music.' + StoryMusic.ext()], { keep: keep });
@@ -4970,7 +5004,7 @@
       });
     });
     // and the hand-over to Part 2 keeps dev on, so its own bar is there too
-    if (continueBtn) continueBtn.search = '?dev=1';
+    if (continueBtn) continueBtn.search = '?dev=1' + (LANG ? '&lan=' + LANG.lang : '');
     if (director && director.on) {
       director.on('start', function () {
         if (current >= 0 && +box.value !== current) box.value = current;

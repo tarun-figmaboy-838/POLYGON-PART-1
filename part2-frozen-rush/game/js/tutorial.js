@@ -72,6 +72,11 @@ const VO = {
 };
 /* WHERE MOMO'S HEAD IS, from where he stands: up from his feet and forward from his drawn x. */
 const HEAD = { up: 362, right: 86 };
+/* THE GAME'S LANGUAGE (js/i18n.js, ?lan=), or null in English. Each step keeps its English (the
+   step logic and the voice table are keyed by it); the sentences are cut and shown in the
+   language, and the word each one leans on is found by that language's list (tutKeyWords, and
+   his name, nameMomo) the way KEY and NAME find it in English. */
+const TUT_LANG = (typeof globalThis !== 'undefined' && globalThis.I18N && globalThis.I18N.on) ? globalThis.I18N : null;
 
 export class Tutorial {
   /**
@@ -547,9 +552,11 @@ export class Tutorial {
   beats(text) {
     const key = (text || '') + '|' + (this.voDur || 0);
     if (this._beatKey === key) return this._beatPlan;
+    if (TUT_LANG && text) text = TUT_LANG.tr(text);
     /* Split on the punctuation and KEEP it: "Oh no!" is a beat BECAUSE of the "!", and a
-       sentence that arrives without its full stop reads as unfinished. */
-    const parts = String(text || '').match(/[^.!?]+[.!?]*/g) || [];
+       sentence that arrives without its full stop reads as unfinished. (The danda is the full
+       stop of Hindi, Marathi and Odia.) */
+    const parts = String(text || '').match(/[^.!?\u0964\u0965]+[.!?\u0964\u0965]*/g) || [];
     const lines = parts.map(t => t.trim()).filter(Boolean);
     let plan;
     if (!lines.length) plan = [];
@@ -1133,12 +1140,12 @@ export class Tutorial {
     const NAME = /^(momo|frozen)[!.,?]*$/i;
     const parts = (text || '').split(/(\s+)/);
     const list = parts.filter(p => p && !/^\s+$/.test(p));       // the words alone, without the gaps
-    const loudAt = w => (w.length > 2 && w === w.toUpperCase() && /[A-Z]/.test(w)) || KEY.test(w);
+    const loudAt = w => (w.length > 2 && w === w.toUpperCase() && /[A-Z]/.test(w)) || (TUT_LANG ? TUT_LANG.isWord(w, 'tutKeyWords') : KEY.test(w));
     /* Decided BEFORE anything is written, because the fallback has to know whether a real
        key word turns up later in the sentence — marking as it went would accent the name
        and then find the verb two words further on. */
     let pow = list.findIndex(loudAt);
-    if (pow < 0) pow = list.findIndex(w => NAME.test(w));
+    if (pow < 0) pow = list.findIndex(w => TUT_LANG ? TUT_LANG.isWord(w, 'nameMomo') : NAME.test(w));
     let i = 0, n = 0;
     el.textContent = '';
     for (const p of parts) {

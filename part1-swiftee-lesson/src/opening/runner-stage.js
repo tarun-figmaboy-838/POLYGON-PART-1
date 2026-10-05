@@ -64,9 +64,11 @@
   }
   var on = !!doc && enabled();
 
+  /* the game in the lesson's language (src/core/i18n.js: ?lan= goes wherever the lesson goes) */
+  function keepLan(u) { return (global.I18N && I18N.keep) ? I18N.keep(u) : u; }
   function url(part, at) {
     var q = 'lesson=' + part + (dev ? '&dev=1' : '') + (at ? '&devat=' + at : '');
-    return GAME_URL + '?' + q;
+    return keepLan(GAME_URL + '?' + q);
   }
   function frame(id, src, shown) {
     var f = doc.createElement('iframe');
@@ -335,8 +337,8 @@
   function devJump(what) {
     var base = loc.pathname || '';
     var q = 'dev=1';
-    if (what === 'start1') { loc.assign(base + '?' + q + '&intro=1'); return; }
-    if (what === 'start2') { loc.assign(base + '?' + q + '&intro=1&devat=break'); return; }
+    if (what === 'start1') { loc.assign(keepLan(base + '?' + q + '&intro=1')); return; }
+    if (what === 'start2') { loc.assign(keepLan(base + '?' + q + '&intro=1&devat=break')); return; }
     // the end: straight to the game's return, from the lesson's last screen or from its ditch
     if (what === 'end1' || what === 'end2') {
       leave();

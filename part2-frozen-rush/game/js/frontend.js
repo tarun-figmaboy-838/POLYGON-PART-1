@@ -50,7 +50,9 @@ export class Frontend {
     this._progress = Math.max(this._progress || 0, Math.min(1, f || 0));
     const pct = Math.floor(this._progress * 100);
     if (this.el.loadingFill) this.el.loadingFill.style.width = pct + '%';
-    if (this.el.loadingLabel) this.el.loadingLabel.textContent = 'Loading… ' + pct + '%';
+    // (in the game's language, js/i18n.js ?lan=, when it has one)
+    const lan = typeof globalThis !== 'undefined' && globalThis.I18N && globalThis.I18N.on ? globalThis.I18N : null;
+    if (this.el.loadingLabel) this.el.loadingLabel.textContent = lan ? lan.t('loadingPercent', { percent: pct }) : 'Loading… ' + pct + '%';
     if (this.el.loadingNote) this.el.loadingNote.setAttribute('aria-valuenow', String(pct));
   }
 

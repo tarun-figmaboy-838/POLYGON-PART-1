@@ -84,14 +84,19 @@
       '<div class="visit-line"></div>';
     return el;
   }
+  /* IN THE LESSON'S LANGUAGE (src/core/i18n.js, ?lan=): the line, and its key words found by
+     the same lists the lesson's key words are — Momo, and polygons */
+  var I = global.I18N && global.I18N.on ? global.I18N : null;
+  function isKey(w) { return I ? (I.isWord(w, 'nameMomo') || I.isWord(w, 'termPolygon')) : KEY.test(w); }
   function setWords(el, text) {
     var line = el.querySelector('.visit-line');
     line.textContent = '';
     var spans = [];
+    if (I) text = I.tr(text);
     String(text).split(/\s+/).filter(Boolean).forEach(function (w, i) {
       if (i) line.appendChild(el.ownerDocument.createTextNode(' '));
       var s = el.ownerDocument.createElement('span');
-      s.className = KEY.test(w) ? 'w k' : 'w';
+      s.className = isKey(w) ? 'w k' : 'w';
       s.textContent = w;
       line.appendChild(s);
       spans.push(s);

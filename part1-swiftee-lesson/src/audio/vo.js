@@ -62,7 +62,13 @@
     wordMs = (j && j.words) || {};
     spokenMs = (j && j.spoken) || {};
   }
+  /* NO VOICE IN ANOTHER LANGUAGE (src/core/i18n.js, ?lan=). The clips are English: read out
+     over Hindi words they say one thing while the screen says another. No clip is known, so
+     none is fetched, none plays, and every line is paced by its own words — the path a page
+     with no index has always taken. */
+  var silent = !!(global.I18N && global.I18N.on && !global.I18N.voice);
   function loadIndex() {
+    if (silent) { index = {}; indexSettled = true; return Promise.resolve(); }
     if (indexWait || indexSettled) return indexWait;
     if (offDisk) {
       index = {};
@@ -225,7 +231,7 @@
 
   /** Play the clip for a line. Returns the Audio element, or null. */
   function play(id) {
-    if (!id || typeof Audio === 'undefined' || known[id] === false || muted()) return null;
+    if (silent || !id || typeof Audio === 'undefined' || known[id] === false || muted()) return null;
     if (!offDisk && (!index || !index[id])) return null;
     stop();
     var a;
@@ -326,6 +332,7 @@
   var warm = {}, warmOrder = [];
   var WARM_MAX = 48;   // clips are 10-17 KB; the replies alone are ~27 (game.js warmVoice)
   function preload(ids) {
+    if (silent) return;
     (ids || []).forEach(function (id) {
       if (!id || warm[id] || known[id] === false) return;
       if (!offDisk && (!index || !index[id])) return;

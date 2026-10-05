@@ -22,6 +22,17 @@ import { fitBubble } from './bubble.js';
  * key-word treatment is for questions. */
 export const KEY_WORD = /^(.*?\bthe\s+(?:[a-z]+\s+)*)([a-z]+?)(s?)([.!]?)$/i;
 
+/* THE GAME'S LANGUAGE (js/i18n.js, ?lan=hi and the rest), or null in English — when every word
+   below is the one it always was. The engine keeps telling the HUD its English; the HUD shows it
+   in the language. A translated question carries its own key word, marked <strong>, because no
+   English pattern can find a noun in Hindi: "अवतल <strong>बहुभुज</strong> को काटें।" */
+const HUD_LANG = (typeof globalThis !== 'undefined' && globalThis.I18N && globalThis.I18N.on) ? globalThis.I18N : null;
+/** A translated question's parts, as KEY_WORD's: [, before, key, '', after]. */
+function keyWordOf(marked) {
+  const m = /^([\s\S]*?)<strong>([\s\S]*?)<\/strong>([\s\S]*)$/.exec(marked || '');
+  return m ? [m[0], m[1], m[2], '', m[3]] : null;
+}
+
 /* WHERE EVERY MARKER STANDS, AS A PERCENTAGE OF THE PANEL.
  *
  * Measured off the reference panel (1362 x 464) and written down ONCE: the CSS places
@@ -365,7 +376,7 @@ export class Hud {
   /** Pause and Resume are one control, so it swaps glyph rather than moving. */
   pauseLabel(isPaused) {
     this.setGlyph(this.el.pause, isPaused ? 'play' : 'pause');
-    if (this.el.pause) this.el.pause.setAttribute('aria-label', isPaused ? 'Resume' : 'Pause');
+    if (this.el.pause) this.el.pause.setAttribute('aria-label', HUD_LANG ? HUD_LANG.t(isPaused ? 'resumeButton' : 'pauseButton') : (isPaused ? 'Resume' : 'Pause'));
   }
 
   /** Sound state on both copies of the control, HUD and pause panel. */
@@ -374,7 +385,7 @@ export class Hud {
       if (!b) continue;
       this.setGlyph(b, on ? 'sound-on' : 'sound-off');
       b.setAttribute('aria-pressed', String(on));
-      b.setAttribute('aria-label', on ? 'Sound on' : 'Sound off');
+      b.setAttribute('aria-label', HUD_LANG ? HUD_LANG.t(on ? 'soundOn' : 'soundOff') : (on ? 'Sound on' : 'Sound off'));
     }
   }
 
@@ -436,7 +447,10 @@ export class Hud {
   setInstruction(message) {
     const el = this.el.text;
     if (!el) return;
-    const m = this._plain ? null : KEY_WORD.exec((message || '').trim());
+    // in the game's language, the key word the translation marks; in English, the pattern's
+    const marked = HUD_LANG && message ? HUD_LANG.html(message) : null;
+    if (marked != null) message = String(marked).replace(/<\/?strong>/g, '');
+    const m = this._plain ? null : marked != null ? keyWordOf(String(marked).trim()) : KEY_WORD.exec((message || '').trim());
     el.textContent = '';
     this._voiceSpans = [];
     this._voiceTail = null;
@@ -480,6 +494,13 @@ export class Hud {
     }
     for (const w of m[1].trim().split(/\s+/)) word(w, 'iw', true);
     word((m[2] + m[3]).toUpperCase(), 'iw key', true);
+    if (marked != null) {
+      /* A TRANSLATION GOES ON AFTER ITS KEY WORD: a case ending joined to it (Odia's
+         "ବହୁଭୁଜ" + "କୁ") without a space, then the rest of the sentence word by word */
+      m[4].split(/(\s+)/).filter(Boolean).reduce((gap, w) => { if (/^\s+$/.test(w)) return true; word(w, 'iw', gap); return true; }, false);
+      this.fitInstruction();
+      return;
+    }
     word(m[4], 'iw', false);                                  // the sentence keeps its full stop
     this.fitInstruction();
   }
@@ -594,7 +615,8 @@ export class Hud {
      the same type size rather than one being shrunk to the other's constraint.
      @param {{band?: string[], centered?: string[]}} sets */
   setQuestions(sets) {
-    const clean = a => (a || []).filter(s => typeof s === 'string' && s.trim());
+    // (measured in the words the board will show: the game's language, when it has one)
+    const clean = a => (a || []).filter(s => typeof s === 'string' && s.trim()).map(s => HUD_LANG ? HUD_LANG.tr(s) : s);
     this._questions = { band: clean(sets && sets.band), centered: clean(sets && sets.centered) };
     this._fit = null;
     this.fitInstruction();

@@ -3,12 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Swiftee — Polygons</title>
+<title data-i18n="lessonPageTitle">Swiftee — Polygons</title>
 <!-- inline, so the page never fires a 404 for a favicon it does not have -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>%F0%9F%90%A6</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+<!-- ANOTHER LANGUAGE (?lan=hi, mr, te, gu or od — src/core/i18n.js): the page's own words wait,
+     unseen, until they are in that language, so the English is never what flashes up first -->
+<script>if (/[?&]lang?=(?!en\b)[a-z]/i.test(location.search)) { document.documentElement.className += ' i18n-wait'; setTimeout(function () { document.documentElement.classList.remove('i18n-wait'); }, 4000); }</script>
 <!-- the title and the backdrop are the first things on screen; fetch them alongside
      the scripts. Everything else — the sleigh's sheets, Swiftee, the story, the voice —
      is fetched by the loading bar (src/core/preload.js) before Play appears. -->
@@ -845,7 +848,7 @@
     background: var(--bubble-paper); color: var(--instruction-text, #174D59);
     box-shadow: inset 0 2px 0 #fff, 0 0 14px 2px rgb(22 159 153 / .16), 0 8px 20px rgb(12 64 78 / .16);
     opacity: 0; scale: .94; transition: opacity 200ms ease-out, scale 220ms cubic-bezier(.22, 1, .36, 1);
-    font-family: "Fredoka", "Baloo 2", "Arial Rounded MT Bold", sans-serif; font-weight: 700;
+    font-family: "Fredoka", "Baloo 2", "Arial Rounded MT Bold", var(--sans); font-weight: 700;
     line-height: 1.3; text-align: center; text-wrap: balance;
   }
   .visit-bubble.show { opacity: 1; scale: 1; }
@@ -957,13 +960,23 @@
 
   .bubble-line { display: block; }
 
+  /* ANOTHER LANGUAGE (src/core/i18n.js, ?lan=). The page's words are hidden only until they
+     have been put into it. Its letters: the lesson's faces have none of them, so they fall
+     through every stack to --sans, which carries the Baloo face drawn for that script — after
+     Nunito, so a digit or a Latin letter keeps the face it had. */
+  html.i18n-wait [data-i18n] { visibility: hidden; }
+  html[data-font="deva"] { --sans: "Nunito", "Baloo 2", "Segoe UI", system-ui, sans-serif; }
+  html[data-font="telu"] { --sans: "Nunito", "Baloo Tammudu 2", "Segoe UI", system-ui, sans-serif; }
+  html[data-font="gujr"] { --sans: "Nunito", "Baloo Bhai 2", "Segoe UI", system-ui, sans-serif; }
+  html[data-font="orya"] { --sans: "Nunito", "Baloo Bhaina 2", "Segoe UI", system-ui, sans-serif; }
+
 </style>
 </head>
 <body>
-<div id="rotate" role="alertdialog" aria-label="Please turn your device sideways">
+<div id="rotate" role="alertdialog" aria-label="Please turn your device sideways" data-i18n-aria="rotateLabel">
   <div>
     <div class="phone" aria-hidden="true"></div>
-    <p>Turn your device sideways<br>to play with Swiftee!</p>
+    <p><span data-i18n="rotateTitle">Turn your device sideways</span><br><span data-i18n="rotateMessage">to play with Swiftee!</span></p>
   </div>
 </div>
 <div id="game">
@@ -982,9 +995,9 @@
   <div id="reward" class="sr-only" role="status" aria-live="polite"></div>
   <div id="instruction" role="note" aria-live="polite"><span class="instruction-text"></span></div>
   <div id="hud">
-    <button class="replay" type="button">Play again</button>
-    <button class="mute" type="button" aria-label="Mute" aria-pressed="false">🔊</button>
-    <button class="restart" type="button" aria-label="Restart">↻</button>
+    <button class="replay" type="button" data-i18n="playAgainButton">Play again</button>
+    <button class="mute" type="button" aria-label="Mute" aria-pressed="false" data-i18n-aria="muteButton">🔊</button>
+    <button class="restart" type="button" aria-label="Restart" data-i18n-aria="restartButton">↻</button>
   </div>
   <!-- A REVIEW TOOL, AND OFF UNLESS IT IS ASKED FOR. A screen picker for
        looking at one screen without playing the thirty-eight in front of it.
@@ -1010,8 +1023,8 @@
        The href is the one place the address of Part 2 is written. -->
   <!-- NEXT, ON THE SUMMARY ONLY (the final pass): shown once its explanations are over, and the
        way on from it; the lesson's other screens go on by themselves -->
-  <button id="next" type="button" aria-label="Next"><span>Next</span><span class="chev" aria-hidden="true">&#9654;</span></button>
-  <a id="continue" href="../part2-frozen-rush/game/index.html?resume=1" aria-label="Continue to Part 2: Frozen Rush"><span>Part 2</span><span class="chev" aria-hidden="true">&#9654;</span></a>
+  <button id="next" type="button" aria-label="Next" data-i18n-aria="nextButton"><span data-i18n="nextButton">Next</span><span class="chev" aria-hidden="true">&#9654;</span></button>
+  <a id="continue" href="../part2-frozen-rush/game/index.html?resume=1" aria-label="Continue to Part 2: Frozen Rush" data-i18n-aria="continuePartTwoLabel"><span data-i18n="partTwoButton">Part 2</span><span class="chev" aria-hidden="true">&#9654;</span></a>
   <div id="progress-track"><div id="progress"></div></div>
 
   <div id="loading">
@@ -1021,18 +1034,18 @@
       <div class="title-snow"></div>
       <div class="title-scrim"></div>
     </div>
-    <h1 class="sr-only">Swiftee &amp; the Polygons</h1>
+    <h1 class="sr-only" data-i18n="lessonTitle">Swiftee &amp; the Polygons</h1>
     <div class="title-play">
-      <button id="start" type="button" aria-label="Start">
+      <button id="start" type="button" aria-label="Start" data-i18n-aria="startButton">
         <span class="start-halo" aria-hidden="true"></span>
         <img src="assets/ui/play.webp" alt="" draggable="false">
       </button>
       <!-- THE LOADING BAR (src/core/preload.js), in Play's place until every file the
            lesson needs is in — real bytes, forward only; then it goes and Play pops in -->
-      <div class="title-loading" id="title-loading" role="progressbar" aria-label="Loading"
+      <div class="title-loading" id="title-loading" role="progressbar" aria-label="Loading" data-i18n-aria="loadingLabel"
            aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
         <div class="title-loading-track"><div class="title-loading-fill" id="title-loading-fill"></div></div>
-        <p class="title-loading-label" id="title-loading-label">Loading…</p>
+        <p class="title-loading-label" id="title-loading-label" data-i18n="loadingLabel">Loading…</p>
       </div>
       <span class="start-sparks" aria-hidden="true"></span>
     </div>
@@ -1040,6 +1053,10 @@
 </div>
 
 <!-- Load order is the dependency order: each module reads the ones above it. -->
+<!-- the words first, in the language the address asks for (?lan=): polygon-locales.json, copied
+     to a script by tools/build-locales.js, and the code that reads it — everything below asks it -->
+<script src="src/core/locales.js"></script>
+<script src="src/core/i18n.js"></script>
 <!-- the loading bar first: its list (generated by tools/build-preload.js) and its loader -->
 <script src="src/core/preload-list.js"></script>
 <script src="src/core/preload.js"></script>

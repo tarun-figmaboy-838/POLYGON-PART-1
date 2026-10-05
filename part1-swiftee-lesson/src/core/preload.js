@@ -120,17 +120,22 @@
       (urls || []).forEach(function (u) { add(u, keep ? keep.test(u) : false); });
       emit();
     },
-    /** A font face, loaded through document.fonts; counted as a small file on the bar. */
-    font: function (css) {
-      var key = 'font:' + css;
+    /** A font face, loaded through document.fonts; counted as a small file on the bar.
+        `text` names the letters wanted (a script's faces come in parts, one per alphabet), and
+        `after` is a promise to wait for first — the stylesheet that says where the face is. */
+    font: function (css, text, after) {
+      var key = 'font:' + css + (text ? '|' + text : '');
       if (jobs[key]) return;
       // (not one of the five fetch slots: the browser loads the face itself)
       var job = { url: key, expect: FONT_BYTES, got: 0, keep: false, settled: false, started: false, blobUrl: null };
       jobs[key] = job; total += job.expect; planned++;
       var fonts = global.document && global.document.fonts;
       if (!fonts || !fonts.load || !usable) { settle(job, null); return; }
-      var t = setTimeout(function () { settle(job, null); }, FONT_MS);
-      fonts.load(css).then(function () { clearTimeout(t); settle(job, null); }, function () { clearTimeout(t); settle(job, null); });
+      var t = setTimeout(function () { settle(job, null); }, FONT_MS + (after ? FONT_MS : 0));
+      var go = function () {
+        (text ? fonts.load(css, text) : fonts.load(css)).then(function () { clearTimeout(t); settle(job, null); }, function () { clearTimeout(t); settle(job, null); });
+      };
+      if (after && after.then) after.then(go, go); else go();
     },
     seal: function () { sealed = true; check(); },
     onProgress: function (fn) { listeners.push(fn); try { fn(shown); } catch (e) {} },
