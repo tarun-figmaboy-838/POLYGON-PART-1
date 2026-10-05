@@ -1749,7 +1749,10 @@
     if (readyOn && Swiftee.pos === 'ledge') {
       var bird = birdRect();
       if (bird && bird.width) {
-        bubble.style.maxWidth = Math.min(f.w * 0.46, 600 * K) + 'px';
+        // AS WIDE AS THE SKY TO HIS RIGHT ALLOWS (up to the usual cap), not a share of the stage:
+        // on a phone the type is large for the screen, and at 0.46 of it the hand-over line ran
+        // to four rows in Telugu with half the sky beside it empty
+        bubble.style.maxWidth = Math.max(MIN_W, Math.min(vw - GAP - (bird.right - bird.width * 0.12), 600 * K)) + 'px';
         snugWidth();
         var rw = bubble.offsetWidth, rh = bubble.offsetHeight;
         var rl = Math.max(X0 + GAP, Math.min(vw - rw - GAP, bird.right - bird.width * 0.12));

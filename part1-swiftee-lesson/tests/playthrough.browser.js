@@ -392,6 +392,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       const bub = document.querySelector('#bubble');
       if (!bub || !bub.classList.contains('show')) return;
       if (parseFloat(getComputedStyle(bub).opacity) < 0.05) return;
+      // NOR ONE BEHIND THE "TURN YOUR DEVICE" SCREEN. The portrait check below narrows the window
+      // to an upright phone, where #rotate covers the lesson; a line that is up at that moment wraps
+      // at a width nobody plays at (the hand-over line, four rows at 400 px, in a voiced run).
+      const turn = document.getElementById('rotate');
+      if (turn && getComputedStyle(turn).display !== 'none') return;
       // LAYOUT BOXES, NOT CLIENT RECTS. Each word rises a few pixels into
       // place as it arrives, and a client rect includes that travel — so a
       // line sampled half way through its reveal reported twice the rows it
