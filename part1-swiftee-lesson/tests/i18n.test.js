@@ -92,7 +92,8 @@ t('Frozen Rush was read', QUESTIONS.length === 9 && NUDGES.length === 5 && TUTOR
 
 for (const lang of LANGS) {
   const I = I18N.make(lang);
-  t(lang + ': chosen', I.lang === lang && I.on && !I.voice && !!I.font);
+  // (Hindi has its own recordings — tests/vo-hindi.test.js — and the rest have none)
+  t(lang + ': chosen', I.lang === lang && I.on && I.voice === (lang === 'hi') && !!I.font);
   const untranslated = [...SHOWN].filter((s) => I.tr(s) === s);
   t(lang + ': every line, label and answer of the lesson is translated', untranslated.length === 0, untranslated.slice(0, 6));
   t(lang + ': nothing reached tr() without a translation', I.misses.length === 0, I.misses.slice(0, 6));

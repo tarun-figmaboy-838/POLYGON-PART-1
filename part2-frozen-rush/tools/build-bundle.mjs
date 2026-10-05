@@ -43,6 +43,7 @@ export const ORDER = [
   'asset-versions.js',      // generated below: content hashes for every file under game/assets
   'polygons.js',
   'option-shapes.js',
+  'vo-hi.js',               // generated: the Hindi take's windows (part1-swiftee-lesson/tools/build-vo-hindi.js)
   'engine.js',
   'bubble.js',
   'hud.js',
@@ -122,11 +123,16 @@ async function walk(dir) {
   }
   return out;
 }
+/* The files the game is served — not the user's .wav recordings (assets/vo-part-2-hindi), which
+   are the source of the Hindi take and never fetched (and not deployed: .vercelignore). */
+async function served() {
+  return (await walk(ASSETS)).filter(p => !/\.wav$/i.test(p)).sort();
+}
 
 /** { 'assets/char/mammoth-run.webp': 'a1b2c3d4', ... } — md5 of the bytes, 8 hex. */
 export async function assetVersions() {
   const map = {};
-  for (const p of (await walk(ASSETS)).sort()) {
+  for (const p of await served()) {
     const key = 'assets/' + relative(ASSETS, p).split('\\').join('/');
     map[key] = createHash('md5').update(await readFile(p)).digest('hex').slice(0, 8);
   }
@@ -137,7 +143,7 @@ export async function assetVersions() {
     weights the loading bar gives its transfers (engine.js NET) before any header arrives. */
 export async function assetSizes() {
   const map = {};
-  for (const p of (await walk(ASSETS)).sort()) {
+  for (const p of await served()) {
     map['assets/' + relative(ASSETS, p).split('\\').join('/')] = (await stat(p)).size;
   }
   return map;

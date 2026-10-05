@@ -87,6 +87,9 @@ const orphans = [], dynamic = [], toolOnly = [];
 let total = 0, orphanBytes = 0;
 
 for (const file of walk(ASSETS)) {
+  // the user's Hindi recordings (assets/vo-part-2-hindi/*.wav): the source of vo-lines-hi, kept out
+  // of the deploy by .vercelignore — not served, so not an asset
+  if (/\.wav$/i.test(file)) continue;
   const rel = relative('game', file).split('\\').join('/');
   const name = basename(file);
   total++;

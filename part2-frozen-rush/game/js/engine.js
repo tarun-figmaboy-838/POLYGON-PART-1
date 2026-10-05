@@ -16,12 +16,22 @@ import { pointsOf as verifiedPoints, sidesOf as verifiedSides } from './polygons
    number a learner counts on screen is the number the game is checking. */
 import { optionShapes } from './option-shapes.js';
 import { ASSET_V, ASSET_SIZE } from './asset-versions.js';
+/* The Hindi take and its windows, assembled from the Hindi recordings (generated: see the file). */
+import { VO_HI } from './vo-hi.js';
 
-/* ANOTHER LANGUAGE, NO VOICE (js/i18n.js, ?lan=hi and the rest). The take is English: spoken over
-   translated words it would say one thing while the screen says another, and pace the words by
-   its own syllables. So no line has a window, the take is never fetched, and every line is timed
-   by its words — the path a muted run has always taken. The music and the effects play as ever. */
-const SILENT_VO = typeof globalThis !== 'undefined' && !!(globalThis.I18N && globalThis.I18N.on && !globalThis.I18N.voice);
+/* ANOTHER LANGUAGE: ITS OWN VOICE, OR NONE (js/i18n.js, ?lan=).
+   HINDI HAS ITS OWN TAKE (VO_TAKES): the same line ids, a window each, and every word's onset
+   measured off the Hindi recording against the Hindi words on screen — so when the game speaks
+   Hindi, CFG.vo IS that take (just below CFG) and everything that speaks reads it unchanged. A
+   line it has no window for is not heard, as with a line the English take lacks.
+   ANY OTHER LANGUAGE HAS NO VOICE. The English take spoken over translated words would say one
+   thing while the screen says another, and pace the words by its own syllables. So no line has a
+   window, the take is never fetched, and every line is timed by its words — the path a muted run
+   has always taken. The music and the effects play as ever. */
+const VO_TAKES = { hi: VO_HI };
+const VO_I18N = typeof globalThis !== 'undefined' ? globalThis.I18N : null;
+const VO_TAKE = VO_I18N && VO_I18N.on && VO_I18N.voice ? VO_TAKES[VO_I18N.lang] || null : null;
+const SILENT_VO = !!(VO_I18N && VO_I18N.on && !VO_TAKE);
 
 /* EVERY ASSET URL GOES THROUGH HERE. The deployment caches game/assets as immutable for a
    year; the sheets were rebuilt under the same names and every returning browser drew from
@@ -1680,6 +1690,8 @@ export const CFG = {
      Every sentence the game speaks or prints lives with the crossing that asks it:
      level 1 in CFG.levelOne.phases, level 2 in CFG.levelTwo.levels. */
 };
+/* SPOKEN IN THE GAME'S LANGUAGE: the Hindi take replaces the English one (see VO_TAKES) */
+if (VO_TAKE) CFG.vo = VO_TAKE;
 
 const T = CFG.timing;
 const C = CFG.colors;

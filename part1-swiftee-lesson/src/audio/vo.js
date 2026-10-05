@@ -14,7 +14,12 @@
  */
 (function (global) {
   'use strict';
-  var BASE = 'assets/vo/';
+  /* HINDI HAS ITS OWN RECORDINGS (src/core/i18n.js, ?lan=hi): the same ids in their own folder,
+     assets/vo/hi/<id>.ogg, with an index of their own — so the clip that plays is the line on
+     the screen, and its words are timed off the Hindi voice (tools/build-vo-hindi.js). A line
+     the Hindi folder has no clip for is not heard, exactly as an English line with no clip. */
+  var I = global.I18N;
+  var BASE = 'assets/vo/' + (I && I.on && I.voice ? I.lang + '/' : '');
   // THE FORMAT THE BROWSER CAN ACTUALLY PLAY. Every clip is written twice —
   // Opus in an .ogg (tools/make-opus.js), which Chrome, Edge, Firefox and
   // Android play and which is under half the size, and an .mp3 for everyone
@@ -62,11 +67,11 @@
     wordMs = (j && j.words) || {};
     spokenMs = (j && j.spoken) || {};
   }
-  /* NO VOICE IN ANOTHER LANGUAGE (src/core/i18n.js, ?lan=). The clips are English: read out
-     over Hindi words they say one thing while the screen says another. No clip is known, so
-     none is fetched, none plays, and every line is paced by its own words — the path a page
-     with no index has always taken. */
-  var silent = !!(global.I18N && global.I18N.on && !global.I18N.voice);
+  /* NO VOICE IN A LANGUAGE NOTHING WAS RECORDED IN (src/core/i18n.js, ?lan=mr and the rest).
+     The English clips read out over Marathi words would say one thing while the screen says
+     another. No clip is known, so none is fetched, none plays, and every line is paced by its
+     own words — the path a page with no index has always taken. */
+  var silent = !!(I && I.on && !I.voice);
   function loadIndex() {
     if (silent) { index = {}; indexSettled = true; return Promise.resolve(); }
     if (indexWait || indexSettled) return indexWait;

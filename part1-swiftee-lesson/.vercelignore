@@ -8,3 +8,5 @@ swiftee-in-use
 serve.js
 package-lock.json
 *.code-workspace
+# the user's Hindi recordings (cut into assets/vo/hi by tools/build-vo-hindi.js)
+assets/vo-part-1-hindi

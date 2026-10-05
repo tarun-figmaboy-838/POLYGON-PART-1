@@ -20,6 +20,8 @@ START GAME.bat
 /part1-swiftee-lesson/artifacts
 /part1-swiftee-lesson/assets/source
 /part1-swiftee-lesson/assets/vo/take
+# the user's Hindi recordings: tools/build-vo-hindi.js cuts them into assets/vo/hi (and Part 2's vo-lines-hi)
+/part1-swiftee-lesson/assets/vo-part-1-hindi
 /part1-swiftee-lesson/swiftee-in-use
 /part1-swiftee-lesson/preview
 /part1-swiftee-lesson/review
@@ -43,3 +45,4 @@ START GAME.bat
 /part2-frozen-rush/game/vercel.json
 /part2-frozen-rush/game/.vercelignore
 /part2-frozen-rush/game/README.md
+/part2-frozen-rush/game/assets/vo-part-2-hindi

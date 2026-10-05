@@ -12,3 +12,5 @@ tools
 test-results
 playwright-report
 qa-report
+# the user's Hindi recordings (the source of Part 2's vo-lines-hi; never fetched)
+game/assets/vo-part-2-hindi

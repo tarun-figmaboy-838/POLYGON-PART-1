@@ -20,12 +20,14 @@
  * the scenes that wait for a word are told the ENGLISH word a translated word stands for
  * (cues), so "अंदर" brings the Inside button in exactly as "inside" did.
  *
- * NO VOICE IN ANOTHER LANGUAGE. The recordings are English; an English voice reading out over
- * Hindi words would say one thing while the screen says another, and pace the words by its
- * own syllables. So `voice` is false and the lines are timed by their own words, the path a
- * run with no clip has always taken.
+ * A VOICE ONLY WHERE ONE WAS RECORDED. English has its recordings, and Hindi has its own
+ * (VOICED below): Part 1 plays them from assets/vo/hi/ and Part 2 from its Hindi take, each
+ * word timed off the Hindi recording (tools/build-vo-hindi.js), so the voice says what the
+ * screen says. Any other language has none — an English voice over its words would say one
+ * thing while the screen says another — so `voice` is false there and the lines are timed by
+ * their own words, the path a run with no clip has always taken.
  *
- *   I18N.lang / on / voice     'hi', true, false   ('en', false, true)
+ *   I18N.lang / on / voice     'hi', true, true   ('mr', true, false; 'en', false, true)
  *   I18N.t(key, vars)          a text of this language by its key, {name}s filled in
  *   I18N.tr(text)              an English line, label or "6 cm" in this language (else unchanged)
  *   I18N.trParts(text, parts)  the script's bubble breaks of a line, in this language (or null)
@@ -50,6 +52,9 @@
      and it has a sister for each script (index.html / style.css: html[data-font]) */
   var FONT = { hi: 'Baloo 2', mr: 'Baloo 2', te: 'Baloo Tammudu 2', gu: 'Baloo Bhai 2', od: 'Baloo Bhaina 2' };
   var SCRIPT = { hi: 'deva', mr: 'deva', te: 'telu', gu: 'gujr', od: 'orya' };
+  /* THE LANGUAGES WITH A RECORDED VOICE besides English (the folder Part 1 plays them from is
+     named after the language: assets/vo/hi/) */
+  var VOICED = { hi: true };
   /* the lesson's key words (dual-coding.js TERMS) and the list that says each in this language */
   var TERM_KEYS = [
     ['irregular', 'termIrregular'], ['polygon', 'termPolygon'], ['vertex', 'termVertex'],
@@ -249,7 +254,7 @@
     }
 
     return {
-      lang: lang, on: on, voice: !on,
+      lang: lang, on: on, voice: !on || !!VOICED[lang],
       htmlLang: HTML_LANG[lang] || 'en',
       font: on ? FONT[lang] || null : null,
       script: on ? SCRIPT[lang] || null : null,

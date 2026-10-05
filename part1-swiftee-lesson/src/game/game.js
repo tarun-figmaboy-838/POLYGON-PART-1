@@ -4396,7 +4396,10 @@
         // the hd character sheets replace the base ones on a big sharp screen, never both
         if (/\/hd\//.test(p) ? !hd : hd && /^assets\/char\/[^/]+$/.test(p) && v[p.replace('assets/char/', 'assets/char/hd/')]) return;
         if (/\.(mp3|ogg)$/.test(p)) {
-          if (LANG && /\/vo-lines\./.test(p)) return;              // (its voice is English: not played in another language)
+          // only the voice take the game will play: vo-lines (English), vo-lines-hi (Hindi), and
+          // none in a language with no recording of its own
+          var take = /\/vo-lines(?:-([a-z]+))?\./.exec(p);
+          if (take && (take[1] || 'en') !== (LANG ? (LANG.voice ? LANG.lang : '-') : 'en')) return;
           var twin = /\.mp3$/.test(p) ? p.replace(/\.mp3$/, '.ogg') : p.replace(/\.ogg$/, '.mp3');
           if (v[twin] && (/\.ogg$/.test(p) !== ogg)) return;   // only the one it will play
           sound.push(p);
