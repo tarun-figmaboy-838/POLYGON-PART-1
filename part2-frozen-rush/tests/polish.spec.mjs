@@ -35,7 +35,8 @@ const box = (page, sel) => page.evaluate(s => {
       const src = cs.backgroundImage !== 'none' || !face ? cs.backgroundImage
                 : getComputedStyle(face).backgroundImage;
       return src;
-    })().replace(/^.*\//, '').slice(0, 40)
+    // the picture's file name: the first url() — an image-set() lists the AVIF twin, then the .webp
+    })().replace(/^[^]*?url\("?([^")]*)"?\)[^]*$/, '$1').replace(/^.*\//, '').slice(0, 40)
   };
 }, sel);
 
@@ -541,7 +542,7 @@ test('the cover and its PLAY button', async ({ page }, info) => {
      press is a darkening and a compression in CSS (screens.css), the way TRY AGAIN's is.
      What is held is that pressing changes something visible and does not move the target's
      centre: the same picture, darker, and smaller rather than displaced. */
-  expect(pressed.bg, 'the same picture, not a second one').toContain('btn-play.webp');
+  expect(pressed.bg, 'the same picture, not a second one').toMatch(/^btn-play\.(webp|avif)\b/);   // or its AVIF twin
   expect(pressed.filter, 'and it darkens under the finger').toMatch(/brightness\(0?\.\d+\)/);
   /* THE SAME OUTER DIMENSIONS IN BOTH STATES, and no layout shift. The press was a darkening
      AND a 6% compression; the compression is gone because a control that changes size under a

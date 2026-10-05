@@ -226,6 +226,7 @@ one speech — no screen here says more than one line, so it could never have ru
 | `tests/playthrough.jsdom.js` | A scripted child plays all 31 screens, trying a wrong answer first on every judged one |
 | `tests/playthrough.browser.js` | The same lesson in a real Chrome, via Playwright — including a real pointer drag on the swipe practice, a twitch that must not classify, and a wrong swipe that must not advance |
 | `tests/qa.browser.js` | The same lesson played BADLY in Chrome — mashed buttons, taps on the scenery, resizes mid-screen — plus type size, contrast and touch-target measurements. See docs/QA.md |
+| `tests/avif.test.js` | The AVIF twins are the ones `tools/build-avif.js` made from the current WebPs, the preload list names each one, and the stylesheet asks for the same addresses the scripts do |
 
 The browser suite exists because jsdom has no hit testing, and that is a whole
 class of bug it cannot see: a faded-out Start button sitting over the middle of
@@ -254,6 +255,15 @@ lesson against today's storyboard.
 
 `.vercelignore` keeps the tests, the tools and the screenshot artifacts out of
 the deployment; they are development gates, not part of the game.
+
+**The pictures are WebP, and some have an AVIF twin** beside them: the same pixels in fewer
+bytes (the backdrop is 797 KB as WebP and 34 KB as AVIF). `index.html` asks the browser once
+whether it shows AVIF (`ImgFormat`); where it does, `Preload.pick()` and the stylesheet's
+`image-set()` ask for the twin, and everywhere else the WebP is used exactly as before.
+`node tools/build-avif.js` makes and checks the twins (a twin is kept only where it is at
+least a fifth smaller at a quality that cannot be told apart, so Swiftee's lossless sheets
+have none), then `node tools/build-preload.js`. After re-making any WebP, run both;
+`npm test` fails until you do.
 
 Any static host works the same way — GitHub Pages, Netlify, an S3 bucket.
 Serve the root, open `/`.

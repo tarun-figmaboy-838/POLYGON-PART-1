@@ -73,10 +73,30 @@ export function mp3Url(src) {
   return v ? src + '?v=' + v : src;
 }
 
+/* AND A PICTURE LEAVES AS ITS AVIF TWIN, WHERE THE BROWSER SHOWS ONE (tools/build-avif.mjs):
+   the same pixels in fewer bytes, beside the .webp, for the pictures where AVIF is smaller.
+   index.html's probe answers once, before the art is asked for (preload() waits for it), so
+   every loader, the stylesheets' image-set() and Part 1's warm-up all choose the same file.
+   Only a twin that exists is used — ASSET_V is what is on disk — and one that will not load
+   falls back to its .webp in loadImg (webpUrl). */
+function showsAvif() {
+  const F = typeof globalThis !== 'undefined' ? globalThis.ImgFormat : null;
+  return !!(F && F.avif);
+}
+
+/** The .webp itself, whatever the probe chose: the fallback for a twin that will not load. */
+export function webpUrl(src) {
+  const v = ASSET_V[src];
+  return v ? src + '?v=' + v : src;
+}
+
 export function assetUrl(src) {
   if (src.endsWith('.mp3') && playsOgg()) {
     const ogg = src.slice(0, -4) + '.ogg';
     if (ASSET_V[ogg]) src = ogg;
+  } else if (src.endsWith('.webp') && showsAvif()) {
+    const avif = src.slice(0, -5) + '.avif';
+    if (ASSET_V[avif]) src = avif;
   }
   const v = ASSET_V[src];
   return v ? src + '?v=' + v : src;
@@ -6300,18 +6320,32 @@ export function createGame(canvas, hooks = {}) {
          blob that failed is let go, and the hd set's when it is dropped (below). */
       const url = assetUrl(src);
       // which file this is, whatever its src — absolute, as img.src always read (sheetFor)
-      try { i.dataset.asset = new URL(url, document.baseURI).href; } catch (e) { i.dataset.asset = url; }
+      const mark = u => { try { i.dataset.asset = new URL(u, document.baseURI).href; } catch (e) { i.dataset.asset = u; } };
+      mark(url);
       const free = () => { if (i.src.startsWith('blob:')) { try { URL.revokeObjectURL(i.src); } catch (e) { /* gone */ } } };
       i.onload = () => { if (i.decode) i.decode().then(() => res(i), () => res(i)); else res(i); };
       NET.get(url).then(blob => {
         const chain = (blob ? [URL.createObjectURL(blob)] : []).concat([url]);
+        // an AVIF twin that will not load is replaced by its .webp, the file it was made from
+        const webp = webpUrl(src);
+        if (webp !== url) chain.push(webp);
         let k = 0;
-        i.onerror = () => { free(); if (k < chain.length) i.src = chain[k++]; else res(null); };
+        i.onerror = () => {
+          free();
+          if (k >= chain.length) { res(null); return; }
+          if (chain[k] === webp) mark(webp);
+          i.src = chain[k++];
+        };
         i.onerror();
       });
     });
   }
   async function preload() {
+    /* WHICH PICTURE FORMAT, FIRST: every image below is asked for as its AVIF twin or as its
+       .webp (assetUrl), so the answer has to be in before the first one is. It is usually in
+       long before this runs; index.html's probe never takes more than a few seconds to say no. */
+    const imgFormat = typeof globalThis !== 'undefined' ? globalThis.ImgFormat : null;
+    if (imgFormat && imgFormat.ready && !imgFormat.settled) await imgFormat.ready;
     /* THE SOUND GOES ON THE LOADING BAR'S LIST NOW (NET), before the art, so the bar's total
        is right from its first frame. The effects, the voice take and the music bed are fetched
        here once; the audio manager decodes or plays those same bytes when it gets to them. Only
@@ -6734,17 +6768,6 @@ export function createGame(canvas, hooks = {}) {
      two crevasses gives slot counts of 2 and 1. A correct chunk takes whichever free
      slot is nearest the cut, so the learner is never asked to guess an allocation,
      and a crevasse is mended only once every slot in it is plugged. */
-
-  /** Share `total` slots over `n` crevasses as evenly as possible, fullest first. */
-  function slotShare(total, n) {
-    const out = [];
-    let left = total;
-    for (let i = 0; i < n; i++) {
-      const k = Math.max(1, Math.ceil(left / (n - i)));
-      out.push(k); left -= k;
-    }
-    return out;
-  }
 
   /* THE ONE WIDTH EVERY OPTION IN A PHASE IS DRAWN AT.
    *
@@ -12887,9 +12910,6 @@ export function createGame(canvas, hooks = {}) {
     /** Whether this line's voice is still to come (speaking, or held next): words wait for it only
         while it is. */
     voComing(id) { return audio.voComing(id); },
-    /** The voice id for a phase's question, from its instruction ("Cut all the PENTAGONS." ->
-        sign-pentagons). One source: the sentence itself, so a re-worded phase cannot drift. */
-    signVoId(text) { return voIdFor(text); },
     replayInstruction() {
       if (!G.instruction) return false;
       armInstruction(T.instructionHold);
@@ -13126,9 +13146,6 @@ export function createGame(canvas, hooks = {}) {
       if (!sh) return false;
       cutShape(sh); return true;
     },
-    _skipTo(ms) { G.st += ms; },
-    /** Drive the character's animation state directly, for an animation audit. */
-    _anim(s) { mammoth.setState(s); },
     _player: () => mammoth,
     /** Draw one frame now, without advancing the simulation — for a test that wants to
         measure a deterministic pose on the real backbuffer. */

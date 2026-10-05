@@ -65,7 +65,9 @@ const ASSET_V = {
   "assets/char/mammoth-run.webp": "d3ab6c72",
   "assets/char/mammoth-skid.webp": "ee6c20a7",
   "assets/char/mammoth-tremble.webp": "2f1852f5",
+  "assets/env/cap-l.avif": "3e1cae9b",
   "assets/env/cap-l.webp": "500443c3",
+  "assets/env/cap-r.avif": "b71bf847",
   "assets/env/cap-r.webp": "2f0a5554",
   "assets/env/obs-bone-arch.webp": "6b0db5b5",
   "assets/env/obs-bone-cage.webp": "598447f6",
@@ -75,9 +77,13 @@ const ASSET_V = {
   "assets/env/obs-log-crossed.webp": "a2dea86c",
   "assets/env/obs-log-fallen.webp": "ed041733",
   "assets/env/obs-log-stump.webp": "d22d850c",
+  "assets/env/path.avif": "6e3f23a8",
   "assets/env/path.webp": "f2a7ea81",
+  "assets/env/rock-band.avif": "d270d029",
   "assets/env/rock-band.webp": "6f4973a9",
+  "assets/env/rock-tall.avif": "c4a7a8c5",
   "assets/env/rock-tall.webp": "760283f8",
+  "assets/env/rock-wide.avif": "0d5f5647",
   "assets/env/rock-wide.webp": "6247692d",
   "assets/env/rope-tied.webp": "f9b3e721",
   "assets/option-shape/concaveHeptagon.webp": "d943871c",
@@ -110,6 +116,7 @@ const ASSET_V = {
   "assets/sky/06-sunset.webp": "6f2a5b77",
   "assets/sky/07-dusk.webp": "d511553c",
   "assets/sky/08-night.webp": "fdbec669",
+  "assets/ui/btn-play.avif": "c49f0c65",
   "assets/ui/btn-play.webp": "e75de185",
   "assets/ui/icons/hint.svg": "9ceb8f16",
   "assets/ui/icons/pause.svg": "660fcd36",
@@ -117,8 +124,10 @@ const ASSET_V = {
   "assets/ui/icons/restart.svg": "0133f671",
   "assets/ui/icons/sound-off.svg": "9d167e38",
   "assets/ui/icons/sound-on.svg": "a375910d",
+  "assets/ui/icons/touch.avif": "c10a0cd6",
   "assets/ui/icons/touch.webp": "f6d2fb65",
   "assets/ui/plank-l.webp": "1b2cb44b",
+  "assets/ui/plank-m.avif": "552ac3d5",
   "assets/ui/plank-m.webp": "3b1338a9",
   "assets/ui/plank-r.webp": "553400cc"
 };
@@ -166,7 +175,9 @@ const ASSET_SIZE = {
   "assets/char/mammoth-run.webp": 478982,
   "assets/char/mammoth-skid.webp": 438268,
   "assets/char/mammoth-tremble.webp": 179364,
+  "assets/env/cap-l.avif": 10590,
   "assets/env/cap-l.webp": 13910,
+  "assets/env/cap-r.avif": 8993,
   "assets/env/cap-r.webp": 12948,
   "assets/env/obs-bone-arch.webp": 54666,
   "assets/env/obs-bone-cage.webp": 69264,
@@ -176,9 +187,13 @@ const ASSET_SIZE = {
   "assets/env/obs-log-crossed.webp": 67684,
   "assets/env/obs-log-fallen.webp": 56266,
   "assets/env/obs-log-stump.webp": 57454,
+  "assets/env/path.avif": 61814,
   "assets/env/path.webp": 254148,
+  "assets/env/rock-band.avif": 7261,
   "assets/env/rock-band.webp": 10056,
+  "assets/env/rock-tall.avif": 29366,
   "assets/env/rock-tall.webp": 51534,
+  "assets/env/rock-wide.avif": 14483,
   "assets/env/rock-wide.webp": 37340,
   "assets/env/rope-tied.webp": 40926,
   "assets/option-shape/concaveHeptagon.webp": 68076,
@@ -211,6 +226,7 @@ const ASSET_SIZE = {
   "assets/sky/06-sunset.webp": 49262,
   "assets/sky/07-dusk.webp": 34740,
   "assets/sky/08-night.webp": 35782,
+  "assets/ui/btn-play.avif": 55513,
   "assets/ui/btn-play.webp": 121778,
   "assets/ui/icons/hint.svg": 434,
   "assets/ui/icons/pause.svg": 279,
@@ -218,8 +234,10 @@ const ASSET_SIZE = {
   "assets/ui/icons/restart.svg": 365,
   "assets/ui/icons/sound-off.svg": 487,
   "assets/ui/icons/sound-on.svg": 557,
+  "assets/ui/icons/touch.avif": 13868,
   "assets/ui/icons/touch.webp": 47284,
   "assets/ui/plank-l.webp": 30482,
+  "assets/ui/plank-m.avif": 42197,
   "assets/ui/plank-m.webp": 69808,
   "assets/ui/plank-r.webp": 29374
 };
@@ -1156,10 +1174,30 @@ function mp3Url(src) {
   return v ? src + '?v=' + v : src;
 }
 
+/* AND A PICTURE LEAVES AS ITS AVIF TWIN, WHERE THE BROWSER SHOWS ONE (tools/build-avif.mjs):
+   the same pixels in fewer bytes, beside the .webp, for the pictures where AVIF is smaller.
+   index.html's probe answers once, before the art is asked for (preload() waits for it), so
+   every loader, the stylesheets' image-set() and Part 1's warm-up all choose the same file.
+   Only a twin that exists is used — ASSET_V is what is on disk — and one that will not load
+   falls back to its .webp in loadImg (webpUrl). */
+function showsAvif() {
+  const F = typeof globalThis !== 'undefined' ? globalThis.ImgFormat : null;
+  return !!(F && F.avif);
+}
+
+/** The .webp itself, whatever the probe chose: the fallback for a twin that will not load. */
+function webpUrl(src) {
+  const v = ASSET_V[src];
+  return v ? src + '?v=' + v : src;
+}
+
 function assetUrl(src) {
   if (src.endsWith('.mp3') && playsOgg()) {
     const ogg = src.slice(0, -4) + '.ogg';
     if (ASSET_V[ogg]) src = ogg;
+  } else if (src.endsWith('.webp') && showsAvif()) {
+    const avif = src.slice(0, -5) + '.avif';
+    if (ASSET_V[avif]) src = avif;
   }
   const v = ASSET_V[src];
   return v ? src + '?v=' + v : src;
@@ -7383,18 +7421,32 @@ function createGame(canvas, hooks = {}) {
          blob that failed is let go, and the hd set's when it is dropped (below). */
       const url = assetUrl(src);
       // which file this is, whatever its src — absolute, as img.src always read (sheetFor)
-      try { i.dataset.asset = new URL(url, document.baseURI).href; } catch (e) { i.dataset.asset = url; }
+      const mark = u => { try { i.dataset.asset = new URL(u, document.baseURI).href; } catch (e) { i.dataset.asset = u; } };
+      mark(url);
       const free = () => { if (i.src.startsWith('blob:')) { try { URL.revokeObjectURL(i.src); } catch (e) { /* gone */ } } };
       i.onload = () => { if (i.decode) i.decode().then(() => res(i), () => res(i)); else res(i); };
       NET.get(url).then(blob => {
         const chain = (blob ? [URL.createObjectURL(blob)] : []).concat([url]);
+        // an AVIF twin that will not load is replaced by its .webp, the file it was made from
+        const webp = webpUrl(src);
+        if (webp !== url) chain.push(webp);
         let k = 0;
-        i.onerror = () => { free(); if (k < chain.length) i.src = chain[k++]; else res(null); };
+        i.onerror = () => {
+          free();
+          if (k >= chain.length) { res(null); return; }
+          if (chain[k] === webp) mark(webp);
+          i.src = chain[k++];
+        };
         i.onerror();
       });
     });
   }
   async function preload() {
+    /* WHICH PICTURE FORMAT, FIRST: every image below is asked for as its AVIF twin or as its
+       .webp (assetUrl), so the answer has to be in before the first one is. It is usually in
+       long before this runs; index.html's probe never takes more than a few seconds to say no. */
+    const imgFormat = typeof globalThis !== 'undefined' ? globalThis.ImgFormat : null;
+    if (imgFormat && imgFormat.ready && !imgFormat.settled) await imgFormat.ready;
     /* THE SOUND GOES ON THE LOADING BAR'S LIST NOW (NET), before the art, so the bar's total
        is right from its first frame. The effects, the voice take and the music bed are fetched
        here once; the audio manager decodes or plays those same bytes when it gets to them. Only
@@ -7817,17 +7869,6 @@ function createGame(canvas, hooks = {}) {
      two crevasses gives slot counts of 2 and 1. A correct chunk takes whichever free
      slot is nearest the cut, so the learner is never asked to guess an allocation,
      and a crevasse is mended only once every slot in it is plugged. */
-
-  /** Share `total` slots over `n` crevasses as evenly as possible, fullest first. */
-  function slotShare(total, n) {
-    const out = [];
-    let left = total;
-    for (let i = 0; i < n; i++) {
-      const k = Math.max(1, Math.ceil(left / (n - i)));
-      out.push(k); left -= k;
-    }
-    return out;
-  }
 
   /* THE ONE WIDTH EVERY OPTION IN A PHASE IS DRAWN AT.
    *
@@ -13970,9 +14011,6 @@ function createGame(canvas, hooks = {}) {
     /** Whether this line's voice is still to come (speaking, or held next): words wait for it only
         while it is. */
     voComing(id) { return audio.voComing(id); },
-    /** The voice id for a phase's question, from its instruction ("Cut all the PENTAGONS." ->
-        sign-pentagons). One source: the sentence itself, so a re-worded phase cannot drift. */
-    signVoId(text) { return voIdFor(text); },
     replayInstruction() {
       if (!G.instruction) return false;
       armInstruction(T.instructionHold);
@@ -14209,9 +14247,6 @@ function createGame(canvas, hooks = {}) {
       if (!sh) return false;
       cutShape(sh); return true;
     },
-    _skipTo(ms) { G.st += ms; },
-    /** Drive the character's animation state directly, for an animation audit. */
-    _anim(s) { mammoth.setState(s); },
     _player: () => mammoth,
     /** Draw one frame now, without advancing the simulation — for a test that wants to
         measure a deterministic pose on the real backbuffer. */
@@ -14387,21 +14422,6 @@ function keyWordOf(marked) {
   return m ? [m[0], m[1], m[2], '', m[3]] : null;
 }
 
-/* WHERE EVERY MARKER STANDS, AS A PERCENTAGE OF THE PANEL.
- *
- * Measured off the reference panel (1362 x 464) and written down ONCE: the CSS places
- * each checkpoint at its own `--x` and never has to know how many there are, and Momo
- * animates between these exact centres rather than between positions recomputed from a
- * grid. Spacing comes out at a uniform 8.4% from the first platform to the eighth, with
- * 8.6% to the friend — slightly wider, so she reads as the destination and not a tenth
- * level.
- *
- * The nine are the current platform plus eight ahead of it. A grid of equal fractions
- * was the previous approach and it could not reproduce this: its cells spanned an inset
- * safe area, which bunched the row toward the middle and left dead ice at both ends. */
-const MARKER_X = [11.8, 20.2, 28.5, 36.9, 45.3, 53.7, 62.1, 70.4, 78.8];
-const BEAR_X = 87.4;
-
 class Hud {
   /** A stage point where the zoomed canvas actually draws it. */
   static toView(view, p) {
@@ -14440,21 +14460,10 @@ class Hud {
          there is no failure panel. The lookups are not kept "just in case" — every
          use of them went with them, and a lookup with no user is how a dead element
          gets resurrected by the next person reading this file. */
-      rotate: root.getElementById('rotate'),
-      trail: root.getElementById('trail'),
-      trailRail: root.getElementById('trail-rail'),
-      trailMomo: root.getElementById('trail-momo')
+      rotate: root.getElementById('rotate')
     };
     this.paused = false;
     this.lastMessage = null;
-    /* THE JOURNEY CARD'S OWN STATE. `_steps` is how many platforms have been built (0
-       until the engine says how many crossings there are), `_at` the platform Momo was
-       last put on. -1 rather than 0, so the FIRST crossing is a real change and gets
-       the card's arrival rather than being silently already-correct. `_goal` is the
-       cave, kept because it is looked at on every change. */
-    this._steps = 0;
-    this._at = -1;
-    this._goal = null;
     /* The board's one type size is measured in pixels, so it is only valid for the stage
        it was measured at — and only for the face it was measured in. A resize invalidates
        it, and so does Baloo 2 arriving after the first paint: measured in the fallback
@@ -14462,262 +14471,6 @@ class Hud {
     this._onResize = () => { this._fit = null; this.checkOrientation(); this.fitInstruction(); };
     if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
       document.fonts.ready.then(() => { this._fit = null; this.fitInstruction(); }).catch(() => {});
-    }
-  }
-
-  /* ---------- the journey card ----------
-
-     Nine platforms, a cave, and Momo on the platform being played. ONE number drives
-     all of it — how many crossings are behind the learner — and that number comes from
-     the engine (pushHud publishes `step` and `steps`). There is deliberately no second
-     copy of the progress here: everything below is derived from those two integers on
-     the frame they change.
-
-       index <  step   ->  done      bright, cyan-lit
-       index === step  ->  now       cyan rim, pulsing, Momo on it
-       index >  step   ->  next      muted, desaturated
-       step === steps  ->  the journey is over; the cave lights
-
-     The DOM is built once for the count the engine reports rather than written out
-     nine times in the markup, so adding or removing a crossing needs no change here
-     and none in index.html. */
-
-  /** Build the row for `n` crossings. Cheap to call again — it returns unless the
-      count has actually changed, so the first HUD push builds it and every later one
-      does nothing. */
-  buildTrail(n) {
-    const rail = this.el.trailRail;
-    if (!rail || n <= 0 || n === this._steps) return;
-    this._steps = n;
-    this._at = -1;
-    rail.textContent = '';
-    /* THE FRAME DECORATES; IT DOES NOT LAY ANYTHING OUT.
-     *
-     * This was one flex row living in the card's CONTENT box — which meant the snow-cloud
-     * caps, drawn as the card's border-image, decided how much room the nine platforms
-     * had. The two pull in opposite directions: every attempt to make the panel taller
-     * scaled the caps up with it and squeezed the journey, and every attempt to widen the
-     * journey flattened the panel. "The corners have negative space", "the stones touch
-     * the bottom", "make it taller" and "do not stretch it" are all that one fault —
-     * layout and decoration were the same number.
-     *
-     * They are separate now: the card paints the frame on a pseudo-element and owns no
-     * border, and this row is a percentage SAFE AREA inside it. Inside the safe area,
-     *
-     *   .journey-lane      the path, behind everything, with its own fill for progress
-     *   .level-node        one platform at its own --x from MARKER_X, and Momo when it
-     *                      is the current one. Absolutely placed rather than laid out by
-     *                      a grid: the reference checkpoints are not evenly spaced, and
-     *                      a grid can only ever give even cells.
-     *   .bear-destination  OUTSIDE the nine, with a gap, because the friend is the goal
-     *                      and not a tenth level
-     */
-    const lane = document.createElement('div');
-    lane.className = 'journey-lane';
-    const fill = document.createElement('i');
-    fill.className = 'journey-lane-fill';
-    lane.appendChild(fill);
-    rail.appendChild(lane);
-    this._lane = fill;
-
-    /* EACH MARKER AT ITS OWN PERCENTAGE, from the one shared array. A crossing count
-       other than nine still works: the positions are spread evenly across the same span
-       the reference uses, so the panel cannot be left with a short row and a gap. */
-    for (let i = 0; i < n; i++) {
-      const cell = document.createElement('div');
-      cell.className = 'level-node';
-      cell.style.setProperty('--x', this._markerX(i, n) + '%');
-      const img = document.createElement('img');
-      img.className = 'trail-node next';
-      img.alt = '';
-      img.src = 'assets/progress/step-locked.webp';
-      cell.appendChild(img);
-      rail.appendChild(cell);
-    }
-
-    // the lane runs from the first marker to the friend, on the shared axis
-    lane.style.setProperty('--lane-x0', this._markerX(0, n) + '%');
-
-    const dest = document.createElement('div');
-    dest.className = 'bear-destination';
-    const goal = document.createElement('img');
-    goal.className = 'trail-goal';
-    goal.alt = '';
-    goal.src = 'assets/progress/step-goal.webp';
-    dest.appendChild(goal);
-    rail.appendChild(dest);
-    this._goal = goal;
-  }
-
-  /** Where marker `i` of `n` stands, as a percentage of the panel. Nine crossings get the
-      reference's own measured positions; any other count is spread evenly across the same
-      span, so the journey always runs from end to end rather than stopping short. */
-  _markerX(i, n) {
-    if (n === MARKER_X.length) return MARKER_X[i];
-    const a = MARKER_X[0], b = MARKER_X[MARKER_X.length - 1];
-    return n < 2 ? a : +(a + (b - a) * (i / (n - 1))).toFixed(2);
-  }
-
-  /** Every platform, in order. The cave is a sibling in the same row, so it has to be
-      filtered out rather than indexed past. */
-  _nodes() {
-    const rail = this.el.trailRail;
-    return rail ? [...rail.querySelectorAll('.trail-node')] : [];
-  }
-
-  /** Put Momo on platform `i`, and run the fill out to meet him. `hop` arcs him across;
-      without it he is simply placed, which is what a rebuild or a resize wants. */
-  _momoTo(i, hop) {
-    const momo = this.el.trailMomo;
-    const nodes = this._nodes();
-    if (!momo || !nodes.length) return;
-    const node = nodes[Math.min(i, nodes.length - 1)];
-    if (!node) return;
-    /* HE IS PUT IN THE CELL, NOT MEASURED ONTO IT.
-     *
-     * This used to read the platform's offsetLeft and write it to a custom property the
-     * CSS positioned him with — two coordinate systems for one fact, and they came apart
-     * repeatedly: the measurement is taken against the row while `left` resolves against
-     * the row's PADDING box, it is wrong on any frame the card is mid-animation, and on
-     * the end platforms he overhung the panel and had to be clamped back by hand.
-     *
-     * Owning the cell removes all of it: he is a child of the platform he is standing on,
-     * centred by the same grid that spaces it.
-     *
-     * AND HE STILL WALKS THERE. Re-parenting alone would move him between one frame and
-     * the next, so: note where he is, move him, offset him straight back to where he was,
-     * and release it. He ends up in the right cell having travelled the distance. */
-    const cell = node.parentElement;
-    if (cell && momo.parentElement !== cell) {
-      const from = momo.getBoundingClientRect().left;
-      cell.appendChild(momo);
-      const to = momo.getBoundingClientRect().left;
-      const d = from - to;
-      if (d && Math.abs(d) < 4000) {
-        momo.style.transition = 'none';
-        momo.style.setProperty('--slide', d + 'px');
-        void momo.offsetWidth;
-        momo.style.transition = '';
-        momo.style.setProperty('--slide', '0px');
-      }
-    }
-    momo.classList.toggle('idle', !hop);
-    if (hop) {
-      // restarted by hand: re-adding a class an element already has replays nothing
-      momo.classList.remove('hop');
-      void momo.offsetWidth;
-      momo.classList.add('hop');
-      momo.addEventListener('animationend', () => {
-        momo.classList.remove('hop');
-        momo.classList.add('idle');
-      }, { once: true });
-    }
-  }
-
-  /** One spark of ice over platform `i`, on the frame it is won. */
-  _spark(i) {
-    const node = this._nodes()[i];
-    const cell = node && node.parentElement;
-    if (!cell) return;
-    /* IN THE CELL, CENTRED BY CSS. It was measured onto the row with offsetLeft and
-       offsetTop, which stopped meaning anything once the platforms moved into grid cells
-       of their own — those offsets are relative to the cell now, so the spark landed in
-       the corner of the panel. A child of the cell needs no measurement at all. */
-    const s = document.createElement('div');
-    s.className = 'trail-spark';
-    cell.appendChild(s);
-    s.addEventListener('animationend', () => s.remove(), { once: true });
-  }
-
-  /** `done` crossings are behind the learner, out of `total`. `visible` is whether the
-      card belongs on screen at all (it does not on the cover or the ending); `asking`
-      is whether a question is up, which slides it out of the way rather than removing
-      it — the two are different things and used to be the same one. */
-  setTrail(done, total, visible, asking) {
-    const wrap = this.el.trail;
-    if (!wrap) return;
-    this.buildTrail(total);
-    if (!this._steps) return;
-
-    if (!visible) { wrap.hidden = true; return; }
-    if (wrap.hidden) {
-      /* FIRST SHOW: put it off-stage, lay it out, then let it slide in. Revealed on the
-         spot it would simply appear, which is the thing every other arrival in this
-         game is written to avoid. Two frames, because `hidden` -> laid out -> animated
-         cannot happen in one. */
-      wrap.hidden = false;
-      wrap.classList.add('away');
-      this._at = -1;
-      if (typeof requestAnimationFrame === 'function') {
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          if (!wrap.hidden) wrap.classList.toggle('away', !!this._asking);
-        }));
-      }
-    }
-    /* THE BOARD AND THE CARD SHARE THE LEFT BAND and are never shown together: the
-       card slides out to the left as the question arrives and comes back when it
-       leaves. That is what lets it sit on the board's own line (see the CSS) instead
-       of being squeezed onto the one below. */
-    this._asking = !!asking;
-    if (!wrap.classList.contains('away') || !asking) wrap.classList.toggle('away', !!asking);
-
-    const at = Math.min(done, this._steps);   // the platform in play; === steps when finished
-    if (at === this._at) return;
-    const first = this._at < 0;
-    const won = !first && at > this._at;      // a crossing was just completed
-
-    const nodes = this._nodes();
-    for (let i = 0; i < nodes.length; i++) {
-      const n = nodes[i];
-      const want = i < at ? 'done' : i === at ? 'now' : 'next';
-      if (n.classList.contains(want)) continue;
-      n.classList.remove('done', 'now', 'next');
-      n.classList.add(want);
-      n.src = 'assets/progress/step-' + (want === 'next' ? 'locked' : want) + '.webp';
-      /* THE ONE JUST WON gets the overshoot and the spark. Only on a real advance —
-         restoring the card after a resize must not fire nine of them. */
-      if (want === 'done' && won && i === at - 1) {
-        n.classList.remove('just');
-        void n.offsetWidth;
-        n.classList.add('just');
-        n.addEventListener('animationend', () => n.classList.remove('just'), { once: true });
-        this._spark(i);
-      }
-    }
-
-    /* THE CHAIN. Link i is the stretch from platform i to platform i+1, so it is walked
-       once the learner has passed platform i — and the last one, to the cave, only when
-       the journey is over. This is the progress bar: there is no separate fill. */
-    /* ONE LANE WITH ONE FILL, rather than nine separate links between the stones. The
-       stones sit ON the lane, so a fill that runs to the middle of the platform in play
-       reads as ground already walked. Expressed as a fraction of the track, so it lands
-       on the same centres the grid puts the stones on at any width — the links were a
-       chain of elements whose lengths had to be kept in step with the spacing by hand. */
-    /* THE FILL STOPS AT THE MARKER IN PLAY, measured in the same percentages the markers
-       are placed at — so it lands on a platform's centre rather than on a fraction of the
-       row that only happened to agree with one. */
-    if (this._lane) {
-      const n = Math.max(1, this._steps);
-      const x0 = this._markerX(0, n);
-      const span = BEAR_X - x0;
-      const here = this._markerX(Math.min(at, n - 1), n);
-      const p = span > 0 ? (here - x0) / span : 0;
-      this._lane.style.width = (Math.max(0, Math.min(1, p)) * 100).toFixed(2) + '%';
-    }
-
-    /* THE CAVE WARMS AS IT IS APPROACHED and lights when it is reached. A cave glowing
-       from crossing one has stopped meaning anything by crossing nine. */
-    if (this._goal) {
-      this._goal.classList.toggle('near', at >= this._steps - 1 && at < this._steps);
-      this._goal.classList.toggle('lit', at >= this._steps);
-    }
-
-    this._at = at;
-    /* After a rebuild the images may not have loaded, so the row's width is not final;
-       measure on the next frame as well as now, and the second one wins. */
-    this._momoTo(at, won);
-    if (first && typeof requestAnimationFrame === 'function') {
-      requestAnimationFrame(() => this._momoTo(at, false));
     }
   }
 
@@ -15687,7 +15440,7 @@ class Tutorial {
         advance: 0, pause: true
       },
       {
-        /* THE ASK. The sweep hand is on the rope of the answer (ropeBox), the engine's demo
+        /* THE ASK. The sweep hand is on the rope of the answer, the engine's demo
            stroke crosses the same rope, and the bubble sits beneath the blocks so it never
            hides the piece it means. */
         /* THE SENTENCE IS ON THE PLANK, not in a bubble (asked for). It is shown there as a wide
@@ -15821,53 +15574,6 @@ class Tutorial {
       from: a, to: b,
       world: false
     };
-  }
-
-  ropeBox(g) {
-    const hang = ((g.l1 && g.l1.shapes) || []).filter(s => s.state === 'hang');
-    if (!hang.length) return null;
-    /* THE ROPE OF THE ANSWER, not the middle one. A student copies the hand; on the middle
-       rope that copy cut the wrong block two times in three (student playtest). The engine's
-       demo stroke (drawCutDemo) aims the same way in this phase, so the two agree. The
-       middle rope is only the fallback when nothing is wanted. */
-    const want = g.l1.unfilled && g.l1.unfilled[0];
-    const sorted = hang.slice().sort((a, b) => a.x - b.x);
-    const mid = hang.find(s => s.kind === want) || sorted[Math.floor(sorted.length / 2)];
-    const topOfBlock = mid.y - (mid.h || 200) / 2;
-    if (topOfBlock < 60) return null;                 // rope still off the top
-    /* ON THE DASHES, NOT NEAR THEM. `guide` is the engine's own cut-line point for this
-       rope (engine.js: cutGuide), published on the shape every frame — the very point
-       the marching dashes are drawn at. This used to re-derive the height with a copy of
-       the engine's formula and take x from the ANCHOR, which is where the rope leaves
-       the fog, not where it is at the height of the dashes: with the rig swaying, the
-       hand sat beside the line it was supposed to be sweeping along. Reading the one
-       published number means the hand and the dashes cannot drift apart. */
-    const gd = mid.guide || null;
-    const ropeY = gd ? gd.y : Math.max(70, topOfBlock - 60);
-    const ropeX = gd ? gd.x : (mid.anchorX !== undefined ? mid.anchorX : mid.x);
-    /* THE ZONE TO KEEP CLEAR IS THE ROPES AND THE BLOCKS, not the rope alone. With a
-       90px box around the rope, a phone's taller bubble could not fit above it and was
-       placed "below" — squarely over the blocks, hiding the very block the sentence
-       named (student playtest). The zone now runs from the top of the stage to under the
-       blocks, so the bubble lands beneath them, over open ice; the hand still aims at the
-       rope itself (handY), which is where the swipe has to happen. */
-    const bottom = mid.y + (mid.h || 200) / 2 + 12;
-    /* UP ON THE ROPE (asked for: the box sat under the blocks, over open ice, and read as
-       unrelated to what it was talking about). The subject is now the rope's own cut stretch —
-       a compact box at handY, where the hand sweeps — so the placement puts the words just
-       above that line with the tail down on it: the sentence and the gesture are in the same
-       place. The blocks below stay clear because the box no longer reaches them. */
-    /* belowY IS THE FALLBACK. There is only so much sky above a rope: on a desktop stage the
-       one-line box fits there, and on a phone-landscape stage it does not — the box would have
-       to be clamped onto the top edge with its tail pointing at nothing. So when above does not
-       fit, the box goes UNDER THE PIECES (the row's bottom edge) rather than half over them,
-       and the tail lands on the piece it names. Either way it never covers the answer. */
-    /* The BOX is aimed at the block's anchor (a bubble hanging off the rope's own line
-       reads as belonging to that rope), while the HAND is on the cut line itself. */
-    const anchor = mid.anchorX !== undefined ? mid.anchorX : mid.x;
-    return { x: anchor, y: ropeY, rx: 120, ry: 34,
-             aimX: anchor, belowY: bottom,
-             handX: ropeX, handY: ropeY, world: true };
   }
 
   /* NO domSpot, AND NO LIFTED DOM TARGET. This measured an element's rect and returned
@@ -16790,7 +16496,7 @@ class Tutorial {
       const tailCss = clampN((b.offsetHeight || 120) * BUBBLE.tailLen, BUBBLE.tailLenMin, BUBBLE.tailLenMax);
       const GAP = tailCss * stageK + 6;
       const upY = box.y - ry - GAP - HALF;      // bottom edge clears the subject top
-      // below: from the subject's own bottom, or from a box-supplied fallback edge (see ropeBox)
+      // below: from the subject's own bottom, or from a box-supplied fallback edge (belowY)
       const dnY = (box.belowY !== undefined ? box.belowY : box.y + ry) + GAP + HALF;
       const upFits = upY - HALF > 0;
       const dnFits = dnY + HALF < H;
@@ -16886,7 +16592,7 @@ class Tutorial {
         hd.hidden = false;
         hd.dataset.gesture = gesture;      // CSS picks tap or sweep off this
         hd.style.left = pc(box.handX !== undefined ? box.handX : box.x, W);
-        // a spot may keep a taller zone clear than where the hand belongs (see ropeBox)
+        // a spot may keep a taller zone clear than where the hand belongs (handX, handY)
         hd.style.top = pc(box.handY !== undefined ? box.handY : box.y, H);
       } else if (!hd.hidden) hd.hidden = true;
     }

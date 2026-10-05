@@ -1,0 +1,47 @@
+{
+  "assets/env/cap-l.webp": {
+    "q": 87,
+    "webp": "500443c3",
+    "avif": "3e1cae9b"
+  },
+  "assets/env/cap-r.webp": {
+    "q": 86,
+    "webp": "2f0a5554",
+    "avif": "b71bf847"
+  },
+  "assets/env/path.webp": {
+    "q": 83,
+    "webp": "f2a7ea81",
+    "avif": "6e3f23a8"
+  },
+  "assets/env/rock-band.webp": {
+    "q": 84,
+    "webp": "6f4973a9",
+    "avif": "d270d029"
+  },
+  "assets/env/rock-tall.webp": {
+    "q": 95,
+    "webp": "760283f8",
+    "avif": "c4a7a8c5"
+  },
+  "assets/env/rock-wide.webp": {
+    "q": 84,
+    "webp": "6247692d",
+    "avif": "0d5f5647"
+  },
+  "assets/ui/btn-play.webp": {
+    "q": 76,
+    "webp": "e75de185",
+    "avif": "c49f0c65"
+  },
+  "assets/ui/icons/touch.webp": {
+    "q": 84,
+    "webp": "f6d2fb65",
+    "avif": "c10a0cd6"
+  },
+  "assets/ui/plank-m.webp": {
+    "q": 78,
+    "webp": "3b1338a9",
+    "avif": "552ac3d5"
+  }
+}

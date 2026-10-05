@@ -108,7 +108,7 @@
       var wd = setTimeout(function () { reject(new Error('sleigh sheet timed out: ' + key)); }, 12000);
       img.onload = function () { clearTimeout(wd); resolve(img); };
       img.onerror = function () { clearTimeout(wd); reject(new Error('sleigh sheet: ' + key)); };
-      img.src = f.sheets[key].file;
+      img.src = global.Preload && Preload.pick ? Preload.pick(f.sheets[key].file) : f.sheets[key].file;   // its AVIF twin, where shown
     });
     return images[key];
   }

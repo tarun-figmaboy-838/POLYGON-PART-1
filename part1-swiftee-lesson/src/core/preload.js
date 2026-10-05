@@ -7,6 +7,15 @@
  *   Preload.onProgress(fn)               fn(fraction 0..1) on every step — forward only
  *   Preload.done                         settles when every file is in (or has failed)
  *   Preload.url(u)                       the blob: URL for a kept file, else u itself
+ *   Preload.pick(u)                      a picture's address as this browser should ask for it
+ *
+ * AVIF WHERE IT IS SHOWN. Some pictures have an AVIF twin beside the .webp: the same pixels
+ * in fewer bytes (tools/build-avif.js; PreloadList.avif names each twin's address). Where
+ * index.html's probe says this browser shows AVIF (ImgFormat.avif), pick() turns a .webp
+ * address into its twin's, and want() fetches every picture through it — so the bar warms
+ * exactly what the scripts then draw, as they draw through pick() too, and what the
+ * stylesheet's image-set() asks for. Anywhere else, and for every picture without a twin,
+ * pick() hands back the address it was given.
  *
  * STREAMED, SO THE BAR IS BYTES. Each response is read chunk by chunk. Every transfer is
  * weighed by its size on disk (PreloadList.sizes, from tools/build-preload.js) from the
@@ -39,6 +48,11 @@
   }());
   var sizes = (global.PreloadList && global.PreloadList.sizes) || {};
   function sizeOf(u) { return sizes[String(u).split('?')[0]] || 40000; }
+  var twins = (global.PreloadList && global.PreloadList.avif) || {};
+  function pick(u) {
+    if (!u || !global.ImgFormat || !global.ImgFormat.avif) return u;
+    return twins[String(u).split('?')[0]] || u;
+  }
 
   function emit() {
     var f = total > 0 ? Math.min(1, loaded / total) : 1;
@@ -117,7 +131,7 @@
   var api = {
     want: function (urls, opts) {
       var keep = opts && opts.keep;
-      (urls || []).forEach(function (u) { add(u, keep ? keep.test(u) : false); });
+      (urls || []).forEach(function (u) { u = pick(u); add(u, keep ? keep.test(u) : false); });
       emit();
     },
     /** A font face, loaded through document.fonts; counted as a small file on the bar.
@@ -140,6 +154,7 @@
     seal: function () { sealed = true; check(); },
     onProgress: function (fn) { listeners.push(fn); try { fn(shown); } catch (e) {} },
     url: function (u) { var j = jobs[u]; return (j && j.blobUrl) || u; },
+    pick: pick,
     done: done
   };
   global.Preload = api;

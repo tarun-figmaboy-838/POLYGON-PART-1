@@ -24,6 +24,7 @@ $mime = @{
   '.png'  = 'image/png'
   '.jpg'  = 'image/jpeg'
   '.webp' = 'image/webp'
+  '.avif' = 'image/avif'
   '.svg'  = 'image/svg+xml'
   '.json' = 'application/json'
   '.mp3'  = 'audio/mpeg'

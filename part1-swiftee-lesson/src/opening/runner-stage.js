@@ -370,7 +370,12 @@
     doc.addEventListener('pointerdown', unlockBack, true);
     doc.addEventListener('keydown', unlockBack, true);
     doc.addEventListener('keydown', keyToGame);
-    if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', opening); else opening();
+    // once the pictures' format is known, as the lesson's boot does (game.js start)
+    var begin = function () {
+      var F = global.ImgFormat;
+      if (F && F.ready && !F.settled) F.ready.then(opening); else opening();
+    };
+    if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', begin); else begin();
   } else {
     release();
   }

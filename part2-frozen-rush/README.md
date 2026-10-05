@@ -94,14 +94,22 @@ Not in git: `node_modules/`, `test-results/`, `playwright-report/`, `qa-report/`
 `art-source/char-sheets/*-gif.png` (regenerable from the GIFs — the command is in
 `.gitignore`).
 
-## The two generated files
+## The generated files
 
-Neither is edited by hand, and a test fails if either drifts from its source.
+None is edited by hand, and a test fails if any drifts from its source.
 
 | generated | from | rebuild |
 |---|---|---|
 | `game/js/game.bundle.js` | the modules in `game/js/` | `node tools/build-bundle.mjs` |
 | `game/js/option-shapes.js` | `art-source/option-shape/*.png` | `node tools/build-option-shapes.mjs` |
+| `game/assets/**/*.avif` | the `.webp` beside each | `node tools/build-avif.mjs`, then `node tools/build-bundle.mjs` |
+
+The AVIF files are twins: the same picture in fewer bytes, for the browsers that show AVIF
+(`index.html` asks once, `ImgFormat`). `assetUrl()` and the stylesheets' `image-set()` ask
+for the twin there and the `.webp` everywhere else, and a twin that will not load falls back
+to its `.webp`. A twin is kept only where it is at least a fifth smaller at a quality that
+cannot be told apart, with the same opaque outline to the pixel (obstacles are seated by
+it); the character sheets and the ice blocks have none. `tests/avif.spec.mjs` holds it.
 
 The bundle exists for one reason: a browser fetches an ES module with CORS even from a
 `file://` page, which `file://` refuses — so opening `index.html` off the disk gave a

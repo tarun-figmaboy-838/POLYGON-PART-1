@@ -1,9 +1,9 @@
 /* THE PROGRESS TRAIL IS GONE (the user: "remove the left side progress bar").
  *
  * The journey card that sat in the sky at the top left — Momo, nine stones and the cave —
- * was taken out of the game on request. Its markup is still in index.html, `hidden`, and the
- * HUD no longer shows it or builds anything into it (hud.js). This checks that it stays that
- * way as the game runs, into a crossing and its question. The tests that measured the card's
+ * was taken out of the game on request, and since then its markup, its code and its styles have
+ * gone too (hud.js). This checks that nothing brings it back as the game runs, into a crossing
+ * and its question. The tests that measured the card's
  * proportions, its whoosh and its ?panel editor went with it. */
 import { test, expect } from '@playwright/test';
 import { boot } from './helpers.mjs';

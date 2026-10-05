@@ -409,6 +409,9 @@
      the point the engine gives, at any size. One image change is one edit here. */
   translate: calc(-1 * var(--tip-x)) calc(-1 * var(--tip-y));
   background: url("../assets/ui/icons/touch.webp?v=f6d2fb65") center / contain no-repeat;
+  /* and its AVIF twin where the browser shows AVIF (tools/build-avif.mjs) — the same picture in
+     fewer bytes; a browser that does not understand image-set(type()) keeps the line above */
+  background: image-set(url("../assets/ui/icons/touch.avif?v=c10a0cd6") type("image/avif"), url("../assets/ui/icons/touch.webp?v=f6d2fb65") type("image/webp")) center / contain no-repeat;
   filter: drop-shadow(0 clamp(3px, calc(0.31 * var(--u)), 12px) clamp(6px, calc(0.63 * var(--u)), 24px) rgba(4, 20, 44, 0.6));
   pointer-events: none;
 }
@@ -917,6 +920,7 @@
   inset: 0;
   z-index: 0;                      /* under the tap ring and the sparks, which are the pseudos */
   background: url("../assets/ui/btn-play.webp?v=e75de185") center / contain no-repeat;
+  background: image-set(url("../assets/ui/btn-play.avif?v=c49f0c65") type("image/avif"), url("../assets/ui/btn-play.webp?v=e75de185") type("image/webp")) center / contain no-repeat;
   pointer-events: none;
   will-change: transform, filter;
   animation: playPulse 2s cubic-bezier(.45, 0, .55, 1) 520ms infinite;
@@ -1035,13 +1039,6 @@
   to   { opacity: 0; translate: -50% -50%; scale: 1.6; }
 }
 
-/* the invitation: a breath, not a bounce. `scale` rather than `transform`, because
-   transform carries the translateX(-50%) that centres the button. */
-@keyframes playBob {
-  0%, 100% { scale: 1; }
-  50%      { scale: 1.035; }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .btn-art,
   .btn-play,
@@ -1055,100 +1052,7 @@
    checkpoint, so the button has no element. Its .btn-art member rules, its focus halo
    and its btn-tryagain.webp went with it. */
 
-/* ---------- the cartoon card ----------
-   `card-fun` is the Ouch panel's own treatment. The overlays all shared one flat pale
-   ice slab, which is a fine web modal and the wrong object for this game: the rest of
-   the screen is a warm, round, hand-painted world and the panel that interrupts it read
-   as a dialog box.
-
-   So: a warmer ground, a much rounder corner, a thick white keyline over the navy one
-   the family already carries, and a bounce on the way in. It is the one moment the
-   player has failed at something, so it is deliberately friendly rather than severe —
-   no red, no alarm, and the character sits right at the top of it. */
-/* THE CARD IS A TOY, NOT A DIALOG.
- *
- * The previous treatment was already warmer than the ice panels it replaced, and it
- * still read as a web modal: a near-white rounded square, everything centred, a small
- * character, and nothing behind any of it. Cream instead of grey is not a game.
- *
- * What makes a panel in a children's game feel like a game is not colour, it is
- * DEPTH and TILT — a thick outline so it reads as a physical object, a shadow it
- * plainly sits above, a couple of degrees off-square so it looks placed rather than
- * laid out, and something happening behind the character so the middle of the card
- * is not empty. All of that is drawn with the panel's own pseudo-elements, so it adds
- * no markup and no new interface: still one heading and one button. */
-.card-fun {
-  position: relative;
-  overflow: hidden;                        /* the rays and specks stay inside the panel */
-  border-radius: clamp(30px, 3.2vw, 62px) !important;
-  /* warm honey at the top into pale sky, and a fat white rim inside the navy edge */
-  background:
-    radial-gradient(120% 78% at 50% 4%, rgba(255, 246, 214, 0.98), rgba(255, 246, 214, 0) 64%),
-    linear-gradient(180deg, #FFFCEF 0%, #EAF7FF 56%, #BFE4FA 100%) !important;
-  border: clamp(4px, 0.42vw, 8px) solid #17547F !important;
-  box-shadow:
-    inset 0 0 0 clamp(4px, 0.42vw, 9px) rgba(255, 255, 255, 0.95),
-    inset 0 clamp(-14px, -1.2vw, -8px) clamp(18px, 1.9vw, 34px) rgba(96, 176, 214, 0.35),
-    0 clamp(10px, 1vw, 20px) 0 #0E3E60,     /* the slab it sits on */
-    0 clamp(18px, 1.9vw, 36px) clamp(26px, 2.7vw, 52px) rgba(6, 32, 60, 0.45) !important;
-  padding: clamp(20px, 2.2vw, 42px) clamp(30px, 3.2vw, 62px) clamp(24px, 2.5vw, 48px) !important;
-  /* placed, not laid out */
-  rotate: -1.6deg;
-  animation: cardPop 460ms cubic-bezier(.2, 1.6, .38, 1) both;
-}
-/* THE BURST BEHIND THE CHARACTER. Rays from a repeating conic gradient, turning very
-   slowly — the one thing that stops the middle of the card being a blank field. Warm,
-   low contrast, and behind everything: it must never compete with the button. */
-.card-fun::before {
-  content: "";
-  position: absolute;
-  left: 50%; top: clamp(38px, 4vw, 78px);
-  width: clamp(260px, 27vw, 520px); aspect-ratio: 1;
-  translate: -50% -50%;
-  background: repeating-conic-gradient(from 0deg,
-    rgba(255, 201, 92, 0.30) 0deg 9deg, rgba(255, 201, 92, 0) 9deg 24deg);
-  -webkit-mask-image: radial-gradient(closest-side, #000 38%, transparent 78%);
-  mask-image: radial-gradient(closest-side, #000 38%, transparent 78%);
-  animation: cardRays 26s linear infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-/* A FEW SPECKS OF SNOW still settling, drawn as three radial dots. Cheap, and it makes
-   the panel feel like part of the same weather as the stage behind it. */
-.card-fun::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(circle, rgba(255,255,255,.95) 42%, transparent 44%),
-    radial-gradient(circle, rgba(255,255,255,.75) 42%, transparent 44%),
-    radial-gradient(circle, rgba(255,255,255,.6) 42%, transparent 44%);
-  background-size: 9px 9px, 6px 6px, 12px 12px;
-  background-position: 12% 22%, 82% 34%, 68% 12%;
-  background-repeat: no-repeat;
-  pointer-events: none;
-  z-index: 0;
-}
-/* everything real sits above the decoration */
-.card-fun > * { position: relative; z-index: 1; }
-@keyframes cardRays { to { rotate: 360deg; } }
-/* THE HEADING IS THE LOGO OF THIS PANEL. Same cartoon lettering as the button — white
-   with a navy stroke — but bigger, tilted the other way to the card so the two do not
-   look skewed together, and sat on a hard drop rather than a soft blur, which is what
-   makes painted lettering read as painted. */
-.card-fun h1 {
-  font-size: clamp(40px, calc(4.6 * var(--u)), 176px) !important;
-  line-height: 0.92;
-  margin: clamp(2px, calc(0.3 * var(--u)), 12px) 0 clamp(10px, calc(1.1 * var(--u)), 40px) !important;
-  color: #FFFFFF !important;
-  -webkit-text-stroke: clamp(4px, calc(0.42 * var(--u)), 16px) #14496F;
-  paint-order: stroke fill;
-  text-shadow:
-    0 clamp(4px, calc(0.42 * var(--u)), 16px) 0 #14496F,
-    0 clamp(9px, calc(0.95 * var(--u)), 36px) clamp(10px, calc(1 * var(--u)), 40px) rgba(20, 73, 111, 0.35);
-  letter-spacing: .015em;
-  rotate: 1.2deg;
-}
+/* The pop the buttons arrive with (.btn-replay, .btn-play). */
 @keyframes cardPop {
   from { opacity: 0; scale: .72; }
   to   { opacity: 1; scale: 1; }
@@ -1156,7 +1060,4 @@
 @media (prefers-reduced-motion: reduce) {
   /* The button keeps its resting state and its glow, and stops pulsing. */
   .btn-play { animation: none; }
-  .card-fun { animation: none; rotate: none; }
-  .card-fun::before { animation: none; }
-  .card-fun h1 { rotate: none; }
 }

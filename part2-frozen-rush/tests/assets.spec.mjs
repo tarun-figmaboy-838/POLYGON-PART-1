@@ -146,6 +146,8 @@ test.describe('assets', () => {
     for (const raw of urls) {
       // the stylesheets' urls carry the file's content hash (?v=); the file itself is judged
       const u = raw.split('?')[0];
+      // an AVIF twin (tools/build-avif.mjs) is judged as the .webp it was made from, beside it
+      const w = u.replace(/\.avif$/, '.webp');
       const res = await page.request.get('/' + raw);
       if (!res.ok()) { bad.push(u + ' -> ' + res.status()); continue; }
       /* Interface art is vector so it stays sharp at any scale and can be recoloured.
@@ -161,12 +163,12 @@ test.describe('assets', () => {
                          'assets/ui/btn-play.webp',
                          'assets/ui/btn-tryagain.webp'];
       const isUi = u.startsWith('assets/ui/');
-      if (isUi && !u.endsWith('.svg') && !RASTER_OK.includes(u)) {
+      if (isUi && !u.endsWith('.svg') && !RASTER_OK.includes(w)) {
         bad.push(u + ' interface art should be SVG');
       }
       // audio is not art and obviously cannot be WebP
       if (u.startsWith('assets/audio/')) continue;
-      if (!isUi && !u.endsWith('.webp')) bad.push(u + ' world art should be WebP');
+      if (!isUi && !w.endsWith('.webp')) bad.push(u + ' world art should be WebP');
     }
     expect(bad, 'broken or wrongly formatted assets').toEqual([]);
     expect(errors).toEqual([]);

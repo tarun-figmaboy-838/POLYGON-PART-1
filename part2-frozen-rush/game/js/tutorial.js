@@ -316,7 +316,7 @@ export class Tutorial {
         advance: 0, pause: true
       },
       {
-        /* THE ASK. The sweep hand is on the rope of the answer (ropeBox), the engine's demo
+        /* THE ASK. The sweep hand is on the rope of the answer, the engine's demo
            stroke crosses the same rope, and the bubble sits beneath the blocks so it never
            hides the piece it means. */
         /* THE SENTENCE IS ON THE PLANK, not in a bubble (asked for). It is shown there as a wide
@@ -450,53 +450,6 @@ export class Tutorial {
       from: a, to: b,
       world: false
     };
-  }
-
-  ropeBox(g) {
-    const hang = ((g.l1 && g.l1.shapes) || []).filter(s => s.state === 'hang');
-    if (!hang.length) return null;
-    /* THE ROPE OF THE ANSWER, not the middle one. A student copies the hand; on the middle
-       rope that copy cut the wrong block two times in three (student playtest). The engine's
-       demo stroke (drawCutDemo) aims the same way in this phase, so the two agree. The
-       middle rope is only the fallback when nothing is wanted. */
-    const want = g.l1.unfilled && g.l1.unfilled[0];
-    const sorted = hang.slice().sort((a, b) => a.x - b.x);
-    const mid = hang.find(s => s.kind === want) || sorted[Math.floor(sorted.length / 2)];
-    const topOfBlock = mid.y - (mid.h || 200) / 2;
-    if (topOfBlock < 60) return null;                 // rope still off the top
-    /* ON THE DASHES, NOT NEAR THEM. `guide` is the engine's own cut-line point for this
-       rope (engine.js: cutGuide), published on the shape every frame — the very point
-       the marching dashes are drawn at. This used to re-derive the height with a copy of
-       the engine's formula and take x from the ANCHOR, which is where the rope leaves
-       the fog, not where it is at the height of the dashes: with the rig swaying, the
-       hand sat beside the line it was supposed to be sweeping along. Reading the one
-       published number means the hand and the dashes cannot drift apart. */
-    const gd = mid.guide || null;
-    const ropeY = gd ? gd.y : Math.max(70, topOfBlock - 60);
-    const ropeX = gd ? gd.x : (mid.anchorX !== undefined ? mid.anchorX : mid.x);
-    /* THE ZONE TO KEEP CLEAR IS THE ROPES AND THE BLOCKS, not the rope alone. With a
-       90px box around the rope, a phone's taller bubble could not fit above it and was
-       placed "below" — squarely over the blocks, hiding the very block the sentence
-       named (student playtest). The zone now runs from the top of the stage to under the
-       blocks, so the bubble lands beneath them, over open ice; the hand still aims at the
-       rope itself (handY), which is where the swipe has to happen. */
-    const bottom = mid.y + (mid.h || 200) / 2 + 12;
-    /* UP ON THE ROPE (asked for: the box sat under the blocks, over open ice, and read as
-       unrelated to what it was talking about). The subject is now the rope's own cut stretch —
-       a compact box at handY, where the hand sweeps — so the placement puts the words just
-       above that line with the tail down on it: the sentence and the gesture are in the same
-       place. The blocks below stay clear because the box no longer reaches them. */
-    /* belowY IS THE FALLBACK. There is only so much sky above a rope: on a desktop stage the
-       one-line box fits there, and on a phone-landscape stage it does not — the box would have
-       to be clamped onto the top edge with its tail pointing at nothing. So when above does not
-       fit, the box goes UNDER THE PIECES (the row's bottom edge) rather than half over them,
-       and the tail lands on the piece it names. Either way it never covers the answer. */
-    /* The BOX is aimed at the block's anchor (a bubble hanging off the rope's own line
-       reads as belonging to that rope), while the HAND is on the cut line itself. */
-    const anchor = mid.anchorX !== undefined ? mid.anchorX : mid.x;
-    return { x: anchor, y: ropeY, rx: 120, ry: 34,
-             aimX: anchor, belowY: bottom,
-             handX: ropeX, handY: ropeY, world: true };
   }
 
   /* NO domSpot, AND NO LIFTED DOM TARGET. This measured an element's rect and returned
@@ -1419,7 +1372,7 @@ export class Tutorial {
       const tailCss = clampN((b.offsetHeight || 120) * BUBBLE.tailLen, BUBBLE.tailLenMin, BUBBLE.tailLenMax);
       const GAP = tailCss * stageK + 6;
       const upY = box.y - ry - GAP - HALF;      // bottom edge clears the subject top
-      // below: from the subject's own bottom, or from a box-supplied fallback edge (see ropeBox)
+      // below: from the subject's own bottom, or from a box-supplied fallback edge (belowY)
       const dnY = (box.belowY !== undefined ? box.belowY : box.y + ry) + GAP + HALF;
       const upFits = upY - HALF > 0;
       const dnFits = dnY + HALF < H;
@@ -1515,7 +1468,7 @@ export class Tutorial {
         hd.hidden = false;
         hd.dataset.gesture = gesture;      // CSS picks tap or sweep off this
         hd.style.left = pc(box.handX !== undefined ? box.handX : box.x, W);
-        // a spot may keep a taller zone clear than where the hand belongs (see ropeBox)
+        // a spot may keep a taller zone clear than where the hand belongs (handX, handY)
         hd.style.top = pc(box.handY !== undefined ? box.handY : box.y, H);
       } else if (!hd.hidden) hd.hidden = true;
     }

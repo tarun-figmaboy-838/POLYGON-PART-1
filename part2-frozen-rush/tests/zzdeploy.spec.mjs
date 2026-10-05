@@ -74,11 +74,15 @@ test('the cache headers say what they should', async ({ request }) => {
     return (r.headers()['cache-control'] || '(none)').toLowerCase();
   };
 
-  // hashed, so it may be held forever
-  const art = await at('/game/assets/progress/panel.webp');
+  // hashed, so it may be held forever — a .webp, and an AVIF twin (tools/build-avif.mjs) likewise
+  const art = await at('/game/assets/env/path.webp');
   console.log('  assets:     ' + art);
   expect(art, 'hashed art should be immutable').toContain('immutable');
   expect(art).toContain('max-age=31536000');
+  const twin = await at('/game/assets/env/path.avif');
+  expect(twin, 'an AVIF twin is hashed art too').toContain('immutable');
+  const avifType = (await request.get('http://127.0.0.1:8201/game/assets/env/path.avif')).headers()['content-type'] || '';
+  expect(avifType, 'and is served as AVIF').toContain('image/avif');
 
   // NOT hashed, so both must be re-checked on every load
   for (const path of ['/game/css/style.css', '/game/js/main.js']) {

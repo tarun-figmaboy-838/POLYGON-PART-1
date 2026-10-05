@@ -105,8 +105,19 @@ All of it is in Part 1. Part 2 needs nothing extra for the hand-over.
 5 Mbps school connection, so the child sat on "Loading…" right after the lesson. Warmed during
 the summary, the cover is ready in about 0.6 s. `warmPart2()` reads Part 2's own
 `game/js/asset-versions.js`, so it requests each file by the same `?v=` address Part 2 uses. It
-makes the same HD and Ogg choices as Part 2. It only runs inside this combined project over
+makes the same HD, Ogg and AVIF choices as Part 2. It only runs inside this combined project over
 http, and anything that fails just means a slower cover.
+
+## The pictures and the sound
+
+Every picture ships as WebP; where AVIF carries the same pixels in clearly fewer bytes there
+is an `.avif` twin beside it, made by each part's `tools/build-avif` (the lesson's backdrop
+goes from 797 KB to 34 KB). Each page asks the browser once whether it shows AVIF
+(`ImgFormat`, the same probe in both parts); where it does, the scripts and the stylesheets'
+`image-set()` take the twin, and every other browser gets the WebP exactly as before. The
+sound ships as Ogg Opus, with the MP3 kept for browsers that cannot play it (Safari before
+it learned Ogg). Neither part has video or GIF animation: the characters move by sprite
+sheets the code steps, frame by frame, in time with the voice.
 
 ## Tests
 

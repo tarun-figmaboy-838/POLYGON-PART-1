@@ -1892,7 +1892,7 @@
       var flightImage = new Image();
       var flightOk = function () { flightReady = true; };
       flightImage.onload = function () { if (flightImage.decode) flightImage.decode().then(flightOk, flightOk); else flightOk(); };
-      flightImage.src = url('swiftee-inspect-flight.webp');
+      flightImage.src = global.Preload && Preload.pick ? Preload.pick(url('swiftee-inspect-flight.webp')) : url('swiftee-inspect-flight.webp');
       flightHold = flightImage;   // (held, so the decoded art stays in memory)
       // the strip of four frames, 1000 x 333, stepped by moving it (tick): the same pixels the
       // background used to show, from an image already in hand

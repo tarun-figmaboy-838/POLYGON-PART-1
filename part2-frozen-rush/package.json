@@ -9,6 +9,7 @@
     "test:headed": "playwright test --headed",
     "test:level2": "playwright test tests/level-two.spec.mjs --workers=1",
     "bundle": "node tools/build-bundle.mjs",
+    "avif": "node tools/build-avif.mjs",
     "report": "playwright show-report"
   },
   "devDependencies": {

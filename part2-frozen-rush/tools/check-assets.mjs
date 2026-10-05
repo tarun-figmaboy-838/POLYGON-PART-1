@@ -72,15 +72,14 @@ const DYNAMIC = [
      this check exists to replace. */
   { dir: 'assets/option-shape', only: '.webp', built: 'option-shapes.js: one webp per polygon name' },
   { dir: 'assets/sky', prefix: '', built: 'engine.js: the sky set, keyed by time of day' },
-  /* The trail's stones are swapped by state, not by name: hud.js writes
-     'assets/progress/step-' + (want === 'next' ? 'locked' : want) + '.webp', so
-     step-done and step-now appear nowhere as literals even though every run loads both. */
-  { dir: 'assets/progress', prefix: 'step-', built: "hud.js: 'assets/progress/step-' + state" },
   /* EVERY SOUND SHIPS TWICE and only the mp3 is ever written down: assetUrl() swaps the
      extension when the browser can take ogg (Safari under 17.4 cannot, so both are
      needed). The first run of this check called all ten oggs unreferenced — 2.4MB of
      "waste" that is nothing of the kind. A twin counts as referenced only if its mp3 is. */
-  { ext: '.ogg', twin: '.mp3', built: 'engine.js assetUrl(): the .mp3 with its extension swapped' }
+  { ext: '.ogg', twin: '.mp3', built: 'engine.js assetUrl(): the .mp3 with its extension swapped' },
+  /* AND SOME PICTURES SHIP TWICE (tools/build-avif.mjs): assetUrl() asks for the .avif beside a
+     .webp where the browser shows AVIF. The same rule: a twin counts only if its .webp does. */
+  { ext: '.avif', twin: '.webp', built: "engine.js assetUrl(): the .webp's AVIF twin" }
 ];
 
 const orphans = [], dynamic = [], toolOnly = [];

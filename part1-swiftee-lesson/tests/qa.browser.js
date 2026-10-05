@@ -38,7 +38,7 @@ const { chromium } = require('playwright');
 const ROOT = path.join(__dirname, '..');
 const TYPES = {
   '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json',
-  '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml'
+  '.png': 'image/png', '.webp': 'image/webp', '.avif': 'image/avif', '.svg': 'image/svg+xml'
 };
 
 let pass = 0, fail = 0, warn = 0;

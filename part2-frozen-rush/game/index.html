@@ -5,6 +5,46 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title data-i18n="gamePageTitle">Ice Age Mammoth Runner</title>
 <meta name="description" content="A 2D Ice Age runner where geometry repairs the broken ice path." />
+<!-- AVIF WHERE THE BROWSER SHOWS IT, WEBP WHERE IT DOES NOT. Some pictures ship twice: the
+     .webp every browser has always been given, and an .avif beside it that is the same
+     picture in fewer bytes (tools/build-avif.mjs). This asks the browser once, before anything is
+     drawn, and the answer is ImgFormat.avif: true only where an AVIF with an alpha channel
+     decodes to the right pixels AND the stylesheet's image-set(... type()) is understood, so
+     the scripts and the stylesheet always choose the same file. Anything else — an older
+     browser, or a decode that fails or never answers — is false, and every picture is the
+     .webp exactly as before. (?avif=0 says false too, for the scripts' pictures only: a
+     stylesheet's image-set() always decides for itself.) ImgFormat.ready settles with the answer; engine.js waits for
+     it before the art is asked for (assetUrl), and the stylesheets choose with image-set(). -->
+<script>
+  (function (w) {
+    var F = w.ImgFormat = { avif: false, settled: false }, done = null;
+    F.ready = typeof Promise === 'function' ? new Promise(function (r) { done = r; }) : null;
+    function settle(ok) {
+      if (F.settled) return;
+      F.settled = true; F.avif = !!ok;
+      if (done) done(F.avif);
+    }
+    try {
+      if (/[?&]avif=0\b/.test(location.search) || !(w.CSS && CSS.supports &&
+          CSS.supports('background-image', 'image-set(url("a.avif") type("image/avif"))'))) { settle(false); return; }
+      var img = new Image();
+      img.onload = function () {
+        // 2x1: an opaque red pixel and a transparent one, encoded the way the twins are
+        var ok = img.width === 2 && img.height === 1;
+        try {
+          var c = document.createElement('canvas'); c.width = 2; c.height = 1;
+          var x = c.getContext('2d'); x.drawImage(img, 0, 0);
+          var p = x.getImageData(0, 0, 2, 1).data;
+          ok = ok && p[0] > 200 && p[1] < 60 && p[2] < 60 && p[3] > 200 && p[7] < 60;
+        } catch (e) { /* no canvas to read: the size is the answer */ }
+        settle(ok);
+      };
+      img.onerror = function () { settle(false); };
+      setTimeout(function () { settle(false); }, 3000);   // never hold the page for an answer
+      img.src = 'data:image/avif;base64,AAAAHGZ0eXBhdmlmAAAAAG1pZjFhdmlmbWlhZgAAAXBtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABwaWN0AAAAAAAAAAAAAAAAAAAAADRpbG9jAAAAAERAAAIAAQAAAAABlAABAAAAAAAAAC0AAgAAAAABwQABAAAAAAAAABcAAAA4aWluZgAAAAAAAgAAABVpbmZlAgAAAAABAABhdjAxAAAAABVpbmZlAgAAAAACAABhdjAxAAAAAA5waXRtAAAAAAABAAAAr2lwcnAAAACKaXBjbwAAAAxhdjFDgSACAAAAABRpc3BlAAAAAAAAAAIAAAABAAAAEHBpeGkAAAAAAwgICAAAAAxhdjFDgQAcAAAAAA5waXhpAAAAAAEIAAAAOGF1eEMAAAAAdXJuOm1wZWc6bXBlZ0I6Y2ljcDpzeXN0ZW1zOmF1eGlsaWFyeTphbHBoYQAAAAAdaXBtYQAAAAAAAAACAAEDgQIDAAIEhAIFhgAAABppcmVmAAAAAAAAAA5hdXhsAAIAAQABAAAATG1kYXQSAAoHOAAm0BDQaTIgGUJjBMAANAIIEOwnlGVLAN8Pvl+zUWUrjSmOji/1m1MSAAoEGAAuVTINGAAAARAjRj1vSa0F9w==';
+    } catch (e) { settle(false); }
+  })(window);
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800;900&display=swap" rel="stylesheet" />
@@ -30,11 +70,16 @@
      while the loading bar was already up over a blank screen. Asked for here they arrive with
      the scripts, so the bar appears over the painting. An Image() warm-up, not
      <link rel=preload>, which Chrome warns about on a run that never shows the cover (?skip=1,
-     ?p2=1, ?at=). tools/build-bundle.mjs keeps the ?v= hashes current. -->
+     ?p2=1, ?at=). tools/build-bundle.mjs keeps the ?v= hashes current. Each is asked for as the
+     stylesheet will ask for it: the PLAY button as its AVIF twin where the probe above said AVIF. -->
 <script>
   (function () {
     if (/[?&](skip|p2)=1\b|[?&]at=/.test(location.search)) return;
-    ['assets/art/cover.webp?v=ff13073d', 'assets/ui/btn-play.webp?v=e75de185'].forEach(function (u) { var i = new Image(); i.src = u; });
+    var warm = function () {
+      var play = ImgFormat.avif ? 'assets/ui/btn-play.avif?v=c49f0c65' : 'assets/ui/btn-play.webp?v=e75de185';
+      ['assets/art/cover.webp?v=ff13073d', play].forEach(function (u) { var i = new Image(); i.src = u; });
+    };
+    if (ImgFormat.ready && !ImgFormat.settled) ImgFormat.ready.then(warm); else warm();
   })();
 </script>
 <!-- No Try Again preload. That card is gone: a crash now plays its animation out and
@@ -83,41 +128,6 @@
              pause, and no way to bring the instruction back. Sound and motion can
              still be set from the URL (?sound=0, ?reduced=1) and the pause panel below
              is still wired, but nothing opens it any more. -->
-
-        <!-- HOW FAR THROUGH THE NINE CROSSINGS — the trail Momo is walking.
-
-             This replaces the row of diamonds that used to sit here and was removed as
-             too plain to be worth the space. A child cannot read "3 / 9", but they can
-             see that the mammoth is three stones along a path of ice with a bear's cave
-             at the end of it, and that one more stone lights up every time they answer
-             something. The stones ARE the nine levels.
-
-             Built in script rather than written out nine times, because the count comes
-             from the engine (three drawing crossings plus six rope ones) and a hard
-             coded nine here would be a second place to change. See Hud.buildTrail.
-
-             It is top-left, in the sky, above everything the game draws — the ice line
-             is at stage y 840 and the trail's bottom is at about 150, so it can never
-             cover a crevasse, a block or the character. Pointer events off: it is a
-             read-out, and a tap anywhere on the stage is the jump control. -->
-        <div class="trail" id="trail" aria-hidden="true" hidden>
-          <div class="trail-card">
-            <!-- The row. Nine platforms then the cave, built in script (Hud.buildTrail)
-                 because the count is the engine's, not the markup's. The shelf they
-                 stand on is a child of the row so it spans exactly what the row spans,
-                 however many platforms there turn out to be. -->
-            <div class="trail-rail" id="trail-rail">
-              <!-- .trail-node / .trail-link x N, then .trail-goal, inserted here -->
-              <!-- MOMO IS IN THE ROW, not in the card, and that is load-bearing. He is
-                   placed by `left: var(--at)` where --at is a platform's offsetLeft —
-                   which is measured against the ROW. Parented to the card instead, the
-                   card's own padding and border sat between the two coordinate systems
-                   and he stood exactly that far to the left of the platform he was
-                   supposed to be on: 21px of a 52px platform, at every viewport. -->
-              <img class="trail-momo" id="trail-momo" alt="" src="assets/progress/step-momo.webp" />
-            </div>
-          </div>
-        </div>
 
         <div class="instruction" id="instruction" hidden>
           <div class="instruction-pill" id="instruction-pill">
@@ -236,18 +246,6 @@
              engine.js. There is no interface for failing any more, which is what a
              runner should look like. -->
 
-        <!-- THE REWARD SCREEN. It carries `card-fun` — the cartoon treatment the Ouch
-             card used to have all to itself, which was the wrong way round: the failure
-             panel was the celebration-shaped one and the payoff for seven crossings was
-             a flat ice slab with a paragraph of prose and a green button belonging to no
-             button family in the game.
-
-             The Ouch card is gone (a crash recovers by itself now), so this is the only
-             panel left in the game and it should be the biggest thing in it.
-
-             The copy is shorter on purpose: "Seven crossings repaired. The mammoth made
-             it to nightfall." is a narrator describing the achievement to someone else.
-             A child who just finished it wants to be told THEY did it. -->
         <!-- THE ENDING. Two pieces, deliberately apart.
 
              The card used to be one centred panel holding the heading, the copy and the

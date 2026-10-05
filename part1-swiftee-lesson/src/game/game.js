@@ -12,6 +12,9 @@
   'use strict';
 
   var $ = function (s) { return document.querySelector(s); };
+  /** A picture's address as this browser asks for it: its AVIF twin where it shows AVIF
+      (src/core/preload.js pick), the .webp everywhere else. */
+  var pic = function (u) { return global.Preload && Preload.pick ? Preload.pick(u) : u; };
   /* THE LESSON'S LANGUAGE (src/core/i18n.js, ?lan=), or null in English — when every line below
      is exactly the English it always was. Lines are turned as they come in to be shown and
      timed (handlerSay, handlerInstruction, popLine), so a bubble is laid out and paced by the
@@ -380,7 +383,7 @@
       rimEl.className = 'peek-rim';
       rimEl.alt = '';
       rimEl.setAttribute('aria-hidden', 'true');
-      rimEl.src = CardFrame.panel.src;
+      rimEl.src = pic(CardFrame.panel.src);
       rimEl.style.cssText = 'position:absolute;z-index:4;pointer-events:none;';
       var host = (Swiftee.el && Swiftee.el.parentNode) || document.body;
       if (Swiftee.el && Swiftee.el.nextSibling) host.insertBefore(rimEl, Swiftee.el.nextSibling); else host.appendChild(rimEl);
@@ -389,7 +392,7 @@
     var x = m.a * a.x + m.e - hostBox.left, y = m.d * a.y + m.f - hostBox.top;
     var w = m.a * a.w, h = m.d * a.h;
     var PF = CardFrame[a.frame || 'panel'] || CardFrame.panel;
-    if (rimEl.getAttribute('src') !== PF.src) rimEl.src = PF.src;
+    if (rimEl.getAttribute('src') !== pic(PF.src)) rimEl.src = pic(PF.src);
     var paneY = PF.pane ? PF.pane.y : 0.082;
     rimEl.style.display = '';
     rimEl.style.left = x + 'px'; rimEl.style.top = y + 'px';
@@ -3592,7 +3595,7 @@
   function warmArt(i) {
     if (warmedArt || i < 1 || typeof Image === 'undefined') return;
     warmedArt = true;
-    try { if (global.MeasuringFrames && MeasuringFrames.image) (new Image()).src = MeasuringFrames.image; } catch (e) {}
+    try { if (global.MeasuringFrames && MeasuringFrames.image) (new Image()).src = pic(MeasuringFrames.image); } catch (e) {}
   }
 
   function runScreen(i) {
@@ -4394,10 +4397,15 @@
       var w = Math.min(global.innerWidth, global.innerHeight * 16 / 9);
       var mem = global.navigator && navigator.deviceMemory;
       var hd = w * (global.devicePixelRatio || 1) / 1920 >= 1.15 && w >= 1000 && !(mem && mem < 4);
+      var avif = !!(global.ImgFormat && ImgFormat.avif);      // as engine.js assetUrl asks (the same probe)
       var art = [], sound = [];
       Object.keys(v).forEach(function (p) {
         // the hd character sheets replace the base ones on a big sharp screen, never both
-        if (/\/hd\//.test(p) ? !hd : hd && /^assets\/char\/[^/]+$/.test(p) && v[p.replace('assets/char/', 'assets/char/hd/')]) return;
+        var asWebp = p.replace(/\.avif$/, '.webp');
+        if (/\/hd\//.test(p) ? !hd : hd && /^assets\/char\/[^/]+$/.test(p) && v[asWebp.replace('assets/char/', 'assets/char/hd/')]) return;
+        // and a picture with an AVIF twin as the one file it will draw: the twin where this
+        // browser shows AVIF, the .webp where it does not
+        if (/\.avif$/.test(p) ? !avif : avif && /\.webp$/.test(p) && v[p.replace(/\.webp$/, '.avif')]) return;
         if (/\.(mp3|ogg)$/.test(p)) {
           // only the voice take the game will play: vo-lines (English), vo-lines-hi (Hindi), and
           // none in a language with no recording of its own
@@ -5018,7 +5026,15 @@
     }
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  /* THE PICTURES' FORMAT BEFORE THE FIRST ONE: boot builds the stage and Swiftee, and they draw
+     each picture as its AVIF twin or as its .webp (pic), so it waits for index.html's probe —
+     usually in long before this, and never more than a few seconds. runner-stage.js's opening
+     waits for the same answer, so the two still run in the order they always did. */
+  function start() {
+    var F = global.ImgFormat;
+    if (F && F.ready && !F.settled) F.ready.then(boot); else boot();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 
   global.Game = {
     relayout: relayout,

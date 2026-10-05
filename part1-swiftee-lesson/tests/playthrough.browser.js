@@ -39,7 +39,7 @@ const SHOT_DIR = (() => { const i = process.argv.indexOf('--shots'); return i > 
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
-  '.json': 'application/json', '.png': 'image/png', '.webp': 'image/webp',
+  '.json': 'application/json', '.png': 'image/png', '.webp': 'image/webp', '.avif': 'image/avif',
   '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg'
 };
 

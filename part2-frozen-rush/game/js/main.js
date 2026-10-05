@@ -19,7 +19,7 @@
                                milliseconds, so ?speed cannot shorten a playthrough.
 */
 
-import { createGame, assetUrl, CFG } from './engine.js';
+import { createGame, CFG } from './engine.js';
 import { Hud } from './hud.js';
 import { Frontend } from './frontend.js';
 import { Tutorial } from './tutorial.js';

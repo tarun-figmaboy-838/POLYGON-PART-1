@@ -11,7 +11,7 @@
     "test:part1:browser": "npm --prefix part1-swiftee-lesson run test:browser",
     "test:part2": "npm --prefix part2-frozen-rush test -- --workers=1",
     "test:part2:level2": "npm --prefix part2-frozen-rush run test:level2",
-    "check:part2": "node part2-frozen-rush/tools/build-bundle.mjs --check",
+    "check:part2": "node part2-frozen-rush/tools/build-bundle.mjs --check && node part2-frozen-rush/tools/build-avif.mjs --check",
     "bundle:part2": "node part2-frozen-rush/tools/build-bundle.mjs"
   }
 }

@@ -9,6 +9,47 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+<!-- AVIF WHERE THE BROWSER SHOWS IT, WEBP WHERE IT DOES NOT. Some pictures ship twice: the
+     .webp every browser has always been given, and an .avif beside it that is the same
+     picture in fewer bytes (tools/build-avif.js). This asks the browser once, before anything is
+     drawn, and the answer is ImgFormat.avif: true only where an AVIF with an alpha channel
+     decodes to the right pixels AND the stylesheet's image-set(... type()) is understood, so
+     the scripts and the stylesheet always choose the same file. Anything else — an older
+     browser, or a decode that fails or never answers — is false, and every picture is the
+     .webp exactly as before. (?avif=0 says false too, for the scripts' pictures only: a
+     stylesheet's image-set() always decides for itself.) ImgFormat.ready settles with the answer;
+     the lesson boots once it has (game.js start), and every picture the scripts draw goes
+     through Preload.pick (src/core/preload.js). -->
+<script>
+  (function (w) {
+    var F = w.ImgFormat = { avif: false, settled: false }, done = null;
+    F.ready = typeof Promise === 'function' ? new Promise(function (r) { done = r; }) : null;
+    function settle(ok) {
+      if (F.settled) return;
+      F.settled = true; F.avif = !!ok;
+      if (done) done(F.avif);
+    }
+    try {
+      if (/[?&]avif=0\b/.test(location.search) || !(w.CSS && CSS.supports &&
+          CSS.supports('background-image', 'image-set(url("a.avif") type("image/avif"))'))) { settle(false); return; }
+      var img = new Image();
+      img.onload = function () {
+        // 2x1: an opaque red pixel and a transparent one, encoded the way the twins are
+        var ok = img.width === 2 && img.height === 1;
+        try {
+          var c = document.createElement('canvas'); c.width = 2; c.height = 1;
+          var x = c.getContext('2d'); x.drawImage(img, 0, 0);
+          var p = x.getImageData(0, 0, 2, 1).data;
+          ok = ok && p[0] > 200 && p[1] < 60 && p[2] < 60 && p[3] > 200 && p[7] < 60;
+        } catch (e) { /* no canvas to read: the size is the answer */ }
+        settle(ok);
+      };
+      img.onerror = function () { settle(false); };
+      setTimeout(function () { settle(false); }, 3000);   // never hold the page for an answer
+      img.src = 'data:image/avif;base64,AAAAHGZ0eXBhdmlmAAAAAG1pZjFhdmlmbWlhZgAAAXBtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABwaWN0AAAAAAAAAAAAAAAAAAAAADRpbG9jAAAAAERAAAIAAQAAAAABlAABAAAAAAAAAC0AAgAAAAABwQABAAAAAAAAABcAAAA4aWluZgAAAAAAAgAAABVpbmZlAgAAAAABAABhdjAxAAAAABVpbmZlAgAAAAACAABhdjAxAAAAAA5waXRtAAAAAAABAAAAr2lwcnAAAACKaXBjbwAAAAxhdjFDgSACAAAAABRpc3BlAAAAAAAAAAIAAAABAAAAEHBpeGkAAAAAAwgICAAAAAxhdjFDgQAcAAAAAA5waXhpAAAAAAEIAAAAOGF1eEMAAAAAdXJuOm1wZWc6bXBlZ0I6Y2ljcDpzeXN0ZW1zOmF1eGlsaWFyeTphbHBoYQAAAAAdaXBtYQAAAAAAAAACAAEDgQIDAAIEhAIFhgAAABppcmVmAAAAAAAAAA5hdXhsAAIAAQABAAAATG1kYXQSAAoHOAAm0BDQaTIgGUJjBMAANAIIEOwnlGVLAN8Pvl+zUWUrjSmOji/1m1MSAAoEGAAuVTINGAAAARAjRj1vSa0F9w==';
+    } catch (e) { settle(false); }
+  })(window);
+</script>
 <!-- ANOTHER LANGUAGE (?lan=hi, mr, te, gu or od — src/core/i18n.js): the page's own words wait,
      unseen, until they are in that language, so the English is never what flashes up first -->
 <script>if (/[?&]lang?=(?!en\b)[a-z]/i.test(location.search)) { document.documentElement.className += ' i18n-wait'; setTimeout(function () { document.documentElement.classList.remove('i18n-wait'); }, 4000); }</script>
@@ -16,7 +57,19 @@
      the scripts. Everything else — the sleigh's sheets, Swiftee, the story, the voice —
      is fetched by the loading bar (src/core/preload.js) before Play appears. -->
 <link rel="preload" as="image" href="assets/ui/banner.webp?v=b5109fa3">
-<link rel="preload" as="image" href="assets/bg/ice-vista.webp" fetchpriority="high">
+<!-- the backdrop as the stylesheet will ask for it: its AVIF twin wherever image-set() can
+     choose one (a browser that cannot show AVIF skips a preload typed image/avif, and so does
+     its image-set), the .webp everywhere else -->
+<script>
+  (function () {
+    var l = document.createElement('link');
+    l.rel = 'preload'; l.as = 'image'; l.setAttribute('fetchpriority', 'high');
+    if (window.CSS && CSS.supports && CSS.supports('background-image', 'image-set(url("a.avif") type("image/avif"))')) {
+      l.type = 'image/avif'; l.href = 'assets/bg/ice-vista.avif?v=0a5a529b';
+    } else l.href = 'assets/bg/ice-vista.webp';
+    document.head.appendChild(l);
+  })();
+</script>
 <style>
   :root {
     --ink: #1c2a4a;
@@ -73,8 +126,12 @@
        than a band. Sharp, not blurred: the board's own copy is drawn at
        almost the same scale, so the two line up and the join disappears. */
     position: absolute; inset: 0;
-    /* lossless WebP: every pixel of the painting as it was, a quarter lighter */
+    /* lossless WebP: every pixel of the painting as it was, a quarter lighter — and where the
+       browser shows AVIF, its twin, the same painting in a twenty-third of the bytes
+       (tools/build-avif.js). A browser that does not understand image-set(type()) keeps the
+       first line. */
     background: url("assets/bg/ice-vista.webp") center center / cover no-repeat, #5fbdfa;
+    background: image-set(url("assets/bg/ice-vista.avif?v=0a5a529b") type("image/avif"), url("assets/bg/ice-vista.webp") type("image/webp")) center center / cover no-repeat, #5fbdfa;
     pointer-events: none; z-index: 0;
   }
   #stage { position: absolute; inset: 0; z-index: 1; }
@@ -587,6 +644,7 @@
        as a seam. The cap border keeps the cap in proportion. */
     border-width: clamp(26px, calc(3.4 * var(--svw, 1vw)), 62px) clamp(46px, calc(5.2 * var(--svw, 1vw)), 96px) clamp(18px, calc(2.4 * var(--svw, 1vw)), 44px);
     border-image-source: url("assets/ui/plank.webp?v=ef53d389");
+    border-image-source: image-set(url("assets/ui/plank.avif?v=cc10196e") type("image/avif"), url("assets/ui/plank.webp?v=ef53d389") type("image/webp"));
     border-image-slice: 120 270 90 270 fill;
     border-image-repeat: stretch;
 
@@ -618,6 +676,7 @@
     border-style: solid;
     border-width: clamp(26px, calc(3.4 * var(--svw, 1vw)), 62px) clamp(46px, calc(5.2 * var(--svw, 1vw)), 96px) clamp(18px, calc(2.4 * var(--svw, 1vw)), 44px);
     border-image: url("assets/ui/plank.webp?v=ef53d389") 120 270 90 270 fill stretch;
+    border-image: image-set(url("assets/ui/plank.avif?v=cc10196e") type("image/avif"), url("assets/ui/plank.webp?v=ef53d389") type("image/webp")) 120 270 90 270 fill stretch;
   }
   /* The words cross-fade; the plank itself never moves, because the lesson
      below is positioned from its height. */
@@ -664,6 +723,7 @@
     padding: 0 2px; font-size: 18px; color: #6a3200; text-shadow: 0 1px 0 rgba(255, 244, 200, .7);
     background: none; border: 0 solid transparent; border-width: 0 28px; border-radius: 0;
     border-image: url("assets/ui/btn-uiPrimary.webp?v=d8ec3af2") 0 82 0 82 fill stretch;
+    border-image: image-set(url("assets/ui/btn-uiPrimary.avif?v=d8f6defc") type("image/avif"), url("assets/ui/btn-uiPrimary.webp?v=d8ec3af2") type("image/webp")) 0 82 0 82 fill stretch;
     box-shadow: none; filter: drop-shadow(0 3px 0 rgba(140, 80, 0, .35));
   }
   #hud .replay.show { display: inline-flex; }
@@ -696,6 +756,7 @@
        pixels; 34px is that cap drawn at this height. */
     background: none; border: 0 solid transparent; border-width: 0 34px;
     border-image: url("assets/ui/btn-uiNav.webp?v=dbbb52c5") 0 83 0 83 fill stretch;
+    border-image: image-set(url("assets/ui/btn-uiNav.avif?v=0530955a") type("image/avif"), url("assets/ui/btn-uiNav.webp?v=dbbb52c5") type("image/webp")) 0 83 0 83 fill stretch;
     height: 60px; line-height: 60px; padding: 0 6px 0 10px; cursor: pointer; display: none; align-items: center; gap: 8px;
     filter: drop-shadow(0 4px 0 rgba(10, 60, 120, .35)); text-shadow: 0 2px 0 rgba(12, 70, 140, .55);
     transition: transform 90ms, filter 90ms, opacity 160ms;

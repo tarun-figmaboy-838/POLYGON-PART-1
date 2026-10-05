@@ -20,7 +20,7 @@ const PORT = Number(process.argv[3] || 8199);
 
 const MIME = { '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8',
   '.css':'text/css; charset=utf-8', '.json':'application/json', '.png':'image/png',
-  '.webp':'image/webp', '.svg':'image/svg+xml', '.mp3':'audio/mpeg', '.gif':'image/gif',
+  '.webp':'image/webp', '.avif':'image/avif', '.svg':'image/svg+xml', '.mp3':'audio/mpeg', '.gif':'image/gif',
   '.woff2':'font/woff2', '.jpg':'image/jpeg' };
 
 // a header rule's `source` is a path pattern, not a regex: literal dots are literal,

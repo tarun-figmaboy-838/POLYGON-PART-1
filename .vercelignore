@@ -11,6 +11,9 @@ package-lock.json
 serve.js
 serve.ps1
 START GAME.bat
+.vercelignore
+# the words' source: both parts load the locales.js generated from it (build-locales.js)
+/polygon-locales.json
 
 # Part 1 — the site is its index.html, src/ and assets/
 /part1-swiftee-lesson/drafts
@@ -20,6 +23,12 @@ START GAME.bat
 /part1-swiftee-lesson/artifacts
 /part1-swiftee-lesson/assets/source
 /part1-swiftee-lesson/assets/vo/take
+# build records beside the files they describe, read by tools and never by a URL: the word
+# starts tools/build-vo-index.js copies into the VO index, and the Swiftee frame data the
+# src/character/*-frames.js tables are generated from
+/part1-swiftee-lesson/assets/vo/word-timings.json
+/part1-swiftee-lesson/assets/vo/hi/word-timings.json
+/part1-swiftee-lesson/assets/swiftee/*.json
 # the user's Hindi recordings: tools/build-vo-hindi.js cuts them into assets/vo/hi (and Part 2's vo-lines-hi)
 /part1-swiftee-lesson/assets/vo-part-1-hindi
 /part1-swiftee-lesson/swiftee-in-use

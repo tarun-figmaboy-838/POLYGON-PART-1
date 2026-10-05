@@ -62,7 +62,7 @@
       img.onload = function () { var d = img.decode ? img.decode() : Promise.resolve(); d.then(function () { res(true); }, function () { res(true); }); };
       img.onerror = function () { res(false); };
     });
-    img.src = STRIP;
+    img.src = global.Preload && Preload.pick ? Preload.pick(STRIP) : STRIP;   // its AVIF twin, where shown
     strip = { img: img, ready: ready };
     return ready;
   }

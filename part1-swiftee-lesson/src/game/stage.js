@@ -77,6 +77,9 @@
      decides anything changes; only the letters drawn do. */
   function inLang(text) { return (global.I18N && I18N.on) ? I18N.tr(text) : text; }
 
+  /** A picture's address as this browser asks for it: its AVIF twin where it shows AVIF
+      (src/core/preload.js pick), the .webp everywhere else. */
+  function pic(u) { return global.Preload && Preload.pick ? Preload.pick(u) : u; }
   function mk(tag, attrs, parent) {
     var e = document.createElementNS(NS, tag);
     for (var k in (attrs || {})) {
@@ -246,7 +249,11 @@
    * the target asks for; it rides a drag ghost. It never taps a choice.
    * ------------------------------------------------------------------ */
   var HAND_H = 62;   // stage units; the glove is 62 tall, its tip ~8 across
-  if (global.HandArt && typeof Image !== 'undefined') { try { (new Image()).src = HandArt.src; } catch (e) {} }
+  if (global.HandArt && typeof Image !== 'undefined') {
+    // warmed once the picture format is known (index.html's probe), so it is the file drawn
+    var warmHand = function () { try { (new Image()).src = pic(HandArt.src); } catch (e) {} };
+    if (global.ImgFormat && ImgFormat.ready && !ImgFormat.settled) ImgFormat.ready.then(warmHand); else warmHand();
+  }
   /** A glove with its fingertip at (x, y) in `parent`. Mirrored when the
       glove would run off the stage's right edge, so it always comes in from
       the side there is room on. */
@@ -259,7 +266,7 @@
     var ripple = mk('circle', { cx: 0, cy: 0, r: 18, fill: 'none', stroke: '#ffffff', 'stroke-width': 3, opacity: 0 }, g);
     var body = mk('g', flip ? { transform: 'scale(-1,1)' } : {}, g);
     var im = mk('image', { x: (-tx).toFixed(1), y: (-ty).toFixed(1), width: w.toFixed(1), height: h.toFixed(1), preserveAspectRatio: 'none' }, body);
-    im.setAttribute('href', A.src); im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', A.src);
+    im.setAttribute('href', pic(A.src)); im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', pic(A.src));
     im.style.filter = 'drop-shadow(0 3px 2.5px rgba(8, 44, 96, .35))';
     im.style.transformBox = 'fill-box'; im.style.transformOrigin = (A.tip.x * 100).toFixed(1) + '% ' + (A.tip.y * 100).toFixed(1) + '%';
     ripple.style.transformBox = 'fill-box'; ripple.style.transformOrigin = 'center';
@@ -757,8 +764,8 @@
     perchLog.style.opacity = '0';
     var li = mk('image', { x: LOG.x, y: LOG.y.toFixed(1), width: LOG.w, height: LOG.h.toFixed(1),
                            preserveAspectRatio: 'xMidYMid meet' }, perchLog);
-    li.setAttributeNS('http://www.w3.org/1999/xlink', 'href', LOG.src);
-    li.setAttribute('href', LOG.src);
+    li.setAttributeNS('http://www.w3.org/1999/xlink', 'href', pic(LOG.src));
+    li.setAttribute('href', pic(LOG.src));
     ambientLife();
   }
 
@@ -1195,8 +1202,8 @@
         x: p.x, y: p.y, width: p.w, height: p.h,
         preserveAspectRatio: 'none', 'pointer-events': 'none'
       }, g);
-      img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', F.src);
-      img.setAttribute('href', F.src);
+      img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', pic(F.src));
+      img.setAttribute('href', pic(F.src));
     } else {
       // No frame table: a plain slab rather than no lesson.
       mk('rect', { x: p.x, y: p.y + 7, width: p.w, height: p.h, rx: 34,
@@ -1834,7 +1841,7 @@
     var walker = mk('g', { 'class': 'measuring-walker' }, g);
     var crop = mk('svg', { x: -cell / 2, y: -baseline, width: cell, height: cell,
       viewBox: '0 0 ' + frames.cell + ' ' + frames.cell, overflow: 'hidden' }, walker);
-    var sheet = mk('image', { href: frames.image, width: frames.cols * frames.cell, height: frames.rows * frames.cell }, crop);
+    var sheet = mk('image', { href: pic(frames.image), width: frames.cols * frames.cell, height: frames.rows * frames.cell }, crop);
     var companion = global.Swiftee && Swiftee.el;
     var opacity = opts.homeOpacity != null ? opts.homeOpacity : (companion && companion.style.opacity);
     if (opts.angle) tapeG.style.display = 'none';           // to a corner: no tape is laid
@@ -1960,7 +1967,7 @@
     var sprite = mk('svg', { x: -anchor.x * scale, y: -anchor.y * scale,
       width: cell * scale, height: cell * scale, viewBox: '0 0 ' + cell + ' ' + cell,
       overflow: 'hidden' }, bird);
-    var sheet = mk('image', { href: frames.image, width: frames.cols * cell, height: frames.rows * cell }, sprite);
+    var sheet = mk('image', { href: pic(frames.image), width: frames.cols * cell, height: frames.rows * cell }, sprite);
     var activeFrame = frames.carry;
     function norm(angle) { return ((angle % 360) + 540) % 360 - 180; }
     function bodyOffset(frame, rotation) {
@@ -2806,8 +2813,8 @@
           width: (L.w * LEDGE_K).toFixed(1), height: (L.h * LEDGE_K).toFixed(1),
           preserveAspectRatio: 'none'
         }, g);
-        im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', L.src);
-        im.setAttribute('href', L.src);
+        im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', pic(L.src));
+        im.setAttribute('href', pic(L.src));
       });
     },
 
@@ -3025,8 +3032,8 @@
             x: z.x, y: ZY, width: ZW, height: ZH,
             preserveAspectRatio: 'xMidYMid meet', 'pointer-events': 'none'
           }, g);
-          im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', Z.src);
-          im.setAttribute('href', Z.src);
+          im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', pic(Z.src));
+          im.setAttribute('href', pic(Z.src));
           var pane = Z.pane || { x: 0.06, y: 0.09, w: 0.88, h: 0.82 };
           var px0 = z.x + ZW * pane.x, pw = ZW * pane.w, py0 = ZY + ZH * pane.y + 10;
           mk('rect', { x: px0 + 14, y: py0, width: pw - 28, height: TITLE_H, rx: 15, fill: c.face, opacity: 0.30 }, g);
@@ -3086,8 +3093,8 @@
         var pane = { x: x + 12, y: y + 10, w: bw - 24, h: bh - 20 };
         if (BF) {
           var im = mk('image', { x: x, y: y, width: bw, height: bh, preserveAspectRatio: 'none', 'pointer-events': 'none' }, g);
-          im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', BF.src);
-          im.setAttribute('href', BF.src);
+          im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', pic(BF.src));
+          im.setAttribute('href', pic(BF.src));
           if (BF.pane) pane = { x: x + bw * BF.pane.x, y: y + bh * BF.pane.y, w: bw * BF.pane.w, h: bh * BF.pane.h };
         } else {
           mk('rect', { x: x, y: y, width: bw, height: bh, rx: UI.radius, fill: tone[0], stroke: tone[1], 'stroke-width': UI.rim }, g);
@@ -3299,7 +3306,7 @@
     g._pop = pop;
     if (F) {
       var img = mk('image', { x: x, y: y, width: w, height: h, preserveAspectRatio: 'none', 'pointer-events': 'none' }, pop);
-      img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', F.src); img.setAttribute('href', F.src);
+      img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', pic(F.src)); img.setAttribute('href', pic(F.src));
     } else {
       mk('rect', { x: x, y: y, width: w, height: h, rx: 34, fill: '#f4fbff', stroke: '#a3d4ef', 'stroke-width': 3 }, pop);
     }
@@ -4360,8 +4367,8 @@
         x: -half, y: -halfH, width: half * 2, height: halfH * 2,
         preserveAspectRatio: 'none'
       }, g);
-      img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', F.src);
-      img.setAttribute('href', F.src);
+      img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', pic(F.src));
+      img.setAttribute('href', pic(F.src));
     } else {
       // No frame table: a plain slab rather than nothing at all.
       mk('rect', { x: -half, y: -halfH, width: half * 2, height: halfH * 2, rx: half * 0.3,
@@ -4756,8 +4763,8 @@
       }, g);
       var im = mk('image', { x: 0, y: 0, width: B.w, height: B.h,
                              preserveAspectRatio: 'none' }, box);
-      im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', B.src);
-      im.setAttribute('href', B.src);
+      im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', pic(B.src));
+      im.setAttribute('href', pic(B.src));
       pieces.push(im);
     };
     /* NO SEAM BETWEEN THE PIECES. Three pieces meeting edge to edge meet at
@@ -4772,8 +4779,8 @@
     return {
       href: function (nb) {
         pieces.forEach(function (im) {
-          im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', nb.src);
-          im.setAttribute('href', nb.src);
+          im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', pic(nb.src));
+          im.setAttribute('href', pic(nb.src));
         });
       }
     };
@@ -7623,17 +7630,6 @@
       if (k < 1 && line.parentNode) frame(step);
       else done();
     }());
-  }
-
-  /** A line the child has just made catches the light once. */
-  function shimmerLine(ln) {
-    if (reduced() || !ln || !ln.animate) return;
-    try {
-      // from the line's own weight (the made side is 6 now, the others 4.5), so it does not jump
-      var w0 = parseFloat(ln.getAttribute('stroke-width')) || 4.5;
-      ln.animate([{ strokeWidth: w0, filter: 'brightness(1)' }, { strokeWidth: w0 + 3.5, filter: 'brightness(1.5)', offset: 0.35 }, { strokeWidth: w0, filter: 'brightness(1)' }],
-                 { duration: 560, easing: 'ease-out' });
-    } catch (e) {}
   }
 
   /** A new diagonal catches the light once — or, the first one the child
