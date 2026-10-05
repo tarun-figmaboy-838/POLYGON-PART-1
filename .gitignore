@@ -10,3 +10,14 @@ node_modules/
 Thumbs.db
 .vscode/
 *.code-workspace
+
+# working files beside the project, never part of it: the user's reference copy of the words
+# (locales.json — polygon-locales.json is the one the game is built from), recordings dropped at
+# the root or in vo/ before they are cut into the game, a session's own Playwright config, and
+# the video renders beside the preview pages
+/locales.json
+/vo/
+/*.wav
+/*.mp3
+.pw-*.config.mjs
+previews/*.webm
