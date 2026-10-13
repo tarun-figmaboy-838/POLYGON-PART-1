@@ -1,0 +1,61 @@
+Add an end-of-lesson SUMMARY screen to this game, using my Summary Kit, without changing
+anything else about the game.
+
+SEE IT WORK: https://polygon-part-1.vercel.app/kits/summary/  (press Play the summary, sound on)
+
+THE KIT (read it fully first; do not edit it):
+  /Users/tarundiwedi/Downloads/POLYGON-1/summary-kit/
+  - README.md       what it is and how to run it (double-click index.html, then Play the summary)
+  - index.html      the SummaryKit engine + styles ("copy from here") and a working demo; its
+                    header documents mount(), the options and the visual vocabulary
+  - assets/, src/   the card, the Next pill, the presenter, the voice lines, polygon-math.js
+  The full original lives in POLYGON-PART-1/part1-swiftee-lesson (screens.js SUMMARY and
+  summaryBeats(), stage.js summaryCard…summaryFinal/summaryWord/summaryReplay, game.js
+  reviewSummary()). Read those when the kit and the game differ.
+
+THE METHOD TO KEEP (this is what makes it work; don't simplify it away)
+- One card per idea the lesson TAUGHT, in the order it was taught, as data: id, label, one short
+  line, its recording, and what the card shows. One card component draws every idea.
+- A strict state sequence per card: CARD_ENTER → CONCEPT_REVEAL → PRESENTER_ENTER → EXPLANATION
+  → READING_PAUSE → PRESENTER_EXIT → CARD_COLLECT → NEXT_CONCEPT … → FINAL_SUMMARY → READY.
+  Each step waits for the one before it: no two states overlap, no voice plays over another,
+  nothing can be tapped while a line is being said.
+- The words appear on the recording's own word timings, and the key word lights the part of the
+  card it names. With no recording, pace the words (~330 ms each).
+- Cards collect into albums at the sides; the finale gathers them; READY shows Next, and a tap
+  on a collected card replays its idea and line while the others rest dimmed.
+- prefers-reduced-motion: the same states, without the motion.
+
+STEP 1 — LOOK, THEN ASK (change nothing yet)
+- Find how this game ends today, what it teaches, its art style, its voice/timing system, its
+  language support, and its tests. Report the current ending with a screenshot.
+- Propose the list of summary ideas with each card's label, line and visual, and ask me to
+  confirm it, plus: does this game have a presenter character, should the cards use the kit's
+  ice art or this game's own style, and are there recordings for the lines (if not: use the
+  game's voice tool, or no voice).
+
+STEP 2 — BUILD, AFTER I CONFIRM
+- Work on a new git branch (a worktree if other sessions use this folder). Never commit to main.
+- Copy only the kit files you need, into this game's own folders. Port the engine into this
+  game's structure and style; reuse its existing loader, voice player and buttons where it has
+  them, rather than adding a second one.
+- Hook the summary in where the lesson ends: one call to start it, and the game's own ending
+  (or next level) on the summary's Next. Everything before that moment must behave exactly as
+  it does now.
+- Keep the game's rules: if it draws polygons, sides are solid lines and diagonals are thin
+  dashed lines (an outside diagonal is a deep violet dash); wrong-answer wording, colours and
+  fonts stay the game's own. Add every new string to the game's translations if it has them.
+
+STEP 3 — PROVE IT
+- Add a test that plays the summary: every card visited in order, each state once per card, no
+  overlap (each EXPLANATION ends before the next card enters), READY reached, Next goes on, a
+  tapped card replays, no console error, no 404.
+- Run the game's full existing test suite before and after; report any test that fails after
+  but not before.
+- Play the whole game through to the end in a real browser (Chromium, and WebKit if available),
+  in every language it supports, and screenshot a card being explained and the final READY
+  screen. Compare the screens before the summary with screenshots from before your change:
+  they must be identical.
+
+DELIVER: push the branch and open a pull request (do not merge). Give me the PR link, the
+screenshots, and the exact test counts, including the output of anything that failed.
