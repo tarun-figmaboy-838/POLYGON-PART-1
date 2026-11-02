@@ -6,13 +6,17 @@
 <title data-i18n="lessonPageTitle">Swiftee — Polygons</title>
 <!-- inline, so the page never fires a 404 for a favicon it does not have -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>%F0%9F%90%A6</text></svg>">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- (the fonts load without holding the page up: a network that drops Google Fonts would leave it blank until it gave
-     up; the text shows in its fallback a moment, then in Nunito and Fredoka, and the lesson lays itself out again as
-     they arrive - game.js, fonts loadingdone) -->
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&family=Fredoka:wght@600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&family=Fredoka:wght@600;700&display=swap" rel="stylesheet"></noscript>
+<!-- THE LESSON'S FACES SHIP WITH IT (assets/fonts): the very WOFF2 files Google Fonts served for Nunito
+     700-800 and Fredoka 600-700 — the variable fonts, cut to the Latin letters — with Google's own @font-face
+     rules copied into the stylesheet below, so nothing is drawn differently; only the trip to Google is gone
+     (on a school line it was the slowest thing on the page, and a network that drops Google left the
+     lesson in its fallback face). The two Latin files are asked for first, with the title art; the
+     Latin-extended twins only if a letter needs them. Hindi and the other languages still fetch their
+     Baloo face from Google (src/core/i18n.js). The faces never hold the page up: the text shows in the
+     fallback until they are in, and the lesson lays itself out again as they land (game.js,
+     fonts loadingdone). -->
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/fredoka-v17-latin.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/nunito-v32-latin.woff2" crossorigin>
 <!-- AVIF WHERE THE BROWSER SHOWS IT, WEBP WHERE IT DOES NOT. Some pictures ship twice: the
      .webp every browser has always been given, and an .avif beside it that is the same
      picture in fewer bytes (tools/build-avif.js). This asks the browser once, before anything is
@@ -75,6 +79,16 @@
   })();
 </script>
 <style>
+  /* the faces (see the note in <head>): Google Fonts' own rules for these files, weight ranges and all */
+  @font-face { font-family: 'Fredoka'; font-style: normal; font-weight: 600 700; font-display: swap; src: url("assets/fonts/fredoka-v17-latin-ext.woff2") format("woff2");
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'Fredoka'; font-style: normal; font-weight: 600 700; font-display: swap; src: url("assets/fonts/fredoka-v17-latin.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'Nunito'; font-style: normal; font-weight: 700 800; font-display: swap; src: url("assets/fonts/nunito-v32-latin-ext.woff2") format("woff2");
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'Nunito'; font-style: normal; font-weight: 700 800; font-display: swap; src: url("assets/fonts/nunito-v32-latin.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
   :root {
     --ink: #1c2a4a;
     --sans: "Nunito", "Segoe UI", system-ui, sans-serif;
