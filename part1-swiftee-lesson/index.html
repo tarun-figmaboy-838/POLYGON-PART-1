@@ -73,7 +73,7 @@
     var l = document.createElement('link');
     l.rel = 'preload'; l.as = 'image'; l.setAttribute('fetchpriority', 'high');
     if (window.CSS && CSS.supports && CSS.supports('background-image', 'image-set(url("a.avif") type("image/avif"))')) {
-      l.type = 'image/avif'; l.href = 'assets/bg/ice-vista.avif?v=0a5a529b';
+      l.type = 'image/avif'; l.href = 'assets/bg/ice-vista.avif?v=abcf3f2f';
     } else l.href = 'assets/bg/ice-vista.webp';
     document.head.appendChild(l);
   })();
@@ -149,7 +149,7 @@
        (tools/build-avif.js). A browser that does not understand image-set(type()) keeps the
        first line. */
     background: url("assets/bg/ice-vista.webp") center center / cover no-repeat, #5fbdfa;
-    background: image-set(url("assets/bg/ice-vista.avif?v=0a5a529b") type("image/avif"), url("assets/bg/ice-vista.webp") type("image/webp")) center center / cover no-repeat, #5fbdfa;
+    background: image-set(url("assets/bg/ice-vista.avif?v=abcf3f2f") type("image/avif"), url("assets/bg/ice-vista.webp") type("image/webp")) center center / cover no-repeat, #5fbdfa;
     pointer-events: none; z-index: 0;
   }
   #stage { position: absolute; inset: 0; z-index: 1; }
@@ -1137,6 +1137,6 @@
      fails until the bundle is current (--check). ?v= is the bundle's own hash, so a new build is
      fetched at once and an unchanged one is kept for a year (vercel.json), and the map beside it
      shows the sources, by name and line, in the browser's devtools. -->
-<script src="src/lesson.min.js?v=386c39e5"></script>
+<script src="src/lesson.min.js?v=66c0f77f"></script>
 </body>
 </html>

@@ -58,7 +58,9 @@ src/
     transition.js          the snowfall between levels (chapters), from the flake art
 
 assets/
-  bg/ice-vista.webp        the painted backdrop (and its AVIF twin)
+  bg/ice-vista.webp        the painted backdrop, WebP q98 for browsers without AVIF (the
+                           lossless painting is assets/source/ice-vista-lossless.webp), and
+                           its AVIF twin, which nearly every browser is given
   ui/banner.webp           the title art
   ui/play.webp             the play button, cut off its white square
   ui/*.webp                the card, button and flake kits, cut by the tools
@@ -256,8 +258,9 @@ the full play needs real memory headroom for a software-rendered headless Chrome
 The repo root **is** the site: `index.html`, `src/lesson.min.js` (with its map) and
 `assets/`. The bundle is the one generated file, and it is committed, so the host builds
 nothing; run `node tools/build-bundle.js` before committing a change to `src/` (`npm test`
-refuses a stale one). The sources deploy beside the bundle as they always have: nobody
-fetches them but the map, which leads devtools to them.
+refuses a stale one). The source folders stay off the deploy (`.vercelignore`): nothing
+fetches them, and the map still names them, so a stack trace in devtools reads
+`game.js:4399` even though the file itself is not served.
 
 ```
 vercel            # preview

@@ -15,8 +15,16 @@ START GAME.bat
 # the words' source: both parts load the locales.js generated from it (build-locales.js)
 /polygon-locales.json
 
-# Part 1 — the site is its index.html, src/ and assets/ (the page loads src/lesson.min.js, the
-# bundle tools/build-bundle.js makes from the sources; the sources stay beside it for its map)
+# Part 1 — the site is its index.html, src/lesson.min.js (+ .map.json) and assets/
+# the scripts ship as the one bundle tools/build-bundle.js makes from them; the source folders are
+# not deployed (1.4 MB nothing fetches — the map still names them, so a stack trace reads
+# game.js:4399 in devtools, only the file's text is not there to open)
+/part1-swiftee-lesson/src/audio
+/part1-swiftee-lesson/src/character
+/part1-swiftee-lesson/src/core
+/part1-swiftee-lesson/src/fx
+/part1-swiftee-lesson/src/game
+/part1-swiftee-lesson/src/opening
 /part1-swiftee-lesson/drafts
 /part1-swiftee-lesson/tests
 /part1-swiftee-lesson/tools
@@ -40,6 +48,9 @@ START GAME.bat
 /part1-swiftee-lesson/.vercelignore
 
 # Part 2 — the site is game/ and nothing else
+# (game.bundle.js is the classic-script build the page loads only off the disk, file://; over
+# http it loads the modules in game/js, so the CDN never serves the bundle — 0.9 MB)
+/part2-frozen-rush/game/js/game.bundle.js
 /part2-frozen-rush/art-source
 /part2-frozen-rush/drafts
 /part2-frozen-rush/tests

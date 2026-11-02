@@ -141,8 +141,9 @@ they did in the original repositories. See each part's README for what the suite
 The repo root is the site. With Vercel: import the repo, leave **Root Directory** empty, no
 build command. `vercel.json` sets the cache rules. Every HTML page must revalidate. Part 1's bundle and
 Part 2's assets are immutable for a year, which is safe because each build stamps the URL with
-a content hash (`?v=`). Part 1's sources deploy beside its bundle, for the map to lead
-devtools to; nothing else fetches them. `trailingSlash: true` keeps each part's relative
+a content hash (`?v=`). `.vercelignore` keeps off the CDN what no URL fetches: Part 1's
+source folders (the bundle is what loads; its map still names them) and Part 2's
+`game.bundle.js` (loaded only off the disk — over http the modules load). `trailingSlash: true` keeps each part's relative
 URLs resolving from its own folder.
 
 Any static host works the same way (GitHub Pages, Netlify, S3): serve the root, open `/`.

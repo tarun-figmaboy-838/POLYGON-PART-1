@@ -30,8 +30,8 @@ window.PreloadList = {
   "assets/ui/zone-regular.webp?v=b52e2d9d"
  ],
  "sizes": {
-  "assets/bg/ice-vista.avif": 35256,
-  "assets/bg/ice-vista.webp": 816574,
+  "assets/bg/ice-vista.avif": 43241,
+  "assets/bg/ice-vista.webp": 121872,
   "assets/bg/ledge-l.webp": 57702,
   "assets/bg/ledge-r.avif": 27133,
   "assets/bg/ledge-r.webp": 35716,
@@ -550,7 +550,7 @@ window.PreloadList = {
   "assets/vo/word-timings.json": 8641
  },
  "avif": {
-  "assets/bg/ice-vista.webp": "assets/bg/ice-vista.avif?v=0a5a529b",
+  "assets/bg/ice-vista.webp": "assets/bg/ice-vista.avif?v=abcf3f2f",
   "assets/bg/ledge-r.webp": "assets/bg/ledge-r.avif?v=cbcf0194",
   "assets/bg/stone-snowy.webp": "assets/bg/stone-snowy.avif?v=49cb0741",
   "assets/swiftee/intro/sheet1.webp": "assets/swiftee/intro/sheet1.avif?v=8fcb2fd8",
