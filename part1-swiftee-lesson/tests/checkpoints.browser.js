@@ -54,7 +54,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 (async () => {
   const { server, port } = await serve();
   const browser = await chromium.launch({
-    channel: 'chrome', headless: !HEADED,
+    ...(process.env.CHROME ? { executablePath: process.env.CHROME } : { channel: 'chrome' }), headless: !HEADED,
     args: ['--no-sandbox', '--disable-dev-shm-usage', '--mute-audio', '--autoplay-policy=no-user-gesture-required',
            '--disable-features=AudioServiceOutOfProcess,AudioServiceSandbox']
   });

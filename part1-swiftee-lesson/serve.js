@@ -29,6 +29,8 @@ const TYPES = {
   '.svg': 'image/svg+xml',
   '.mp3': 'audio/mpeg',
   '.ogg': 'audio/ogg',
+  '.woff2': 'font/woff2',
+  '.map': 'application/json',
   '.riv': 'application/octet-stream'
 };
 

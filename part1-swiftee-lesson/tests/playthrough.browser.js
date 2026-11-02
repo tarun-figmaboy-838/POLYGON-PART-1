@@ -40,7 +40,7 @@ const SHOT_DIR = (() => { const i = process.argv.indexOf('--shots'); return i > 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json', '.png': 'image/png', '.webp': 'image/webp', '.avif': 'image/avif',
-  '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg'
+  '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.woff2': 'font/woff2', '.map': 'application/json'
 };
 
 function serve() {
@@ -78,8 +78,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   // LAN=hi (mr, te, gu, od): the same lesson in that language (src/core/i18n.js)
   const URL = `http://127.0.0.1:${port}/index.html?story=0` + (process.env.LAN ? '&lan=' + process.env.LAN : '');
 
+  // (CHROME=/path/to/a/chromium plays it in that browser instead of the installed Google Chrome)
   const browser = await chromium.launch({
-    channel: 'chrome',
+    ...(process.env.CHROME ? { executablePath: process.env.CHROME } : { channel: 'chrome' }),
     headless: !HEADED,
     args: ['--no-sandbox', '--disable-dev-shm-usage', '--mute-audio',
            '--autoplay-policy=no-user-gesture-required',

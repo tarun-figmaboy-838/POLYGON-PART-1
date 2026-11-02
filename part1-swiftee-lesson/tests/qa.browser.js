@@ -38,7 +38,8 @@ const { chromium } = require('playwright');
 const ROOT = path.join(__dirname, '..');
 const TYPES = {
   '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json',
-  '.png': 'image/png', '.webp': 'image/webp', '.avif': 'image/avif', '.svg': 'image/svg+xml'
+  '.png': 'image/png', '.webp': 'image/webp', '.avif': 'image/avif', '.svg': 'image/svg+xml',
+  '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.woff2': 'font/woff2', '.map': 'application/json'
 };
 
 let pass = 0, fail = 0, warn = 0;
@@ -71,7 +72,8 @@ const LUM = `(function (c) {
 (async () => {
   const srv = await serve();
   const port = srv.address().port;
-  const browser = await chromium.launch({ channel: 'chrome' });
+  // (CHROME=/path/to/a/chromium plays it in that browser instead of the installed Google Chrome)
+  const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : { channel: 'chrome' });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 
   const errors = [], starved = [];
