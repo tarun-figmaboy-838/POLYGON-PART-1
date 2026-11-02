@@ -55,7 +55,6 @@
     note:        { rig: 'writing',     hold: true, seated: 'explain', level: 2, tier: 'present' },
     // held while the child measures the angles: the same glass, looking with them
     examine:     { rig: 'learning',    hold: true, seated: 'inspect', level: 2, tier: 'present' },
-    build:       { rig: 'puzzleing',   loops: 1, seated: 'point', level: 2, tier: 'present' },
     // the idle nudge: one look toward whatever is waiting to be touched
     hint:        { rig: 'curious',     brief: 6, lean: true, level: 2, tier: 'hint' },
     oops:        { rig: 'confused',    brief: 4, cut: true, react: true, then: 'encourage', again: 'rethink', level: 2, tier: 'feedback' },
@@ -285,8 +284,6 @@
     playful_stop: [1,  2,  3,  4,  5,  6,  7,  8],
     proud_start: [1,  2,  3,  4,  5],
     proud_stop: [1,  2,  3,  4,  5],
-    puzzle_start: [1,  2,  3,  4,  5],
-    puzzle_stop: [1,  2,  3,  4,  5],
     reading_start: [1,  2,  3,  4,  5,  6],
     reading_stop: [1,  2,  3,  4,  5,  6],
     relieved_start: [1,  2,  3,  4,  5,  6],

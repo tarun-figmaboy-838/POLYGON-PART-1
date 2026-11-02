@@ -803,48 +803,6 @@
             "h": 1536
           }
         },
-        "puzzle_start": {
-          "cell": 512,
-          "frames": 7,
-          "pages": 1,
-          "bytes": 60620,
-          "image": "spritesheets/2x/swiftee_puzzle_start@2x.webp",
-          "atlas": "atlas/2x/swiftee_puzzle_start@2x.json",
-          "cols": 3,
-          "rows": 3,
-          "sheetSize": {
-            "w": 1536,
-            "h": 1536
-          }
-        },
-        "puzzle_stop": {
-          "cell": 512,
-          "frames": 7,
-          "pages": 1,
-          "bytes": 61084,
-          "image": "spritesheets/2x/swiftee_puzzle_stop@2x.webp",
-          "atlas": "atlas/2x/swiftee_puzzle_stop@2x.json",
-          "cols": 3,
-          "rows": 3,
-          "sheetSize": {
-            "w": 1536,
-            "h": 1536
-          }
-        },
-        "puzzleing": {
-          "cell": 512,
-          "frames": 37,
-          "pages": 1,
-          "bytes": 104468,
-          "image": "spritesheets/2x/swiftee_puzzleing@2x.webp",
-          "atlas": "atlas/2x/swiftee_puzzleing@2x.json",
-          "cols": 7,
-          "rows": 6,
-          "sheetSize": {
-            "w": 3584,
-            "h": 3072
-          }
-        },
         "reading": {
           "cell": 512,
           "frames": 30,
@@ -1956,48 +1914,6 @@
             "h": 768
           }
         },
-        "puzzle_start": {
-          "cell": 256,
-          "frames": 7,
-          "pages": 1,
-          "bytes": 43410,
-          "image": "spritesheets/1x/swiftee_puzzle_start@1x.webp",
-          "atlas": "atlas/1x/swiftee_puzzle_start@1x.json",
-          "cols": 3,
-          "rows": 3,
-          "sheetSize": {
-            "w": 768,
-            "h": 768
-          }
-        },
-        "puzzle_stop": {
-          "cell": 256,
-          "frames": 7,
-          "pages": 1,
-          "bytes": 43626,
-          "image": "spritesheets/1x/swiftee_puzzle_stop@1x.webp",
-          "atlas": "atlas/1x/swiftee_puzzle_stop@1x.json",
-          "cols": 3,
-          "rows": 3,
-          "sheetSize": {
-            "w": 768,
-            "h": 768
-          }
-        },
-        "puzzleing": {
-          "cell": 256,
-          "frames": 37,
-          "pages": 1,
-          "bytes": 63520,
-          "image": "spritesheets/1x/swiftee_puzzleing@1x.webp",
-          "atlas": "atlas/1x/swiftee_puzzleing@1x.json",
-          "cols": 7,
-          "rows": 6,
-          "sheetSize": {
-            "w": 1792,
-            "h": 1536
-          }
-        },
         "reading": {
           "cell": 256,
           "frames": 30,
@@ -2998,63 +2914,6 @@
       },
       "exitsCell": false
     },
-    "puzzle_start": {
-      "name": "Puzzle start",
-      "frames": 7,
-      "fps": 20,
-      "durationMs": 333,
-      "loop": false,
-      "pingpong": false,
-      "timeline": {
-        "frames": 20,
-        "fps": 60
-      },
-      "opaqueBoundsUnion": {
-        "x": 80,
-        "y": 58,
-        "w": 393,
-        "h": 452
-      },
-      "exitsCell": false
-    },
-    "puzzle_stop": {
-      "name": "Puzzle stop",
-      "frames": 7,
-      "fps": 20,
-      "durationMs": 333,
-      "loop": false,
-      "pingpong": false,
-      "timeline": {
-        "frames": 20,
-        "fps": 60
-      },
-      "opaqueBoundsUnion": {
-        "x": 80,
-        "y": 58,
-        "w": 393,
-        "h": 452
-      },
-      "exitsCell": false
-    },
-    "puzzleing": {
-      "name": "Puzzleing",
-      "frames": 37,
-      "fps": 20,
-      "durationMs": 1833,
-      "loop": true,
-      "pingpong": false,
-      "timeline": {
-        "frames": 110,
-        "fps": 60
-      },
-      "opaqueBoundsUnion": {
-        "x": 75,
-        "y": 89,
-        "w": 398,
-        "h": 421
-      },
-      "exitsCell": false
-    },
     "reading": {
       "name": "Reading",
       "frames": 30,
@@ -3563,16 +3422,6 @@
         "proud_start",
         "proud",
         "proud_stop"
-      ]
-    },
-    "puzzleing": {
-      "start": "puzzle_start",
-      "loop": "puzzleing",
-      "stop": "puzzle_stop",
-      "play": [
-        "puzzle_start",
-        "puzzleing",
-        "puzzle_stop"
       ]
     },
     "reading": {

@@ -348,7 +348,7 @@ t('the game exposes its semantic state table', RIG && Object.keys(RIG).length >=
 
   // 5 IN THE AIR a prop pose becomes its standing twin
   air = true; Swiftee.place('top-left', 'small');
-  t('no sitting with a book in mid-air', Swiftee.resolve('recall', {}) === 'think' && Swiftee.resolve('build', {}) === 'point');
+  t('no sitting with a book in mid-air', Swiftee.resolve('recall', {}) === 'think' && Swiftee.resolve('note', {}) === 'explain');
   air = false; Swiftee.place('left', 'medium');
   t('on the ground the prop pose is his', Swiftee.resolve('recall', {}) === 'recall');
 
