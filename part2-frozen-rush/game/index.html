@@ -47,7 +47,10 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800;900&display=swap" rel="stylesheet" />
+<!-- (not holding the page up: the cover and its loading bar are drawn without the face; the text shows in its
+     fallback a moment where Google Fonts is slow, then in Baloo 2) -->
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'; if (document.fonts &amp;&amp; document.fonts.load) [700, 800, 900].forEach(function (w) { document.fonts.load(w + ' 20px &quot;Baloo 2&quot;').catch(function () {}); })" />
+<noscript><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800;900&display=swap" rel="stylesheet" /></noscript>
 <link rel="stylesheet" href="css/style.css" />
 <link rel="stylesheet" href="css/screens.css" />
 <!-- ANOTHER LANGUAGE (?lan=hi, mr, te, gu or od — js/i18n.js): the page's own words wait, unseen,

@@ -8,7 +8,11 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>%F0%9F%90%A6</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+<!-- (the fonts load without holding the page up: a network that drops Google Fonts would leave it blank until it gave
+     up; the text shows in its fallback a moment, then in Nunito and Fredoka, and the lesson lays itself out again as
+     they arrive - game.js, fonts loadingdone) -->
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&family=Fredoka:wght@600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&family=Fredoka:wght@600;700&display=swap" rel="stylesheet"></noscript>
 <!-- AVIF WHERE THE BROWSER SHOWS IT, WEBP WHERE IT DOES NOT. Some pictures ship twice: the
      .webp every browser has always been given, and an .avif beside it that is the same
      picture in fewer bytes (tools/build-avif.js). This asks the browser once, before anything is

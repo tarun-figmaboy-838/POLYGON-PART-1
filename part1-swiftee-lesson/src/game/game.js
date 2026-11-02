@@ -4658,6 +4658,9 @@
     // over the panel it was carefully kept clear of.
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(relayout, function () {});
+      // (the font stylesheet comes without holding the page up - index.html - so the faces may land after
+      // fonts.ready has already settled: each batch that finishes loading lays the lesson out again)
+      if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', relayout);
     }
 
     /* THE STORY BEFORE THE LESSON (src/story/story.js): its layer is built and its
