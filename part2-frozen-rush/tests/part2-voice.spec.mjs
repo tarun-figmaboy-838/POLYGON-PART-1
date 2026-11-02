@@ -13,7 +13,7 @@ test.describe('Part 2 voice', () => {
       // and Level 2's five nudges, said on the plank after a wrong stroke (CFG.levelTwo.hintVo)
       for (const k in CFG.levelTwo.hintVo) prompts.push({ id: CFG.levelTwo.hintVo[k], text: CFG.levelTwo.instructions[k] });
       const audio = new AudioContext();
-      const decoded = await audio.decodeAudioData(await (await fetch('/assets/audio/vo-lines.mp3')).arrayBuffer());
+      const decoded = await audio.decodeAudioData(await (await fetch('/assets/audio/vo-lines.ogg')).arrayBuffer());
       await audio.close();
       return { duration: decoded.duration, prompts: prompts.map(p => ({
         ...p, window: CFG.vo.lines[p.id]

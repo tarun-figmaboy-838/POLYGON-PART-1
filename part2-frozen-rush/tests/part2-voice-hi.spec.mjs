@@ -22,7 +22,7 @@ test.describe('Part 2 voice in Hindi', () => {
     });
     expect(lines.lang).toBe('hi');
     expect(lines.voice, 'Hindi is a voiced language').toBe(true);
-    expect(lines.src, 'the Hindi take').toBe('assets/audio/vo-lines-hi.mp3');
+    expect(lines.src, 'the Hindi take').toBe('assets/audio/vo-lines-hi.ogg');
     expect(lines.prompts).toHaveLength(14);
     for (const { id, shown, window: w } of lines.prompts) {
       expect(w, `${id} has Hindi speech`).toBeDefined();
@@ -77,7 +77,7 @@ test.describe('Part 2 voice in Hindi', () => {
       expect(r.spoken - r.shown, 'no more than one slow render frame behind').toBeLessThanOrEqual(2);
     }
     expect(asked.length, 'the take was fetched').toBeGreaterThan(0);
-    expect(asked.every(u => /vo-lines-hi\.(ogg|mp3)/.test(u)), 'only the Hindi take: ' + asked.join(', ')).toBe(true);
+    expect(asked.every(u => /vo-lines-hi\.ogg/.test(u)), 'only the Hindi take: ' + asked.join(', ')).toBe(true);
   });
 
   test('the tutorial is spoken in Hindi, line by line', async ({ page }) => {

@@ -748,7 +748,7 @@ const levelOf = (st) => { const d = RIG[st]; return d ? (d.level || 1) : 0; };
   const doc = fs.readFileSync(path.join(__dirname, '../docs/VO.md'), 'utf8');
   const ids = [];
   S.forEach((s) => allBeats(s).forEach((b) => { if (b.vo) ids.push(b.vo); }));
-  const missing = [...new Set(ids)].filter((id) => doc.indexOf('assets/vo/' + id + '.mp3') < 0);
+  const missing = [...new Set(ids)].filter((id) => doc.indexOf('assets/vo/' + id + '.ogg') < 0);
   t('the voice script lists every clip the storyboard asks for (npm run vo:script)', missing.length === 0, missing);
 }
 

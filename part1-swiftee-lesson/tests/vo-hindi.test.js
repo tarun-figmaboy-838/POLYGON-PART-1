@@ -50,7 +50,7 @@ const offDisk = fs.readFileSync(path.join(HI_DIR, 'index.js'), 'utf8');
 t('the Hindi index is also a script, for a page opened off the disk', offDisk.indexOf(JSON.stringify(idx.clips)) > 0);
 idx.clips.forEach((id) => {
   t(id + ': a line the game asks for', en.clips.indexOf(id) >= 0);
-  t(id + ': mp3 and ogg', fs.existsSync(path.join(HI_DIR, id + '.mp3')) && fs.existsSync(path.join(HI_DIR, id + '.ogg')));
+  t(id + ': ogg', fs.existsSync(path.join(HI_DIR, id + '.ogg')));
   t(id + ': measured', idx.seconds[id] > 0.4 && !!idx.rev[id], [idx.seconds[id], idx.rev[id]]);
   const text = shown(id), on = idx.words[id] || [];
   t(id + ': the screen shows Hindi', text !== DATA.en[id] && /[ऀ-ॿ]/.test(text), text);
@@ -72,7 +72,7 @@ const mod = fs.readFileSync(path.join(GAME, 'js', 'vo-hi.js'), 'utf8');
 const VO_HI = vm.runInNewContext('(' + mod.slice(mod.indexOf('{', mod.indexOf('export const VO_HI'))).replace(/;\s*$/, '') + ')');
 const engine = fs.readFileSync(path.join(GAME, 'js', 'engine.js'), 'utf8');
 const lines = Object.keys(VO_HI.lines);
-t('Part 2 plays the Hindi take', VO_HI.src === 'assets/audio/vo-lines-hi.mp3' && fs.existsSync(path.join(GAME, VO_HI.src)) && fs.existsSync(path.join(GAME, VO_HI.src.replace(/\.mp3$/, '.ogg'))));
+t('Part 2 plays the Hindi take', VO_HI.src === 'assets/audio/vo-lines-hi.ogg' && fs.existsSync(path.join(GAME, VO_HI.src)));
 t('Part 2 has its Hindi lines', lines.length >= 22, lines.length);
 const versions = fs.readFileSync(path.join(GAME, 'js', 'asset-versions.js'), 'utf8');
 t('the Hindi take is versioned (tools/build-bundle.mjs)', /"assets\/audio\/vo-lines-hi\.ogg": "[0-9a-f]{8}"/.test(versions));

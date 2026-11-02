@@ -38,41 +38,6 @@ const SILENT_VO = !!(VO_I18N && VO_I18N.on && !VO_TAKE);
    the stale strips it had — no character at all. The file's content hash on the URL is what
    makes a changed file a new fetch and an unchanged one a cache hit. Generated at build
    time (tools/build-bundle.mjs -> js/asset-versions.js). Paths in CFG stay bare. */
-/* AND EVERY MP3 LEAVES AS AN OGG, WHERE THE BROWSER TAKES ONE.
-   The audio ships as both (tools/make-ogg.mjs): Ogg Opus is what the game is asked to use —
-   under half the mp3's size across the set — and Chrome, Edge, Firefox and Android play it;
-   Safari gets the mp3 unless it says it plays Opus in Ogg, so an iPad on an older iOS keeps
-   its sound. The choice is made ONCE, here, rather than at each of the fifty call sites, and
-   only the chosen file is ever fetched. A browser that says yes and then cannot decode one
-   falls back to that file's mp3 (mp3Url, and the three places that load audio).
-
-   canPlayType returns 'probably' | 'maybe' | '' — '' is the only answer that means no, and
-   'maybe' is what several browsers say about a codec they do play, so anything non-empty is
-   taken as yes. Wrapped because a document-less context (a build script importing CFG) has
-   no Audio at all, and because the ogg twin is only used when the build actually produced
-   one: ASSET_V is generated from what is on disk, so a missing twin falls back by itself. */
-let oggOk = null;
-function playsOgg() {
-  if (oggOk === null) {
-    try {
-      /* NOT OFF THE DISK. On file:// there is no download to make smaller — the point of the
-         ogg — and Chromium aborts the media element that loads one from a file URL
-         (net::ERR_ABORTED), which is a logged failure on the one path that is supposed to be
-         silent. The mp3 loads there and is already the format the rest of the file-scheme
-         handling assumes, so the negotiation simply does not apply. */
-      if (typeof location !== 'undefined' && location.protocol === 'file:') oggOk = false;
-      else oggOk = !!new Audio().canPlayType('audio/ogg; codecs="opus"');
-    } catch (e) { oggOk = false; }
-  }
-  return oggOk;
-}
-
-/** The mp3 itself, whatever the negotiation chose: the fallback for an ogg that will not decode. */
-export function mp3Url(src) {
-  const v = ASSET_V[src];
-  return v ? src + '?v=' + v : src;
-}
-
 /* AND A PICTURE LEAVES AS ITS AVIF TWIN, WHERE THE BROWSER SHOWS ONE (tools/build-avif.mjs):
    the same pixels in fewer bytes, beside the .webp, for the pictures where AVIF is smaller.
    index.html's probe answers once, before the art is asked for (preload() waits for it), so
@@ -91,10 +56,7 @@ export function webpUrl(src) {
 }
 
 export function assetUrl(src) {
-  if (src.endsWith('.mp3') && playsOgg()) {
-    const ogg = src.slice(0, -4) + '.ogg';
-    if (ASSET_V[ogg]) src = ogg;
-  } else if (src.endsWith('.webp') && showsAvif()) {
+  if (src.endsWith('.webp') && showsAvif()) {
     const avif = src.slice(0, -5) + '.avif';
     if (ASSET_V[avif]) src = avif;
   }
@@ -1463,7 +1425,7 @@ export const CFG = {
      The keys are the ids in docs/VO-SCRIPT.md. say(id) plays one; the text reveals in step
      with it (see Tutorial.setWords and hud.setInstruction). */
   vo: {
-    src: 'assets/audio/vo-lines.mp3', gain: 1,
+    src: 'assets/audio/vo-lines.ogg', gain: 1,
     lines: {
       /* "He" and "needs" used to sit at 1.70 and 1.96 — inside the half-second of SILENCE
          between the two sentences, so both words lit before either was spoken. The take's
@@ -1533,7 +1495,7 @@ export const CFG = {
          nothing asks for them. */
     }
   },
-  music: { src: 'assets/audio/bgm-ice-hunt.mp3', gain: 0.17, duck: 0.35, fadeMs: 2200 },
+  music: { src: 'assets/audio/bgm-ice-hunt.ogg', gain: 0.17, duck: 0.35, fadeMs: 2200 },
 
   /* RECORDED SOUND, over the top of the synthesised palette.
 
@@ -1555,27 +1517,27 @@ export const CFG = {
      splash and the rope parting are all still generated. Nothing goes quiet if a file
      fails to load either — every cue falls back to the synth. */
   sfx: {
-    step:   { src: 'assets/audio/freesound_community-foot_steps_snow_heavy-38297.mp3',
+    step:   { src: 'assets/audio/freesound_community-foot_steps_snow_heavy-38297.ogg',
               mode: 'onset', dur: 0.40, gain: 0.42, rate: 0.10 },
-    jump:   { src: 'assets/audio/dragon-studio-heavy-whoosh-06-414584.mp3',
+    jump:   { src: 'assets/audio/dragon-studio-heavy-whoosh-06-414584.ogg',
               mode: 'onset', dur: 0.55, gain: 0.50, rate: 0.06 },
-    land:   { src: 'assets/audio/universfield-ground-impact-352053.mp3',
+    land:   { src: 'assets/audio/universfield-ground-impact-352053.ogg',
               mode: 'onset', dur: 0.75, gain: 0.55, rate: 0.06 },
     // the shape wedging home: the heaviest thing in the game
-    wedge:  { src: 'assets/audio/dragon-studio-heavy-boulder-thud-515257.mp3',
+    wedge:  { src: 'assets/audio/dragon-studio-heavy-boulder-thud-515257.ogg',
               mode: 'onset', dur: 1.10, gain: 0.62, rate: 0.05 },
-    rumble: { src: 'assets/audio/themediaguy-earthquake-rumble-amp-cracking-379298.mp3',
+    rumble: { src: 'assets/audio/themediaguy-earthquake-rumble-amp-cracking-379298.ogg',
               mode: 'window', at: 0, dur: 2.60, gain: 0.55, rate: 0.02 },
-    ui:     { src: 'assets/audio/floraphonic-punchy-taps-ui-5-183901.mp3',
+    ui:     { src: 'assets/audio/floraphonic-punchy-taps-ui-5-183901.ogg',
               mode: 'onset', dur: 0.22, gain: 0.45, rate: 0.08 },
     /* the tremble at the edge: the owner's cartoon blink — four little pips in the first
        half-second of a 1.1 s file, so the bite is that half-second from just before them */
-    tremble: { src: 'assets/audio/dragon-studio-cartoon-blinking-372481.mp3',
+    tremble: { src: 'assets/audio/dragon-studio-cartoon-blinking-372481.ogg',
               mode: 'window', at: 0.04, dur: 0.50, gain: 0.55, rate: 0.03 },
     /* the knockout: the owner's sad trumpet ("wah-wah-waah", 2.9 s, loud from 0.18 s) on
        the crash that knocks him down — chosen by the owner for this moment; the running
        wince of a third strike keeps the lighter kit cue */
-    knockout: { src: 'assets/audio/universfield-sad-trumpet-278822.mp3',
+    knockout: { src: 'assets/audio/universfield-sad-trumpet-278822.ogg',
               mode: 'window', at: 0.12, dur: 2.20, gain: 0.60, rate: 0.02 }
   },
   /* WHERE THE HITS ARE, for the build that cannot work them out for itself.
@@ -2270,14 +2232,14 @@ class AudioManager {
     try {
       /* NO SOURCE OF ITS OWN UNTIL THE LOADING BAR HAS ITS BYTES (NET), so the bed is fetched
          once, not by the bar and again by the element: preload 'none', then a blob URL. If
-         the blob will not play, the file's own URL; if that is an ogg that will not, its mp3. */
+         the blob will not play, the file's own URL. */
       const url = assetUrl(M.src);
       const el = new Audio();
       el.loop = true;
       el.preload = 'none';
       const play = () => { const q = el.play(); if (q && q.catch) q.catch(() => {}); };
       NET.get(url).then(blob => {
-        const chain = (blob ? [URL.createObjectURL(blob)] : []).concat([url], url === mp3Url(M.src) ? [] : [mp3Url(M.src)]);
+        const chain = (blob ? [URL.createObjectURL(blob)] : []).concat([url]);
         let k = 0;
         const next = () => {
           if (k > 0 && chain[k - 1].startsWith('blob:')) { try { URL.revokeObjectURL(chain[k - 1]); } catch (e) { /* gone */ } }
@@ -2377,12 +2339,7 @@ class AudioManager {
               const blob = await NET.get(assetUrl(cue.src));
               return blob ? this.ctx.decodeAudioData(await blob.arrayBuffer()) : get(assetUrl(cue.src));
             };
-            try { return await fromNet(); }
-            catch (e) {
-              // the ogg would not decode here (or was not there): the mp3 twin, once
-              if (assetUrl(cue.src) === mp3Url(cue.src)) throw e;
-              return get(mp3Url(cue.src));
-            }
+            return fromNet();
           })());
         }
         const buf = await byUrl.get(cue.src);
@@ -2562,16 +2519,7 @@ class AudioManager {
       if (!this.ctx) { this.voLoading = false; return; }     // try again when the context opens
       if (!this.voBytes) await this.fetchVo();
       if (!this.voBytes) throw new Error('no voice bytes');
-      try { this.vo = await this.ctx.decodeAudioData(this.voBytes.slice(0)); }
-      catch (e) {
-        // the ogg take would not decode here: its mp3 twin, fetched now and decoded once
-        if (this.voFellBack || assetUrl(V.src) === mp3Url(V.src)) throw e;
-        this.voFellBack = true;
-        const res = await fetch(mp3Url(V.src));
-        if (!res.ok) throw new Error(res.status + ' ' + V.src);
-        this.voBytes = await res.arrayBuffer();
-        this.vo = await this.ctx.decodeAudioData(this.voBytes.slice(0));
-      }
+      this.vo = await this.ctx.decodeAudioData(this.voBytes.slice(0));
       this._sayPending();
     } catch (e) {
       // let a later attempt try again: a decode that failed once is not fatal

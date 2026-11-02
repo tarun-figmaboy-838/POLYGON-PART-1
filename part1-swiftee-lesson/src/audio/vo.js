@@ -3,7 +3,7 @@
  *
  * One clip per line, named by the VO id the deck gives the line:
  *
- *   assets/vo/<id>.mp3          e.g. assets/vo/p04.mp3, assets/vo/fb01.mp3
+ *   assets/vo/<id>.ogg          e.g. assets/vo/p04.ogg, assets/vo/fb01.ogg
  *
  * docs/VO.md lists every id with its words and how it is delivered. The
  * game asks for a clip whenever a line with an id is spoken (game.js, the
@@ -20,23 +20,14 @@
      the Hindi folder has no clip for is not heard, exactly as an English line with no clip. */
   var I = global.I18N;
   var BASE = 'assets/vo/' + (I && I.on && I.voice ? I.lang + '/' : '');
-  // THE FORMAT THE BROWSER CAN ACTUALLY PLAY. Every clip is written twice —
-  // Opus in an .ogg (tools/make-opus.js), which Chrome, Edge, Firefox and
-  // Android play and which is under half the size, and an .mp3 for everyone
-  // else (Safari, unless it says it plays Opus in Ogg). Asking canPlayType
-  // once means nobody downloads the format they cannot use. Unknown answers
-  // fall back to mp3, which plays anywhere.
-  var EXT = (function () {
+  // Clips ship as Ogg Opus only. A browser that cannot play it gets no voice:
+  // nothing is fetched and every line is paced by its words.
+  var playsOgg = (function () {
     try {
       var a = document.createElement('audio');
-      if (a.canPlayType && a.canPlayType('audio/ogg; codecs=\"opus\"')) return '.ogg';
-    } catch (e) {}
-    return '.mp3';
+      return !!(a.canPlayType && a.canPlayType('audio/ogg; codecs="opus"'));
+    } catch (e) { return false; }
   }());
-  /* AND A BROWSER THAT SAID YES AND WAS WRONG hears the mp3: the first .ogg that will not
-     play is retried as the mp3 (play, start), and every clip after it is asked for as one. */
-  var oggFailed = false;
-  function ext() { return oggFailed ? '.mp3' : EXT; }
   var current = null, known = {};   // known[id] = false once a clip has failed to load
   var liveId = null;                // the id of the clip `current` is playing
   // THE INDEX. assets/vo/index.json lists the clips that exist; only those
@@ -71,7 +62,7 @@
      The English clips read out over Marathi words would say one thing while the screen says
      another. No clip is known, so none is fetched, none plays, and every line is paced by its
      own words — the path a page with no index has always taken. */
-  var silent = !!(I && I.on && !I.voice);
+  var silent = !!(I && I.on && !I.voice) || !playsOgg;
   function loadIndex() {
     if (silent) { index = {}; indexSettled = true; return Promise.resolve(); }
     if (indexWait || indexSettled) return indexWait;
@@ -117,7 +108,7 @@
   function rawUrl(id) {
     var v = revs[id];
     // (off the disk there is no cache to outwit, and no query on a file path)
-    return BASE + id + ext() + (v && !offDisk ? '?v=' + v : '');
+    return BASE + id + '.ogg' + (v && !offDisk ? '?v=' + v : '');
   }
   /** What an element plays: the loading bar's copy in memory (src/core/preload.js) when it
       has one — so a line starts at once, with nothing left to fetch — else the file. */
@@ -270,11 +261,6 @@
       if (current !== a) return;              // an element already replaced is nothing to us
       var next = null, src = a.src || '';
       if (/^blob:/.test(src)) next = rawUrl(id);
-      else if (!oggFailed && EXT === '.ogg' && /\.ogg(\?|$)/.test(src)) {
-        oggFailed = true;
-        if (global.console) console.warn('[VO] ogg will not play here, using mp3: ' + id);
-        next = rawUrl(id);
-      }
       if (next && next !== src) {
         var b = null;
         try { b = new Audio(next); } catch (e) { b = null; }
@@ -347,7 +333,6 @@
         a.addEventListener('error', function () {
           delete warm[id];
           if (/^blob:/.test(a.src || '')) return;                          // play() will try the file itself
-          if (!oggFailed && EXT === '.ogg') { oggFailed = true; return; }   // play() asks for the mp3 now
           known[id] = false;
         });
         warm[id] = a;

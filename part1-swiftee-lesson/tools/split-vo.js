@@ -4,7 +4,7 @@
  *
  *   node tools/split-vo.js [assets/source/gamevo.mp3] [--keep-others]
  *       reads docs/vo-timeline.json (tools/align-vo.js), writes
- *       assets/vo/<id>.mp3 + .ogg for every line in it, their word starts into
+ *       assets/vo/<id>.ogg for every line in it, their word starts into
  *       assets/vo/word-timings.json, and rebuilds assets/vo/index.json.
  *   node tools/split-vo.js --master <name>
  *       the same for one master take (tools/vo-masters.js): reads
@@ -206,7 +206,6 @@ cuts.forEach((c) => {
   const af = (STRETCH ? STRETCH + ',' : '') + 'volume=' + gain.toFixed(2) + 'dB,afade=t=in:st=0:d=0.015,afade=t=out:st=' + Math.max(0, out - 0.06).toFixed(3) + ':d=0.06' +
              (c.pad > 0.005 ? ',apad=pad_dur=' + (c.pad / TEMPO).toFixed(3) : '');
   const common = ['-ss', c.start.toFixed(3), '-t', dur.toFixed(3), '-i', wav, '-af', af, '-ac', '1'];
-  ff(common.concat(['-c:a', 'libmp3lame', '-b:a', '64k', path.join(VO, c.id + '.mp3')]));
   ff(common.concat(['-c:a', 'libopus', '-b:a', '40k', '-vbr', 'on', '-application', 'voip', path.join(VO, c.id + '.ogg')]));
   timings[c.id] = c.words.map((w) => Math.max(0, Math.round((w.start - c.start) * 1000 / TEMPO - w.lead)));
   c.snaps = c.words.filter((w) => !w.lead).length;

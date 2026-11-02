@@ -12,7 +12,7 @@
  * own. The storyboard is the script; this only prints it.
  *
  * To voice the game: record (or generate) each line, save it as
- * assets/vo/<id>.mp3, and run `npm run build:vo`. The game then plays each
+ * assets/vo/<id>.ogg, and run `npm run build:vo`. The game then plays each
  * clip as its words appear and paces the bubbles by the recording; a clip
  * that is not there yet is simply silent.
  */
@@ -88,7 +88,7 @@ let md = '';
 md += '# Voice-over script — Swiftee & the Polygons\n\n';
 md += '_Generated from the storyboard by `node tools/vo-script.js`; do not edit by hand._\n\n';
 md += 'Every line the game says — the story\u2019s three voices first, then Swiftee\u2019s — **in the order a child hears it**, with the file the game plays. ';
-md += 'Save each clip as `assets/vo/<id>.mp3`, then run `npm run build:vo`: the game plays it as the words appear and paces the bubbles by the recording. ';
+md += 'Save each clip as `assets/vo/<id>.ogg`, then run `npm run build:vo`: the game plays it as the words appear and paces the bubbles by the recording. ';
 md += 'A clip that is not there yet is silent, so they can be added a few at a time.\n\n';
 md += '**Voice:** Swiftee, a small, warm, playful teal bird talking to a seven-year-old. Clear, unhurried and smiling, never shouty. Lines end with a smile, not a drop.\n\n';
 md += '**Files:** mono MP3, 44.1 kHz, 128 kbps or better, about −16 LUFS, no more than 0.2 s of silence at either end. Aim for about 0.4 s per word plus 0.4 s.\n\n';
@@ -110,7 +110,7 @@ Object.keys(STORY_VOICE).forEach((k) => { md += '- **' + k + '** — ' + STORY_V
 md += '\n| # | Scene | Speaker | File | Line | Recorded |\n|---|-------|---------|------|------|----------|\n';
 story.forEach((r, k) => {
   const scene = (/story scene (\d+)/.exec(r.where) || [])[1] || '';
-  md += '| ' + (k + 1) + ' | ' + scene + ' | ' + r.speaker + ' | `assets/vo/' + r.id + '.mp3` | ' + esc(r.text) + ' | ' + (have.has(r.id) ? 'yes' : '—') + ' |\n';
+  md += '| ' + (k + 1) + ' | ' + scene + ' | ' + r.speaker + ' | `assets/vo/' + r.id + '.ogg` | ' + esc(r.text) + ' | ' + (have.has(r.id) ? 'yes' : '—') + ' |\n';
 });
 md += '\n';
 md += '## Lesson lines (' + lesson.length + '), in timeline order\n\n';
@@ -118,13 +118,13 @@ md += '| # | Screen | Screen id | File | Type | Line | Breaths | When | Delivery
 md += '|---|--------|-----------|------|------|------|---------|------|----------|----------|\n';
 lesson.forEach((r, k) => {
   const c = ctx.get(r.id) || {};
-  md += '| ' + (k + 1) + ' | ' + (c.screen || '') + ' | ' + (c.id || '') + ' | `assets/vo/' + r.id + '.mp3` | ' + r.kind + ' | ' + esc(r.text) + ' | ' +
+  md += '| ' + (k + 1) + ' | ' + (c.screen || '') + ' | ' + (c.id || '') + ' | `assets/vo/' + r.id + '.ogg` | ' + r.kind + ' | ' + esc(r.text) + ' | ' +
         (c.parts ? esc(c.parts.join(' / ')) : '') + ' | ' + when(r, c) + ' | ' + delivery(r) + ' | ' + (have.has(r.id) ? 'yes' : '—') + ' |\n';
 });
 md += '\n## Answers (' + fb.length + '), said when the child answers\n\n';
 md += '| File | Line | When | Delivery | Recorded |\n|------|------|------|----------|----------|\n';
 fb.forEach((r) => {
-  md += '| `assets/vo/' + r.id + '.mp3` | ' + esc(r.text) + ' | ' + when(r, null) + ' | ' + delivery(r) + ' | ' + (have.has(r.id) ? 'yes' : '—') + ' |\n';
+  md += '| `assets/vo/' + r.id + '.ogg` | ' + esc(r.text) + ' | ' + when(r, null) + ' | ' + delivery(r) + ' | ' + (have.has(r.id) ? 'yes' : '—') + ' |\n';
 });
 md += '\n## Not recorded\n\nThe score between the two finale lines ("<XP> XP and <badges> badges.") is the child’s own, so it is shown and not voiced.\n';
 
@@ -133,8 +133,8 @@ fs.writeFileSync(path.join(ROOT, 'docs', 'VO.md'), md);
 const q = (s) => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"';
 const csv = ['order,id,file,kind,screen,screen_id,text,breaths,when,delivery'].concat(rows.map((r, k) => {
   const c = ctx.get(r.id) || {};
-  if (r.kind === 'story') return [k + 1, r.id, 'assets/vo/' + r.id + '.mp3', r.kind, '', '', q(r.text), '""', q(r.where), q(r.speaker)].join(',');
-  return [k + 1, r.id, 'assets/vo/' + r.id + '.mp3', r.kind, c.screen || '', c.id || '', q(r.text), q(c.parts ? c.parts.join(' / ') : ''), q(when(r, r.kind === 'feedback' ? null : c)), q(delivery(r))].join(',');
+  if (r.kind === 'story') return [k + 1, r.id, 'assets/vo/' + r.id + '.ogg', r.kind, '', '', q(r.text), '""', q(r.where), q(r.speaker)].join(',');
+  return [k + 1, r.id, 'assets/vo/' + r.id + '.ogg', r.kind, c.screen || '', c.id || '', q(r.text), q(c.parts ? c.parts.join(' / ') : ''), q(when(r, r.kind === 'feedback' ? null : c)), q(delivery(r))].join(',');
 })).join('\n') + '\n';
 fs.writeFileSync(path.join(ROOT, 'docs', 'vo-lines.csv'), csv);
 console.log('docs/VO.md and docs/vo-lines.csv written — ' + story.length + ' story lines, ' + lesson.length + ' lesson lines, ' + fb.length + ' answers');

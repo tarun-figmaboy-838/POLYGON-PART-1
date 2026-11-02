@@ -286,7 +286,7 @@ function cues(text, heard) {
       return t.lines.map((l) => l.id).concat((t.derived || []).map((d) => d.id));
     } catch (e) { return []; }
   })());
-  const todo = lines().filter((l) => l.text && !taken.has(l.id) && voiceOf(l) && (only.length ? only.includes(l.id) : (ALL || !fs.existsSync(path.join(VO, l.id + '.mp3')))));
+  const todo = lines().filter((l) => l.text && !taken.has(l.id) && voiceOf(l) && (only.length ? only.includes(l.id) : (ALL || !fs.existsSync(path.join(VO, l.id + '.ogg')))));
   console.log('Swiftee: ' + VOICE + ' (pitch ' + PITCH + ', rate ' + RATE + '); the story: its own three voices. ' + todo.length + ' line' + (todo.length === 1 ? '' : 's'));
   let ok = 0, unsynced = [];
   for (const l of todo) {
@@ -305,7 +305,6 @@ function cues(text, heard) {
     let gain = lv.lufs == null ? 0 : TARGET - lv.lufs;
     if (lv.peak != null) gain = Math.min(gain, PEAK_DB - lv.peak);
     const af = 'volume=' + gain.toFixed(2) + 'dB';
-    ff(['-i', t.file, '-af', af, '-ac', '1', '-c:a', 'libmp3lame', '-b:a', '64k', path.join(VO, l.id + '.mp3')]);
     ff(['-i', t.file, '-af', af, '-ac', '1', '-c:a', 'libopus', '-b:a', '40k', '-vbr', 'on', '-application', 'voip', path.join(VO, l.id + '.ogg')]);
     if (t.file !== TMP) { try { fs.unlinkSync(t.file); } catch (e) {} }
     const c0 = cues(l.text, res.words);

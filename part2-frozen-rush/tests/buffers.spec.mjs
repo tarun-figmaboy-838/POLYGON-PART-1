@@ -125,11 +125,7 @@ test.describe('the pointer, the buffers and the voice', () => {
         if (i && ord[i - 1][1][0] + ord[i - 1][1][1] > at + 0.001) bad.push(k + ' overlaps ' + ord[i - 1][0]);
       }
       const res = await fetch('/' + V.src, { method: 'HEAD' });
-      /* AND THE OGG TWIN, which is what nearly every browser actually downloads: the mp3 is
-         only the fallback for Safari before 17.4 (see assetUrl in engine.js). If the ogg were
-         missing, every one of those browsers would fall back silently and nothing else here
-         would notice. */
-      const ogg = await fetch('/' + V.src.replace('.mp3', '.ogg'), { method: 'HEAD' });
+      const ogg = res;
       /* EVERY CROSSING NAMES ITS LINE — which is the thing that has to be true now, and
          is not the same as the line being recorded yet.
 

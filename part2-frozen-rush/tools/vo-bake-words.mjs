@@ -31,7 +31,7 @@ import fs from 'node:fs';
 import { decode, envelope, words as splitWords, HOP, SR } from './vo-words.mjs';
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
-const TAKE = arg('--take', 'game/assets/audio/vo-lines.mp3');
+const TAKE = arg('--take', 'game/assets/audio/vo-lines.ogg');
 const WRITE = process.argv.includes('--write');
 
 /* The text of every line, by id. The word COUNT is what the split needs; the words

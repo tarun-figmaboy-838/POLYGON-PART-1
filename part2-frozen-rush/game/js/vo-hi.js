@@ -5,7 +5,7 @@
  * with one onset per Hindi word shown, timed off the Hindi recording. engine.js plays this instead
  * of CFG.vo when the game speaks Hindi (VO_TAKES). A line with no window here is not heard. */
 export const VO_HI = {
-  src: 'assets/audio/vo-lines-hi.mp3', gain: 1,
+  src: 'assets/audio/vo-lines-hi.ogg', gain: 1,
   lines: {
     "tut-1-meet":           [0, 3.292, [0.11, 0.39, 0.81, 1.47, 1.74, 2.1, 2.46, 2.62, 3.04]],   // यह मोमो है। उसे अपने दोस्त को ढूँढना है।
     "tut-2-goal":           [3.942, 3.208, [0.11, 0.56, 0.86, 1.54, 1.88, 2.13, 2.41, 2.55, 2.83]],   // मोमो को बर्फ़ीला दर्रा पार करने में मदद करें!

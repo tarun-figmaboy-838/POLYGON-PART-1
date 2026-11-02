@@ -2,7 +2,7 @@
 /*!
  * build-vo-index.js — lists the voice clips that exist, and how long each is.
  *
- *   assets/vo/*.mp3  →  assets/vo/index.json
+ *   assets/vo/*.ogg  →  assets/vo/index.json
  *       { "clips": ["p01", ...], "seconds": { "p01": 5.11, ... } }
  *
  * THE LIST. The game (src/audio/vo.js) only ever asks for a clip in this
@@ -19,7 +19,7 @@
  * Run it after adding or removing clips:  npm run build:vo
  *
  * ANOTHER LANGUAGE'S CLIPS live in their own folder with their own index, the same ids:
- *   node tools/build-vo-index.js --lang hi    assets/vo/hi/*.mp3 → assets/vo/hi/index.json
+ *   node tools/build-vo-index.js --lang hi    assets/vo/hi/*.ogg → assets/vo/hi/index.json
  * (tools/build-vo-hindi.js runs it; src/audio/vo.js reads that folder when the lesson speaks Hindi)
  */
 'use strict';
@@ -32,7 +32,7 @@ const LANG = li > 0 ? String(process.argv[li + 1] || '').replace(/[^a-z]/g, '') 
 const dir = path.resolve(__dirname, '..', 'assets', 'vo', LANG);
 const name = 'assets/vo/' + (LANG ? LANG + '/' : '');
 fs.mkdirSync(dir, { recursive: true });
-const clips = fs.readdirSync(dir).filter((f) => /\.mp3$/i.test(f)).map((f) => f.replace(/\.mp3$/i, '')).sort();
+const clips = fs.readdirSync(dir).filter((f) => /\.ogg$/i.test(f)).map((f) => f.replace(/\.ogg$/i, '')).sort();
 
 /* THE REVISION, AND WHY A CLIP NEEDS ONE.
  *
@@ -50,7 +50,7 @@ const clips = fs.readdirSync(dir).filter((f) => /\.mp3$/i.test(f)).map((f) => f.
 const revOf = (id) => {
   const h = crypto.createHash('md5');
   let any = false;
-  ['.mp3', '.ogg'].forEach((ext) => {
+  ['.ogg'].forEach((ext) => {
     const f = path.join(dir, id + ext);
     if (!fs.existsSync(f)) return;
     any = true;
@@ -87,11 +87,11 @@ const wordMs = (() => {
 let probed = 0;
 clips.forEach((id) => {
   const r = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0',
-                                  path.join(dir, id + '.mp3')], { encoding: 'utf8' });
+                                  path.join(dir, id + '.ogg')], { encoding: 'utf8' });
   const d = parseFloat((r.stdout || '').trim());
   if (d > 0) {
     seconds[id] = Math.round(d * 100) / 100; probed++;
-    const e = speechEnd(path.join(dir, id + '.mp3'), d);
+    const e = speechEnd(path.join(dir, id + '.ogg'), d);
     if (e) spoken[id] = e;
   }
   const v = revOf(id);

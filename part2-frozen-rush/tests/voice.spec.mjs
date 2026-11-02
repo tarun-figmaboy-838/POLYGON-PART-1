@@ -18,7 +18,7 @@ test.describe('the voice and the crossing order', () => {
       const buf = await ac.decodeAudioData(await (await fetch('/' + V.src)).arrayBuffer());
       return { src: V.src, dur: +buf.duration.toFixed(2), lines: Object.entries(V.lines) };
     });
-    expect(r.src).toBe('assets/audio/vo-lines.mp3');
+    expect(r.src).toBe('assets/audio/vo-lines.ogg');
     /* FIFTEEN: seven tutorial lines, seven signs and the cheer. It was sixteen — 'win-title'
        and 'win-sub' were cut with the ending banner that showed them, taking it to fourteen —
        and then 'win-yay', which had been sitting unused in the take, was wired up and put it

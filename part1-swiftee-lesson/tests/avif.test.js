@@ -73,7 +73,7 @@ t('no AVIF: a twinned picture stays the .webp', Preload.pick(one + '?v=12345678'
 global.ImgFormat = { avif: true, settled: true };
 t('AVIF: a twinned picture becomes its twin, whatever ?v= it was named with', Preload.pick(one + '?v=12345678') === twins[one]);
 t('AVIF: a picture without a twin stays itself', Preload.pick('assets/ui/snowflake.webp') === 'assets/ui/snowflake.webp');
-t('AVIF: a voice clip stays itself', Preload.pick('assets/vo/p01.mp3') === 'assets/vo/p01.mp3');
+t('AVIF: a voice clip stays itself', Preload.pick('assets/vo/p01.ogg') === 'assets/vo/p01.ogg');
 delete global.ImgFormat;
 t('no probe at all: everything stays itself', Preload.pick(one) === one);
 

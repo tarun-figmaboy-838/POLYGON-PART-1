@@ -505,7 +505,7 @@
   }
 
   /* What he says when the child gets it. Each carries the id of its voice clip
-     (assets/vo/<id>.mp3), listed in docs/VO.md with everything else he says.
+     (assets/vo/<id>.ogg), listed in docs/VO.md with everything else he says.
      TWO CHEERS, EACH WITH ITS OWN JOB (the user's feedback rules — praiseFor): "Keep going!"
      for a right answer on the way, "Great job!" for the one that completes a level. The round
      of ten ("Nice!", "You got it!", "Perfect!", "Well done!"…) mixed its phrases at random from
@@ -4372,8 +4372,7 @@
 
      The list is Part 2's own (game/js/asset-versions.js), with the ?v= hash
      each file is requested by, so its requests hit exactly what is warmed: the
-     same hd-or-not choice (its wantHd in main.js) and ogg-or-mp3 choice
-     (playsOgg in engine.js). Only inside the combined project — the page sits
+     same hd-or-not choice (its wantHd in main.js). Only inside the combined project — the page sits
      in /part1-swiftee-lesson/ over http — because the lesson's own test
      servers and file:// have no Part 2 beside them. Nothing waits on it: a
      file that fails only costs a slower cover. */
@@ -4393,7 +4392,7 @@
       var re = /"(assets\/[^"]+)":\s*"([0-9a-f]+)"/g;
       while ((m = re.exec(src))) v[m[1]] = m[2];
       var ogg = false;
-      try { ogg = !!new Audio().canPlayType('audio/ogg; codecs="opus"'); } catch (e) {}   // as engine.js playsOgg asks
+      try { ogg = !!new Audio().canPlayType('audio/ogg; codecs="opus"'); } catch (e) {}
       var w = Math.min(global.innerWidth, global.innerHeight * 16 / 9);
       var mem = global.navigator && navigator.deviceMemory;
       var hd = w * (global.devicePixelRatio || 1) / 1920 >= 1.15 && w >= 1000 && !(mem && mem < 4);
@@ -4406,13 +4405,12 @@
         // and a picture with an AVIF twin as the one file it will draw: the twin where this
         // browser shows AVIF, the .webp where it does not
         if (/\.avif$/.test(p) ? !avif : avif && /\.webp$/.test(p) && v[p.replace(/\.webp$/, '.avif')]) return;
-        if (/\.(mp3|ogg)$/.test(p)) {
+        if (/\.ogg$/.test(p)) {
+          if (!ogg) return;
           // only the voice take the game will play: vo-lines (English), vo-lines-hi (Hindi), and
           // none in a language with no recording of its own
           var take = /\/vo-lines(?:-([a-z]+))?\./.exec(p);
           if (take && (take[1] || 'en') !== (LANG ? (LANG.voice ? LANG.lang : '-') : 'en')) return;
-          var twin = /\.mp3$/.test(p) ? p.replace(/\.mp3$/, '.ogg') : p.replace(/\.ogg$/, '.mp3');
-          if (v[twin] && (/\.ogg$/.test(p) !== ogg)) return;   // only the one it will play
           sound.push(p);
         } else art.push(p);
       });
