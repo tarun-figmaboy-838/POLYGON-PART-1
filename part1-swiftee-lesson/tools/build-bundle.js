@@ -2,8 +2,8 @@
 /*!
  * build-bundle.js — the lesson's scripts as one minified file, which is what the page loads.
  *
- *   node tools/build-bundle.js           writes src/lesson.min.js and src/lesson.min.js.map, and
- *                                        stamps the bundle's hash into index.html (?v=)
+ *   node tools/build-bundle.js           writes src/lesson.min.js and src/lesson.min.js.map.json,
+ *                                        and stamps the bundle's hash into index.html (?v=)
  *   node tools/build-bundle.js --check   fails if any of the three is out of date; writes nothing
  *   node tools/build-bundle.js --watch   builds, then again whenever a source changes
  *
@@ -24,6 +24,8 @@
  * THE SOURCE MAP beside it leads the browser's devtools to the sources, line and all, on the
  * live site: it names them by their paths under src/, which deploy with it as they always have,
  * and does not copy them in (a map that did was 2 MB rewritten on every commit that touched src/).
+ * It is called .map.json, not .map: Vercel answers 403 for a file ending in .map on a production
+ * deployment (measured 2026-11-02; a missing one is a 404), and serves the same bytes as .json.
  *
  * STALENESS IS THE RISK, as with Part 2's bundle: a bundle behind its sources would ship the
  * old lesson while the sources read like the new one. So the bundle's hash is written into
@@ -38,7 +40,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUT = path.join(ROOT, 'src', 'lesson.min.js');
-const MAP = OUT + '.map';
+const MAP = OUT + '.map.json';
 const PAGE = path.join(ROOT, 'index.html');
 const CHECK = process.argv.includes('--check');
 const WATCH = process.argv.includes('--watch');
@@ -139,7 +141,7 @@ function build() {
     logLevel: 'silent'
   });
   (r.warnings || []).forEach((w) => console.error('esbuild: ' + w.text));
-  const code = r.code.replace(/\s*$/, '\n') + '//# sourceMappingURL=lesson.min.js.map\n';
+  const code = r.code.replace(/\s*$/, '\n') + '//# sourceMappingURL=lesson.min.js.map.json\n';
   const map = JSON.parse(r.map);
   if (!map.sources || map.sources.length !== ORDER.length) {
     console.error('the map does not lead back to the ' + ORDER.length + ' sources (' + (map.sources || []).length + ')');
@@ -167,7 +169,7 @@ function run() {
   const haveMap = fs.existsSync(MAP) ? fs.readFileSync(MAP, 'utf8') : '';
   const stale = [];
   if (have !== code) stale.push('src/lesson.min.js');
-  if (haveMap !== mapText) stale.push('src/lesson.min.js.map');
+  if (haveMap !== mapText) stale.push('src/lesson.min.js.map.json');
   if (m[2] !== hash) stale.push('index.html (?v=' + m[2] + ', the bundle is ' + hash + ')');
 
   if (CHECK) {

@@ -25,8 +25,8 @@ load.
 ```
 index.html                 the page: markup, styling, the fonts, the bundle's address
 src/lesson.min.js          what the page loads: the scripts below, minified and joined in
-                           their dependency order (tools/build-bundle.js); its .map shows the
-                           sources in devtools
+                           their dependency order (tools/build-bundle.js); its .map.json leads
+                           devtools to the sources
 serve.js                   local static server
 vercel.json                static deploy: no build, cache rules
 
@@ -68,7 +68,7 @@ assets/
                            the lesson no longer waits on Google (index.html, @font-face)
 
 tools/
-  build-bundle.js          src/*.js -> src/lesson.min.js + .map, and index.html's ?v=
+  build-bundle.js          src/*.js -> src/lesson.min.js + .map.json, and index.html's ?v=
                            (--check in npm test; --watch while editing)
   build-swiftee-frames.js  manifest -> src/character/swiftee-frames.js
   build-sleigh-frames.js   measures the three intro sheets from their alpha
