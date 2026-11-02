@@ -1,5 +1,11 @@
 # Frozen Rush 2
 
+> **`art-source/` (raw sprite sheets, animation captures, character source art) is not in the working tree.** The game never loads it and the deploy never shipped it; it is kept, untouched, in git history (left out so the project zip is about 29 MB). Before running a tool that reads it, bring it back with:
+>
+> ```bash
+> git checkout 1b6bf57 -- part2-frozen-rush/art-source
+> ```
+
 A browser game that teaches polygons. A mammoth is stopped by a crevasse in the ice, and
 geometry is what mends the path. **Two levels, two questions.**
 

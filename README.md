@@ -1,5 +1,7 @@
 # Polygon Adventure
 
+> The two parts' source folders (`part1-swiftee-lesson/assets/source/`, `part2-frozen-rush/art-source/`, 44.6 MB the game never loads) are kept in git history, not the working tree. Restore them with `git checkout 1b6bf57 -- part1-swiftee-lesson/assets/source part2-frozen-rush/art-source`.
+
 A two-part browser game about polygons, set in one frozen world.
 
 | | Part | What the child does | Folder |

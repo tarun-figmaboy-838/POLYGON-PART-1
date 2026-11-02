@@ -1,5 +1,11 @@
 # Swiftee &amp; the Polygons
 
+> **`assets/source/` (voice masters, draft and reference art) is not in the working tree.** The game never loads it and the deploy never shipped it; it is kept, untouched, in git history (left out so the project zip is about 29 MB). Before running a tool that reads it, bring it back with:
+>
+> ```bash
+> git checkout 1b6bf57 -- part1-swiftee-lesson/assets/source
+> ```
+
 A 31-screen guided lesson: diagonals, convex and concave, regular and irregular,
 ending on an animated end-game summary that collects every idea it taught.
 Plain scripts, no framework. The page loads them as one minified file, `src/lesson.min.js`,
