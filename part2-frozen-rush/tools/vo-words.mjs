@@ -1,19 +1,4 @@
-/* Find the WORDS inside a voice-over take, not just the lines.
- *
- *     node tools/vo-words.mjs "<take>.mp3" [lineGap] [wordGap]
- *
- * The game reveals a line one word at a time, and until now it spread the words evenly
- * across the line's length — a guess that drifts against any real delivery. This finds the
- * onsets the recording actually has, so a word can appear on the syllable it is spoken.
- *
- * HOW. Decode to mono 16k, take an RMS envelope in 10ms hops, and split twice: a long gap
- * of silence separates LINES, a short dip separates WORDS. A dip is not always silence —
- * connected speech runs "the-path" together — so within a line the split is made at local
- * minima of the envelope that are deep enough relative to the peaks either side, which
- * survives co-articulation better than a flat threshold.
- *
- * Reports only. tools/vo-bake.mjs is what writes the timings into the config.
- */
+// Find the WORDS inside a voice-over take, not just the lines.
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
@@ -59,12 +44,6 @@ export function lines(env, gapS = 0.30) {
   return out.filter(([a, b]) => (b - a) * 0.01 >= 0.2);
 }
 
-/* Word onsets inside one line, as frame indices, the first being the line's own start.
- *
- * `want` is how many words the script says are in this line. The dips are ranked by how
- * deep they are and the best (want - 1) are taken, which is what keeps this honest: the
- * envelope always offers more candidate dips than there are words, and choosing by depth
- * rather than by a threshold means the answer has the right COUNT by construction. */
 export function words(env, a, b, want) {
   const span = b - a + 1;
   if (want <= 1 || span < 4) return [a];
@@ -91,8 +70,6 @@ export function words(env, a, b, want) {
   return [a, ...picked];
 }
 
-/* How many word groups a line looks like it has, with no script to compare against —
- * used to fingerprint an unknown take. Counts dips deeper than a fixed proportion. */
 export function countWords(env, a, b) {
   let n = 1;
   const peak = Math.max(...Array.from(env.slice(a, b + 1)));

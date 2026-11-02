@@ -1,39 +1,5 @@
 #!/usr/bin/env node
-/*!
- * build-buttons.js — cut the supplied button sheets into 3-slice buttons.
- *
- *   node tools/build-buttons.js
- *
- * assets/source/image.avif is twenty finished capsules on a black background;
- * assets/source/new plus-minus.avif is the stepper's pair of keys.
- *
- * WHY SLICE RATHER THAN STRETCH. The buttons in this game are every width
- * from a 64-unit stepper key to a 184-unit answer, and the sheet is one
- * aspect ratio. Scaled to fit, a round end becomes an oval and the specular
- * highlight smears across the face. So each button is cut into three: a left
- * cap, a stretchable middle, and a right cap. The caps are drawn at their true
- * proportions at either end and the middle is stretched between them, which is
- * the only part of a pill that CAN stretch without deforming — it is a flat
- * vertical gradient.
- *
- * FIND THE BUTTONS, DO NOT ASSUME A GRID. The first sheet sat each button in
- * the middle of a 5x4 cell with room to spare. This one draws them wider and
- * closer, so they bleed over the cell boundaries — and cutting by cell took a
- * slice of the neighbour with every button: a green sliver down the side of
- * the orange one, a red edge on the green one. Every run of connected
- * non-black pixels is a component, the big ones are the buttons, and they are
- * sorted into reading order by where their centres fall.
- *
- * WHICH ONES. The lesson cuts only what it draws (the want lists in SHEETS
- * below): the stepper's two keys, and four capsules from the UI kit —
- * uiPrimary for an answer, uiNav for Next and Back, uiSuccess and uiDanger
- * for a verdict. A category is never a button at all: categories are flat
- * tags and tinted drop zones (build-card.js), because a category drawn in
- * the green or the red that mean right and wrong tells a child that half
- * the shapes are mistakes.
- *
- * Writes assets/ui/btn-*.webp and src/game/button-frame.js.
- */
+// build-buttons.js — cut the supplied button sheets into 3-slice buttons.
 'use strict';
 
 const http = require('http');
@@ -45,24 +11,7 @@ const { chromium } = require('playwright');
 const ROOT = path.join(__dirname, '..');
 const OUT_JS = path.join(ROOT, 'src/game/button-frame.js');
 
-/* THE KIT, read in reading order. Only what the lesson draws is cut; a tone
-   nothing drew is not cut, and adding its line back here brings it back.
-   (The older matte-pill sheet, btn.png, went when its last pill stopped
-   being drawn: the stepper keys are their own pictures and categories are
-   never buttons.) */
 const SHEETS = [
-  /* THE SUPPLIED UI KIT — twenty glossy capsules, five across and four down,
-     cut by what each colour is FOR rather than by what it is: an answer, the
-     button that moves you on, and the two verdicts an answer turns into. The
-     green and the red are kept for those verdicts alone. A child learning
-     that green means "you were right" should not meet green as the colour of
-     a Next button.
-
-       row 1  gold  orange  amber   beige     brown
-       row 2  cyan  blue    deep    lavender  purple
-       row 3  pink  magenta red     coral     rose
-       row 4  green lime    teal    turquoise slate
-  */
   { src: 'assets/source/image.avif', want: [
     { cell: 0,  tone: 'uiPrimary',   role: 'Primary action' },
     { cell: 6,  tone: 'uiNav',       role: 'Navigation' },
@@ -155,8 +104,6 @@ const CUT = function (opts) {
         const box = found[w.cell];
         if (!box) return;
 
-        /* A pill's cap is a little over its half-height: that is the part with
-           curvature, plus a couple of pixels of the straight run after it. */
         const cap = Math.round(box.h * 0.56);
 
         const t2 = document.createElement('canvas');
@@ -164,12 +111,6 @@ const CUT = function (opts) {
         const g2 = t2.getContext('2d');
         g2.drawImage(img, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
 
-        /* THE MATTE OUT OF THE CUT BUTTON. Flooded in from the edges of the
-           slice and stopped at the first pixel that is not near-black, so the
-           surround goes and the dark navy button further down the sheet —
-           which is a button, not background — is never reached. The
-           antialiased rim left behind is faded by luminance, so the button
-           does not carry a pencil line around it. */
         const dd = g2.getImageData(0, 0, box.w, box.h);
         const p = dd.data;
         const BW = box.w, BH = box.h;
@@ -205,12 +146,6 @@ const CUT = function (opts) {
             if (lum < 110) p[n * 4 + 3] = Math.round(cp[n * 4 + 3] * (lum / 110));
           }
         }
-        /* ONLY THE BUTTON SURVIVES THE SLICE.
-           A component bbox is a rectangle and the buttons are not, so the
-           corners of the slice can still hold a piece of the neighbour that
-           reaches into them. Whatever is left after keying is labelled again
-           and everything but the biggest island is erased — the button is
-           always the biggest thing in its own box. */
         const keep = new Uint8Array(BW * BH);
         let best = null;
         const lab = new Uint8Array(BW * BH);
@@ -244,13 +179,6 @@ const CUT = function (opts) {
         }
         g2.putImageData(dd, 0, 0);
 
-        /* IS ANY OF THIS SOMEBODY ELSE'S BUTTON?
-           Not "is the border opaque" — a button's own glow reaches the edge
-           of its own box, and the gold one's reaches further than the rest,
-           which failed the build for a picture that was perfectly clean. What
-           would actually be wrong is a FOREIGN HUE on the border: a green
-           sliver down the side of the orange one. Hue is compared against the
-           middle of the button, which is the button by definition. */
         const hueOf = function (i) {
           const r0 = p[i] / 255, g0 = p[i + 1] / 255, b0 = p[i + 2] / 255;
           const mx = Math.max(r0, g0, b0), mn = Math.min(r0, g0, b0), c0 = mx - mn;
@@ -276,9 +204,6 @@ const CUT = function (opts) {
           if (foreign((ay * BW + BW - 1) * 4)) edge++;
         }
 
-        /* A GLYPH KEY IS DRAWN SMALL: the stepper's keys are about fifty units
-           tall, so a 600px picture of one is weight with nothing to show for
-           it. Scaled to at most GLYPH_CAP tall, its own proportions kept. */
         let outCanvas = t2, ow = box.w, oh = box.h;
         const GLYPH_CAP = 240;
         if (w.glyph && box.h > GLYPH_CAP) {
@@ -301,9 +226,6 @@ const CUT = function (opts) {
 };
 
 (async () => {
-  // `node tools/build-buttons.js stepMinus stepPlus` re-cuts only the named
-  // buttons and keeps every other one exactly as button-frame.js has it, so
-  // swapping one piece of art does not re-encode the whole kit.
   const only = process.argv.slice(2).filter((a) => !a.startsWith('-'));
   const tones = [].concat.apply([], SHEETS.map((s) => s.want.map((w) => w.tone)));
   const unknown = only.filter((k) => tones.indexOf(k) < 0);

@@ -1,7 +1,4 @@
-/* THE TREMBLE AT THE EDGE, THE STOP, THE COMEDY CRASH, THE TIED ROPE — the owner's brief:
-   the 12-frame tremble replaces the trample and is played by a timing plan; once he has
-   stopped the feet stop (the wait is the idle loop); a crash throws stars at the impact with
-   its own sound; the rope carries a knot at the block. */
+// THE TREMBLE AT THE EDGE, THE STOP, THE COMEDY CRASH, THE TIED ROPE — the owner's brief:
 import { test, expect } from '@playwright/test';
 import { boot, force, waitState } from './helpers.mjs';
 
@@ -22,7 +19,6 @@ test.describe('the tremble, the stop and the crash', () => {
     expect(r.hd).toBe('assets/char/hd/mammoth-tremble.webp');
     expect(r.frames).toBe(12);
     expect(r.trample, 'the trample is shelved, not fetched').toBeNull();
-    // about 3.3 s in all (retuned from 1.9 s: "not evident, looks fast"), frames 0..11, notice to settle
     expect(r.total).toBeGreaterThanOrEqual(2800); expect(r.total).toBeLessThanOrEqual(3800);
     expect(r.maxFrame).toBe(11); expect(r.first).toBe(0); expect(r.last).toBe(11);
     // the strong tremble is the 4-5-6-5 oscillation, three times, at a readable 90 ms
@@ -47,12 +43,10 @@ test.describe('the tremble, the stop and the crash', () => {
       await new Promise(res => setTimeout(res, 700));
       return { frames: [...seen].filter(k => k.startsWith('tremble')).length, shook, fired, after, sheet0, sheet1: p.lastSheet, wobAfter: Math.abs(p.wobX), marks };
     });
-    // sampled once per animation frame under a loaded runner, so 62 ms steps are missed: many, not all
     expect(r.frames, 'the tremble sheet is what plays').toBeGreaterThanOrEqual(6);
     expect(r.shook, 'the secondary shake ran during the strong tremble').toBe(true);
     expect(r.fired, 'the sound fired').toBe(true);
     expect(r.after).toBe('LOOK_DOWN');
-    // the wait is the tremble's own settle, held: no second sheet, so no cut between the two
     expect(r.sheet0, 'the wait is the settle the tremble ends on').toBe('tremble');
     expect(r.sheet1, 'and it is still that, not an idle pass').toBe('tremble');
     expect(r.marks, 'the tremble marks were drawn on the strong beat').toBe(true);
@@ -65,8 +59,6 @@ test.describe('the tremble, the stop and the crash', () => {
     await page.waitForFunction(() => window.iceAgeGame.debug().state === 'OBSTACLE_HIT', null, { timeout: 15_000 });
     const r = await page.evaluate(async () => {
       const g = window.iceAgeGame; const m = await import('/js/engine.js');
-      /* The stars live under a second of game time; sample for a moment and keep the fullest
-         burst seen, so a slow poll on a loaded runner does not read an empty list. */
       let best = []; const t0 = Date.now();
       while (Date.now() - t0 < 2500) {
         const now = g._particles().list.filter(p => p.kind === 'star' && !p.dead);
@@ -107,8 +99,6 @@ test.describe('the tremble, the stop and the crash', () => {
     await page.waitForFunction(() => /This is Momo/.test(document.getElementById('tut-text').textContent), null, { timeout: 40_000 });
     expect(await veilOn(), 'a frozen describing line is veiled').toBe(true);
     await page.waitForFunction(() => /Tap to jump/.test(document.getElementById('tut-text').textContent), null, { timeout: 90_000 });
-    /* Jump whenever a rock is in range until the ice breaks — a missed jump under a loaded
-       test runner crashes, retries and comes round again, so one shot is not enough. */
     await page.evaluate(async () => {
       const g = window.iceAgeGame; const t0 = Date.now();
       while (Date.now() - t0 < 60000 && !/GLACIER_BREAK_1|PHASE_/.test(g.debug().state)) {
@@ -127,9 +117,6 @@ test.describe('the tremble, the stop and the crash', () => {
     expect(atOhNo.anim, 'the tremble has finished: he is on the idle wait').toBe('LOOK_DOWN');
     expect(atOhNo.step, 'every step of the plan was spent before the line').toBe(atOhNo.plan);
     expect(atOhNo.veil).toBe(true);
-    /* THE TAIL POINTS AT THE DITCH (asked for): the shape's tip lands within a hand's width above
-       the ice surface, horizontally inside the gap — not beside it, not floating over it.
-       Measured once the pop-in (380 ms) and the first re-measure have settled. */
     await page.waitForTimeout(800);
     const aim = await page.evaluate(() => {
       const st = document.getElementById('stage').getBoundingClientRect(), k = 1920 / st.width;
@@ -141,8 +128,6 @@ test.describe('the tremble, the stop and the crash', () => {
     expect(aim.tipY, 'the tip reaches the ice edge').toBeGreaterThan(aim.surfaceY - 40);
     expect(aim.tipY).toBeLessThan(aim.surfaceY + 40);
     expect(aim.cx, 'over the hole').toBeGreaterThan(aim.gx0); expect(aim.cx).toBeLessThan(aim.gx1);
-    /* THE TEACHING LINE IS ON THE PLANK, not in the bubble (moved there on request), so it is
-       the instruction panel that is waited for and measured here. */
     await page.waitForFunction(() => /right ice piece/i.test(document.getElementById('instruction-text').textContent), null, { timeout: 150_000 });
     await page.waitForTimeout(900);
     const box = await page.evaluate(() => { const st = document.getElementById('stage').getBoundingClientRect(), k = 1920 / st.width; const bb = document.getElementById('instruction-pill').getBoundingClientRect(); return { x0: (bb.left - st.left) * k, x1: (bb.right - st.left) * k }; });
@@ -175,9 +160,6 @@ test.describe('the tremble, the stop and the crash', () => {
     expect(r.stubs).toBe(1);
   });
 
-  /* THE HAND-OVERS, on a hand-driven clock so a loaded runner cannot blur them. The owner's three
-     points: the wait is one still pose and a wrong drop replays nothing; changes between sheets
-     dissolve instead of cutting; the celebration is two real arcs and then the idle. */
   test('the wait is one still pose, a wrong drop dissolves in and out of it, and nothing replays', async ({ page }) => {
     await boot(page, { fast: 1 });
     const r = await page.evaluate(async () => {
@@ -186,7 +168,6 @@ test.describe('the tremble, the stop and the crash', () => {
       const at = (state, t) => { p.setState(state); p.t = t; g._renderOnce(); return { frame: p.lastSheet + ':' + p.lastFrame, under: +(p.lastUnder || 0).toFixed(2), blend: +(p.lastBlend || 0).toFixed(2) }; };
       p.setState('RUN'); p.t = 0; g._renderOnce();
       const wait = [0.3, 1, 5, 30].map(t => at('LOOK_DOWN', t).frame);
-      // a wrong drop: the startle comes in over the wait, passes, and the wait comes back
       const S = window.__SP.startle, H = window.__SP.handover;
       const startIn = at('SURPRISED', 0.01), midIn = at('SURPRISED', H * 0.5), doneIn = at('SURPRISED', H + 0.02),
             alert = at('SURPRISED', S * 0.5),
@@ -197,8 +178,6 @@ test.describe('the tremble, the stop and the crash', () => {
     });
     expect(new Set(r.wait).size, 'one pose for the whole wait: ' + r.wait.join(' ')).toBe(1);
     expect(r.wait[0], 'and it is the settle the tremble ends on').toBe('tremble:11');
-    /* The shape of the dissolve, not one opacity on it: present as the change starts, lower
-       part-way through, gone by the end of the span. */
     expect(r.startIn.under, 'the startle dissolves in over the wait').toBeGreaterThan(0.25);
     expect(r.midIn.under, 'and it is falling').toBeLessThan(r.startIn.under);
     expect(r.doneIn.under, 'and finished by the end of its span').toBe(0);
@@ -230,9 +209,6 @@ test.describe('the tremble, the stop and the crash', () => {
     expect(segs).toEqual(['crouch', 'arc', 'land', 'arc', 'land', 'absorb', 'idle']);
     const idle = r.rows.filter(x => x.seg === 'idle');
     expect(idle[0].sheet, 'the ending breathes on the idle sheet').toBe('idle');
-    /* The dissolve to watch here is the CROSS-SHEET one — the settle fading over the idle. The
-       idle's own crossfade (blend) runs for ever by design, so asserting on it measured the
-       wrong thing entirely. */
     expect(idle[0].cross, 'entered through a dissolve from the settle').toBeGreaterThan(0.25);
     expect(idle.find(x => x.t > idle[0].t + r.H.toIdle + 0.02 && x.cross > 0.01), 'which finishes').toBeUndefined();
     // and the idle is moving from its first frame, not waiting out the dissolve
@@ -240,26 +216,9 @@ test.describe('the tremble, the stop and the crash', () => {
   });
 
   test('the rope moves with the block it carries: in phase, never against it, and visibly', async ({ page }) => {
-    /* The history of this one property, because each fix was reviewed and sent back:
-         - the cord's bend had its own clock (a random phase per rope): opposite directions
-         - the bend followed the swing's VELOCITY: honest physics, 90 degrees out of phase,
-           reviewed as "waving differently"
-         - proved rigid, and still read as detached, because a solid block moving 12px is
-           visible and a thin cord moving 12px is not
-         - switched off: reviewed as dead, "add minor evident motion but keep it in sync"
-       What ships: the cord's bend is locked to the swing's POSITION (ropeBow), so the rope is
-       at its most curved on the very frame the block is at its furthest. Both extremes land
-       together, which is what "moving together" looks like on a thin line. This holds it as
-       a number: over six seconds, every rope's bend rises and falls WITH the swing — a
-       correlation near +1 — and the swing itself is alive. */
     await boot(page, { fast: 2 });
     await force(page, 'GLACIER_BREAK_1');
     await waitState(page, 'PHASE_ACTIVE', 40_000);
-    /* SAMPLED ON A BUDGET, and the budget is reported rather than assumed. A rAF loop with
-       a fixed frame count is at the mercy of a throttled or occluded tab: it simply never
-       returns, the evaluate hangs, and what the runner reports is the test's own timeout
-       with no clue which line was waiting. This stops on the wall clock whatever the frames
-       do, and says whether it got what it came for. */
     const r = await page.evaluate(async (budgetMs) => {
       const g = window.iceAgeGame, rows = [];
       const t0 = performance.now();
@@ -273,12 +232,10 @@ test.describe('the tremble, the stop and the crash', () => {
       const moved = new Set(rows.map(x => x.t)).size;
       return { rows, moved, phases: L.shapes.map(s => s.phase), swayRad: rows[0].swayRad };
     }, 6000);
-    // the clock really advanced, so what follows is a waveform and not one frame repeated
     expect(r.moved, 'the game clock advanced across the samples').toBeGreaterThan(30);
     const swings = r.rows.map(x => x.swing);
     // ALIVE: the motion was asked back after a still rig read as dead
     expect(Math.max(...swings) - Math.min(...swings), 'the rig swings').toBeGreaterThan(r.swayRad * 0.5);
-    // IN PHASE: every cord's bend tracks the swing's position, never its velocity, never against it
     const bows = r.rows.map(x => x.bows);
     expect(bows[0].length, 'the row is hanging').toBeGreaterThan(2);
     const corr = (a, b) => {
@@ -297,9 +254,6 @@ test.describe('the tremble, the stop and the crash', () => {
   });
 
   test('where the rope is cut is where it parts, and both halves show it', async ({ page }) => {
-    /* Both lengths used to be constants — a 34px snippet went down with the block and 72% of
-       the rope stayed on the rig — so a swipe under the fog and a swipe just above the block
-       produced the same picture. They are measured from the crossing point now. */
     await boot(page, { fast: 2 });
     await force(page, 'GLACIER_BREAK_1');
     await waitState(page, 'PHASE_ACTIVE', 40_000);
@@ -311,8 +265,6 @@ test.describe('the tremble, the stop and the crash', () => {
 
     const r = await page.evaluate(async () => {
       const g = window.iceAgeGame;
-      /* The swipe is aimed through the puzzle's own view transform, so it crosses the rope
-         where it is DRAWN rather than where it would be unzoomed. */
       const swipe = (worldX, worldY, id) => {
         const G = g.debug(), k = G.zoom || 1;
         const vx = w => (k > 1.0005 ? G.zoomVX + (w - G.zoomVX) * k : w);
@@ -337,8 +289,6 @@ test.describe('the tremble, the stop and the crash', () => {
       const hiStub = L().stubs[L().stubs.length - 1];
       const high = { cut: !!hi.cut, tail: hi.tail, stub: hiStub ? hiStub.len : -1 };
 
-      /* A wrong cut opens PHASE_WRONG for a beat, and the hit test only runs in PHASE_ACTIVE —
-         swiping through the feedback is how this test silently cut nothing the first time. */
       await active();
 
       // 2. cut LOW, just above the block
@@ -354,9 +304,7 @@ test.describe('the tremble, the stop and the crash', () => {
     expect(r.high.cut, 'the high swipe cut its rope').toBe(true);
     expect(r.low.cut, 'and so did the low one').toBe(true);
     expect(r.stubs, 'two ropes are parted').toBe(2);
-    // cut high: most of the rope goes down with the block, almost nothing is left hanging
     expect(r.high.tail, 'a high cut sends a long tail down with the ice').toBeGreaterThan(120);
-    // cut low: the block keeps a short tail and a long stub is left swinging from the fog
     expect(r.low.tail, 'a low cut sends a short one').toBeLessThan(r.high.tail * 0.5);
     expect(r.low.stub, 'and leaves the rest hanging on the rig').toBeGreaterThan(r.high.stub + 80);
   });

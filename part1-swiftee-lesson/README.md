@@ -85,7 +85,6 @@ tools/
                            one folder per state, for re-costuming
 
 tests/                     see "Test gates"
-docs/BUILD.md              the original build handoff and deck review
 ```
 
 ---
@@ -241,7 +240,7 @@ one speech — no screen here says more than one line, so it could never have ru
 | `tests/swiftee.test.js` | 26 checks. The frame table still matches the manifest, every grid can address every frame, every sheet exists, no reaction outruns the beat ceiling |
 | `tests/playthrough.jsdom.js` | A scripted child plays all 31 screens, trying a wrong answer first on every judged one |
 | `tests/playthrough.browser.js` | The same lesson in a real Chrome, via Playwright — including a real pointer drag on the swipe practice, a twitch that must not classify, and a wrong swipe that must not advance |
-| `tests/qa.browser.js` | The same lesson played BADLY in Chrome — mashed buttons, taps on the scenery, resizes mid-screen — plus type size, contrast and touch-target measurements. See docs/QA.md |
+| `tests/qa.browser.js` | The same lesson played BADLY in Chrome — mashed buttons, taps on the scenery, resizes mid-screen — plus type size, contrast and touch-target measurements |
 | `tests/avif.test.js` | The AVIF twins are the ones `tools/build-avif.js` made from the current WebPs, the preload list names each one, and the stylesheet asks for the same addresses the scripts do |
 
 The browser suite exists because jsdom has no hit testing, and that is a whole

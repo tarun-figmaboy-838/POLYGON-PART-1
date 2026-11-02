@@ -1,34 +1,4 @@
 #!/usr/bin/env node
-/*!
- * build-vo-hindi.js — the Hindi voice, from the user's recordings to what both halves play.
- *
- *   node tools/build-vo-hindi.js --align   first: where each word falls in each recording
- *                                          (tools/align-vo-hindi.py; needs torch — see that file)
- *                                          → docs/vo-hindi.json, then builds as below
- *   node tools/build-vo-hindi.js           builds from docs/vo-hindi.json (needs only ffmpeg/ffprobe):
- *
- *   Part 1  assets/vo/hi/<id>.mp3 + .ogg, word-timings.json, index.json + index.js
- *           — played by src/audio/vo.js when the lesson speaks Hindi (?lan=hi)
- *   Part 2  ../part2-frozen-rush/game/assets/audio/vo-lines-hi.mp3 + .ogg, and its windows in
- *           ../part2-frozen-rush/game/js/vo-hi.js — the Hindi take engine.js plays instead of the
- *           English one (then rebuild Part 2's bundle: node tools/build-bundle.mjs there)
- *   docs/VO-HINDI.md  every recording, the line it is, and the lines that have none yet
- *
- * WHICH RECORDING IS WHICH LINE is tools/vo-hindi.js. A new recording: add its id there, run
- * --align, and the build picks it up.
- *
- * THE WORDS ARE TIMED OFF THE HINDI VOICE. Each recording is aligned against the Hindi words
- * the game shows for its line (polygon-locales.json "hi"), one onset per word — the same count
- * the bubble, the plank and the tutorial split the line into — so each word appears as it is said.
- *
- * AS THE ENGLISH IS. Part 1's clips are cut like the English ones: 0.1 s before the first word
- * (the recordings open on 0.3 s of silence) and the natural tail kept; mono mp3 at 64 kbps and
- * an Opus twin. Part 2's lines are one take with a window each, padded 60 ms before the first
- * word and 120 ms after the last, 0.65 s apart, like the English take. One gain per take
- * (tools/vo-hindi.js `take`: the recordings made together) brings that take's median loudness to
- * the English clips' (-21 LUFS), so the voice sits over the music as the English one does, every
- * take as loud as the others, and no line in a take louder than another than it was.
- */
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
@@ -96,9 +66,6 @@ A.recordings.forEach((r) => { byId[r.id] = r; });
 const stale = recordings.filter((r) => !byId[r.id] || byId[r.id].text !== textOf(r.id) || byId[r.id].file !== r.file);
 if (stale.length) { console.error('aligned against other words (or not aligned): ' + stale.map((r) => r.id).join(' ') + ' — run with --align'); process.exit(1); }
 
-/* A WORD IS SHOWN AS IT IS SAID, NEVER AFTER. The aligner places a word's start 30-70 ms after
-   the sound begins (measured against the recordings' own energy, where a word follows a pause),
-   so every start is brought forward by LEAD. */
 const LEAD = 0.04;
 /** Each word's start, with a silent word (an em dash) given the next word's. */
 function onsets(r) {
@@ -106,7 +73,6 @@ function onsets(r) {
   for (let i = out.length - 1; i >= 0; i--) if (out[i] == null) out[i] = i + 1 < out.length ? out[i + 1] : r.words[i - 1].end;
   return out;
 }
-/** Where the speech starts and ends in a file, and the pauses inside it (ffmpeg silencedetect). */
 function speech(file) {
   const log = run('ffmpeg', ['-hide_banner', '-i', file, '-af', 'silencedetect=noise=-45dB:d=0.08', '-f', 'null', '-']).stderr.toString();
   const dur = parseFloat(run('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', file]).stdout.toString());
@@ -128,12 +94,9 @@ function pcm(file, from, to, gainDb) {
   return run('ffmpeg', ['-v', 'error', '-i', file, '-af', 'atrim=start=' + from.toFixed(4) + (to != null ? ':end=' + to.toFixed(4) : '') +
     ',asetpts=PTS-STARTPTS,volume=' + gainDb.toFixed(2) + 'dB', '-ac', '1', '-ar', String(RATE), '-f', 's16le', '-']).stdout;
 }
-/* (bit-exact: an Ogg stream otherwise takes a random serial number, so every rebuild would change
-   every clip's bytes — and its revision, sending every returning player to fetch it again) */
 const pcmIn = ['-f', 's16le', '-ar', String(RATE), '-ac', '1', '-i', '-', '-fflags', '+bitexact', '-flags:a', '+bitexact'];
 const r2 = (x) => Math.round(x * 100) / 100, r3 = (x) => Math.round(x * 1000) / 1000;
 
-// ONE GAIN PER TAKE: each take's median loudness to the English clips'
 const GAIN = {};
 [...new Set(recordings.map((r) => r.take || 1))].sort().forEach((tk) => {
   const levels = recordings.filter((r) => (r.take || 1) === tk).map((r) => lufs(abs(r.file))).filter((x) => x != null).sort((a, b) => a - b);
@@ -153,9 +116,6 @@ for (const f of fs.readdirSync(OUT1)) {                 // a clip whose line is 
 const timings1 = {};
 recordings.filter((r) => r.plays === 1).forEach((rc) => {
   const file = abs(rc.file), r = byId[rc.id], sp = speech(file);
-  /* 0.1 s before the first word — or before its first sound, a soft attack just ahead of it —
-     but not a breath further ahead: the second take draws one before some lines (p37a: 0.3 s of
-     it at -53 dB), and a clip that opened on it put its first word 0.4 s after the bubble */
   const on0 = onsets(r)[0];
   const first = Math.max(Math.min(sp.start, on0), on0 - 0.15);
   const cut = Math.max(0, first - 0.10);
@@ -176,7 +136,6 @@ const lines2 = recordings.filter((r) => r.plays === 2).map((rc) => {
 }).concat(derived.filter((d) => d.plays === 2).map((d) => {
   const r = byId[d.from], file = abs(r.file), sp = speech(file), on = onsets(r);
   const from = Math.max(0, Math.min(sp.start, on[0]) - 0.06);
-  // up to the pause after its words: the first pause that starts after the last of them has begun
   const after = sp.pauses.find((p) => p[0] > on[d.words - 1]);
   const to = after ? Math.min(after[0] + 0.12, after[1]) : sp.end + 0.12;
   return { id: d.id, text: r.words.slice(0, d.words).map((w) => w.w).join(' '), file, from, to, take: takeOf(d.from), words: on.slice(0, d.words).map((t) => t - from) };
@@ -216,8 +175,6 @@ const EN = LOC.en;
 const playedBy = (r) => (r.plays === 1 ? 'Part 1' : 'Part 2');
 const recorded = new Set(recordings.map((r) => r.id).concat(derived.map((d) => d.id)));
 const enClips = JSON.parse(fs.readFileSync(path.join(LESSON, 'assets', 'vo', 'index.json'), 'utf8')).clips;
-// in the order they stand in polygon-locales.json, as the recordings are numbered — so each has the
-// number its file should take in the lesson's folder, after the ones there now
 const missing = Object.keys(EN).filter((id) => enClips.indexOf(id) >= 0 && !recorded.has(id) && typeof EN[id] === 'string');
 const next1 = recordings.filter((r) => /vo-part-1-hindi/.test(r.file)).length + 1;
 const cell = (s) => String(s).replace(/\|/g, '\\|');

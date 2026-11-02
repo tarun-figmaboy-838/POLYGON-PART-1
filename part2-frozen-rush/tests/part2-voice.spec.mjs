@@ -10,7 +10,6 @@ test.describe('Part 2 voice', () => {
       const { CFG } = await import('/js/engine.js');
       const prompts = [...CFG.levelOne.phases, ...CFG.levelTwo.levels]
         .map(p => ({ id: p.voId, text: p.instruction }));
-      // and Level 2's five nudges, said on the plank after a wrong stroke (CFG.levelTwo.hintVo)
       for (const k in CFG.levelTwo.hintVo) prompts.push({ id: CFG.levelTwo.hintVo[k], text: CFG.levelTwo.instructions[k] });
       const audio = new AudioContext();
       const decoded = await audio.decodeAudioData(await (await fetch('/assets/audio/vo-lines.ogg')).arrayBuffer());
@@ -30,7 +29,6 @@ test.describe('Part 2 voice', () => {
       for (let i = 0; i < onsets.length; i++) {
         expect(onsets[i], `${id} word ${i + 1} is inside the line`).toBeGreaterThanOrEqual(0);
         expect(onsets[i]).toBeLessThan(dur);
-        // (an em dash is shown as a word and is not spoken: it shares the onset of the word after it)
         if (i) { if (words[i - 1] === '—') expect(onsets[i]).toBeGreaterThanOrEqual(onsets[i - 1]); else expect(onsets[i]).toBeGreaterThan(onsets[i - 1]); }
       }
     }

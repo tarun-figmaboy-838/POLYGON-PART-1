@@ -1,21 +1,8 @@
 #!/usr/bin/env node
-/**
- * measure-loudness.js — render every sfx.js recipe offline and measure it,
- * so the per-sound trims are derived rather than guessed.
- *
- * Metric: maximum short-term K-weighted loudness over a 100 ms sliding
- * window (ITU-R BS.1770 weighting, ungated). Integrated LUFS needs 400 ms
- * blocks and gating, which is meaningless for a 50 ms click; the sliding
- * peak captures "how loud does this hit" for both a click and an explosion.
- *
- *   node tools/measure-loudness.js            # measure, print table
- *   node tools/measure-loudness.js --trims    # also emit the TRIM literal
- */
+// measure-loudness.js — render every sfx.js recipe offline and measure it,
 'use strict';
 
 const path = require('path');
-/* NOT A DEPENDENCY OF THIS REPO — see the same note in verify-mix.js. The game never
-   needs a native audio renderer; only these two measurement scripts do. */
 let OfflineAudioContext;
 try {
   ({ OfflineAudioContext } = require('node-web-audio-api'));
@@ -32,9 +19,6 @@ const REPEATS  = 7;      // averaged, to take the noise out of the calibration
 const WINDOW   = 0.100;
 const MAX_TRIM = 8.0;     // ceiling on boost; peak guard usually binds first
 
-// Per-family targets. Flat-normalising all thirty to one number would be
-// wrong: a UI tick is *supposed* to sit under an explosion. These are mix
-// decisions, deliberately spread over 9 dB.
 const TARGETS = {
   interface: -27.0,   // click, tick, select — present, never obtrusive
   setup:     -24.0,   // ratchet, anticipate — must sit UNDER the payoff
@@ -64,8 +48,6 @@ const FAMILY = {
   cuckoo:'comic', rubberChicken:'comic', ricochet:'comic',
   pianoRun:'comic', fallingWhistle:'comic', kazoo:'comic'
 };
-/* game/js/sfx.js is the kit's one copy — the file the page loads. This used to resolve
-   '../sfx.js' (tools/sfx.js), a path that has not existed since the kit moved. */
 const SFX_PATH = path.resolve(__dirname, '../../game/js/sfx.js');
 
 /* --- BS.1770 K-weighting, 48 kHz ---------------------------------- */
@@ -113,12 +95,6 @@ function decay(samples) {
   return Math.ceil((last / SR) * 100) / 100;   // round up to 10 ms
 }
 
-/**
- * Average several renders in the power domain. Noise-based recipes read a
- * random offset into a freshly generated noise buffer, so a single render of
- * a 35 ms click can sit several dB from its own mean. Calibrating from one
- * draw bakes that error into the trim.
- */
 function meanLoudness(runs) {
   var lin = 0, n = 0;
   for (var i = 0; i < runs.length; i++) {
@@ -200,8 +176,6 @@ async function render(name) {
     if (isFinite(r.lufs)) {
       db = target - r.lufs;
       trim = Math.min(MAX_TRIM, Math.pow(10, db / 20));
-      // Don't let a trim push the peak into clipping; the limiter is a
-      // safety net, not a mixing tool.
       if (r.peak * trim > 0.98) trim = 0.98 / r.peak;
       db = 20 * Math.log10(trim);
     }

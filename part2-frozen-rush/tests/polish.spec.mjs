@@ -1,18 +1,4 @@
-/* THE POLISH PASS, GUARDED.
-
-   One test per defect the QA sweep found, so none of them can come back quietly. What
-   they have in common is that each is measured or driven the way a PLAYER would: real
-   mouse strokes rather than the _cut hook wherever the gesture is the point, and every
-   assertion against a number the game reports about itself rather than against the
-   code that produced it.
-
-   They also print what they measured. That is deliberate — the numbers in the report
-   these came with (rope spacing, wobble amplitude, verdict box, frame rate) are read
-   out of this file's output, so a claim about the interface can always be re-checked
-   rather than taken on trust.
-
-   The screenshot tests at the end write to test-results/ and assert nothing. They are
-   the frames to look at when something is reported as "looking wrong". */
+// THE POLISH PASS, GUARDED.
 import { test, expect } from '@playwright/test';
 import { boot, waitState } from './helpers.mjs';
 
@@ -26,28 +12,15 @@ const box = (page, sel) => page.evaluate(s => {
     w: Math.round(r.width), h: Math.round(r.height),
     position: cs.position, opacity: cs.opacity, visibility: cs.visibility,
     filter: cs.filter,                       // the press is a filter now, not a second picture
-    /* WHEREVER THE ART IS PAINTED. PLAY's picture moved onto a child span so that layer can
-       be scaled by the pulse without moving the element's box — and onto a span rather than
-       a pseudo-element because ::before is the tap ring and ::after is the press sparks,
-       both already taken. Read the child when the element has no picture of its own. */
     bg: (() => {
       const face = el.querySelector('.btn-play-face');
       const src = cs.backgroundImage !== 'none' || !face ? cs.backgroundImage
                 : getComputedStyle(face).backgroundImage;
       return src;
-    // the picture's file name: the first url() — an image-set() lists the AVIF twin, then the .webp
     })().replace(/^[^]*?url\("?([^")]*)"?\)[^]*$/, '$1').replace(/^.*\//, '').slice(0, 40)
   };
 }, sel);
 
-/* KEEP THE RUN MOVING, in the background.
-
-   The game does NOT reach a crevasse on its own: there is a rock before phase 1 that
-   has to be jumped, and walking into it opens the Ouch panel and stops the world. So
-   any test that waits for a later state has to be clearing obstacles the whole time —
-   the two that were not simply sat in the Ouch panel until they timed out, which
-   looked exactly like the game hanging. This installs one page-side loop that jumps
-   rocks and dismisses the panel, and touches nothing else. */
 async function autoDrive(page) {
   await page.evaluate(() => {
     if (window.__drive) return;
@@ -67,19 +40,8 @@ async function autoDrive(page) {
   });
 }
 
-/* BACK TO REAL TIME before a gesture is measured.
-
-   ?fast=N steps the simulation N times per rendered frame, which is the only way to
-   reach a later phase quickly — but it also means N seconds of game time pass per
-   second of wall clock, and a Playwright mouse stroke is a dozen CDP round trips.
-   Measured: at fast=4 a swipe cut a rope correctly and the whole PHASE_WRONG beat had
-   played out before the assertion ran, and the ropes' jiggle had decayed to zero. Both
-   read as the input being ignored, and neither was. So a test about input drives the
-   run fast and then puts the clock back. */
 const realTime = page => page.evaluate(() => window.iceAgeGame.setOptions({ fast: 1 }));
 
-/* Every rope, and every hanging chunk, as the game has them right now. Printed rather
-   than assumed: a swipe test that guesses where a rope is tests nothing. */
 const ropes = page => page.evaluate(() => {
   const g = window.iceAgeGame.debug();
   if (!g.l1) return null;
@@ -90,9 +52,6 @@ const ropes = page => page.evaluate(() => {
   }));
 });
 
-/* Drive to a playable phase. The game will not get there on its own: the first rock
-   has to be jumped or hit three times, so a test that only waits sits in the Ouch
-   panel until it times out. */
 async function toPhase(page, phase = 0, budget = 120000) {
   await page.evaluate(async p => {
     const g = window.iceAgeGame;
@@ -115,8 +74,6 @@ async function toPhase(page, phase = 0, budget = 120000) {
 test('a right answer showers confetti across the stage', async ({ page }) => {
   await boot(page, { fast: 4 });
   await toPhase(page);
-  /* Real time to look at it: the pieces live about two seconds of GAME time, which
-     at fast=4 would be gone before the screenshot. */
   await realTime(page);
   const good = await page.evaluate(() => window.iceAgeGame.debug().l1.unfilled[0]);
   await page.evaluate(k => window.iceAgeGame._cut(k), good);
@@ -158,10 +115,6 @@ test('the fright actually plays when he sees the ditch', async ({ page }) => {
   });
   const shake = trail.filter(s => s.anim === 'SHAKE');
   const shakeFrames = shake.length;
-  /* THE DURATION, not the sample count. Sampling once per animation frame counts
-     FRAMES, and a headless runner compositing a 1920x1080 canvas manages about half
-     of them — so a threshold on the count fails on a slow machine while the fright it
-     is measuring is playing perfectly. p.t is the state's own clock. */
   const shakeHeld = shake.length ? Math.max(...shake.map(s => s.t)) : 0;
   const maxWob = Math.max(...trail.map(s => Math.abs(s.wobX)));
   const maxLean = Math.max(...trail.map(s => Math.abs(s.lean)));
@@ -178,29 +131,9 @@ test('the fright actually plays when he sees the ditch', async ({ page }) => {
   expect(shakeHeld, 'the fright holds for a real length of time').toBeGreaterThan(0.9);
   expect(shakeFrames, 'and is drawn on many frames').toBeGreaterThan(6);
 
-  /* IT IS THE DELIVERED ANIMATION, and that is a change of substance rather than of
-     numbers. This used to assert a procedural wobble and a recoil-then-lean, because
-     the fright had no art of its own and was a sine wave applied on top of a held
-     frame. There is a 36-frame delivered fright now, so what has to be true is that
-     the SHEET plays: same sheet throughout, and many distinct frames of it.
-
-     Twice during this change a missing symbol threw once per frame inside update(),
-     which aborted it partway and left the animation stuck on frame 0 — and a frozen
-     sheet is indistinguishable from a held pose in a screenshot. Asserting on the
-     count of distinct frames is what catches that. */
-  /* THE TRAMPLE, since the fright sheet was shelved on request: the arrival at the edge
-     is the delivered rear-up-and-stamp loop, played from its first frame, and LOOK_DOWN
-     carries the same sheet on. One sheet throughout is still the thing to hold. */
   expect(sheets, 'the arrival is drawn from the owner\'s tremble sheet').toEqual(['tremble']);
   expect(distinct, 'and the sheet actually advances').toBeGreaterThan(6);
 
-  /* AND THE OLD SHUDDER STAYS GONE. Removed on request: two performances of one beat
-     fight rather than add, and a sine wave shoving the sprite sideways over a drawn
-     reaction reads as the picture vibrating. This is the guard against it creeping
-     back the next time someone wants the fright to feel stronger. */
-  /* SINCE THE OWNER'S TREMBLE SHEET: a SMALL secondary shake is asked for, on the strong
-     tremble only (CFG.sprite.tremble.strong, plan steps 7-14) — ±3 px, never more — and
-     nothing anywhere else. The sine-wave shudder over the whole fright stays gone. */
   const strong = s => s.step >= 7 && s.step <= 18;
   const wobOutside = Math.max(0, ...trail.filter(s => !(s.anim === 'SHAKE' && strong(s))).map(s => Math.abs(s.wobX)));
   expect(wobOutside, 'no procedural wobble outside the strong tremble').toBe(0);
@@ -211,16 +144,6 @@ test('the fright actually plays when he sees the ditch', async ({ page }) => {
   expect(maxScare, 'the fright amplitude still exists for the other cues').toBeGreaterThan(0.2);
 });
 
-/* A MISSED SWIPE IS ANSWERED BY SOUND, NOT MOTION.
-
-   This used to assert that the ropes near the stroke jiggled. That feedback has been
-   removed: the hanging options now hold perfectly still — no swing, no tilt, no settle
-   bounce and no jiggle — because they are the question being asked and a question
-   should not move while it is being read. So what a near miss must now do is exactly
-   nothing to the options, and the whiff cue carries it.
-
-   The assertion that matters either way is unchanged and is the important one: a stroke
-   that crosses no rope must not cut anything. */
 test('a swipe that misses every rope cuts nothing, and moves nothing', async ({ page }) => {
   await boot(page, { fast: 4 });
   await toPhase(page);
@@ -283,9 +206,6 @@ test('a real swipe across a rope cuts it', async ({ page }) => {
   }
   await page.mouse.up();
   await page.waitForTimeout(140);
-  /* Asserted on what the cut LEAVES, not on the state it passes through: PHASE_WRONG
-     ends when the chunk has finished falling, so a slow round trip can miss it
-     entirely and report an input that worked as an input that did nothing. */
   const st = await page.evaluate(() => {
     const G = window.iceAgeGame.debug();
     return {
@@ -312,18 +232,6 @@ test('tapping the mammoth reacts, and changes nothing', async ({ page }) => {
     const r = document.querySelector('#game-canvas').getBoundingClientRect();
     return { x: r.x + 430 / 1920 * r.width, y: r.y + 700 / 1080 * r.height };
   });
-  /* THE PEAK, NOT A SNAPSHOT — and stop fast-forwarding first.
-   *
-   * hop and scare are both DECAYING values, so what is being asserted is that they
-   * were raised at all. Reading them once after a fixed 60ms wall-clock wait measured
-   * something else entirely: with ?fast=4 each rendered frame advances four capped dt
-   * steps, so on a slow renderer a single frame burns ~130ms of GAME time and the whole
-   * reaction can be over before the read. It passed for months and then failed under
-   * parallel load, reporting that the character had not reacted when it plainly had.
-   *
-   * So: back to real time for the poke, because the decay is the thing being watched
-   * and fast-forwarding it is actively wrong here; and take the maximum over a few
-   * frames rather than one sample, which is what "he reacted" actually means. */
   await page.evaluate(() => window.iceAgeGame.setOptions({ fast: 1 }));
   await page.mouse.click(pt.x, pt.y);
   const after = await page.evaluate(async () => {
@@ -355,10 +263,6 @@ test('shots of every beat', async ({ page }, info) => {
   await page.waitForTimeout(500); await shot('01-run');
   await waitState(page, 'GLACIER_BREAK_1', 90000);
   await page.waitForTimeout(900); await shot('02-break');
-  /* EITHER the intro or the puzzle. The intro is 1.4s of game time now (introRead), which
-     at fast=3 is under half a second of wall clock — less than the screenshot pause above
-     — so waiting for PHASE_INTRO alone missed it and sat out the 30s while the game idled
-     in PHASE_ACTIVE. The shots still capture whichever beat is up. */
   await waitState(page, ['PHASE_INTRO', 'PHASE_ACTIVE'], 30000);
   await page.waitForTimeout(220); await shot('03-fright');
   await page.waitForTimeout(800); await shot('04-peer');
@@ -378,16 +282,6 @@ test('shots of every beat', async ({ page }, info) => {
   await page.waitForTimeout(800); await shot('08-mended');
 });
 
-/* EVERY SHAPE, WITH ITS RING, at the size the game draws it.
-
-   The ring traced off the artwork is what the game reasons about and what it clips
-   the picture to, so if the two are misregistered the learner is counting the corners
-   of one polygon while the outline draws another. That is exactly what was happening:
-   seat() rotates a ring and then re-centres it on its new bounding box, and the
-   artwork transform was given the rotation and the scale but not the re-centring.
-
-   This walks all seven phases and crops the option row out of each, so all fourteen
-   shapes can be checked at once against the outline they are supposed to fill. */
 test('every option shape sits on its own outline', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'one set of frames is enough');
   test.setTimeout(300000);
@@ -433,32 +327,15 @@ test('the cover and its PLAY button', async ({ page }, info) => {
   const stage = await box(page, '#stage');
   console.log(info.project.name, 'PLAY', JSON.stringify(b), 'stage', stage.w + 'x' + stage.h);
   expect(b.bg, 'the supplied art').toContain('btn-play');
-  /* BIG ENOUGH TO BE THE THING YOU LOOK AT — held as a share of the stage, not in pixels.
-     A flat >120px was a desktop number: the stage letterboxes, so at 844x390 it is 693px
-     wide and the same 13.5% button measures 94px. That read as a shrunken button and was
-     nothing of the kind. Measured: 259/1920 = 13.5% and 94/693 = 13.6% — the same button.
-     The pixel floor that does matter on a phone is the tap target, so that is what is kept. */
   expect(b.w / stage.w, 'PLAY is the same share of the stage at every size').toBeGreaterThan(0.12);
   expect(b.w, 'and never smaller than a thumb').toBeGreaterThan(44);
 
-  /* AND IT IS ACTUALLY ON THE SCREEN.
-
-     This is here because the button vanished and every other check still passed. The art
-     had been moved onto a layer of its own so the pulse could scale it, and that layer was
-     ::before — which is already the tap ring, declared later in screens.css with opacity 0.
-     The later rule won. The picture was loaded, the pulse was running, the box was the
-     right size in the right place, and the cover had no button on it. Measuring where the
-     art IS PAINTED, rather than only what it is set to, is the check that catches that. */
   const face = await page.evaluate(() => {
     const f = document.querySelector('#btn-play .btn-play-face');
     if (!f) return { missing: true };
     const cs = getComputedStyle(f);
     return {
       opacity: +cs.opacity, visibility: cs.visibility, display: cs.display,
-      /* offsetWidth/Height, not the client rect. The layer is mid-pulse whenever this is
-         read and a rect carries the scale with it — 259 measures 268 at the top of the
-         swell. Layout size is what "fills the button" means, and a transform never
-         touches it. */
       w: f.offsetWidth, h: f.offsetHeight,
       hasArt: cs.backgroundImage !== 'none'
     };
@@ -472,28 +349,10 @@ test('the cover and its PLAY button', async ({ page }, info) => {
   expect(face.w, 'and it fills the button').toBe(b.w);
   expect(face.h, 'in both axes').toBe(b.h);
 
-  /* IT LOOKS ALIVE, AND IT LOOKS SMOOTH — measured on the painted layer, not assumed.
-
-     Read off .btn-play-face across a whole cycle, because none of it can be trusted from
-     the stylesheet: a filter list of a different length between keyframes parses fine and
-     then sits dead on one frame, and a scale that fails to interpolate does the same.
-
-     AND NOTHING JUMPS. The pulse stuttered when it was written with four keyframes —
-     easing applies to every segment, so each extra stop is a full stop — and it visibly
-     shook when the swell was done with background-size, which re-rasterises the image at a
-     new pixel size every frame. Both faults show up the same way: the change from one
-     position to the next stops being even. So the largest step is compared against the
-     average. On a sine-shaped ease that ratio is about pi/2; a curve with a stall in it,
-     or one built from four keyframes, runs well past it. */
   const pulse = await page.evaluate(() => {
     const face = document.querySelector('#btn-play .btn-play-face');
     const anim = face.getAnimations().find(a => /pulse/i.test(a.animationName || ''));
     if (!anim) return { missing: true };
-    /* SCRUBBED, NOT WATCHED. Sampling this on a timer measured the RUNNER, not the button:
-       a loaded headless box delivers frames 20ms apart and then 90ms apart, so the position
-       deltas came out uneven and a perfectly smooth curve failed the evenness check. Pausing
-       the animation and stepping its own timeline in equal slices takes wall clock out of it
-       entirely — what is left is the shape of the curve, which is the thing being judged. */
     anim.pause();
     const ct = anim.effect.getComputedTiming();
     const delay = ct.delay || 0;
@@ -524,10 +383,6 @@ test('the cover and its PLAY button', async ({ page }, info) => {
   expect(pulse.blurMax - pulse.blurMin, 'the glow opens and closes').toBeGreaterThan(6);
   expect(pulse.brightMax, 'and the face lifts at the peak').toBeGreaterThan(1.08);
   expect(pulse.stepMax / pulse.stepAvg, 'and it travels evenly — no stall, no shake').toBeLessThan(2.6);
-  /* RAISED, AND FULLY IN FRAME (asked for). It sat at 2.8% off the bottom, which on a phone
-     in landscape is where the browser's own chrome and the gesture bar arrive; 7% of the
-     stage is a comfortable margin of ice under it. Held as a share of the stage so it is the
-     same margin at every size, and the whole button must be inside the stage. */
   const gapBelow = (stage.y + stage.h) - (b.y + b.h);
   expect(gapBelow / stage.h, 'a comfortable margin under the button').toBeGreaterThan(0.05);
   expect(b.y, 'and the top of it is on the stage').toBeGreaterThan(stage.y);
@@ -538,16 +393,8 @@ test('the cover and its PLAY button', async ({ page }, info) => {
   await page.screenshot({ path: `test-results/qa-play-pressed-${info.project.name}.png` });
   const pressed = await box(page, '#btn-play');
   console.log(info.project.name, 'PRESSED bg =', pressed.bg);
-  /* THE PRESS IS NOT A PICTURE ANY MORE. This delivery of PLAY is a single take, so the
-     press is a darkening and a compression in CSS (screens.css), the way TRY AGAIN's is.
-     What is held is that pressing changes something visible and does not move the target's
-     centre: the same picture, darker, and smaller rather than displaced. */
   expect(pressed.bg, 'the same picture, not a second one').toMatch(/^btn-play\.(webp|avif)\b/);   // or its AVIF twin
   expect(pressed.filter, 'and it darkens under the finger').toMatch(/brightness\(0?\.\d+\)/);
-  /* THE SAME OUTER DIMENSIONS IN BOTH STATES, and no layout shift. The press was a darkening
-     AND a 6% compression; the compression is gone because a control that changes size under a
-     thumb is a control that moves while it is being hit, and the requirement is that resting
-     and pressed are the same box. So the only thing that changes is the light. */
   expect(pressed.w, 'the pressed box is the resting box').toBe(b.w);
   expect(pressed.h, 'in both axes').toBe(b.h);
   expect(Math.abs((pressed.x + pressed.w / 2) - (b.x + b.w / 2)), 'and it does not move').toBeLessThan(1);
@@ -555,14 +402,6 @@ test('the cover and its PLAY button', async ({ page }, info) => {
   await page.mouse.up();
 });
 
-/* THE PATH JOINS.
-
-   The path art is a finished segment, not a seamless tile, so butting copies of it
-   left a hard vertical seam down through the snow, the ice and the rock — visible
-   once every ~1900px, which is every 3.7s of running. Alternate tiles are now
-   mirrored so every join meets its own reflection. This walks the world past several
-   joins and captures the ground strip each time, so the fix can be looked at rather
-   than argued about. */
 test('the path tiles without a seam', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'one set of frames is enough');
   await boot(page, { fast: 1 });
@@ -579,13 +418,6 @@ test('the path tiles without a seam', async ({ page }, info) => {
   }
 });
 
-/* ONE COLLISION SHOULD COST ONE STRIKE.
-
-   The three-strike valve exists so a learner who cannot time the jump is never stuck:
-   on the third failure the rock crumbles and the run continues. But the collision test
-   ran while the world was STOPPED behind the Ouch panel — the rock stays exactly where
-   it is, the 1.1s grace expires, and it hits again, and again. So one bump burned all
-   three strikes in 2.2 seconds and the player never got a second real attempt. */
 test('walking into a rock costs one strike, not three', async ({ page }) => {
   await boot(page, { fast: 1 });
   const r = await page.evaluate(async () => {

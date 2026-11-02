@@ -1,34 +1,4 @@
-/* THE MODULES, AS ONE CLASSIC SCRIPT — so index.html opens off the disk.
- *
- * WHY. The game is written as ES modules, and a browser fetches a module with CORS
- * even from a file:// page. Opening game/index.html by double-clicking it therefore
- * failed at the first line with
- *
- *   Access to script at 'file:///.../js/main.js' from origin 'null' has been blocked
- *   by CORS policy: Cross origin requests are only supported for protocol schemes:
- *   chrome, chrome-untrusted, data, http, https.
- *
- * and the page stayed a blank dark stage. A classic <script> has no such restriction,
- * so the same code concatenated into one non-module file loads straight off the disk.
- *
- * WHAT IT DOES NOT DO. It is not a general bundler and does not try to be. It relies
- * on three facts that a test enforces:
- *   - the dependency graph is a fixed, acyclic list (ORDER below)
- *   - every top-level name across all six modules is UNIQUE, so they can share one
- *     scope with nothing renamed
- *   - the only import forms used are `import { a, b as c } from './x.js'`
- * If any of those stops being true the build fails loudly rather than emitting
- * something subtly wrong.
- *
- * STALENESS IS THE REAL RISK — a bundle that no longer matches the modules is worse
- * than no bundle, because http:// runs the modules and file:// runs the bundle, so the
- * two would silently disagree. tests/bundle.spec.mjs rebuilds in memory and fails if
- * the file on disk differs, so a forgotten rebuild is a red test rather than a bug
- * report from someone who opened the file version.
- *
- *     node tools/build-bundle.mjs           write game/js/game.bundle.js
- *     node tools/build-bundle.mjs --check   exit 1 if it is out of date, write nothing
- */
+// THE MODULES, AS ONE CLASSIC SCRIPT — so index.html opens off the disk.
 import { readFile, writeFile, readdir, stat } from 'node:fs/promises';
 import { join, resolve, relative } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -37,13 +7,11 @@ const ROOT = resolve(import.meta.dirname, '..');
 const JS = join(ROOT, 'game', 'js');
 const OUT = join(JS, 'game.bundle.js');
 
-/* Dependency order, deepest first. engine.js imports the two data modules; main.js
-   imports the other three. */
 export const ORDER = [
   'asset-versions.js',      // generated below: content hashes for every file under game/assets
   'polygons.js',
   'option-shapes.js',
-  'vo-hi.js',               // generated: the Hindi take's windows (part1-swiftee-lesson/tools/build-vo-hindi.js)
+  'vo-hi.js',
   'engine.js',
   'bubble.js',
   'hud.js',
@@ -99,19 +67,6 @@ function flatten(name, src) {
   return (aliases.length ? aliases.join('\n') + '\n' : '') + lines.join('\n');
 }
 
-/* ---------------- ASSET VERSIONS ----------------
- *
- * WHY. The deployment caches everything under game/assets as immutable for a year
- * (vercel.json), which is the right header for files that never change under one name —
- * and exactly the wrong one the day they do. The character sheets were rebuilt as
- * six-column grids under the same file names; every browser that had visited before fed
- * the cached strips to code reading rows the strips did not have, and drew no character
- * at all. A cache header cannot fix that; the URL has to change when the file does.
- *
- * So every file under game/assets is hashed here, the map is written as a module the
- * engine imports, and every loader (images, audio, the CSS url()s) appends ?v=<hash>.
- * A changed file is a new URL; an unchanged one keeps its year of cache. Paths in CFG
- * stay bare, so the asset tests can still read them. */
 const ASSETS = join(ROOT, 'game', 'assets');
 const CSS_FILES = ['style.css', 'screens.css'].map(f => join(ROOT, 'game', 'css', f));
 
@@ -123,8 +78,6 @@ async function walk(dir) {
   }
   return out;
 }
-/* The files the game is served — not the user's recordings (assets/vo-part-2-hindi, Ogg Opus), which
-   are the source of the Hindi take and never fetched (and not deployed: .vercelignore). */
 async function served() {
   return (await walk(ASSETS)).filter(p => !/\.(wav|opus)$/i.test(p)).sort();
 }
@@ -139,8 +92,6 @@ export async function assetVersions() {
   return map;
 }
 
-/** { 'assets/char/mammoth-run.webp': 123456, ... } — each file's size on disk, in bytes: the
-    weights the loading bar gives its transfers (engine.js NET) before any header arrives. */
 export async function assetSizes() {
   const map = {};
   for (const p of await served()) {
@@ -173,7 +124,6 @@ ${sizeBody}
 `;
 }
 
-/** The two stylesheets with every url("../assets/...") carrying the file's current hash. */
 export async function versionedCss() {
   const map = await assetVersions();
   const out = {};
@@ -182,8 +132,6 @@ export async function versionedCss() {
     out[file] = src.replace(/url\("\.\.\/(assets\/[^"?]+)(?:\?v=[0-9a-f]+)?"\)/g,
       (m, path) => map[path] ? `url("../${path}?v=${map[path]}")` : m);
   }
-  /* AND index.html's early warm-up of the cover's pictures: every 'assets/...?v=' string in the
-     page carries the file's current hash, so the warm-up asks for exactly what the stylesheet will. */
   const html = join(ROOT, 'game', 'index.html');
   out[html] = (await readFile(html, 'utf8')).replace(/'(assets\/[^'?]+)\?v=[0-9a-f]+'/g,
     (m, path) => map[path] ? `'${path}?v=${map[path]}'` : m);
@@ -195,7 +143,6 @@ export async function build() {
   const seen = new Map();
   const manifest = await assetVersionsModule();
   for (const f of ORDER) {
-    // the manifest is generated, not read: the bundle must reflect the assets as they are NOW
     const src = f === 'asset-versions.js' ? manifest : await readFile(join(JS, f), 'utf8');
     for (const n of topLevelNames(src)) {
       if (seen.has(n)) {

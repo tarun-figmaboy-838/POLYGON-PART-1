@@ -1,24 +1,5 @@
 #!/usr/bin/env node
-/*!
- * encode-sprites.js — the sprite sheets the game draws, as WebP, from their PNG masters.
- *
- *   node tools/encode-sprites.js
- *
- *   assets/source/intro/sheet1-3.png       ->  assets/swiftee/intro/sheet1-3.webp   (the sleigh intro)
- *   assets/source/swiftee-measuring.png    ->  assets/swiftee/swiftee-measuring.webp (the measuring walk)
- *
- * NEAR-LOSSLESS, NOT LOSSY. These are flat-shaded cartoon sprites with dark outlines and soft
- * alpha edges. Lossy WebP at quality 85 was a third of the size and visibly wrong: it washed
- * out Swiftee's beak outline and the reindeer's collar, and 7-24% of the visible pixels moved
- * by more than 8/255 (the worst by 100). Near-lossless at level 40 moves no pixel, over white
- * or over the sky, by more than 8/255 — which cannot be seen — and is half the size of the PNG.
- *
- * The PNGs stay as the masters (assets/source is not deployed): tools/build-sleigh-frames.js
- * and tools/build-measuring.js measure and write those, and this turns them into what ships.
- * A WebP that is not smaller than its PNG is refused, not written.
- *
- * sharp is Part 2's (part2-frozen-rush/node_modules), as for tools/build-story.js.
- */
+// encode-sprites.js — the sprite sheets the game draws, as WebP, from their PNG masters.
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');

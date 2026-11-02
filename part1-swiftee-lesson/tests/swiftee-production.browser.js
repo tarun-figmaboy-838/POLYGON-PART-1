@@ -1,20 +1,4 @@
 // node tests/swiftee-production.browser.js [url] [--slow] [--nocache] [--seconds=90] [--story]
-//
-// SWIFTEE ON THE DEPLOYED BUILD, LOOKED AT. The glitch this guards against only shows on a real
-// network: a state change pointing the sprite at a sheet that has not arrived (or not decoded)
-// painted nothing, and he went blank between states (see src/character/swiftee.js, THE CELL IS
-// DRAWN, NOT SWAPPED). The network log cannot see that — every sheet was already fetched by the
-// loading bar — so this looks at the pixels: every 150 ms his box is captured and his teal body
-// counted. A visible Swiftee with almost no teal is a blank frame.
-//
-// It fails on: a blank frame, his box collapsing to nothing, a failed Swiftee request, a page
-// error. It is not in `npm test` (it needs the network); run it against the deployment:
-//
-//   node tests/swiftee-production.browser.js                                  (the live site)
-//   node tests/swiftee-production.browser.js https://polygon-part-1.vercel.app --slow --nocache
-//
-// --slow is a 3 Mbps line with 150 ms latency; --nocache disables the browser cache (the worst
-// case: every sheet fetched again on use); --story plays the Momo and Popo story first.
 'use strict';
 const { chromium } = require('playwright');
 

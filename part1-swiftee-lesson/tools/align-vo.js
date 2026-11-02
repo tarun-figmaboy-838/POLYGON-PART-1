@@ -1,34 +1,5 @@
 #!/usr/bin/env node
-/*!
- * align-vo.js — where every word of the recorded take is said, to the frame.
- *
- *   node tools/align-vo.js [assets/source/gamevo.mp3] [--modules <dir>]
- *       → docs/vo-timeline.json
- *   node tools/align-vo.js --master <name> [--modules <dir>]
- *       → docs/vo-masters/<name>.json — one of the master takes in tools/vo-masters.js
- *
- * The take is Swiftee reading the lesson end to end: p01 … p37i, then the
- * finale's "Honk-tastic!" and "You are a polygon adventurer!" (the feedback
- * cheers and nudges are not in it). This finds, for every word of every one
- * of those lines, the moment it starts and ends in the take. Then
- * tools/split-vo.js cuts the take into the per-line clips the game plays and
- * writes each clip's word starts, which the bubbles step against the voice's
- * own clock (game.js reveal).
- *
- * FORCED ALIGNMENT, NOT RECOGNITION. Speech-to-text timestamps were tried
- * first (whisper.cpp, plain and DTW) and measured against the silences in the
- * take: "I am Swiftee" starts at 0.94 s and they put it at 0.70 and 1.08; a
- * quarter of a second is a word visibly early or late. So the script is known
- * and only its timing is asked for: a wav2vec2 CTC model scores every letter
- * in every 20 ms frame, and a Viterbi pass forces the whole script — every
- * line, in order, letter by letter — through those scores. Each word starts
- * on the frame its first letter is emitted. Run once, at development time; the
- * game never does any of this.
- *
- * The model runs in Node through transformers.js, which is NOT a dependency
- * of the game: install it anywhere (`npm i @huggingface/transformers@3` in a
- * scratch folder) and pass that folder with --modules.
- */
+// align-vo.js — where every word of the recorded take is said, to the frame.
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
@@ -40,9 +11,6 @@ const ROOT = path.resolve(__dirname, '..');
 const argv = process.argv.slice(2);
 const flag = (name) => { const i = argv.indexOf('--' + name); if (i < 0) return null; const v = argv[i + 1]; argv.splice(i, 2); return v; };
 const MODULES = flag('modules');
-/* A MASTER TAKE (tools/vo-masters.js): its own recording, its own lines in the order it reads
-   them — the game's text for each id, a line read twice listed twice (`<id>~2`) — and its own
-   timeline, which split-vo.js --master cuts from. */
 const MASTER = flag('master');
 const master = MASTER ? require('./vo-masters').find((m) => m.name === MASTER) : null;
 if (MASTER && !master) throw new Error('no master take "' + MASTER + '" in tools/vo-masters.js');
@@ -52,8 +20,6 @@ const MODEL = 'Xenova/wav2vec2-base-960h';
 const RATE = 16000, FRAME = 320;                  // the model's hop: 20 ms
 const rel = (p) => path.relative(ROOT, p).replace(/\\/g, '/');
 
-/* THE LINES, IN THE ORDER THE TAKE READS THEM: the deck's narration and
-   instructions (p…), which ends with the finale's two. */
 const byId = {}; voLines().forEach((l) => { byId[l.id] = l; });
 const lines = master
   ? master.lines.map((e) => {
@@ -61,14 +27,8 @@ const lines = master
       const l = byId[e.split('~')[0]]; if (!l) throw new Error('no line ' + e); return { id: e, text: l.text };
     })
   : voLines().filter((l) => /^p\d/.test(l.id));
-/* FEEDBACK THE TAKE SAYS INSIDE A LESSON LINE: cut out as a clip of its own by
-   split-vo.js (words [first, last] of that line), and known to make-vo.js as
-   recorded, so it is never generated over. */
 const DERIVED = master ? [] : [{ id: 'fb18', from: 'p12', words: [0, 0] }];          // "Yay!"
 
-/* WHAT IS SAID FOR A WORD ON SCREEN. The model spells in capitals and
-   apostrophes; "non-adjacent" is said as two words and "Atleast" as "at
-   least". A word can be several spoken tokens; its time is its first one's. */
 function spokenOf(word) {
   const w = String(word).replace(/[‘’]/g, "'").toUpperCase();
   if (w.replace(/[^A-Z]/g, '') === 'ATLEAST') return ['AT', 'LEAST'];
@@ -111,8 +71,6 @@ function silences(file) {
   const seconds = pcm.length / RATE;
   console.log(rel(SRC) + ': ' + seconds.toFixed(2) + ' s, ' + lines.length + ' lines');
 
-  /* 1. LETTER SCORES FOR EVERY FRAME. In windows of 20 s, each keeping only
-     its middle so every frame is scored with context either side. */
   const nFrames = Math.floor(pcm.length / FRAME);
   let V = 0, logp = null;
   const HOP = 15 * RATE, CTX = Math.round(2.5 * RATE);
@@ -136,8 +94,6 @@ function silences(file) {
   }
   process.stdout.write('\n');
 
-  /* 2. THE SCRIPT AS ONE STRING OF LETTERS, words parted by the model's '|',
-     each letter remembering which word on screen it belongs to. */
   const tokens = [], owner = [];      // owner[k] = { li, wi } for letters, null for '|'
   const words = lines.map((l) => String(l.text).trim().split(/\s+/));
   words.forEach((ws, li) => ws.forEach((w, wi) => {
@@ -150,9 +106,6 @@ function silences(file) {
     });
   }));
 
-  /* 3. VITERBI. States are the letters with a blank before, between and after
-     each; a frame stays, steps to the next state, or skips a blank between
-     two different letters. */
   const L = tokens.length, S = 2 * L + 1, Tn = nFrames;
   const lab = (s) => (s % 2 === 0 ? BLANK : tokens[(s - 1) >> 1]);
   let prev = new Float32Array(S).fill(-Infinity), cur = new Float32Array(S);
@@ -179,8 +132,6 @@ function silences(file) {
     s -= how;
   }
 
-  /* 4. EACH WORD ON SCREEN: from its first letter's first frame to its last
-     letter's last frame. */
   const at = words.map((ws) => ws.map(() => ({ start: null, end: null })));
   owner.forEach((o, k) => {
     if (!o) return;
@@ -204,9 +155,6 @@ function silences(file) {
   };
   fs.writeFileSync(OUT, JSON.stringify(timeline, null, 1) + '\n');
 
-  /* HOW GOOD IS IT. Every line begins after a pause, and the pause's end is
-     measured independently of the model (silencedetect): the first word of
-     each line should start within a frame or two of it. */
   const errs = [];
   timeline.lines.forEach((l) => {
     const before = sil.filter((q) => q[1] != null && q[1] <= l.start + 0.3 && q[1] >= l.start - 0.5).pop();

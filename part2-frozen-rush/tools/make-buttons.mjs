@@ -1,46 +1,13 @@
-/* THE BUTTON ART, from the supplied normal/pressed pairs.
- *
- * Both of this game's picture buttons work the same way, because that is how the art
- * is drawn: THE PRESS IS ALREADY IN THE PICTURE. The pressed take has the coloured cap
- * pushed down into its rim, so swapping the image IS the press, and a transform on top
- * of it would double the travel into a lurch.
- *
- * THE ONE THING THAT HAS TO BE GOT RIGHT IS REGISTRATION. Trimming each file to its
- * own opaque bounds makes the button change SIZE when you press it, because the two
- * takes are never exactly the same size — the play pair is 1866x711 and 1880x707. So
- * each take is trimmed and then padded onto ONE common box:
- *
- *   centred horizontally, aligned along the BOTTOM
- *
- * A button rests on a baseline and a press moves the cap down inside a rim that stays
- * where it is, so the bottom is the edge that must not move. Whatever height the
- * pressed take is short by then reads as the button sinking, which is what it is.
- *
- * The common box's aspect ratio is printed, because the stylesheet has to declare it
- * (`aspect-ratio`) or the art gets letterboxed inside its own element.
- *
- *   node tools/make-buttons.mjs          # every pair
- *   node tools/make-buttons.mjs jump     # just one
- */
+// THE BUTTON ART, from the supplied normal/pressed pairs.
 import sharp from 'sharp';
 import { writeFileSync, existsSync } from 'node:fs';
 
-/* One entry per button. `outW` is about twice the widest the control is ever drawn on
-   a 1920 stage, which is as much resolution as a 2x display can show. */
 const BUTTONS = {
-  /* PLAY came as a SINGLE take this time — a nearly square amber-to-red button with the
-     word painted into it — so, like TRY AGAIN below, it has no `pressed` entry and the
-     press is done in CSS (a darkening plus a compression). The previous delivery was a
-     two-take pair and its pressed file went with it.
-     outW 900: the button is drawn up to about 460px on a 4K stage, and twice that is as
-     much resolution as a 2x display can show. */
   play: {
     normal: 'art-source/btn-play-raw.webp',
     outNormal: 'game/assets/ui/btn-play.webp',
     outW: 900
   }
-  /* TRY AGAIN and the JUMP pair are gone: the Ouch card and the jump button were removed from the
-     game, and their raw art and recipes went with them (history: tag sources-before-compression). */
 };
 
 /** Opaque bounds of an image, alpha > 8. */
@@ -77,9 +44,6 @@ async function build(name, cfg) {
     const t = b[state];
     const trimmed = await sharp(state === 'normal' ? cfg.normal : cfg.pressed)
       .extract(t).png().toBuffer();
-    /* Composited and resized in TWO passes on purpose. Sharp runs resize BEFORE
-       composite whatever order the calls are written in, so asking for both at once
-       shrinks the canvas first and then refuses the full-size overlay. */
     const placed = await sharp({
       create: { width: boxW, height: boxH, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } }
     })
@@ -97,17 +61,6 @@ async function build(name, cfg) {
               `  (${(boxW / boxH).toFixed(4)})`);
 }
 
-/* SHELVED RECIPES DO NOT RUN BY DEFAULT.
- *
- * `tryagain` and `jump` build art for controls the game no longer has. The recipes are
- * kept — the delivered PNGs are still in art-source/ and this is how they are rebuilt if
- * a control comes back — but their OUTPUT is not wanted in game/assets: it was 149KB
- * downloaded by every visitor for buttons that cannot appear, and because a tool named
- * the files, tools/check-assets.mjs counted them as referenced and reported a clean run.
- *
- * So a bare run builds only what the game loads. Name one explicitly to rebuild it
- * (`node tools/make-buttons.mjs jump`), and remember that writes into game/assets/ui
- * are exactly what --strict is there to catch. */
 const only = process.argv[2];
 for (const [name, cfg] of Object.entries(BUTTONS)) {
   if (only && only !== name) continue;

@@ -1,18 +1,4 @@
-/*!
- * avif.test.js — the AVIF twins are current, and every place that draws a picture agrees on them.
- *
- *   node tests/avif.test.js
- *
- *   THE TWINS   Every .avif under assets/ was made by tools/build-avif.js from the .webp beside it
- *               as it is now, and is listed in tools/avif-twins.json (a rebuilt .webp, a hand-made
- *               .avif or a forgotten twin all fail here).
- *   THE LIST    src/core/preload-list.js is current, and PreloadList.avif names every twin.
- *   THE PAGE    Each address the stylesheet asks for a twin by is the one PreloadList.avif gives
- *               Preload.pick, so the loading bar warms what is drawn; and every stylesheet use of a
- *               twinned .webp offers its twin, or the scripts and the stylesheet would fetch both.
- *   THE CHOICE  Preload.pick hands back the twin only where the probe said AVIF, and only for a
- *               picture that has one; and the probe in index.html is the same code as Part 2's.
- */
+// avif.test.js — the AVIF twins are current, and every place that draws a picture agrees on them.
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -54,7 +40,6 @@ literals.forEach((u) => {
   const webp = u.split('?')[0].replace(/\.avif$/, '.webp');
   t(u + ' is the address Preload.pick gives ' + webp, twins[webp] === u, twins[webp]);
 });
-// every declaration that names a twinned .webp is followed by one offering the twin
 const css = (html.match(/<style[^>]*>[\s\S]*?<\/style>/g) || []).join('\n').replace(/\/\*[\s\S]*?\*\//g, '');
 const decls = css.split(/[;{}]/).map((d) => d.trim());
 decls.forEach((d, i) => {

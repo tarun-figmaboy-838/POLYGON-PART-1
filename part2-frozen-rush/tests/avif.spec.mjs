@@ -1,13 +1,4 @@
-/* THE AVIF TWINS (tools/build-avif.mjs): the same picture in fewer bytes where the browser shows
- * AVIF, the .webp everywhere else — and never both, which would cost more than either.
- *
- *   - the twins on disk are the ones the list made, from the .webp files as they are now
- *   - where the probe says AVIF, every twinned picture the run loads is fetched as its twin and
- *     its .webp is never fetched; a picture with no twin is fetched as its .webp
- *   - where it says no (?avif=0 here), the scripts' pictures are the .webp, exactly as before
- *   - a twin that will not load falls back to its .webp, and the game still plays
- *   - the cover's early warm-up asks for the PLAY button the way the stylesheet does
- */
+// THE AVIF TWINS (tools/build-avif.mjs): the same picture in fewer bytes where the browser shows
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -16,7 +7,6 @@ import { boot, READY } from './helpers.mjs';
 test.setTimeout(180_000);
 
 const TWINS = JSON.parse(await readFile(resolve('tools/avif-twins.json'), 'utf8'));
-// the twins the scripts load on every run (the stylesheets' own come with the screens that use them)
 const WORLD = Object.keys(TWINS).filter(f => f.startsWith('assets/env/'));
 const fetched = page => {
   const got = [];

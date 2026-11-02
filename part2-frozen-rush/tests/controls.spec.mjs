@@ -1,8 +1,4 @@
-/* THE CONTROLS UNDER A FINGER, and the launch furniture.
- *
- * Found on the deployment: a JUMP button that hopped 24px on every press, a blank page while
- * the art loaded, a preload warning on every load, and no icon. These hold the fixes — and
- * the button itself is gone now, so the first of them holds THAT instead. */
+// THE CONTROLS UNDER A FINGER, and the launch furniture.
 import { test, expect } from '@playwright/test';
 import { boot, READY, force, waitState } from './helpers.mjs';
 
@@ -10,10 +6,6 @@ test.describe('controls', () => {
   test.setTimeout(90_000);
 
   test('there is no JUMP button: the whole stage is the control', async ({ page }) => {
-    /* The button was removed on request — a tap anywhere already jumped, so it was a
-       second way to do one thing and a corner target competing with the instruction that
-       matters. This holds the removal from every side it could come back from: the
-       markup, the stylesheet, and the code that used to press it. */
     await boot(page);
     await waitState(page, 'RUN_SEGMENT_1');
     await page.waitForFunction('window.iceAgeGame.debug().jumpEnabled === true');
@@ -38,8 +30,6 @@ test.describe('controls', () => {
 
   test('a tap on a block answers: its halo flashes and the hand shows how', async ({ page }) => {
     await boot(page);
-    /* Through the INTRO, not straight to ACTIVE: the intro is what lowers the blocks in
-       (dropReady), and a forced PHASE_ACTIVE leaves them held above the screen. */
     await force(page, 'PHASE_INTRO');
     await page.waitForFunction(() => window.iceAgeGame.state() === 'PHASE_ACTIVE', null, { timeout: 20_000 });
     await page.waitForFunction(() => { const L = window.iceAgeGame.debug().l1; return L && L.shapes.some(s => s.state === 'hang' && s.y > 400); }, null, { timeout: 20_000 });
@@ -54,19 +44,12 @@ test.describe('controls', () => {
     const after = await page.evaluate(() => {
       const G = window.iceAgeGame.debug();
       const want = G.l1.shapes.find(s => s.state === 'hang' && G.l1.unfilled.includes(s.kind));
-      /* ON THE ANSWER'S OWN CUT LINE. It used to be measured against the block's anchorX,
-         which is where the rope leaves the fog — the hand belongs where the marching
-         dashes are, and with the rig swaying that is up to a dozen pixels off the anchor.
-         Both now come from the one published point (engine.js: cutGuide -> sh.guide), so
-         this holds the thing that actually matters: the hand is on the right rope, at the
-         place that rope is marked to be cut. */
       const gd = want.guide;
       return { flashed: G.l1.shapes.filter(s => (s.flash || 0) > 0.1).map(s => s.kind), hand: !!G.handHint,
                handOnAnswer: !!G.handHint && !!gd && Math.abs(G.handHint.x - gd.x) < 0.5 && Math.abs(G.handHint.y - gd.y) < 0.5,
                handNearRope: !!G.handHint && Math.abs(G.handHint.x - want.anchorX) < 30,
                state: G.state, attempts: G.attempts };
     });
-    // light, not movement: the options hold still while they are read, so the answer is the halo
     expect(after.flashed, 'the tapped block flashes').toContain(at.kind);
     expect(after.hand, 'the demonstration hand comes forward').toBe(true);
     expect(after.handOnAnswer, 'and it is on the cut line of the answer, never a wrong one').toBe(true);
@@ -86,8 +69,6 @@ test.describe('controls', () => {
       const ax = sh.anchorX === undefined ? sh.x : sh.anchorX;
       return { x: r.left + ax / 1920 * r.width, y: r.top + 300 / 1080 * r.height, span: 90 / 1920 * r.width };
     });
-    /* Read the mark the moment the cut registers: a headless pointer step costs ~70ms of game
-       time, and a 0.3s flash is gone by the end of an eight-step swipe. */
     await page.mouse.move(geo.x - geo.span, geo.y); await page.mouse.down();
     let mark = { n: 0 };
     for (let i = 1; i <= 8 && !mark.n; i++) {
@@ -179,8 +160,6 @@ test.describe('controls', () => {
   });
 
   test('the cover shows before the art is in, and PLAY is held until READY', async ({ page }) => {
-    /* The cover appears as soon as the page runs; while the sheets load its note is up and
-       PLAY does nothing. Once READY the note is gone and PLAY starts the run. */
     page.on('pageerror', e => { throw e; });
     await page.goto('/index.html?sound=0&tutorial=0');
     await expect(page.locator('#cover')).toBeVisible({ timeout: 15_000 });

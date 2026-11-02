@@ -1,13 +1,4 @@
-/* Simulates a Vercel deploy of THIS repo, so a 404 can be reproduced locally.
-   Serves the repo ROOT (Root Directory unset) and applies the root vercel.json's
-   redirects / trailingSlash / cleanUrls / rewrites the way Vercel does.
-
-   trailingSlash is simulated ON PURPOSE and was the gap that let a broken deploy
-   ship: the config redirected "/" to "/game/", but "trailingSlash": false then
-   bounced "/game/" to "/game", and every relative href in index.html ("css/style.css")
-   resolves against "/" from there instead of "/game/". The sim used to serve "/game/"
-   directly, so the test passed while production 404'd on every stylesheet, module and
-   sprite. Each normalisation is a separate round trip here, exactly as on Vercel. */
+// Simulates a Vercel deploy of THIS repo, so a 404 can be reproduced locally.
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, resolve } from 'node:path';
@@ -23,8 +14,6 @@ const MIME = { '.html':'text/html; charset=utf-8', '.js':'text/javascript; chars
   '.webp':'image/webp', '.avif':'image/avif', '.svg':'image/svg+xml', '.mp3':'audio/mpeg', '.gif':'image/gif',
   '.woff2':'font/woff2', '.jpg':'image/jpeg' };
 
-// a header rule's `source` is a path pattern, not a regex: literal dots are literal,
-// only the (.*) groups are wild
 const sourceRe = src => new RegExp('^' + src
   .split('(.*)').map(s => s.split('.').join('[.]')).join('(.*)') + '$');
 
@@ -36,8 +25,6 @@ const server = createServer(async (req, res) => {
   for (const r of CFG.redirects || []) {
     if (r.source === p) return go(r.permanent === false ? 307 : 308, r.destination);
   }
-  // then trailingSlash normalisation — its own redirect, its own round trip.
-  // Only paths that do not look like a file are normalised.
   if (!extname(p)) {
     if (CFG.trailingSlash === true && !p.endsWith('/')) return go(308, p + '/');
     if (CFG.trailingSlash === false && p !== '/' && p.endsWith('/')) return go(308, p.slice(0, -1));

@@ -1,25 +1,4 @@
-/* THE THREE SHAPES THE SUPPLIED SET DOES NOT COVER.
- *
- * The delivered ice blocks cover 11 of the 14 geometries the curriculum names. Three
- * are missing — regularHexagon, concavePentagon, concaveHexagon — and two of those are
- * ANSWERS in phases 6 and 7, so the game cannot ship without them.
- *
- * They are not drawn from scratch. Each is built from the delivered art's own material
- * so it cannot look like a different set:
- *
- *   INTERIOR   real pixels, lifted from a donor block and masked to the new outline,
- *              inset so none of the donor's own bevel comes with it. So the frost
- *              mottling, the cracks and the air bubbles are the supplied ones.
- *   FRAME      rebuilt to the construction measured off the delivered art at
- *              1254x1254: a 4px saturated outline (11,148,247), a bright cyan bevel
- *              band about 40px wide (111..123, 212..226, 251), and an inner shadow
- *              step (42,170,246) where the bevel meets the face.
- *   GEOMETRY   the verified ring from polygons.js, so the side count, the convexity
- *              and the concavity are the checked ones rather than whatever a hand
- *              drawing happened to produce.
- *
- *     node tools/make-option-shapes.mjs
- */
+// THE THREE SHAPES THE SUPPLIED SET DOES NOT COVER.
 import sharp from 'sharp';
 import { join, resolve } from 'node:path';
 import { pointsOf } from '../game/js/polygons.js';
@@ -35,8 +14,6 @@ const OUTLINE = 4;
 const BEVEL = 40;
 const INNER = 6;
 
-/* Which donor supplies the interior. Chosen for a big uninterrupted face, so the crop
-   is all interior and none of it is the donor's own frame. */
 const WANT = [
   { id: 'regularHexagon',  donor: 'regularOctagon.avif' },
   { id: 'concavePentagon', donor: 'regularPentagon.avif' },
@@ -59,7 +36,6 @@ function ring(id) {
   return pts.map(p => [S / 2 + (p.x - cx) * k, S / 2 + (p.y - cy) * k]);
 }
 
-/** The same ring shrunk about its centre, for insetting the bevel and the texture. */
 function shrink(pts, f) {
   const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length;
   const cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
@@ -76,9 +52,6 @@ for (const { id, donor } of WANT) {
   const frameIn = 1 - (OUTLINE + BEVEL + INNER) / (S * 0.5);
   const face = shrink(outer, frameIn);
 
-  /* 1. the face: a vertical ramp taken from the delivered art's own readings —
-        light at the top, deep blue at the bottom. This shows through wherever the
-        borrowed texture is thin. */
   const base = await sharp(svg(`
     <defs><linearGradient id="f" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#CCF4FD"/>
@@ -90,10 +63,6 @@ for (const { id, donor } of WANT) {
   /* 2. real ice, lifted from a donor and masked to the new face. */
   const texMask = await sharp(svg(`<polygon points="${poly(face)}" fill="#fff"/>`))
     .png().toBuffer();
-  /* THE DONOR IS SOURCE ART, so it comes from SRC_DIR. This read DIR — the served
-     folder — which was right when the delivered PNGs still lived inside game/, and has
-     been wrong since they moved to art-source/ with the rest of the build inputs. It
-     only surfaced now because nothing had needed to build a new shape since the move. */
   const donorFace = await sharp(join(SRC_DIR, donor))
     // pull from the middle of the donor, well inside its own frame
     .extract({ left: 210, top: 210, width: S - 420, height: S - 420 })
@@ -103,9 +72,6 @@ for (const { id, donor } of WANT) {
     .composite([{ input: texMask, blend: 'dest-in' }])
     .png().toBuffer();
 
-  /* 3. the frame, to the measured construction: bright bevel, inner shadow step,
-        saturated outline. Stroked on inset rings so every band sits inside the
-        silhouette and the outline stays the true edge. */
   const bevelRing = shrink(outer, 1 - (OUTLINE + BEVEL / 2) / (S * 0.5));
   const innerRing = shrink(outer, 1 - (OUTLINE + BEVEL + INNER / 2) / (S * 0.5));
   const frame = await sharp(svg(`
@@ -121,10 +87,6 @@ for (const { id, donor } of WANT) {
     <polygon points="${poly(outer)}" fill="none" stroke="#0B94F7"
              stroke-width="${OUTLINE}" stroke-linejoin="miter"/>`)).png().toBuffer();
 
-  /* AND IT WRITES SOURCE ART, not a served asset. What this makes is a delivered-style
-     picture that build-option-shapes.mjs then traces and turns into the webp the game
-     loads — so it belongs beside the other inputs in art-source/, and writing it into
-     game/assets/ put a 1254px PNG in the deploy folder that no URL ever asks for. */
   const out = join(SRC_DIR, id + '.avif');
   await sharp({ create: { width: S, height: S, channels: 4,
                           background: { r: 0, g: 0, b: 0, alpha: 0 } } })

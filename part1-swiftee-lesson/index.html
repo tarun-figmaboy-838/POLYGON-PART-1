@@ -6,30 +6,9 @@
 <title data-i18n="lessonPageTitle">Swiftee — Polygons</title>
 <!-- inline, so the page never fires a 404 for a favicon it does not have -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>%F0%9F%90%A6</text></svg>">
-<!-- THE LESSON'S FACES SHIP WITH IT (assets/fonts): the very WOFF2 files Google Fonts served for Nunito
-     700-800 and Fredoka 600-700 — the variable fonts, cut to the Latin letters — with Google's own @font-face
-     rules copied into the stylesheet below, so nothing is drawn differently; only the trip to Google is gone
-     (on a school line it was the slowest thing on the page, and a network that drops Google left the
-     lesson in its fallback face). The two Latin files are asked for first, with the title art; the
-     Latin-extended twins only if a letter needs them. Hindi and the other languages still fetch their
-     Baloo face from Google (src/core/i18n.js). The faces never hold the page up: the text shows in the
-     fallback until they are in, and the lesson lays itself out again as they land (game.js,
-     fonts loadingdone). -->
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/fredoka-v17-latin.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/nunito-v32-latin.woff2" crossorigin>
-<!-- AVIF WHERE THE BROWSER SHOWS IT, WEBP WHERE IT DOES NOT. Some pictures ship twice: the
-     .webp every browser has always been given, and an .avif beside it that is the same
-     picture in fewer bytes (tools/build-avif.js). This asks the browser once, before anything is
-     drawn, and the answer is ImgFormat.avif: true only where an AVIF with an alpha channel
-     decodes to the right pixels AND the stylesheet's image-set(... type()) is understood, so
-     the scripts and the stylesheet always choose the same file. Anything else — an older
-     browser, or a decode that fails or never answers — is false, and every picture is the
-     .webp exactly as before. (?avif=0 says false too, for the scripts' pictures only: a
-     stylesheet's image-set() always decides for itself.) ImgFormat.ready settles with the answer;
-     the lesson boots once it has (game.js start), and every picture the scripts draw goes
-     through Preload.pick (src/core/preload.js). -->
-<script>
-  (function (w) {
+<script>  (function (w) {
     var F = w.ImgFormat = { avif: false, settled: false }, done = null;
     F.ready = typeof Promise === 'function' ? new Promise(function (r) { done = r; }) : null;
     function settle(ok) {
@@ -58,18 +37,9 @@
     } catch (e) { settle(false); }
   })(window);
 </script>
-<!-- ANOTHER LANGUAGE (?lan=hi, mr, te, gu or od — src/core/i18n.js): the page's own words wait,
-     unseen, until they are in that language, so the English is never what flashes up first -->
 <script>if (/[?&]lang?=(?!en\b)[a-z]/i.test(location.search)) { document.documentElement.className += ' i18n-wait'; setTimeout(function () { document.documentElement.classList.remove('i18n-wait'); }, 4000); }</script>
-<!-- the title and the backdrop are the first things on screen; fetch them alongside
-     the scripts. Everything else — the sleigh's sheets, Swiftee, the story, the voice —
-     is fetched by the loading bar (src/core/preload.js) before Play appears. -->
 <link rel="preload" as="image" href="assets/ui/banner.webp?v=b5109fa3">
-<!-- the backdrop as the stylesheet will ask for it: its AVIF twin wherever image-set() can
-     choose one (a browser that cannot show AVIF skips a preload typed image/avif, and so does
-     its image-set), the .webp everywhere else -->
-<script>
-  (function () {
+<script>  (function () {
     var l = document.createElement('link');
     l.rel = 'preload'; l.as = 'image'; l.setAttribute('fetchpriority', 'high');
     if (window.CSS && CSS.supports && CSS.supports('background-image', 'image-set(url("a.avif") type("image/avif"))')) {
@@ -78,9 +48,7 @@
     document.head.appendChild(l);
   })();
 </script>
-<style>
-  /* the faces (see the note in <head>): Google Fonts' own rules for these files, weight ranges and all */
-  @font-face { font-family: 'Fredoka'; font-style: normal; font-weight: 600 700; font-display: swap; src: url("assets/fonts/fredoka-v17-latin-ext.woff2") format("woff2");
+<style>  @font-face { font-family: 'Fredoka'; font-style: normal; font-weight: 600 700; font-display: swap; src: url("assets/fonts/fredoka-v17-latin-ext.woff2") format("woff2");
     unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
   @font-face { font-family: 'Fredoka'; font-style: normal; font-weight: 600 700; font-display: swap; src: url("assets/fonts/fredoka-v17-latin.woff2") format("woff2");
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
@@ -92,12 +60,7 @@
   :root {
     --ink: #1c2a4a;
     --sans: "Nunito", "Segoe UI", system-ui, sans-serif;
-    /* Comic ink: one outline weight and one hard offset shadow, reused by the
-       bubble, the card and every button, so they read as one drawn set
-       instead of three unrelated widgets. */
     --ink-w: 3px;
-    /* THE LESSON'S TOKENS, one place for what every screen shares: the ink of
-       an instruction and the accent its key words are set in. */
     --instruction-text: #174D59;
     --instruction-accent: #ff7a0e;
   }
@@ -105,88 +68,27 @@
   html, body {
     margin: 0; height: 100%; background: #a9d6f4; font-family: var(--sans);
     color: var(--ink); overflow: hidden;
-    /* NOTHING HERE IS A DOCUMENT. A child dragging a finger across the ice
-       was selecting text, and a tap that landed on a text node left Chrome's
-       blinking caret standing on the snow — a black bar beside Swiftee that
-       belongs to a word processor. The stage already refused selection; the
-       page did not, and the caret is painted by whatever has focus, so both
-       have to be said here. Buttons keep their own focus ring (:focus-visible),
-       which is a ring, not a caret. */
     user-select: none; -webkit-user-select: none; caret-color: transparent;
   }
 
-  /* THE BAND ROUND THE STAGE IS SKY, NOT PAPER.
-     The lesson is drawn 16:9 and fitted inside the window without stretching,
-     so on a 16:10 laptop or a 4:3 tablet there is a strip above and below it.
-     That strip used to be a pale grey-blue wash that met the painting at a
-     hard line: the game looked like a picture pasted on a page. These two
-     colours are the top and bottom rows of assets/bg/ice-vista.webp (#40b7fd
-     and #acd8fd), so the sky simply carries on past the edge of the stage and
-     the snow does too, and the seam cannot be seen. */
   #game { position: fixed; inset: 0; background: #5fbdfa; }   /* under the backdrop; never seen unless an image fails */
-  /* FULL BLEED. Insetting this by the plank's height did move the lesson
-     down, and also letterboxed the painted vista into a box with white bars
-     either side of it — the scene is the background of the whole window, not
-     a panel inside it. The plank floats over the top band instead, and the
-     lesson's own boxes start below it; see PANELS in stage.js. */
-  /* THE PAINTING FILLS THE WINDOW. The lesson is drawn 16:9 and fitted, so
-     on any other shape of screen there is a strip above and below it — and
-     that strip was flat colour, which turned the game into a picture pasted
-     on a page: a small scene with the buttons hanging off it over plain
-     blue. This is the same backdrop, scaled to COVER whatever shape the
-     window is and thrown out of focus, so the band is the same place seen
-     softly rather than an edge. It is behind everything and never moves. */
   #backdrop {
-    /* THE SAME TRICK THE TITLE SCREEN USES. The lesson is a 16:9 board fitted
-       inside the window, so on any other shape there is a strip it does not
-       reach; this is the same painting behind it, scaled to COVER the window
-       exactly as the title art does, so the strip is more of the scene rather
-       than a band. Sharp, not blurred: the board's own copy is drawn at
-       almost the same scale, so the two line up and the join disappears. */
     position: absolute; inset: 0;
-    /* lossless WebP: every pixel of the painting as it was, a quarter lighter — and where the
-       browser shows AVIF, its twin, the same painting in a twenty-third of the bytes
-       (tools/build-avif.js). A browser that does not understand image-set(type()) keeps the
-       first line. */
     background: url("assets/bg/ice-vista.webp") center center / cover no-repeat, #5fbdfa;
     background: image-set(url("assets/bg/ice-vista.avif?v=abcf3f2f") type("image/avif"), url("assets/bg/ice-vista.webp") type("image/webp")) center center / cover no-repeat, #5fbdfa;
     pointer-events: none; z-index: 0;
   }
   #stage { position: absolute; inset: 0; z-index: 1; }
-  /* No shadow at the edge of the board any more: the background now runs
-     past it in the painting own colours (stage.js drawVista bleeds), so a
-     shadow there would draw the very line it was added to hide. */
 
   /* Swiftee is an HTML/SVG overlay positioned by game.js */
   .swiftee { z-index: 3; }
 
-  /* ---- THE SPEECH BUBBLE ----
-     A bordered box of paper with a tail that is ONE SILHOUETTE with it.
-
-     The tail is a 60x60 SVG on a "0 0 60 60" viewBox, so one unit is one
-     CSS pixel. y=12 in that box is the MOUTH, placed on the centreline of
-     the bubble's border. The fill starts at y=0, twelve pixels before the
-     mouth, so it covers the border across the mouth's width; without that
-     the border paints straight across the join and the two read as separate
-     pieces. Only the two FREE edges are stroked — the border is already the
-     line at the mouth. The stroke is 4 user units = the 4px border, and it
-     scales with the element, so the border is 4px at every size.
-
-     The same square serves all four sides by rotating about its centre.
-     Offsets: element 60, mouth at 12, border 4 -> 12 - 4/2 = 10.
-     game.js (paintSkin) picks the side that faces Swiftee, slides the tail
-     along it to his head, and mirrors the sweep so the tip leans his way. */
   #bubble {
     --bubble-edge:   #169F99;   /* the border; the tail's outline follows it */
     --bubble-paper:  #FFFBEA;   /* the fill; the tail's fill follows it      */
     --bubble-ink:    var(--instruction-text, #174D59);
     --bubble-border: 4px;       /* keep in step with --tail-offset            */
     --bubble-radius: 26px;
-    /* A SHORTER TAIL, so the bubble can sit close over his head (the polish
-       pass: 12–24px from bubble to head) and the tip still stops at the top
-       of his head rather than on his face. The tail SVG keeps its 60-unit
-       drawing; this is the size it is drawn at. game.js (TAIL_SIZE, TIP,
-       MOUTH_*) works in the same pixels. */
     --tail-size:     36px;
     --tail-offset:   5.2px;     /* mouth(12/60 of the size) - border/2        */
     --tail-x:        calc(70% - 18px);
@@ -196,9 +98,6 @@
     isolation: isolate;
     box-sizing: border-box;
     /* One size for the whole component; the padding is em of this. */
-    /* ONE SIZE FOR EVERY LINE, on every screen: it scales with the window and
-       with nothing else (the fit used to step it down for a crowded screen and
-       up for an empty one, so the words changed size from line to line). */
     font-size: clamp(18px, calc(2 * var(--svw, 1vw)), 40px);
     max-width: min(820px, calc(68 * var(--svw, 1vw)));
     min-width: 5em;
@@ -214,32 +113,14 @@
       0 0 30px 8px rgb(22 159 153 / .07),
       0 8px 20px rgb(12 64 78 / .16);
     opacity: 0; pointer-events: none;
-    /* THE PANEL ARRIVES WITH A SOFT POP: 94% to 102% and settle, in 220ms
-       (bubbleIn, below) — and the first word lands 120ms into that (game.js
-       reveal, PANEL_LEAD), so the box is seen coming and then the words
-       begin. It used to spring out of the tail from fifteen per cent with a
-       45% overshoot, which was the loudest thing on the screen every time he
-       opened his mouth. */
     transform: translateY(6px) scale(.94);
     transform-origin: 12% 100%;
-    /* IT GLIDES, IT DOES NOT JUMP. The line is placed when it is set, and
-       measured again on the next frame and once the scene has stopped moving
-       — the sort tray lands on timers, Swiftee is still walking to his mark —
-       so the box does move after it appears. Moving it in one frame reads as
-       a glitch; 240ms of easing reads as the bubble settling next to him.
-       .snap turns this off for the FIRST placement of each line, so a new
-       line does not slide across the screen from where the last one was. */
     transition: transform 220ms cubic-bezier(.22, 1, .36, 1), opacity 200ms ease-out,
                 left 240ms cubic-bezier(.3, .8, .3, 1), top 240ms cubic-bezier(.3, .8, .3, 1);
   }
   #bubble.snap { transition: transform 220ms cubic-bezier(.22, 1, .36, 1), opacity 200ms ease-out; }
-  /* THE START OF AN ENTRANCE, laid down with no transition so the move is
-     always from here — for a line arriving and for the next bubble of one. */
   #bubble.pre      { transition: none !important; opacity: 0; transform: translateY(6px) scale(.94); }
   #bubble.pre-swap { transition: none !important; opacity: 0; transform: translateY(5px) scale(.96); }
-  /* The pop itself. Fill 'backwards' only: once it has played the bubble is
-     back on its ordinary styles, so dimming it while the child works still
-     works. */
   #bubble.show.enter { animation: bubbleIn 220ms ease-out backwards; }
   @keyframes bubbleIn {
     0%   { opacity: 0; transform: translateY(6px) scale(.94); }
@@ -254,30 +135,12 @@
     background: #fff; transform: rotate(-22deg); pointer-events: none;
   }
   #bubble.show { opacity: 1; pointer-events: auto; cursor: pointer; transform: none; }
-  /* WHILE HE IS OUT ON THE MEASURING WALK his words step aside (game.js
-     tailWhenHome), and spring back when he is home — a line that is his,
-     not a label left standing. */
-  /* (.dim.away too: a press dims the bubble — "#bubble.show.dim", later in
-     this sheet — and the press is exactly what starts the walk) */
   #bubble.show.away, #bubble.show.dim.away { opacity: 0; transform: scale(.94); transition: opacity 200ms ease, transform 200ms ease; }
   #bubble.show.back { animation: bubbleBack 460ms cubic-bezier(.3,1.5,.5,1); }
   @keyframes bubbleBack { 0% { opacity: 0; transform: scale(.9); } 60% { opacity: 1; transform: scale(1.03); } 100% { opacity: 1; transform: none; } }
   @media (prefers-reduced-motion: reduce) { #bubble.show.back { animation: none; } #bubble.show.away { transition: none; } }
-  /* KEPT UP, BUT OUT OF THE WAY. An instruction stays on screen while it is
-     being obeyed, and the bubble is above the stage and takes pointer events
-     — so the words a child is reading were also a lid over the thing they
-     were being told to touch. Once the interaction is live the box stops
-     taking taps entirely: still there, still readable, no longer a control.
-     Tapping to finish the reveal is done BEFORE this, while the line is
-     still arriving, which is the only moment that gesture means anything. */
   #bubble.show.passive { pointer-events: none; cursor: default; }
-  /* WHILE THE CHILD WORKS, THE WORDS STEP BACK A LITTLE: still readable,
-     not in the way. Back to full the moment the next line comes. */
   #bubble.show.dim { opacity: .82; }
-  /* GOING AWAY IS QUICKER THAN ARRIVING: the old bubble lifts four pixels and
-     fades in 170ms, and only then does the next one come in — two bubbles of
-     one line are never on screen together, and the words are never swapped
-     inside a box that stays. */
   #bubble.out { opacity: 0; transform: translateY(-4px); transition: transform 170ms ease-in, opacity 170ms ease-in; }
 
   .dialogue-inner {
@@ -286,18 +149,8 @@
     font-family: "Fredoka", "Baloo 2", "Arial Rounded MT Bold", var(--sans);
     font-size: inherit; font-weight: 700; line-height: 1.3;   /* 1.3–1.45 reads comfortably; 1.22 was tight */
     letter-spacing: .2px; text-align: center;
-    /* BALANCED, SO NO WORD IS LEFT ON ITS OWN. Ordinary wrapping filled the
-       first row to the edge and left "vertex." alone on the second; balanced
-       rows give "Drag the line segment / to a different vertex." The box then
-       closes to the widest row (game.js snugWidth), so balancing costs no
-       empty paper. */
     text-wrap: balance;
   }
-
-  /* ONE BUBBLE, ONE LOOK. Praise, hints and questions all come in the same
-     teal-and-cream bubble; a bubble that changed colour with its mood read
-     as a different widget each time. data-mood stays on the element for
-     the tests and for anyone who wants it, and styles nothing. */
 
   /* ---- the tail ---- */
   .bubble-tail {
@@ -311,8 +164,6 @@
   .bubble-tail-fill   { fill: var(--bubble-paper); }
   .bubble-tail-stroke {
     fill: none; stroke: var(--bubble-edge);
-    /* the 60-unit drawing is shown at --tail-size, so 4px of border is
-       4 x 60/36 units of stroke */
     stroke-width: 6.67;
     stroke-linecap: round; stroke-linejoin: round;
   }
@@ -338,30 +189,9 @@
     #bubble.show.enter { animation: none; }
   }
 
-  /* ---- the line arrives a word at a time ----
-     Each word is its own span, faded in on a timer. They are hidden with
-     opacity rather than display, so the bubble is laid out at its FINAL size
-     from the first frame: it never grows as the words arrive, which means it
-     never jitters and never has to be re-placed against the lesson mid-line. */
-  /* EACH WORD ARRIVES: up six pixels, from 96%, fading in — a soft ease-out
-     over about four hundred milliseconds, no bounce, one word after another
-     at a read-aloud pace (~280ms apart, dialogue-timing.js). Each word is
-     still settling as the next begins, so the line flows rather than ticks.
-     The key words get a slightly stronger pop of their own (dcTermPop, below).
-
-     scale and translate, never transform: the words carry no other transform
-     and these two composite on their own, so nothing here can throw away a
-     position something else set. The box does not move — every word holds its
-     space from the first frame (visibility is opacity here) — so a line
-     arrives without one reflow, and the bubble never has to be re-placed
-     against the lesson mid-sentence. No blur: a filter on every word was the
-     most expensive thing in the bubble and nobody could see it. */
   .bubble-line .w, .bubble-line .dc-term {
     display: inline-block;
     transform-origin: 50% 80%;
-    /* ON THE VOICE: each word arrives as it is SPOKEN (the clip's word
-       timings), so the arrival itself is short — a fade and a small lift in
-       about 160ms — or the text trails the voice it is showing */
     transition: opacity 160ms cubic-bezier(.25,.8,.35,1),
                 scale 170ms cubic-bezier(.25,.8,.35,1),
                 translate 170ms cubic-bezier(.25,.8,.35,1);
@@ -373,21 +203,6 @@
     .bubble-line.revealing .w:not(.in), .bubble-line.revealing .dc-term:not(.in) { translate: 0 0; scale: 1; }
   }
 
-  /* ---- dual coding: the key word is marked, and the thing it names
-     moves on the stage as the word appears ---- */
-  /* THE KEY WORD IS THE LOUDEST WORD IN THE BUBBLE — the action the child
-     takes ("Drag", "Tap") and the maths word it is about ("vertex",
-     "diagonal", "sides", "inside"). One flat warm orange for all of them, a
-     touch bigger than the sentence, so the look is learned once and nothing
-     is stuck on the line: no chip, no highlighter bar, no gradient.
-
-     The bump in size is paid back in line-height (1.07 x 1.215 = 1.3, the
-     line's own), so a row with a term in it is the same height as a row
-     without one. And the term hangs from the TOP of the row: baseline-
-     aligned, the bigger letters sat its box 0.7px higher than its
-     neighbours', and everything that counts rows by where each word's box
-     starts (rowsOfLine, snugWidth, the browser gate) counted two rows in
-     "Pick any vertex." and closed the bubble to half its width. */
   .dc-term {
     position: relative; isolation: isolate;
     display: inline-block; vertical-align: top;
@@ -395,19 +210,11 @@
     font-size: 1.07em; line-height: 1.215;
     font-weight: 800; white-space: nowrap;
   }
-  /* FLAT WARM ORANGE, AND NOTHING BEHIND IT. The key word was a gradient
-     ink over a yellow highlighter bar; the bar read as a sticker stuck on the
-     sentence ("do not add this bg bar fill, it looks odd") and a gradient is
-     one more effect in a line a seven-year-old is trying to read. It is one
-     warm orange now — the instruction accent, against the bubble's dark teal
-     ink — a touch larger than the words round it, with the faintest lift. */
   .dc-ink {
     display: inline-block;
     color: var(--instruction-accent, #B84A00);
     text-shadow: 0 1px 0 rgba(120, 40, 0, .16);
   }
-  /* ...and when it lands, a tiny pop more than the words round it — on the
-     same beat as the thing it names moving on the stage. */
   .bubble-line.revealing .dc-term.in { animation: dcTermPop 220ms cubic-bezier(.22, 1, .36, 1) both; }
   @keyframes dcTermPop {
     0%   { scale: .92; }
@@ -417,36 +224,9 @@
   @media (prefers-reduced-motion: reduce) {
     .bubble-line.revealing .dc-term.in { animation: none; }
   }
-  /* A tinted term and the punctuation that follows it, held together — see
-     the note in dual-coding.js. */
-  /* ON THE PLANK, BLUE. Warm ink on warm wood was the one place the key
-     word did not stand out; against the brown lettering a deep glacier
-     blue is the coldest thing on the board, and reads at a glance. The
-     bubble is white, and keeps the warm ink. */
   #instruction .dc-ink { color: #0f4fc0; background: none; -webkit-text-fill-color: currentColor; filter: none; }
   .dc-keep { white-space: nowrap; }
 
-  /* ---- the interaction language ------------------------------------------
-     One rule for the whole game: anything the child can touch right now is
-     lifted off the scene by a warm halo, in the same amber as the Next
-     button, the play button and the speech bubble's rim. Stage.alive() puts
-     the class on and takes it off, keyed off the one signal every touchable
-     thing already sets — its own cursor — so a new interaction inherits this
-     without anybody remembering to.
-
-     A halo rather than a recolouring, because the lesson is already using
-     colour to mean things: a picked vertex is yellow, a diagonal that falls
-     outside is red. An affordance must not overwrite a fact. */
-  /* NOTHING GLOWS BY ITSELF.
-
-     The halo and the breathing were on for as long as a target existed, so a
-     screen with four cards had four things pulsing at the child the whole
-     time they were trying to read the question. An affordance that never
-     stops is not an affordance, it is noise.
-
-     What is left answers the pointer instead: a target lifts and warms under
-     the cursor and presses down when it is pushed. The hand cursor is still
-     what says 'touchable' before anyone reaches for it. */
   #stage .touchable { transition: filter .14s ease, translate .14s ease; }
   #stage .touchable:hover {
     filter: drop-shadow(0 0 7px rgba(255, 181, 21, .9));
@@ -456,46 +236,20 @@
     filter: drop-shadow(0 0 3px rgba(255, 181, 21, .7));
     translate: 0 3px;
   }
-  /* The polygon's own vertices carry it themselves — they are redrawn amber
-     and larger while they are the target — so a halo on top would only blur
-     them. A drop zone is not a button either: it is a place to put something,
-     already two hundred pixels of coloured dashed outline, and a glow around
-     something that big reads as a rendering fault rather than as an
-     invitation. The halo is for things the size of a control. */
-  /* A drop zone is two hundred pixels of dashed outline; a ring around
-     something that big reads as a rendering fault. It still answers a press. */
   #stage .zone.touchable:hover { filter: none; translate: 0; }
-  /* AN ANSWER CARD DOES NOT MOVE UNDER THE FINGER (the user: "when I tap, the card pops a
-     little"): pressed is a light state, not a movement — the halo that follows is the answer */
   #stage .card.touchable:hover, #stage .card.touchable:active { translate: 0; }
 
-  /* WHERE TO TAP. A side or corner still waiting to be measured breathes:
-     a soft warm glow that comes and goes, never a flash. The class is put
-     on by the tap-each input and taken off the moment the target is done. */
-  /* NO SECOND LINE ALONG A SIDE. A side still to measure used to be painted
-     over with a 14-unit glowing stroke — a second line running along the
-     side, which read as another side. It is marked by a small dot at its
-     middle instead (stage.js, side dots), and the side itself is left as the
-     shape draws it. The class stays for the tap target and its cursor. */
   #stage .edge.hint { stroke: transparent; }
-  /* A side still to measure breathes along its length (stage.js side-todo):
-     slow and soft, a beat apart side to side, and still once it is measured. */
-  /* (still, not pulsing: the marks say what is left to measure while he walks — a loop there
-     competed with the walk, the one thing to watch) */
   #stage .side-todo { stroke-opacity: .35; }
   @keyframes sideTodo { 0%, 100% { stroke-opacity: .22; } 50% { stroke-opacity: .85; } }
   @media (prefers-reduced-motion: reduce) { #stage .side-todo { animation: none; stroke-opacity: .6; } }
   /* a bird on a mark with no ground under it bobs on the air */
-  /* a slow, small rise and fall — enough to say "hovering", not a bounce (the animation review) */
   .swiftee.air { animation: hoverBob 2.6s ease-in-out infinite; }
   @keyframes hoverBob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -5px; } }
   #stage .knob.hint {
     transform-box: fill-box; transform-origin: center;
     filter: drop-shadow(0 0 4px rgba(75, 224, 255, .85));
   }
-  /* "SELECT ANY VERTEX": every corner breathes, a beat apart round the shape,
-     until one is picked (stage.js st.breathe) — soft, a swell and a glow,
-     never a flash. Still and glowing under reduced motion. */
   #stage .knob.breathe { transform-box: fill-box; transform-origin: center; animation: knobBreathe 1.6s ease-in-out infinite; }
   @keyframes knobBreathe {
     0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(75, 224, 255, 0)); }
@@ -504,8 +258,6 @@
   @media (prefers-reduced-motion: reduce) {
     #stage .knob.breathe { animation: none; filter: drop-shadow(0 0 4px rgba(75, 224, 255, .85)); }
   }
-  /* AN ANGLE STILL TO MEASURE breathes in outline (stage.js drawArc todo),
-     a beat apart round the shape, until it is tapped and fills. */
   #stage .angle-todo { opacity: .6; }
   #stage .angle-todo[data-todo="1"] { animation-delay: .22s; } #stage .angle-todo[data-todo="2"] { animation-delay: .44s; }
   #stage .angle-todo[data-todo="3"] { animation-delay: .66s; } #stage .angle-todo[data-todo="4"] { animation-delay: .88s; }
@@ -514,31 +266,12 @@
     50% { opacity: 1; filter: drop-shadow(0 0 5px rgba(255, 211, 90, .9)); }
   }
   @media (prefers-reduced-motion: reduce) { #stage .angle-todo { animation: none; opacity: .9; } }
-  /* A drop zone breathes while a card is waiting for it, and flares once
-     when a card lands. Both zones, always: the glow says "here is where
-     things go", never which one is right. */
-  /* A right card glows green, a wrong one flushes red. The glow is the
-     verdict: no ring and no tick on top of the shape. */
-  /* the compare card being talked about (stage.js focus): a gold rim just outside the card's own */
   #stage .focus-ring { transition: opacity 320ms ease; filter: drop-shadow(0 0 6px rgba(255, 194, 60, .8)); }
-  /* THE VERDICT, UNMISSABLE (the user: "glow when right or wrong?"): a wide, bright halo — green
-     for right, red for wrong — plus a tight rim, so it reads at a glance on the pale ice */
-  /* (drawn in the SVG now — stage.js optionCard `_mark`, a blurred halo rect and a rim — because a
-     CSS filter on an SVG group is not rendered by Safari; the classes remain as the state's name) */
-  /* A LITTLE LIFT UNDER THE CURSOR (the user: "add a little hover when the cursor is on the card,
-     to look active"): an answer card or button grows three percent under a pointer that can
-     hover — never on touch, never once the card is out, never while a finger is on it. */
   @media (hover: hover) and (pointer: fine) {
     #stage .card .shape-card, #stage .choice { transform-box: fill-box; transform-origin: center; transition: transform .16s ease-out; }
     #stage .card:not(.card-off):hover .shape-card, #stage .choice:hover { transform: scale(1.03); }
     #stage .card:not(.card-off):active .shape-card, #stage .choice:active { transform: scale(1.0); transition-duration: .06s; }
   }
-  /* A card missed twice is put out for the rest of the question: dimmer and
-     greyer, still readable, and nothing happens under a finger. */
-  /* THE SHAPE TAUGHT UP CLOSE (stage.js teachShape): the play steps back
-     under a dim, soft sheet — still there, quieter — and the card being
-     taught sits on it, large. Inside #stage, so he and his words stay
-     above it. */
   #stage .teach-sheet { position: absolute; inset: 0; z-index: 2; pointer-events: auto;
     background: rgba(2, 10, 26, 0); -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0);
     transition: background .35s ease, -webkit-backdrop-filter .35s ease, backdrop-filter .35s ease; }
@@ -569,22 +302,9 @@
     #stage .touchable:hover { translate: 0; }
   }
 
-  /* ---- TEMPORARY screen picker -------------------------------------------
-     Top-left, and quiet until it is wanted: at a quarter opacity it reads as
-     a tool rather than as part of the lesson, and it comes up to full on
-     hover or focus. Above the card, because the card is the other thing that
-     lives in this corner and the picker has to stay reachable. */
   #jump {
-    /* NOT the top-left corner: that is the instruction card's corner (left:3%,
-       top:4%, up to 46% wide), and a picker sitting on top of it covered the
-       first line of the only text telling the child what to do. This sits in
-       the clear strip between the card and the HUD at every width, because
-       the card can never pass 49% and the HUD starts at the right edge. */
     position: fixed; top: 6px; left: 52%; z-index: 60;
     max-width: calc(48vw - 96px);
-    /* THE REVIEW BAR, drawn the same in both parts (Part 2: .dev-bar in its
-       style.css): a small dark pill of plain system type, so it can never be
-       mistaken for one of the lesson's own buttons. */
     display: flex; align-items: center; gap: 6px;
     padding: 4px 6px; border-radius: 999px;
     background: rgba(10, 30, 60, .82); box-shadow: 0 2px 10px rgba(0, 0, 0, .3);
@@ -612,54 +332,21 @@
     background: #fff; border: 0; border-radius: 8px;
     padding: 0 6px; cursor: pointer;
   }
-  /* Under a phone width there is no clear strip, so it drops below the HUD
-     buttons and keeps its own row rather than fighting for one. */
   @media (max-width: 680px) {
     #jump { left: auto; right: 6px; top: 98px; max-width: 46vw; }
   }
 
-  /* ---- the instruction plank ---------------------------------------------
-
-     THE PRIMARY GUIDANCE, AND IT IS GIVEN ITS OWN ROOM.
-
-     This was a cream card pinned to the top-left corner, capped to whatever
-     width the lesson happened to leave beside it — and refused that cap when
-     the room fell below a readable column, at which point it sat over the
-     lesson instead. It negotiated for space the screen had already spent.
-
-     It is a plank across the top now, centred, and the lesson starts below
-     it: #stage takes its top inset from --instruction-h, which the component
-     measures from the rendered panel. One line or three, phone or desktop,
-     the lesson moves down by exactly what the plank needed and no number
-     here has to know how tall a line is.
-
-     BORDER-IMAGE, NOT A STRETCHED PICTURE. The artwork has snow caps on its
-     four corners and a plain wooden middle. Scaled as one image the caps
-     smear; as a nine-slice the four corners are drawn at their own
-     proportions and only the wood between them stretches, which is the one
-     part that can. 'fill' paints the middle slice behind the words, so the
-     text sits on wood rather than on nothing.
-
-     Everything that can scale is clamped rather than fixed, so the same rule
-     serves 1920 and 390 without a breakpoint.
-  */
   #instruction {
     position: absolute; z-index: 5;
     left: 50%; transform: translateX(-50%);
     top: clamp(6px, 1.2vh, 18px);
     box-sizing: border-box;
-    /* AS WIDE AS ITS SENTENCE, on one line. instruction.js steps the type
-       down until the sentence fits the room the HUD leaves, so the plank
-       never wraps and never carries empty wood either side of the words. */
     width: max-content;
     min-width: 0;
     max-width: min(calc(100 * var(--svw, 1vw) - 270px), 1200px);   /* never under the HUD buttons, at any width */
     height: auto;
 
     border-style: solid;
-    /* The side slices sit PAST the snow caps (270 of 1400), so the caps are
-       never cut and stretched; cut at 150 the cap edge ran down the plank
-       as a seam. The cap border keeps the cap in proportion. */
     border-width: clamp(26px, calc(3.4 * var(--svw, 1vw)), 62px) clamp(46px, calc(5.2 * var(--svw, 1vw)), 96px) clamp(18px, calc(2.4 * var(--svw, 1vw)), 44px);
     border-image-source: url("assets/ui/plank.webp?v=ef53d389");
     border-image-source: image-set(url("assets/ui/plank.avif?v=cc10196e") type("image/avif"), url("assets/ui/plank.webp?v=ef53d389") type("image/webp"));
@@ -677,12 +364,6 @@
     transition: opacity 200ms ease;
   }
   #instruction.show { opacity: 1; }
-  /* NO SEAMS. A nine-slice border-image is drawn as separate pieces, each
-     antialiased on its own, and on a screen scaled 125% or 150% the joins
-     fall between device pixels: faint lines ran down the plank and the Next
-     and Back buttons. The same art is laid a second time, one pixel larger
-     all round, behind the words: its joins fall one pixel away from the
-     first's, so wherever one layer has a hairline the other is solid. */
   #instruction { isolation: isolate; }
   /* the plank's words arriving with its voice (instruction.js voice) */
   #instruction .pw { opacity: 0; transition: opacity .16s ease; }
@@ -696,8 +377,6 @@
     border-image: url("assets/ui/plank.webp?v=ef53d389") 120 270 90 270 fill stretch;
     border-image: image-set(url("assets/ui/plank.avif?v=cc10196e") type("image/avif"), url("assets/ui/plank.webp?v=ef53d389") type("image/webp")) 120 270 90 270 fill stretch;
   }
-  /* The words cross-fade; the plank itself never moves, because the lesson
-     below is positioned from its height. */
   #instruction .instruction-text {
     display: block;
     transition: opacity 150ms ease;
@@ -711,14 +390,7 @@
     #instruction, #instruction .instruction-text { transition: none; }
   }
 
-
   /* ---- HUD ---- */
-  /* --band-x / --band-y are the letterbox strips the 16:9 fit leaves over
-     (game.js seatFurniture). Adding them keeps the corner furniture on the
-     painted ice instead of out on the band. */
-  /* SCALED WITH THE STAGE, WHOLE (--u, game.js seatFurniture): the HUD and
-     Next are the same size against the lesson on every screen, from their
-     own corner, so nothing inside them has to know. */
   #hud { position: absolute; z-index: 6; right: calc(14px * var(--u, 1) + var(--band-x, 0px)); top: calc(12px * var(--u, 1) + var(--band-y, 0px)); display: flex; gap: 10px; align-items: center;
          scale: var(--u, 1); transform-origin: 100% 0; }
   #hud button {
@@ -728,14 +400,8 @@
     box-shadow: 3px 4px 0 rgba(28, 42, 74, .8);
     transition: transform 90ms, box-shadow 90ms;
   }
-  /* Press the button into its own shadow — the cheapest way to make a
-     control feel physical, and it costs no extra art. */
   #hud button:active { transform: translate(3px, 4px); box-shadow: 0 0 0 rgba(28, 42, 74, .8); }
   #hud button.on { background: #ffe3ea; }
-  /* PLAY AGAIN IS THE KIT'S PRIMARY ACTION — the gold capsule
-     (btn-uiPrimary), 3-slice like Next and Back, so the one button the finale
-     offers is one of the game's own and not a flat green form control. Gold
-     acts, blue navigates. 82 is this capsule's cap in its own pixels. */
   #hud .replay {
     width: auto; height: 50px; display: none; align-items: center; gap: 6px;
     padding: 0 2px; font-size: 18px; color: #6a3200; text-shadow: 0 1px 0 rgba(255, 244, 200, .7);
@@ -747,31 +413,10 @@
   #hud .replay.show { display: inline-flex; }
   #hud .replay:active { transform: translateY(3px); box-shadow: none; filter: drop-shadow(0 0 0 rgba(140, 80, 0, 0)) brightness(.95); }
 
-  /* ---- The button on to Part 2 (there is no Next: every screen, and every story scene, goes
-     on by itself once it has been said and seen). The history, for the shape of the thing: ----
-     Advancing used to be a tap anywhere, so the same gesture both dismissed a
-     line and poked whatever was underneath it. It is a button now. It appears
-     only while the game is genuinely waiting, and it nudges itself every few
-     seconds so a child who has finished reading knows where to look.
-
-     #continue IS THE SAME BUTTON FOR THE LAST MOVE OF ALL: on to Part 2. It
-     stands where Next has stood for the whole lesson, because that corner is
-     where a child has already learnt "moving on" lives. Next is hidden on the
-     finale, so the two never share it. */
   #next, #continue {
     position: absolute; z-index: 6; right: calc(22px * var(--u, 1) + var(--band-x, 0px)); bottom: calc(26px * var(--u, 1) + var(--band-y, 0px));
     scale: var(--u, 1); transform-origin: 100% 100%;
     font: inherit; font-weight: 800; font-size: clamp(17px, 2vw, 23px); color: #fff;
-    /* NAVIGATION IS BLUE. This is the button that moves you on, and the
-       supplied kit gives each colour a job: gold acts, blue navigates, purple
-       is optional, green and red are verdicts. Next was the lesson's own
-       orange answer pill, which made the control that leaves a screen look
-       like one of the answers on it.
-
-       Still a 3-slice pill: round caps at their true proportion and only the
-       flat middle stretched to the word, so it fits Next and Play again alike
-       without ovalling the ends. 83 is this button's own cap in its own
-       pixels; 34px is that cap drawn at this height. */
     background: none; border: 0 solid transparent; border-width: 0 34px;
     border-image: url("assets/ui/btn-uiNav.webp?v=dbbb52c5") 0 83 0 83 fill stretch;
     border-image: image-set(url("assets/ui/btn-uiNav.avif?v=0530955a") type("image/avif"), url("assets/ui/btn-uiNav.webp?v=dbbb52c5") type("image/webp")) 0 83 0 83 fill stretch;
@@ -779,9 +424,6 @@
     filter: drop-shadow(0 4px 0 rgba(10, 60, 120, .35)); text-shadow: 0 2px 0 rgba(12, 70, 140, .55);
     transition: transform 90ms, filter 90ms, opacity 160ms;
   }
-  /* NO SEAMS (as the plank): the same pill once more behind the label, one
-     pixel wider each side, so the joins of one layer fall on the solid
-     pixels of the other at any display scaling. */
   #continue { text-decoration: none; }
   #next, #continue, #hud .replay { isolation: isolate; }
   #next::before, #continue::before, #hud .replay::before {
@@ -795,13 +437,9 @@
     #next::before, #continue::before { left: -29px; right: -29px; border-width: 0 28px; }
   }
 
-  /* IT WAITS BEFORE IT NUDGES. A button that twitches from the moment it
-     appears is hurrying a child who is still reading; this one first moves
-     after four seconds of nothing, and then once every eight. */
   #next.show, #continue.show { display: inline-flex; animation: nextNudge 8s ease-in-out 4s infinite; }
   #next:active, #continue:active { transform: translateY(4px); filter: drop-shadow(0 0 0 rgba(10, 60, 120, 0)) brightness(.94); animation: none; }
   #next .chev, #continue .chev { font-size: 1.1em; line-height: 1; }
-  /* while a card's explanation replays, Next waits for it (a press is not lost: it is not taken) */
   #next.show.wait { opacity: .55; cursor: default; animation: none; }
   @keyframes nextNudge {
     0%, 12%, 100% { transform: translateX(0); }
@@ -809,10 +447,6 @@
     8% { transform: translateX(1px); }
   }
   @media (max-width: 760px) { #next, #continue { right: calc(14px + var(--band-x, 0px)); bottom: calc(18px + var(--band-y, 0px)); height: 50px; line-height: 50px; border-width: 0 28px; } }
-  /* THE HAND-OVER SCREEN (game.js readyScene). Part 2's button is the only thing to press
-     there, so it is bigger — the same blue pill, a quarter taller, its caps grown in step
-     so the ends stay round — and it breathes after a moment instead of waiting eight
-     seconds to nudge, because nothing will move on without it. */
   #game.ready-scene #continue.show {
     height: 76px; line-height: 76px; border-width: 0 43px; font-size: clamp(21px, 2.5vw, 30px);
     animation: readyBreathe 2.4s ease-in-out 2.2s infinite;
@@ -830,21 +464,11 @@
   #progress-track { position: absolute; z-index: 5; left: var(--band-x, 0px); right: var(--band-x, 0px); bottom: var(--band-y, 0px); height: max(4px, calc(6px * var(--u, 1))); background: rgba(255,255,255,.35); }
   #progress { height: 100%; width: 0; background: #f2b544;   /* the plank's warmth, not another blue */ transition: width 400ms ease; }
 
-  /* ---- title screen ----------------------------------------------------
-     The painted banner is the whole screen, with the snow that falls through
-     the lesson falling in front of it and the play button sitting on a cold
-     floor at the bottom. Everything here is torn down by TitleFx.stop() the
-     moment the lesson starts.
-  */
   #loading {
     position: absolute; inset: 0; z-index: 10; display: grid; place-items: center;
     background: #9ecdf0; overflow: hidden;
     transition: opacity 400ms ease, visibility 0s linear 400ms;
   }
-  /* `pointer-events: none` here is not enough on its own: #start re-enables
-     it for itself below, so the faded-out button would keep swallowing every
-     tap in the middle of the screen. visibility takes the whole overlay out
-     of hit-testing, and the delayed transition lets the fade finish first. */
   #loading.gone { opacity: 0; pointer-events: none; visibility: hidden; }
   #loading.gone #start { pointer-events: none; }
 
@@ -862,20 +486,11 @@
     opacity: 0; mix-blend-mode: screen;
   }
   .title-snow { position: absolute; inset: 0; }
-  /* A cold settling of the light toward the bottom of the frame. It used to
-     be a floor for the button; the button now sits up on the ice, so this is
-     back to doing the one thing it is good at — keeping the foreground from
-     being as bright as the middle distance. */
   .title-scrim {
     position: absolute; left: 0; right: 0; bottom: 0; height: 42%;
     background: linear-gradient(180deg, rgba(150, 203, 237, 0) 0%, rgba(120, 184, 227, .16) 58%, rgba(92, 163, 212, .34) 100%);
   }
 
-  /* Pinned to a point in the PAINTING — the open ice under the logo — not to
-     a corner of the window. The art is object-fit: cover, so on anything but
-     16:9 the window and the picture disagree about where "three quarters
-     across" is; TitleFx.placePlay() does the cover arithmetic and sets these
-     two values. The transform centres it on that point. */
   .title-play {
     position: absolute; left: 50%; top: 76%;
     transform: translate(-50%, -50%);
@@ -890,26 +505,14 @@
   }
   #start img { display: block; width: 100%; height: 100%; }
   #loading.ready #start { opacity: 1; pointer-events: auto; }
-  /* WHILE EVERYTHING LOADS (src/core/preload.js; game.js startLoading) the bar stands where
-     Play will, and Play is hidden — there is nothing to press until there is something to
-     play. It pops in when the last file is in (backwards fill only, so its press still works
-     the moment the pop has played). The bar is the same family as Part 2's: an ice-bright
-     fill in a dark rimmed track, over the painted title. */
   #loading:not(.ready) #start { visibility: hidden; }
-  /* STRAIGHT IN FROM FROZEN RUSH (?auto=1, game.js): no banner, no Play — the loading bar alone on
-     the snow-white Frozen Rush's hand-over fades to, and the lesson starts by itself */
   #loading.auto { background: #eaf6ff; }
 
-  /* ---- FROZEN RUSH AROUND THE LESSON (src/opening/runner-stage.js, the game-lesson kit) ----
-     The game's frame covers the window, above the lesson and its title, under the review bar
-     (60) and the rotate prompt (120). Swiftee's visit is over the frame, the snow over him, and
-     the curtain over all of it for the moment the game comes back. */
   .runner-frame {
     position: fixed; inset: 0; width: 100%; height: 100%; border: 0; margin: 0; padding: 0;
     z-index: 50; background: #cfe9fb; opacity: 1; transition: opacity 1300ms ease;
   }
   .runner-frame.unseen { visibility: hidden; pointer-events: none; }
-  /* the lesson's way on is not shown when the game is coming back by itself (the kit's last screen) */
   html.runner-on #continue { display: none !important; }
   .runner-frame.fading { opacity: 0; pointer-events: none; }
   /* while the game opens the experience the lesson's title is not shown under it */
@@ -917,8 +520,6 @@
   .visit { position: fixed; inset: 0; z-index: 56; pointer-events: none; overflow: hidden; }
   .visit-bird { position: absolute; left: 0; top: 0; transform-origin: 50% 77.6%;
     filter: drop-shadow(0 6px 10px rgba(18, 60, 96, .22)); will-change: transform; }
-  /* HIS BOX IS THE LESSON'S BOX: #bubble's paper, border, ink, type and tail, so the Swiftee who
-     visits the game is visibly the one who teaches the lesson */
   .visit-bubble {
     --bubble-edge: #169F99; --bubble-paper: #FFFBEA; --tail-size: 36px; --tail-x: 40%;
     position: absolute; left: 0; top: 0; box-sizing: border-box;
@@ -952,7 +553,6 @@
   }
   #loading.auto .title-art, #loading.auto .title-sheen, #loading.auto .title-scrim,
   #loading.auto .title-snow, #loading.auto .title-play { visibility: hidden; }
-  /* (only where the browser will not play a sound without a tap — Safari: Play alone, on the snow) */
   #loading.auto.auto-tap .title-play { visibility: visible; }
   #loading.ready #start { animation: startPop 520ms cubic-bezier(.2, 1.6, .35, 1) backwards; }
   @keyframes startPop {
@@ -997,13 +597,6 @@
   #start:active { transform: translateY(4px) scale(.965); filter: drop-shadow(0 4px 8px rgba(12, 64, 102, .5)) brightness(.97); }
   #start:focus-visible { outline: 4px solid #fff; outline-offset: 7px; border-radius: 50%; }
 
-  /* ---- turn the device ------------------------------------------------
-     A 16:9 lesson in a portrait window is a letterbox strip with two thirds
-     of the screen empty: the shape a child taps is a third of the size it
-     should be, and Swiftee stands in the blank below it. Every phone and
-     tablet turns, so the game asks. Pure CSS on the orientation query —
-     nothing to initialise, nothing to get out of step, and it goes away by
-     itself the moment the device is turned. */
   #rotate {
     position: fixed; inset: 0; z-index: 120; display: none;
     place-items: center; text-align: center; padding: 8vw;
@@ -1039,10 +632,6 @@
 
   .bubble-line { display: block; }
 
-  /* ANOTHER LANGUAGE (src/core/i18n.js, ?lan=). The page's words are hidden only until they
-     have been put into it. Its letters: the lesson's faces have none of them, so they fall
-     through every stack to --sans, which carries the Baloo face drawn for that script — after
-     Nunito, so a digit or a Latin letter keeps the face it had. */
   html.i18n-wait [data-i18n] { visibility: hidden; }
   html[data-font="deva"] { --sans: "Nunito", "Baloo 2", "Segoe UI", system-ui, sans-serif; }
   html[data-font="telu"] { --sans: "Nunito", "Baloo Tammudu 2", "Segoe UI", system-ui, sans-serif; }
@@ -1068,9 +657,6 @@
     </g></svg>
     <div class="dialogue-inner"><span class="bubble-line"></span></div>
   </div>
-  <!-- Progress is announced to a screen reader only. On screen it is the
-       confetti, the sound and Swiftee's reaction that say "well done"; a
-       yellow toast saying so as well was a caption on a joke. -->
   <div id="reward" class="sr-only" role="status" aria-live="polite"></div>
   <div id="instruction" role="note" aria-live="polite"><span class="instruction-text"></span></div>
   <div id="hud">
@@ -1078,14 +664,6 @@
     <button class="mute" type="button" aria-label="Mute" aria-pressed="false" data-i18n-aria="muteButton">🔊</button>
     <button class="restart" type="button" aria-label="Restart" data-i18n-aria="restartButton">↻</button>
   </div>
-  <!-- A REVIEW TOOL, AND OFF UNLESS IT IS ASKED FOR. A screen picker for
-       looking at one screen without playing the thirty-eight in front of it.
-       It is hidden for everybody who opens the game: game.js builds it only
-       when the address ends in ?dev=1, which is how the test runs reach a
-       screen directly and how a layout gets reviewed. Nothing else reads it,
-       so deleting this element, the #jump rules in the stylesheet and
-       wireJump() in game.js would still change nothing about the lesson.
-       Marked data-dev so the suites can tell a review tool from the game. -->
   <div id="jump" data-dev="1" hidden>
     <span class="dev-tag">DEV</span>
     <button type="button" class="dev-step" data-step="-1" aria-label="Previous screen">&#9664;</button>
@@ -1096,12 +674,6 @@
     <a class="dev-go" href="../part2-frozen-rush/game/index.html?dev=1">Part 2 &#9654;</a>
   </div>
   
-  <!-- The way on to Part 2. game.js shows it on the finale, in Next's corner,
-       and goes there by itself a few seconds after Swiftee's last word (goOn:
-       the snow closes in, then Frozen Rush opens); pressing it just goes now.
-       The href is the one place the address of Part 2 is written. -->
-  <!-- NEXT, ON THE SUMMARY ONLY (the final pass): shown once its explanations are over, and the
-       way on from it; the lesson's other screens go on by themselves -->
   <button id="next" type="button" aria-label="Next" data-i18n-aria="nextButton"><span data-i18n="nextButton">Next</span><span class="chev" aria-hidden="true">&#9654;</span></button>
   <a id="continue" href="../part2-frozen-rush/game/index.html?resume=1" aria-label="Continue to Part 2: Frozen Rush" data-i18n-aria="continuePartTwoLabel"><span data-i18n="partTwoButton">Part 2</span><span class="chev" aria-hidden="true">&#9654;</span></a>
   <div id="progress-track"><div id="progress"></div></div>
@@ -1119,8 +691,6 @@
         <span class="start-halo" aria-hidden="true"></span>
         <img src="assets/ui/play.webp" alt="" draggable="false">
       </button>
-      <!-- THE LOADING BAR (src/core/preload.js), in Play's place until every file the
-           lesson needs is in — real bytes, forward only; then it goes and Play pops in -->
       <div class="title-loading" id="title-loading" role="progressbar" aria-label="Loading" data-i18n-aria="loadingLabel"
            aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
         <div class="title-loading-track"><div class="title-loading-fill" id="title-loading-fill"></div></div>
@@ -1131,12 +701,6 @@
   </div>
 </div>
 
-<!-- THE LESSON'S CODE, AS ONE FILE: the thirty-two scripts in src/, in their dependency order,
-     minified and joined by tools/build-bundle.js (the order, and the notes on it, are there). The
-     sources are still the lesson: edit those and run the build (or leave it watching); npm test
-     fails until the bundle is current (--check). ?v= is the bundle's own hash, so a new build is
-     fetched at once and an unchanged one is kept for a year (vercel.json), and the map beside it
-     shows the sources, by name and line, in the browser's devtools. -->
-<script src="src/lesson.min.js?v=bcccb513"></script>
+<script src="src/lesson.min.js?v=1ea4470a"></script>
 </body>
 </html>

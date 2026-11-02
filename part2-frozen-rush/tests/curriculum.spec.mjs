@@ -1,20 +1,4 @@
-/* THE CURRICULUM, held to its own spec.
-
-   SIX ROPE CROSSINGS (levels 4-9), and what they teach is CONCAVITY — whether a shape
-   is dented — not how many sides it has. Part 2 replaced the seven side-counting
-   crossings this file used to describe; levels 1-3 come before these and are drawn on
-   a single slab, so they live in tests/level-two.spec.mjs and part2-crossing2.spec.mjs.
-   These tests check two separate things and keep them separate:
-
-     the GEOMETRY   every shape the curriculum names really has the side count,
-                    convexity and regularity it claims, straight from the verified
-                    registry rather than from a filename or a picture;
-     the PHASE      a crossing accepts exactly its targets, rejects everything else,
-                    and — where it wants more than one — is not finished until every
-                    one of them has been cut, in whatever order the learner chose.
-
-   Everything here drives the real engine through its debug hooks. Nothing asserts a
-   fixed horizontal option order, because the options are shuffled on purpose. */
+// THE CURRICULUM, held to its own spec.
 import { test, expect } from '@playwright/test';
 import { boot, waitState, cut, G, jsErrors } from './helpers.mjs';
 
@@ -89,8 +73,6 @@ test.describe('polygon geometry', () => {
     expect(problems, 'polygons.js verify()').toEqual([]);
   });
 
-  /* Side count, convexity and regularity come from the METADATA and the vertices,
-     never from the name of a file or how a shape looks. */
   test('every named geometry has the sides, convexity and regularity it claims', async ({ page }) => {
     await boot(page);
     const rows = await page.evaluate(async () => {
@@ -104,9 +86,6 @@ test.describe('polygon geometry', () => {
         irregularConvexOctagon: [8, false, true],
         concavePentagon: [5, false, false], concaveHexagon: [6, false, false],
         concaveHeptagon: [7, false, false],
-        // Part 2's second concave pentagon. iceQuadrilateral is deliberately NOT here:
-        // its geometry is traced from the delivered art (option-shapes.js), because the
-        // level draws corner handles ON the picture and they must land on painted corners.
         concavePentagon2: [5, false, false]
       };
       const turn = (p, i) => {
@@ -151,8 +130,6 @@ test.describe('polygon geometry', () => {
     }
   });
 
-  /* The runner fits, seats and rotates every chunk before it is drawn. None of that
-     may change what the polygon IS — which is the one thing the learner counts. */
   test('fitting, seating and rotating a chunk never changes its side count or convexity', async ({ page }) => {
     await boot(page);
     const bad = await page.evaluate(async () => {
@@ -161,10 +138,6 @@ test.describe('polygon geometry', () => {
       const out = [];
       const turn = (q, i) => {
         const n = q.length, a = q[(i - 1 + n) % n], b = q[i], c = q[(i + 1) % n];
-        /* The cross product of the two EDGE vectors, b-a and c-b. This read
-           (c.x - a.x), which is neither edge and only happens to carry the right sign
-           on most shapes — it reported a rotated convex hexagon as concave, and the
-           geometry was never wrong. */
         return (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
       };
       for (const name of Object.keys(p.polygonMetadata)) {
@@ -188,10 +161,6 @@ test.describe('polygon geometry', () => {
 /* =========================== the curriculum data =========================== */
 
 test.describe('curriculum data', () => {
-  /* THE ROPE CROSSINGS ARE 4 TO 9 NOW. Part 2 replaced the seven side-counting
-     crossings this used to assert: the first three levels are drawn on one slab and
-     live in CFG.levelTwo.levels, and what is left here asks about concavity instead.
-     The ids are the level numbers the design names, which is why they start at 4. */
   test('six rope crossings, with the exact instruction sentences', async ({ page }) => {
     await boot(page);
     const phases = await curriculum(page);
@@ -206,10 +175,6 @@ test.describe('curriculum data', () => {
     expect(phases.map(p => p.id)).toEqual([4, 5, 6, 7, 8, 9]);
   });
 
-  /* AND THE THREE BEFORE THEM. Nine levels in all: a child is asked to draw on a slab
-     three times and then to choose from the ropes six times. Asserted here because the
-     count is split across two config blocks and nothing else would notice one of them
-     losing an entry. */
   test('nine levels in all, numbered 1 to 9 with no gaps', async ({ page }) => {
     await boot(page);
     const r = await page.evaluate(async () => {
@@ -257,19 +222,6 @@ test.describe('curriculum data', () => {
     });
   });
 
-  /* The instruction names the CLASS, and only the class. Phase 4's answer is an
-     irregular hexagon and phase 5's is a concave heptagon — if the sentence said so,
-     there would be nothing left for the learner to work out. */
-  /* THE BAN INVERTED WITH THE CURRICULUM, and that is worth spelling out because the
-     old rule reads like a law and was only ever a consequence.
-
-     Part 1 taught SIDE COUNT, so a sentence saying "concave" handed the answer over and
-     the words were banned outright. Part 2 teaches CONCAVITY — the property IS the
-     question — so naming it is not a leak, it is the instruction. What must not appear
-     now is anything that points at a particular option: where it hangs, what order it
-     is in, or how it is drawn beyond the property being asked for.
-
-     So the test still exists and still guards a leak; it guards the right one. */
   test('the instruction names the property, and never which option', async ({ page }) => {
     await boot(page);
     const phases = await curriculum(page);
@@ -277,22 +229,14 @@ test.describe('curriculum data', () => {
       const s = p.instruction.toLowerCase();
       // it names the property being taught
       expect(/concave|convex/.test(s), `phase ${p.id} names the property: "${p.instruction}"`).toBe(true);
-      /* ...and never points at an option. "Regular"/"irregular" stay banned: they are
-         not what these levels ask about, so they could only ever narrow the field. */
       for (const tell of ['regular', 'irregular', 'sided', 'sides',
                           'left', 'right', 'middle', 'first', 'last', 'biggest', 'smallest']) {
         expect(s, `phase ${p.id} must not say "${tell}"`).not.toContain(tell);
       }
-      /* "all the" exactly where every match is wanted. Levels 6 and 7 want two and are
-         deliberately singular — the owner's wording — so the COUNT is carried by the
-         second line instead, which is asserted below. */
       expect(s.includes('all the'), `phase ${p.id} "all"`).toBe(p.targets.length > 2);
     }
   });
 
-  /* THE SECOND LINE CARRIES THE COUNT where the headline cannot. Levels 6 and 7 ask for
-     two shapes with a singular sentence, and a child told to cut "the" concave pentagon
-     would cut one and wait — so the sub-line has to say otherwise. */
   test('every phase has a sub-line, and it says how many where the question does not', async ({ page }) => {
     await boot(page);
     const rows = await page.evaluate(async () => {
@@ -330,24 +274,6 @@ test.describe('curriculum data', () => {
 test.describe('single-answer phases', () => {
   test.setTimeout(180_000);
 
-  /* One case per phase 1-5: the target is accepted, and each distractor is refused
-     and splashes.
-
-     PHASES 4 AND 5 CHANGED (2026-09-04) and the reason is the point of the whole
-     curriculum. Phase 4's target is an IRREGULAR hexagon and its distractors were both
-     regular, so the target was the only irregular shape in the row and "cut the wonky
-     one" passed it every time — without counting a side. Phase 5's target is a CONCAVE
-     heptagon among two convex distractors, so "cut the dented one" always worked. Those
-     are exactly the two phases that introduce irregular and concave shapes, so each
-     shortcut defeated the lesson its own phase exists to teach.
-
-     One distractor swapped in each: an irregular pentagon in 4, a concave hexagon in 5.
-     Now neither regularity nor convexity separates the answer from the rest in any
-     phase, and only the side count can. */
-  /* Only two rope crossings have a single answer now — 4 and 5, the pair that
-     introduce concave and convex. Their rows are built so the side count cannot
-     answer them: 4 spreads five, six and seven sides across its three options so only
-     the dent separates them, and 5 is its mirror with two dented distractors. */
   const cases = [
     { i: 0, id: 4, target: 'concaveHexagon', wrong: ['regularPentagon', 'regularHeptagon'] },
     { i: 1, id: 5, target: 'regularHexagon', wrong: ['concavePentagon', 'concaveHeptagon'] }
@@ -384,18 +310,8 @@ test.describe('single-answer phases', () => {
 /* =========================== "cut ALL the ..." =========================== */
 
 test.describe('multi-answer phases', () => {
-  /* 420s, not 300s. These drive three answers through three different orders, and the
-     journey pacing changes — a 2.3s skid and 8s runs — made each pass through a phase
-     about half again as long. They pass in a minute alone and were timing out only
-     under four-way parallel load. */
-  /* Three orders through a seven-phase level, at a frame rate this runner sets rather
-     than the game — see the note at the top of helpers.mjs. */
   test.setTimeout(600_000);
 
-  /* FOUR crossings want more than one shape now, not two. 6 and 7 want a PAIR and ask
-     about two properties at once — each has a distractor with the right property and the
-     wrong side count, and one with the right count and the wrong property, so neither
-     half of the question can be skipped. 8 and 9 want all three of a kind. */
   const MULTI = [
     { i: 2, name: 'level 6', targets: ['concavePentagon', 'concavePentagon2'],
       wrong: ['regularPentagon', 'concaveHeptagon'] },
@@ -413,9 +329,6 @@ test.describe('multi-answer phases', () => {
       const start = await enterPhase(page, m.i);
       const N = m.targets.length;
       expect(start.wanted.sort(), 'every answer is wanted up front').toEqual(m.targets.slice().sort());
-      /* ONE SLOT PER ANSWER, whatever that number is. Levels 6 and 7 want a pair and 8
-         and 9 want three, so a hard-coded count here would only ever be right for half
-         of them — and the property being tested is the relationship, not the number. */
       expect(start.slots, 'one repair slot per answer').toBe(N);
 
       // every answer but the last leaves the crossing open
@@ -433,8 +346,6 @@ test.describe('multi-answer phases', () => {
 
     test(`${m.name} accepts its targets in any order`, async ({ page }) => {
       const errors = await boot(page, { speed: 900, fast: 4 });
-      /* Every rotation of the answers — two orders for a pair, three for a trio — so
-         the test covers each shape going first without assuming how many there are. */
       const t = m.targets;
       const orders = t.map((_, k) => t.slice(k).concat(t.slice(0, k)));
       for (const order of orders) {
@@ -469,8 +380,6 @@ test.describe('multi-answer phases', () => {
         const r = await cutAndSettle(page, t);
         expect(r.accepted, t + ' must still be usable').toBe(true);
       }
-      /* Read the STATE, not l1: the puzzle object is torn down 700ms into the
-         celebrate, so a test that waits only for PHASE_DONE would race it. */
       const end = await page.evaluate(() => {
         const G = window.iceAgeGame.debug();
         return { state: G.state, wanted: G.l1 ? G.l1.wanted.length : 0 };
@@ -502,23 +411,6 @@ test.describe('multi-answer phases', () => {
     });
   }
 
-  /* Three answers, three repair slots, and no slot bound to a shape in advance. The
-     point of the slot model is that the learner is never told which shape belongs
-     where — any answer fits the nearest free slot.
-
-     THIS USED TO ASSERT THE SLOTS WERE THE SAME WIDTH, and the reason it gave was
-     "a phase that mends one hole with two small plugs and another with one big one
-     shows a difference the learner cannot account for". That reason is about PLUG
-     SIZE, and slot width no longer determines it: a plug is now sized from the depth
-     of the cavity, so every plug in the game comes out identical however the slots are
-     shared out. Equal slot widths had become a proxy for something it no longer
-     implied — and an expensive one, because it is what forced phases 6 and 7 down to a
-     single crevasse.
-
-     So it asserts the thing it actually cares about instead: that the PLUGS are the
-     same size. That is strictly stronger, since it checks the outcome rather than a
-     stand-in for it. Phases 6 and 7 open two crevasses again, which also widens the
-     option row and so makes every shape bigger. */
   test('every repair slot is cut for one answer, and any answer still lands somewhere', async ({ page }) => {
     test.setTimeout(180_000);
     await boot(page, { speed: 900, fast: 4 });
@@ -532,13 +424,8 @@ test.describe('multi-answer phases', () => {
         widths: G.l1.slots.map(s => Math.round(s.x1 - s.x0))
       };
     });
-    /* REVERSED on request (September 2026): the gap now shows the silhouette of the piece that
-       belongs in it, so every slot is bound to a target up front. What must still hold is that
-       cutting in any order works: the piece goes to the slot cut for it, never refused. */
     expect(before.preBound, 'every slot expects a particular shape up front').toBe(3);
     expect(before.widths.length, 'one slot per answer').toBe(3);
-    /* Cut the answer hanging FURTHEST RIGHT first. If any allocation were hidden in
-       the data this is where it would show up as a refusal. */
     const rightmost = await page.evaluate(() => {
       const L = window.iceAgeGame.debug().l1;
       const mine = L.shapes.filter(s => s.state === 'hang' && L.wanted.includes(s.kind));
@@ -550,24 +437,6 @@ test.describe('multi-answer phases', () => {
     expect(r.solved, 'and it counted').toBe(1);
   });
 
-  /* EVERY PLUG IS THE SAME SIZE — and that size is 1.0, the size the shape was cut at.
-
-     This replaces an assertion that the repair SLOTS were all the same width. The
-     reason that one gave was "a phase that mends one hole with two small plugs and
-     another with one big one shows a difference the learner cannot account for" — which
-     is about plug size, and slot width no longer determines it. A plug is sized from
-     the depth of the cavity, and CFG.levelOne.optionH is tied to that same depth, so a
-     block cannot be taller than the hole it sits in and never has to be scaled to get
-     there. Equal slot widths had become a proxy for something it no longer implied, and
-     an expensive one: it is what forced phases 6 and 7 down to a single crevasse.
-
-     Asserting the plug size directly is strictly stronger, because it checks the
-     outcome the old comment described instead of a stand-in for it. It also guards the
-     thing that actually went wrong twice: a plug scaled to fill its slot had its
-     silhouette clipped, so phase 1's triangle arrived as a trapezoid.
-
-     It is a test of its own because it FINISHES the phase, and the allocation test
-     above needs the phase still running after it. */
   test('every repair plug lands at the size it was cut', async ({ page }) => {
     test.setTimeout(300_000);
     await boot(page, { speed: 900, fast: 4 });
@@ -600,14 +469,9 @@ test.describe('multi-answer phases', () => {
 test.describe('the hanging row', () => {
   test.setTimeout(240_000);
 
-  /* Five and six options are new. The row has to stay inside the stage, keep clear
-     air between neighbours, and above all keep every chunk out of the band a falling
-     chunk could drop on the character. */
   test('no row clips, overlaps, or reaches the character — at every option count', async ({ page }) => {
     await boot(page, { speed: 900, fast: 4 });
     const total = await phaseCount(page);
-    // read, not asserted: Part 2 changed how many rope crossings there are and this
-    // test is about the ROW at each option count, not about how many crossings exist
     expect(total).toBeGreaterThan(0);
 
     for (let i = 0; i < total; i++) {
@@ -657,31 +521,6 @@ test.describe('the hanging row', () => {
   });
 
   test('the crossing cannot be jumped, and every piece spans its own hole', async ({ page }) => {
-    /* THE CROSSING, NOT EACH GAP — and that is a change of claim, not a relaxed
-     * threshold.
-     *
-     * This used to require each crevasse to exceed 400px, because a jump carries about
-     * 460 and one fixed 620px hole was the whole crossing. A ditch is now cut to the
-     * width of the piece that bridges it, which is 133-200px depending on how many
-     * options the row holds — so the old assertion fails by design, and raising it
-     * would only force the geometry back.
-     *
-     * What still has to be true is that the crossing is IMPASSABLE — and the honest
-     * assertion for that is NOT a width. A first attempt at this measured the span
-     * from the first near lip to the last far lip and required it to beat a jump,
-     * which fails on a single-ditch phase for a good reason: that span is one 200px
-     * ditch, and 200px genuinely is jumpable. The geometry is not what stops the
-     * player crossing.
-     *
-     * What stops them is that the JUMP IS DISABLED for the whole of a puzzle. So that
-     * is what is asserted — the actual mechanism rather than an invented consequence
-     * of it.
-     *
-     * And the new invariant the redesign rests on: every option must be at least as
-     * wide as the hole, or a correct answer drops through the gap it was meant to
-     * bridge. That is the assertion that would have caught the two ways this went
-     * wrong while it was being built — a ditch sized from the row box instead of the
-     * finished piece, and a floor that outgrew the piece in the six-option phases. */
     await boot(page, { speed: 900, fast: 4 });
     const total = await phaseCount(page);
     for (let i = 0; i < total; i++) {
@@ -707,8 +546,6 @@ test.describe('the hanging row', () => {
         expect(g.slots, `phase ${i + 1} slots per crevasse`).toBeLessThanOrEqual(2);
         // the near lip is past the character, who stops at the edge
         expect(g.near, `phase ${i + 1} near lip`).toBeGreaterThan(430 + 200);
-        // and the narrowest option still reaches across the THROAT, where it wedges —
-        // the mouth above it is deliberately wider (L1.mouth), which is the visible gap
         expect(r.narrowestPiece, `phase ${i + 1} piece spans its share of the throat`)
           .toBeGreaterThanOrEqual(g.throat / g.slots);
         expect(g.w, `phase ${i + 1} mouth is wider than the throat`).toBeGreaterThan(g.throat);

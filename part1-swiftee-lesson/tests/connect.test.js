@@ -1,43 +1,8 @@
-/*!
- * connect.test.js — the pick → connect step, from every corner.
- *
- *   node tests/connect.test.js
- *
- * Plays the lesson in jsdom up to the pentagon, picks corner k, and then does
- * what a child exploring would: lets go on no corner,
- * joins it to one neighbour (a side), tries to draw while he is still talking,
- * taps his bubble while the line is being spoken, tries the used end again,
- * joins the other neighbour (the second side — for k = 0 and k = 4 that is
- * the wrap-around), and finally joins a corner that is not a neighbour (the
- * diagonal). Each corner's state (Stage.state.vstate) is checked at every step
- * against the Screen 7 vertex brief. For every k it checks:
- *
- *   - any corner can be picked, and only that corner's knob is left showing
- *     until the connecting starts — then the other corners come back as
- *     points to connect to (the user's call: "why points not added")
- *   - both neighbours are sides, by vertex order, wrapping at 0 and n-1
- *   - a side is never a wrong answer: no wrong cue, no "oops", no miss
- *   - the starting corner never changes, and the side is cleared between tries
- *   - a line let go on nothing gives no verdict and no answer away
- *   - nothing can be drawn while feedback is on (the stage state machine)
- *   - the lines come in the spec's order, each heard out:
- *       Select any vertex. / Let’s connect it to another vertex. /
- *       This is a side of the polygon. / Let’s connect it to a different vertex. /
- *       (again) / Yay! You made a diagonal!
- *   - one voice at a time, none cut off, no stock "Nice!" over the cheer
- *   - the diagonal glows only once it is made, and it stays
- *   - the far corners are open from the start (the user: "why diagonal vertex disable? …
- *     revert it"): from k = 0 and k = 3 a second run goes straight to a far corner, and the
- *     diagonal is made with no side first
- *
- * The voice is a stub with real durations (VO has no clips on disk yet), so
- * the pacing below is the pacing the recordings will get.
- */
+// connect.test.js — the pick → connect step, from every corner.
 'use strict';
 const { JSDOM } = require('jsdom'); const fs = require('fs'); const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8').replace(/<link[^>]+fonts[^>]*>/g, '');
-// (without the ?v= the page asks the bundle by — src/lesson.min.js, tools/build-bundle.js)
 const SCRIPTS = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1].split('?')[0]);
 const CLIP_MS = 700;
 
@@ -48,8 +13,6 @@ const t = (label, cond, extra) => {
 };
 
 function world() {
-  // ?story=0: this is about the connect screen, not the Momo and Popo story before the
-  // lesson (tests/playthrough.jsdom.js plays that), so Start goes straight to screen 1
   const dom = new JSDOM(html, { runScripts: 'outside-only', pretendToBeVisual: true, url: 'http://localhost/?story=0' });
   const w = dom.window, d = w.document;
   const anim = () => ({ finished: Promise.resolve(), cancel() {}, playbackRate: 1, effect: { getKeyframes: () => [{ composite: 'add' }] } });
@@ -72,8 +35,6 @@ function world() {
   const errors = []; w.addEventListener('error', (e) => errors.push(e.message)); w.console.error = (...a) => errors.push(a.join(' ')); w.console.warn = () => {};
   SCRIPTS.forEach((f) => { try { w.eval(fs.readFileSync(path.join(ROOT, f), 'utf8')); } catch (e) { errors.push(f + ': ' + e.message); } });
 
-  // THE VOICE, STUBBED WITH REAL LENGTHS: every clip "exists", runs CLIP_MS,
-  // and a clip stopped before its end is recorded as cut off.
   const voice = { played: [], cut: [], current: null };
   const waiters = [];
   const release = () => waiters.splice(0).forEach((f) => f());
@@ -132,9 +93,6 @@ async function play(k, { w, d, errors, voice }, direct) {
 
   const connectAt = w.Screens.list.findIndex((s) => s.id === 'connect');
   const next = async () => { await until(() => !!pending, 30000); const sp = pending; pending = null; await until(() => !w.Input.guarded); return sp; };
-  // KEEP AT IT UNTIL THE LESSON MOVES ON. A tap can land in the moment
-  // before an answer is live (the cards are still being dealt, Next is still
-  // coming up); a child taps again, and so does this.
   const keep = async (act) => {
     const scr = w.Game.screen;
     for (let i = 0; i < 40 && pending === null && w.Game.screen === scr; i++) { act(); await until(() => pending !== null || w.Game.screen !== scr, 400); }
@@ -145,7 +103,6 @@ async function play(k, { w, d, errors, voice }, direct) {
   for (let guard = 0; guard < 20 && !picked; guard++) {
     const sp = await next();
     if (!sp) { t('k=' + k + ': reached the pick', false, stalled()); return; }
-    // (the end of a screen: the lesson goes on by itself — game.js autoAdvance — so this waits)
     if (sp.type === 'tap-anywhere') { await keep(() => {}); continue; }
     if (sp.type === 'multi-select') {
       await keep(() => { (w.Stage.state.cards || []).filter((c) => c._opt && c._opt.correct && !c._done).forEach(tapEl); });
@@ -171,27 +128,17 @@ async function play(k, { w, d, errors, voice }, direct) {
   const from = () => svg().querySelectorAll('.vertex')[k];
   const mistakesBefore = sfx.filter((s) => s === 'wrong').length;
 
-  // THE SCREEN 7 VERTEX BRIEF, AS ITS REGRESSION LIST (the numbers are the brief's):
-  //  1 select anchor · 2 first ghost is a side (tests/checkpoints.browser.js — it needs real
-  //  time) · 3 drag to a neighbour · 4 the side is a normal dark edge · 5 its end disables ·
-  //  6 the anchor stays · 7 drag to the other neighbour · 8 that side is normal · 9 its end
-  //  disables · 10 the far corners are open throughout · 11 the diagonal · 12 it locks ·
-  //  13 a drag during dialogue does nothing · 14 no false "Try again" · 15 disabled ends never react
   const vs = () => (St().vstate || []).slice();
   const want = (m) => { const o = []; for (let q = 0; q < n; q++) o.push(m[q]); return o.join(','); };
-  // A SIDE'S FAR CORNER, DONE WITH (the user, screen 7: "do not change the dot style, just disable
-  // and dim it"): the same white point as an open corner, dimmed, never breathing, never a target
   const spentKnob = (q) => { const kn = St().knobEls[q]; return kn.getAttribute('fill') === '#ffffff' && kn.getAttribute('r') === '9' && +kn.getAttribute('opacity') < 0.6 && !kn.classList.contains('breathe') && !kn.classList.contains('target'); };
   const whiteKnob = (q) => { const kn = St().knobEls[q]; return kn.getAttribute('fill') === '#ffffff' && kn.getAttribute('opacity') === '1'; };
   const discLive = (q) => St().vertEls[q].style.pointerEvents === 'all';
-  // (the drag preview lives in the effects layer; the white diagonal is in the polygon's)
   const previewShown = () => [...svg().querySelectorAll('.layer-fx line')].some((l) => l.getAttribute('stroke') === '#eafcff' && l.getAttribute('opacity') !== '0' && !l.closest('.gesture-ghost'));
   const litSides = () => [...svg().querySelectorAll('line.segment, line.segment-done')].filter((l) => l.getAttribute('stroke') !== '#2f5fc4' || l.getAttribute('stroke-width') !== '3.5' || l.getAttribute('style')).length;
   const noWrong = () => sfx.filter((s) => s === 'wrong').length === mistakesBefore && !faces.includes('oops') && !lines.some((l) => /Try again/.test(l));
   const statesAre = (m) => vs().join(',') === want(m);
   const FAR = 'inactive', ADJ = 'adjacent-available', USED = 'side-used-disabled', DIAG = 'diagonal-available';
 
-  // THE DIAGONAL STRAIGHT AWAY: a far corner is a place the line may go from the start
   if (direct) {
     const sp0 = await next();
     t('k=' + k + ' (direct): the far corners are open before any side', sp0 && sp0.sides === true &&
@@ -220,7 +167,6 @@ async function play(k, { w, d, errors, voice }, direct) {
     whiteKnob(left) && whiteKnob(right) && whiteKnob(far) && whiteKnob((k + 3) % n) && St().knobEls[k].getAttribute('fill') === '#34b4a4' && Object.keys(St().vcolor).length === 1);
   t('k=' + k + ': only the anchor takes a press', [...Array(n).keys()].every((q) => discLive(q) === (q === k)), [...Array(n).keys()].map(discLive));
 
-  // [12 — the brief's INVALID DRAG] a line let go on no corner: only the preview resets
   const c = w.Poly.centroid(V());
   const before0 = vs().join(',');
   await drag(from(), lerp(V()[k], c, 5));
@@ -298,7 +244,6 @@ async function play(k, { w, d, errors, voice }, direct) {
     /DIAGONAL_DRAG,DIAGONAL_CREATED,INTERACTION_LOCKED/.test(flow) && /^(INTERACTION_LOCKED|EXPLANATION)$/.test(w.Stage.connectState()) && w.Input.mode() === 'locked' && [...Array(n).keys()].every((q) => St().vertEls[q].style.pointerEvents === 'none'), { st: w.Stage.connectState(), mode: w.Input.mode(), flow });
   t('k=' + k + ': the used ends stay disabled; every other corner but the anchor is inactive',
     statesAre({ [k]: 'anchor', [right]: USED, [left]: USED, [nonAdj[0]]: FAR, [nonAdj[1]]: FAR }), vs());
-  // [13] nothing more can be drawn over the cheer — from the anchor, or from the diagonal itself
   await drag(from(), lerp(V()[k], V()[nonAdj[(k + 1) % 2]], 6));
   const dl = St().diagLines || svg().querySelectorAll('.layer-poly line');
   const aLine = [...svg().querySelectorAll('line')].find((l) => !l.closest('.gesture-ghost') && +l.getAttribute('x1') === V()[Math.min(k, target)].x);
@@ -307,7 +252,6 @@ async function play(k, { w, d, errors, voice }, direct) {
   t('k=' + k + ': [13] no second line while the diagonal is cheered, and the diagonal cannot be dragged', (St().diagonals || []).length === 1 && !previewShown());
   await until(() => w.Stage.connectState() === 'EXPLANATION', 8000);
   t('k=' + k + ': EXPLANATION while "Yay! You made a diagonal!" is said', w.Stage.connectState() === 'EXPLANATION', w.Stage.connectState());
-  // THE BRIEF'S STATE FLOW, in order (the drags that went nowhere in between are READY again)
   const seen = (St().connectLog || []).filter((x, i, a) => a[i - 1] !== x);
   const order = ['ANCHOR_SELECTED', 'SIDE_HINT', 'SIDE_DRAG', 'SIDE_COMPLETE', 'ENDPOINT_DISABLED', 'NEXT_SIDE_READY', 'SIDE_DRAG', 'SECOND_SIDE_COMPLETE',
                  'ENDPOINT_DISABLED', 'DIAGONAL_INSTRUCTION', 'DIAGONAL_READY', 'DIAGONAL_DRAG', 'DIAGONAL_CREATED', 'INTERACTION_LOCKED', 'EXPLANATION'];

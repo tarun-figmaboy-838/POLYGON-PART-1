@@ -1,32 +1,4 @@
-/*!
- * titlefx.js — weather and sparkle on the title screen.
- *
- * The title art is a painting, and a painting that never moves announces
- * that nothing here moves. This puts the same snow that falls all through
- * the lesson in front of it, gives the picture a slow drift so it breathes,
- * and sets the play button glinting so the eye knows where to go.
- *
- * Three pieces, all cancellable:
- *
- *   snow     crystals from the same generator the weather and the transition
- *            use, falling across the whole screen in three depths — the near
- *            ones big, fast and softly out of focus, the far ones small, slow
- *            and faint. One field at one size reads as a screensaver; three
- *            depths read as being outdoors.
- *   drift    a very slow push in and out on the art itself, plus one pass of
- *            light across it, so the picture is never quite still.
- *   sparkle  fairy snow around the play button: crystals turning on its rim
- *            and four-point glints that fire and fade, staggered so they
- *            never twinkle in unison, over a glow that breathes. The button
- *            itself never moves — see sparkle().
- *
- * All of it is torn down the moment the lesson starts. A title screen that
- * keeps animating behind the game is a title screen that keeps costing
- * battery for something nobody can see.
- *
- *   TitleFx.mount(loadingEl)
- *   TitleFx.stop()
- */
+// titlefx.js — weather and sparkle on the title screen.
 (function (global) {
   'use strict';
 
@@ -36,9 +8,6 @@
 
   var anims = [], mounted = null;
 
-  /* juice.js owns the motion preference for the whole game — see the note in
-     transition.js. Asking the OS here as well would mean Juice.disable() left
-     the title screen snowing. */
   function reduced() { return !!(global.Juice && Juice.reducedMotion); }
 
   function run(el, frames, opts) {
@@ -49,13 +18,6 @@
 
   function rnd(a, b) { return a + Math.random() * (b - a); }
 
-  /* ------------------------------------------------------------------ *
-   * Snow across the title art
-   * ------------------------------------------------------------------ */
-
-  /* Near, middle and far. Size, speed, opacity and blur all move together,
-     because that is what depth is — one of them alone just looks like a
-     mistake in the other three. */
   var DEPTHS = [
     { size: [40, 76], dur: [7000, 11000], op: [0.5, 0.8],  blur: 2.4, sway: 70, n: 0.22 },
     { size: [20, 38], dur: [11000, 17000], op: [0.55, 0.9], blur: 0.6, sway: 46, n: 0.36 },
@@ -94,8 +56,6 @@
     var spin = (Math.random() < 0.5 ? -1 : 1) * rnd(160, 420);
     var dur = rnd(dep.dur[0], dep.dur[1]);
 
-    // Fall measured in viewport height rather than pixels, so a window
-    // resize on the title screen cannot strand a flake halfway.
     run(el, [
       { transform: 'translate(0px,-14vh) rotate(0deg)' },
       { transform: 'translate(' + sway.toFixed(0) + 'px,32vh) rotate(' + (spin * 0.35).toFixed(0) + 'deg)', offset: 0.35 },
@@ -104,13 +64,7 @@
     ], { duration: dur, delay: -Math.random() * dur, iterations: Infinity, easing: 'linear' });
   }
 
-  /* ------------------------------------------------------------------ *
-   * The art itself
-   * ------------------------------------------------------------------ */
-
   function drift(banner, sheen) {
-    // Slow enough that it is never caught moving, large enough that the
-    // screen is never the same twice.
     run(banner, [
       { transform: 'scale(1.035) translate(0,0)' },
       { transform: 'scale(1.055) translate(-.8%,-.5%)', offset: 0.5 },
@@ -127,24 +81,9 @@
     ], { duration: 13000, iterations: Infinity, easing: 'linear' });
   }
 
-  /* ------------------------------------------------------------------ *
-   * Fairy snow on the play button
-   * ------------------------------------------------------------------ */
-
   function sparkle(host, halo, btn) {
     var doc = host.ownerDocument, i;
 
-    // THE GLOW BREATHES, NOT THE BUTTON.
-    //
-    // The obvious version scales #start itself, and it is wrong twice. A
-    // WAAPI transform on the button outranks the :active press, so it stops
-    // giving under the finger. And a target that never stops moving is a
-    // target a seven-year-old has to chase — the one control on the screen
-    // is the last thing that should be sliding about under their thumb.
-    //
-    // So the halo behind it pulses and the button holds still. The button
-    // gets a glow that swells with it, through `filter`, which paints outside
-    // the layout box and therefore moves nothing.
     run(halo, [
       { transform: 'scale(.94)', opacity: 0.65 },
       { transform: 'scale(1.08)', opacity: 1, offset: 0.5 },
@@ -157,14 +96,6 @@
       { filter: 'drop-shadow(0 10px 18px rgba(12,64,102,.45)) drop-shadow(0 0 0 rgba(255,229,150,0))' }
     ], { duration: 2400, iterations: Infinity, easing: 'ease-in-out' });
 
-    // Crystals turning on the rim.
-    //
-    // Two elements per crystal, not one. A ring carries it round — a plain
-    // infinite rotation, so the radius is the ring's size and never has to be
-    // recomputed when the button resizes — and the crystal inside fades up and
-    // down on its own clock. Folded into a single animation the two would have
-    // to share a period, and every flake would wink at the same point of every
-    // lap.
     for (i = 0; i < RIM_CRYSTALS; i++) {
       var a0 = (i / RIM_CRYSTALS) * 360 + rnd(-16, 16);
       var size = rnd(18, 32);
@@ -234,34 +165,6 @@
     }
   }
 
-  /**
-   * The burst when the button is pressed.
-   *
-   * A press that only fades a screen out is a press you are not sure landed.
-   * The glow flares, and a ring of crystals goes out from under the finger —
-   * the same crystals falling behind it, so the button appears to knock the
-   * snow off itself rather than to fire a generic particle effect.
-   *
-   * Each flake takes itself out of the document when it is done, because this
-   * fires on the way to a screen where TitleFx.stop() is about to run and
-   * anything left behind would be swept up half a second later regardless —
-   * but the one case that matters is a press that does NOT start the game,
-   * and there is no reason for it to leave litter.
-   */
-  /**
-   * The button going down, and coming back up.
-   *
-   * THE IMAGE MOVES, THE BUTTON DOES NOT. A transform on #start changes the
-   * box that a fingertip — and the browser's own hit testing — aims at, and a
-   * control that moves out from under a press is a control that drops it.
-   * The artwork inside it is free to squash as far as it likes.
-   *
-   * These are bound to pointerdown/up rather than to click, because click
-   * does not arrive until the finger lifts. The press used to be drawn on
-   * click alongside the curtain that covers it, so the one frame of feedback
-   * a child gets for touching the only button on the screen was painted
-   * underneath the transition that hid it.
-   */
   function pressDown() {
     if (!mounted || reduced()) return;
     var img = mounted.querySelector('#start img');
@@ -330,32 +233,10 @@
     if (an && an.finished) an.finished.then(drop, drop); else setTimeout(drop, 800);
   }
 
-  /* ------------------------------------------------------------------ *
-   * Where the play button goes
-   * ------------------------------------------------------------------ */
-
-  // A point in the PAINTING, not in the window. On the Frozen Rush 2 banner (the user's new
-  // sequence) that is the middle of the ice wall under the scene — clear of Momo on the left and
-  // the logo on the right — the same place Frozen Rush's own cover puts its Play (the user: "the
-  // play button is not centre"). It was 0.775, 0.755: the open ice under the old banner's logo.
   var PLAY_AT = { x: 0.5, y: 0.8 };
 
-  // The idle mid-point of the drift in drift(): the art is held at 1.035 and
-  // pushed to 1.055, so on average it is showing at this zoom. Ignoring it
-  // puts the button a couple of per cent off the mark it was measured for.
   var ART_ZOOM = 1.045;
 
-  /**
-   * Put the button on that point.
-   *
-   * `object-fit: cover` means the picture and the window only agree about
-   * where anything is when their aspect ratios match. Everywhere else the art
-   * is cropped — on a phone held upright, most of its width — so a button
-   * positioned as a percentage of the WINDOW slides off the ice and ends up
-   * over the deer. This does the cover arithmetic the browser does, finds the
-   * anchor inside the drawn picture, and clamps the result so the button can
-   * never leave the screen even when the crop takes the ice with it.
-   */
   function placePlay(root) {
     var art = root.querySelector('.title-art');
     var play = root.querySelector('.title-play');
@@ -389,8 +270,6 @@
   function mount(root) {
     if (!root || mounted === root) return;
     stop();
-    // Reduced motion loses the weather, not the layout: the button still has
-    // to be on the ice.
     if (reduced()) { mounted = root; placePlay(root); global.addEventListener('resize', onResize); return; }
 
     var banner = root.querySelector('.title-art');
@@ -406,8 +285,6 @@
 
     mounted = root;
     placePlay(root);
-    // naturalWidth is 0 until the banner has decoded, and the whole placement
-    // is arithmetic on the banner's own dimensions.
     if (banner && !banner.complete) banner.addEventListener('load', onResize, { once: true });
     global.addEventListener('resize', onResize);
   }

@@ -1,10 +1,4 @@
-/* LIVE QA — play the whole game and measure it.
- *
- * Not a pass/fail suite. This plays a real playthrough at real speed, records every
- * state it passes through and how long it held, watches for long frames, dead input,
- * arrays that only grow, and console noise — then prints it. The point is to find the
- * things a unit test cannot phrase: buffering, stalls, dead air, and getting stuck.
- */
+// LIVE QA — play the whole game and measure it.
 import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
 
@@ -54,7 +48,6 @@ for (const vp of VIEWPORTS) {
     const frames = [];
     let last = '', lastAt = performance.now(), lastFrame = performance.now();
     let deadTaps = 0, cuts = 0, wrongs = 0, jumps = 0, retries = 0;
-    // Part 2 is drawn, not cut: its own counter, and a throttle so the drags can play out
     let l2cuts = 0, lastL2 = -999;
     const growth = [];
     const t0 = Date.now();
@@ -87,22 +80,6 @@ for (const vp of VIEWPORTS) {
         else if (G.l1.unfilled.length) { g._cut(G.l1.unfilled[0]); cuts++; }
       }
 
-      /* AND PART 2, WHICH THIS COULD NOT PLAY AT ALL.
-       *
-       * The loop above is the whole of what it knew: g._cut(kind), the rope crossings'
-       * mechanic. Part 2 is drawn diagonals, so the moment the game reached LEVEL_2 the
-       * bot had nothing to do and sat there until the clock ran out — a run reported as
-       * "0 / 7 crossings, 0 cuts, 87.7% of the time in LEVEL_2_ACTIVE", which reads like
-       * the game is stuck when it is the tool that is.
-       *
-       * A diagonal is any pair of corners that are not neighbours. Trying them in order
-       * satisfies all three crossings without knowing which is which: crossing 1 wants
-       * one, crossing 2 wants every one, and crossing 3 wants two that share a corner —
-       * so where the level has already fixed an origin, its diagonals are tried first.
-       * Refusals are the level's own rules talking and are counted as wrong answers.
-       *
-       * Throttled, because these are drags with animations behind them: firing every
-       * frame would queue hundreds of them and measure nothing real. */
       if (/^LEVEL_2/.test(G.state) && typeof g._l2Cut === 'function' && typeof g._l2 === 'function') {
         const L = g._l2();
         if (L && L.corners && L.corners.length >= 4 && !L.fall && !L.seated && !L.locked
@@ -113,20 +90,12 @@ for (const vp of VIEWPORTS) {
           for (let i = 0; i < n; i++) {
             for (let j = i + 2; j < n; j++) if (!(i === 0 && j === n - 1)) diags.push([i, j]);
           }
-          /* LONGEST FIRST, AND NEVER ONE ALREADY DRAWN.
-             Trying them in index order meant offering short diagonals to crossing 1,
-             which only takes a main one — 122 refusals in a run, each of which drops the
-             slab, plays the wrong-answer beat and grows a new one, so the bot spent the
-             clock being told no. Ordering by span puts corner-to-opposite-corner first,
-             which is what every crossing here will take; skipping what is on the slab
-             already is what crossing 2 needs to finish. */
           const o = L.origin;
           const drawn = new Set(L.drawn || []);
           const span = d => Math.min(d[1] - d[0], n - (d[1] - d[0]));
           const order = diags
             .filter(d => !drawn.has(d[0] + '-' + d[1]))
             .sort((a, b) => span(b) - span(a));
-          // where the level has fixed an origin, its diagonals go first: same-vertex wants that
           if (o !== undefined && o !== null) {
             order.sort((a, b) => ((b[0] === o || b[1] === o) ? 1 : 0) - ((a[0] === o || a[1] === o) ? 1 : 0));
           }

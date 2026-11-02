@@ -1,24 +1,7 @@
-/* LEVEL 2 — "Cut the shape along its diagonal."
- *
- * The level asks WHERE to cut rather than WHICH to cut, so what these hold is the
- * rule: a diagonal joins two corners that are not next to each other, a side does
- * not, and only a cut that goes right across leaves two halves that can each bridge
- * a hole. Everything else here is the same set of promises Level 1 is held to — a
- * wrong answer takes nothing away, the crossing cannot be jumped, the answer lands
- * at the size it was cut, and the level completes.
- *
- * Most of these drive the level through `_l2Cut(i, j)`, which is the corner-index
- * form of the drag and goes through the same attemptCut() a finger does. The pointer
- * itself is exercised separately, at the bottom, because a gesture test also has to
- * be right about where the corners are on screen — a different question from whether
- * the rule is right.
- */
+// LEVEL 2 — "Cut the shape along its diagonal."
 import { test, expect } from '@playwright/test';
 import { boot, G, waitState, jsErrors, playLevelTwo } from './helpers.mjs';
 
-/** Put the game at the start of Level 2's puzzle, without playing Level 1 first.
-    Waits through the scene-reading beat and the focus move, so callers land in the
-    state where the slab is actually live. */
 async function enterLevelTwo(page) {
   await page.evaluate(() => {
     const g = window.iceAgeGame, G = g.debug();
@@ -55,21 +38,10 @@ test.describe('Level 2 — the shape and its holes', () => {
     const [a, b] = r.gaps;
     expect(a.w, 'both holes are the same size — the halves are congruent').toBe(b.w);
 
-    /* NOT THE 400px FLOOR, AND ON PURPOSE. Level 1's crevasses are held above 400
-       because a leap carries anything narrower — but that is a rule about a control,
-       and jumping is switched OFF for the whole of this level, from the collapse to the
-       mend. What matters here instead is that the hole is cut to the shape: the holes
-       come from the SHORTEST main diagonal, so whichever of the three the learner
-       chooses still bridges. Asserting the real property rather than the inherited one.
-
-       The jump being off is asserted below, because it is what makes this safe. */
     expect(a.w, 'the hole is cut from the shape, not picked').toBeGreaterThan(300);
     const jump = await page.evaluate(() => window.iceAgeGame.debug().jumpEnabled);
     expect(jump, 'nothing can jump this crossing: the control is off').toBe(false);
 
-    /* AND BOTH ON THE STAGE. Two holes plus the pillar between them is the widest
-       thing this layout ever builds, and it has to fit between the character and the
-       right edge or the far one is off screen. */
     const G0 = await G(page);
     expect(b.x1 - G0.worldX, 'the far lip is on a 1920 stage').toBeLessThan(1920);
     expect(a.x0 - G0.worldX, 'the near lip is clear of the character').toBeGreaterThan(700);
@@ -81,9 +53,6 @@ test.describe('Level 2 — the shape and its holes', () => {
     const l2 = await page.evaluate(() => window.iceAgeGame._l2());
     expect(l2, 'the slab exists').not.toBeNull();
     expect(l2.corners.length, 'six corners').toBe(6);
-    /* NO CORNER IS SINGLED OUT. There are three right answers and the level must not
-       hand one over, so the corners are all drawn the same — nothing in the state
-       marks one of them as the one to use. */
     expect(l2.cut, 'nothing is cut yet').toBeNull();
     expect(l2.dragFrom, 'no corner is pre-selected').toBe(-1);
     expect(jsErrors(errors), 'the game threw').toEqual([]);
@@ -100,11 +69,6 @@ test.describe('Level 2 — the shape and its holes', () => {
   });
 });
 
-/* THE THREE THINGS THE OWNER ASKED FOR, on top of the cut that was already here:
-   the whole scene is shown before the question, the slab announces itself, and a wrong
-   cut loses it to the river. The last of those is the one with a trap in it — a level
-   with one object cannot destroy that object and stay winnable — so most of these are
-   about the recovery rather than the fall. */
 test.describe('Level 2 — the scene is read before it is asked about', () => {
   test.setTimeout(180_000);
 
@@ -175,16 +139,12 @@ test.describe('Level 2 — the scene is read before it is asked about', () => {
 test.describe('Level 2 — a wrong cut loses the slab to the river', () => {
   test.setTimeout(180_000);
 
-  /* THE FALL IS THE JOKE; THE REPLACEMENT IS WHAT KEEPS IT A GAME. This level has one
-     object in it, so destroying it on a wrong answer would make the level unwinnable —
-     the one thing a wrong answer must never do. */
   test('a side tips it into the water, and another slab is sent down', async ({ page }) => {
     const errors = await boot(page, { speed: 900, fast: 2 });
     await enterLevelTwo(page);
     const before = await page.evaluate(() => window.iceAgeGame._l2().corners.length);
 
-    await page.evaluate(() => window.iceAgeGame._l2Cut(0, 1));   // a side
-    // it is falling
+    await page.evaluate(() => window.iceAgeGame._l2Cut(0, 1));
     const falling = await page.evaluate(async () => {
       const g = window.iceAgeGame;
       const t0 = Date.now();
@@ -210,12 +170,6 @@ test.describe('Level 2 — a wrong cut loses the slab to the river', () => {
     expect(jsErrors(errors), 'the game threw').toEqual([]);
   });
 
-  /* A SHORT DIAGONAL NOW CUTS, AND THE CUT IS THE POINT. It used to wobble and hold —
-     the reasoning being that the child had understood what a diagonal is and should not
-     lose the slab for it. That protected them from the lesson: they were told 'not that'
-     and never shown why not. It comes apart along the line they drew instead, into the
-     sliver and lump that plainly cannot bridge, and those go in the river. The nudge
-     still never calls it a side, because it is not one. */
   test('a short diagonal cuts into unfit pieces and loses them', async ({ page }) => {
     await boot(page, { speed: 900, fast: 2 });
     await enterLevelTwo(page);
@@ -251,9 +205,6 @@ test.describe('Level 2 — a wrong cut loses the slab to the river', () => {
 test.describe('Level 2 — what counts as a diagonal', () => {
   test.setTimeout(180_000);
 
-  /* THE RULE, as pure geometry, with no level running. A diagonal joins two corners
-     that are not adjacent; of a hexagon's diagonals only the three that go right
-     across leave two halves that can each bridge a hole (see CFG.levelTwo). */
   test('only the three main diagonals are accepted', async ({ page }) => {
     await boot(page);
     const table = await page.evaluate(() => {
@@ -291,10 +242,6 @@ test.describe('Level 2 — what counts as a diagonal', () => {
     expect(jsErrors(errors), 'the game threw').toEqual([]);
   });
 
-  /* A SHORT DIAGONAL IS NOT CALLED WRONG. It IS a diagonal — the learner has
-     understood the idea — it just leaves a piece too tall to bridge. So it gets its
-     own nudge, and the nudge must not use the word "side": saying that would unteach
-     the thing they just got right. */
   test('a short diagonal is nudged, not called a side', async ({ page }) => {
     await boot(page, { speed: 900, fast: 4 });
     await enterLevelTwo(page);
@@ -325,9 +272,6 @@ test.describe('Level 2 — what counts as a diagonal', () => {
     expect(after.sign.toLowerCase(), 'in the lesson\'s word, vertex, not corner').toContain('vertices');
   });
 
-  /* THE COST OF BEING WRONG IS NOTHING BUT THE ATTEMPT. This is the promise Level 1
-     makes too, and it is the one that matters most for a learner: nothing is removed,
-     nothing is locked out, and the slab is live again a moment later. */
   test('a wrong cut takes nothing away and the slab comes back', async ({ page }) => {
     const errors = await boot(page, { speed: 900, fast: 4 });
     await enterLevelTwo(page);
@@ -373,10 +317,6 @@ test.describe('Level 2 — the mend', () => {
     });
   }
 
-  /* THE ANSWER LANDS AT THE SIZE IT WAS CUT. RUNNER's standing rule, and the reason
-     CFG.levelTwo.hexR is 220 rather than a rounder number: a half is 0.866R tall
-     against a 234px cavity, so the seating fit comes out at 1.0 and the learner never
-     watches their own answer resize. */
   test('neither half is resized on the way in', async ({ page }) => {
     await boot(page, { speed: 900, fast: 4 });
     await enterLevelTwo(page);
@@ -400,12 +340,6 @@ test.describe('Level 2 — the mend', () => {
         const p = g.pieces[0];
         // the widest the seated silhouette gets, against the hole it has to cover
         const xs = p.pts.map(q => q.x * p.fit);
-        /* AGAINST THE THROAT, NOT THE MOUTH. A crevasse is an undercut: the opening at
-           the walking line is the throat and the void below it flares out 1.6x wider
-           (see layoutLevelTwo). The half bridges the OPENING — that is what "no
-           daylight" means — and it is not supposed to span the cavern underneath, which
-           nothing could. This asserted against the mouth and so demanded a piece half
-           again as wide as the hole it plugs. */
         return { span: Math.max(...xs) - Math.min(...xs), throat: g.throat, mouth: g.x1 - g.x0 };
       });
     });
@@ -441,17 +375,10 @@ test.describe('Level 2 — the mend', () => {
 test.describe('Level 2 — the instruction', () => {
   test.setTimeout(120_000);
 
-  /* THE SAME RULE LEVEL 1's SENTENCES FOLLOW: the words name what to do, never how to
-     recognise the answer, and none of the words that would give a shape away may
-     appear. Level 2's sentence has one more thing to avoid — it must not say WHICH
-     diagonal, because there are three and any of them is right. */
   test('names the cut without naming which one, and avoids the banned words', async ({ page }) => {
     await boot(page);
     const text = await page.evaluate(async () => {
       const m = await import('/js/engine.js');
-      /* The crossing's OWN sentence — the one p2Cfg() reads and the plank renders.
-         This used to read CFG.levels[1], a duplicate the engine never looked at, so
-         the guard could pass while the words on screen said something else. */
       return m.CFG.levelTwo.levels[0].instruction;
     });
     expect(text.length, 'there is a sentence').toBeGreaterThan(0);
@@ -478,9 +405,6 @@ test.describe('Level 2 — the instruction', () => {
 test.describe('Level 2 — the drag', () => {
   test.setTimeout(180_000);
 
-  /* THE REAL GESTURE, once. Everything above drives the rule through corner indices;
-     this one puts a finger on the screen and drags it, because the level is only
-     playable if the corners are where they are drawn. */
   test('a drag from one corner to the opposite one cuts the slab', async ({ page }) => {
     const errors = await boot(page, { speed: 900 });
     await enterLevelTwo(page);
@@ -504,9 +428,6 @@ test.describe('Level 2 — the drag', () => {
     expect(jsErrors(errors), 'the game threw').toEqual([]);
   });
 
-  /* A PRESS WITH NO TRAVEL IS NOT AN ANSWER. Someone touching a corner to see what it
-     does must not have that read as a cut — the same guard Level 1's swipe has, for
-     the same reason: an accidental commit is the worst input bug this game can have. */
   test('a tap on a corner commits nothing', async ({ page }) => {
     await boot(page, { speed: 900 });
     await enterLevelTwo(page);

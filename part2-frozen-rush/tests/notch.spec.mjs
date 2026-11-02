@@ -1,7 +1,4 @@
-/* THE NOTCH, IN TWO STATES (temporary, pending feedback). Before the answer the gap shows a
-   generic faceted break that resembles no option; after the right piece seats it resolves to
-   the exact answer outline and the plug fills it. Held on the data, on the leak check, and on
-   the one-source rule: the instruction's noun and the target kind must agree. */
+// THE NOTCH, IN TWO STATES (temporary, pending feedback).
 import { test, expect } from '@playwright/test';
 import { boot, force, waitState, cut } from './helpers.mjs';
 
@@ -10,9 +7,6 @@ const NOUN = k => /triangle/i.test(k) ? 'triangle' : /quadrilateral/i.test(k) ? 
 
 test.describe('the notch', () => {
   test.setTimeout(120_000);
-  /* The notch is an experiment behind CFG.levelOne.notch and is OFF after review (the plain neck
-     looked natural, the faceted break did not). Its behaviour tests run only when it is on; the
-     one-source-of-truth test always runs. */
   let mode = 'off';
   test.beforeEach(async ({ page }) => {
     await boot(page);
@@ -42,7 +36,6 @@ test.describe('the notch', () => {
     expect(r.hasNotch).toBe(true);
     expect(r.kind).toBe(r.wanted);
     expect(r.reveal).toBe(0);
-    // mean depth difference from the answer's outline, over the answer's depth: not the answer
     expect(r.leak, 'the break must not be the answer').toBeGreaterThan(0.1);
     expect(Math.abs(r.wTop - r.throat), 'the top of the hole is the width of the piece').toBeLessThan(r.throat * 0.12);
     expect(r.wMid, 'a seated break, not a flat box: still open at 40px').toBeGreaterThan(r.throat * 0.3);

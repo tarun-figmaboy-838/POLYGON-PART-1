@@ -1,7 +1,4 @@
-/* THE TEXT FITS, AND NOTHING IS HALF EMPTY. Asked for: the instruction panel and the dialogue
-   box must fit their text with no dead space. The sign is nowrap, so the check is that every
-   phase sentence sits inside the plank's safe box; the bubble wraps, so the check is that the
-   box hugs the widest line it wrapped to and the air above and below the words matches. */
+// THE TEXT FITS, AND NOTHING IS HALF EMPTY.
 import { test, expect } from '@playwright/test';
 import { boot, force, waitState } from './helpers.mjs';
 
@@ -13,12 +10,6 @@ test.describe('the text fits its panel', () => {
     const sentences = await page.evaluate(async () => (await import('/js/engine.js')).CFG.levelOne.phases.map(p => p.instruction));
     expect(sentences.length).toBeGreaterThan(0);
     await force(page, 'GLACIER_BREAK_1');
-    /* WAIT FOR THE QUESTION, not merely for the intro. The intro now arrives in beats and the
-       sign is held back until its own beat (see engine PHASE_INTRO), so measuring during beat 0
-       reads an empty panel. PHASE_ACTIVE has the sign up and stays put until the puzzle is
-       solved, which is what makes the measuring below deterministic. (Pausing instead was tried
-       and is wrong: the HUD is pushed from the game loop, so a paused game never picks up the
-       next sentence.) */
     await waitState(page, 'PHASE_ACTIVE', 60_000);
     for (const s of sentences) {
       const m = await page.evaluate(async sen => {
@@ -70,15 +61,11 @@ test.describe('the text fits its panel', () => {
         text: tx.textContent, nLines: tops.length, boxW: b.offsetWidth, widest,
         deadX: b.offsetWidth - pad.l - pad.r - widest,
         airTop: pad.t + hl + (asc - cap), airBottom: pad.b + hl + desc,
-        // the width fitBubble GAVE the shape: its rect carries the pop scale and the wobble's rotation
         svgW: parseFloat(document.getElementById('tut-shape').style.width) || 0,
         overflowY: tx.scrollHeight - tx.clientHeight, fontPx: fs,
         outLeft: sr.left - br.left, outRight: br.right - sr.right, stageW: sr.width
       };
     });
-    /* SETTLED, NOT MID-POP. The box arrives through a 380ms scale animation and the words rise
-       one after another, so a measurement taken on the frame the sentence appears catches the
-       shape layer part-way through being fitted. */
     const line = async re => {
       await page.waitForFunction(r => { const l = document.getElementById('tutorial'), tx = document.getElementById('tut-text'); return !!(l && !l.hidden && tx && new RegExp(r).test(tx.textContent)); }, re, { timeout: 40_000 });
       await page.waitForTimeout(700);
@@ -91,7 +78,6 @@ test.describe('the text fits its panel', () => {
 
     for (const m of [first, second]) {
       expect(m.widest, `${m.text}: words laid out`).toBeGreaterThan(40);
-      // 20 is the top of hugWords' slack ladder: the smallest width that keeps the line count
       expect(m.deadX, `${m.text}: no empty yellow beside the words`).toBeLessThanOrEqual(20);
       expect(m.deadX, `${m.text}: and the box is not narrower than its words`).toBeGreaterThanOrEqual(-2);
       expect(m.outLeft, `${m.text}: no edge off the left of the stage`).toBeLessThanOrEqual(1);
@@ -104,16 +90,7 @@ test.describe('the text fits its panel', () => {
   });
 
   test('a line finishes before anything moves on: all its words, its voice, then a pause', async ({ page }) => {
-    /* The whole of line 1 plus the start of line 2 is about eight seconds of real time, and
-       this runs it at whatever speed the host renders — give it room rather than reporting a
-       slow machine as a broken gate. */
     test.setTimeout(180_000);
-    /* The rule (asked for): a tutorial line is not finished when its last word appears and it
-       is not finished when the voice stops — it is finished when BOTH have happened, and then
-       it is held complete on screen for a reading pause. Nothing may advance before that, the
-       game stays frozen through it, and no idle hint may start.
-
-       Measured on line 1, which is the one that carries two sentences and the longest clip. */
     await boot(page, { tutorial: true, skipScreens: true, sound: true });
     await page.evaluate(() => window.iceAgeGame.sfx('ui'));            // the gesture the context needs
     const r = await page.evaluate(async () => {
@@ -131,7 +108,6 @@ test.describe('the text fits its panel', () => {
         if (voOn && !v.saying && voEnd < 0) voEnd = t;
         // while line 1 is up the world must be frozen and no hand may appear
         if (s && /Momo|friend/.test(s)) { if (!g.isPaused()) everUnpaused = true; if (g.debug().handHint) everHand = true; }
-        // line 1's two sentences, then whatever replaces them — that third event is the gate
         if (seen.filter(x => x.s).length >= 3 && voEnd > 0) break;
       }
       return { seen: seen.map(x => ({ t: +x.t.toFixed(2), s: x.s })), voEnd: +voEnd.toFixed(2), everUnpaused, everHand,
@@ -143,11 +119,6 @@ test.describe('the text fits its panel', () => {
     expect(first, 'the first sentence is shown on its own').toBeTruthy();
     expect(second, 'then the second, on its own').toBeTruthy();
     expect(second.t, 'the second follows the first').toBeGreaterThan(first.t);
-    /* THE READING PAUSE, when there was a voice to wait for. Without one — muted, blocked,
-       or a machine too slow to reach the end of the line inside the budget — the pause cannot
-       be measured here, and the test says so rather than passing on an assumption. What is
-       still checked in that case is the part that does not need audio: the sentences arrived
-       in order, the world stayed frozen, and no hint appeared. */
     if (r.ctx === 'running' && r.voEnd > 0 && next) {
       expect(next.t - r.voEnd, 'the finished line is held after the voice stops').toBeGreaterThanOrEqual(0.9);
     } else {
@@ -158,8 +129,6 @@ test.describe('the text fits its panel', () => {
   });
 
   test('rapid taps cannot skip a line, duplicate a step, or move the game on', async ({ page }) => {
-    /* A child taps because a finger is on the screen. Twelve taps during a line must change
-       nothing at all: not the sentence, not the step, not the clock. */
     await boot(page, { tutorial: true, skipScreens: true });
     await page.waitForFunction(() => /This is Momo/.test(document.getElementById('tut-text').textContent), null, { timeout: 60_000 });
     const before = await page.evaluate(() => ({ st: window.iceAgeGame.state(), t: window.iceAgeGame.debug().t,
@@ -172,27 +141,12 @@ test.describe('the text fits its panel', () => {
                                                dialogue: window.iceAgeGame.debug().dialogue }));
     expect(after.st, 'the state did not move').toBe(before.st);
     expect(after.t, 'the game clock did not move: it is frozen').toBeCloseTo(before.t, 2);
-    /* STILL ON LINE 1. Not "the same sentence": the line is delivered a sentence at a time and
-       the second one arrives on its own clock, which is the line PLAYING, not a tap skipping
-       it. What a skip would look like is the tutorial jumping to a later line — so the text
-       must still be one of line 1's two sentences. */
     expect(['This is Momo.', 'He needs to find his friend.'],
            'the taps did not jump the tutorial past line 1').toContain(after.text.trim());
     expect(after.dialogue, 'the engine knows a line is up').toBe(true);
   });
 
   test('muted, and with the voice throwing, the tutorial still shows every line and never hangs', async ({ page }) => {
-    /* The completion gate waits for the text AND the voice — so the failure mode to rule out
-       is a line that waits for a voice that will never come. It cannot happen by construction
-       (api.say returns a LENGTH, or 0 when it will not be heard; nothing subscribes to an
-       'ended' event) and this holds that construction from both sides:
-
-         MUTED    - sound off, which is how every test in this suite boots.
-         THROWING - say() replaced with a function that throws, which is what a broken decode
-                    or a revoked context looks like from the tutorial's side.
-
-       In both cases the lines must still arrive, in order, and the tutorial must still reach
-       the ask. A deadlock would show up as the first line staying on screen for ever. */
     test.setTimeout(180_000);
     await boot(page, { tutorial: true, skipScreens: true });        // sound: false by default
     await page.evaluate(() => {
@@ -212,7 +166,6 @@ test.describe('the text fits its panel', () => {
       return { out, vo: g._voice().said.slice(0, 4) };
     });
     const lines = seen.out.map(o => o.s);
-    // it got past the first sentence, and past the first LINE: no line is waiting on a voice
     expect(lines.length, 'the tutorial kept moving with no audio: ' + JSON.stringify(lines)).toBeGreaterThanOrEqual(4);
     expect(lines[0]).toBe('This is Momo.');
     expect(lines[1]).toBe('He needs to find his friend.');
@@ -224,10 +177,6 @@ test.describe('the text fits its panel', () => {
   });
 
   test("the dialogue's tail stays on the mammoth's head", async ({ page }) => {
-    /* Measured off the delivered run sheet: his crown is 362px above the foot line and 86px
-       right of his own x (tutorial.js: HEAD_UP / HEAD_RIGHT). The bubble is placed so its
-       tail tip touches that point, and it is read from the LIVE player every frame, so it
-       holds through his movement and through a change of sheet. */
     await boot(page, { tutorial: true, skipScreens: true });
     await page.waitForFunction(() => /This is Momo/.test(document.getElementById('tut-text').textContent), null, { timeout: 60_000 });
     await page.waitForTimeout(500);
@@ -250,14 +199,6 @@ test.describe('the text fits its panel', () => {
   });
 
   test('a line arrives one sentence at a time, never as a paragraph', async ({ page }) => {
-    /* Asked for: shorter sentences, in sequence, like comic dialogue. "This is Momo. He needs
-       to find his friend." used to land as one block of text — a paragraph in a speech bubble,
-       which is the one thing a five-year-old will not read. It is split at its own full stops
-       now (Tutorial.beats) and the sentences take the box in turn.
-
-       What is held here is the SEQUENCE: each sentence is on screen by itself, in script order,
-       and the two halves are never up together. The words are not changed by the split, so the
-       recording and docs/VO-SCRIPT.md still match — a separate test holds that. */
     await boot(page, { tutorial: true, skipScreens: true });
     const seen = await page.evaluate(async () => {
       const out = [];
@@ -277,7 +218,6 @@ test.describe('the text fits its panel', () => {
     const iSecond = seen.indexOf('He needs to find his friend.');
     expect(iFirst, 'the first sentence is shown on its own').toBeGreaterThanOrEqual(0);
     expect(iSecond, 'and then the second one is').toBeGreaterThan(iFirst);
-    // the whole line never appears as one block, which is the thing that was asked to stop
     expect(seen.some(t => /This is Momo\..*friend/.test(t)), 'the two are never up together').toBe(false);
     // and every sentence that arrives is a short one
     for (const t of seen) expect(t.length, `"${t}" is a sentence, not a paragraph`).toBeLessThan(46);

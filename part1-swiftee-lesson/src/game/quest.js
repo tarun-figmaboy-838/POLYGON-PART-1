@@ -1,14 +1,10 @@
 (function (global) {
   'use strict';
   var chapters = [
-    // (the diagonal chapter's five demonstration screens became the child's
-    // own connect-and-discover step, so every end after it is five earlier)
     { end: 3, name: 'Shape scout' },
     { end: 9, name: 'Diagonal detective' },
     { end: 21, name: 'Dent discoverer' },
     { end: 29, name: 'Pattern pro' },
-    // the last level is the end-game summary now, one screen where the four
-    // builder screens were
     { end: 30, name: 'Polygon champion' }
   ];
   function create() {

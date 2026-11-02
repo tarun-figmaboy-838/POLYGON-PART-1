@@ -1,14 +1,5 @@
 #!/usr/bin/env node
-/*!
- * serve.js — run the game locally.
- *
- *   npm start            then open the URL it prints
- *   node serve.js 8000   to choose the port
- *
- * The game is plain scripts and works over file:// too, with one exception:
- * pack.js cannot fetch the recorded voice clips from a file:// page, so the
- * browser voice takes over. Over http you get whichever is actually present.
- */
+// serve.js — run the game locally.
 'use strict';
 
 const http = require('http');
@@ -39,8 +30,6 @@ http.createServer((req, res) => {
   try { rel = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '') || 'index.html'; }
   catch (e) { res.writeHead(400).end('bad request'); return; }
   const file = path.resolve(ROOT, rel);
-  // inside this folder — not a sibling whose name merely starts the same —
-  // and never the repository's own history
   if ((file !== ROOT && !file.startsWith(ROOT + path.sep)) || /(^|[\\/])\.git([\\/]|$)/.test(rel)) { res.writeHead(403).end('forbidden'); return; }
 
   fs.readFile(file, (err, buf) => {

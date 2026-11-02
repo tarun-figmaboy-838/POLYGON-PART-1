@@ -1,17 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-/* Runs the real game against a STRICTLY case-sensitive server (every path segment
-   verified with readdirSync), which is what Vercel/Linux does. Catches dynamically
-   built asset paths that a static grep cannot see. */
 test('no 404s on a case-sensitive host', async ({ page }) => {
   test.setTimeout(180_000);
-  /* SAME-ORIGIN ONLY. This test exists to catch a path whose CASE is wrong — something
-     that works on Windows and 404s on Vercel — so it can only be about paths this repo
-     controls. The page also pulls a webfont from fonts.googleapis.com, and when that
-     connection drops (ERR_CONNECTION_CLOSED, which is a thing that happens) the test
-     failed reporting a case-sensitivity problem that did not exist. A third party's
-     uptime is not what is under test here, and the font already has a real fallback
-     stack in the stylesheet. */
   const bad = [];
   const ours = u => u.startsWith('http://127.0.0.1:8321');
   page.on('response', r => { if (r.status() >= 400 && ours(r.url())) bad.push(r.status() + ' ' + r.url()); });

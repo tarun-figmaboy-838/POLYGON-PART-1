@@ -1,45 +1,10 @@
-/*!
- * swiftee-visit.js — Swiftee, flying in over Frozen Rush (the user's game-lesson kit).
- *
- *   SwifteeVisit.run({ frame, where, lines, exit })  -> Promise, resolved when he has gone
- *
- * Twice in the experience the game holds still and Swiftee comes to Momo: at the broken path
- * before the lesson ("Momo needs your help." / "But to help Momo, you need to learn about
- * polygons.") and at the first ditch after it ("Now let's help Momo."). He is drawn by THIS page,
- * over the game's frame, with the lesson's own sprite sheets, the lesson's dialogue box and the
- * lesson's voice — nothing of his is added to the game, which only stops and says where Momo and
- * the hole are (`where`, from the game's tutorial: in its 1920 x 1080 stage, after its zoom).
- *
- *   flight   from the top right, on one curve, wings going              FLY_IN
- *   hover    IN THE AIR beside Momo, wings going, a moment to arrive     WATCH
- *            (the user: "Swiftee delivers the dialogue in the air, flying — not on the path")
- *   lines    in the box over his head, each word as it is spoken        + HOLD after each
- *   exit     off to the side the next thing is on                       FLY_OUT
- *
- * ONE DRAWING OF HIM AT A TIME, AND ALWAYS IN THE AIR. One canvas, one frame of the lesson's
- * flight strip (swiftee-inspect-flight.webp) at a time — never two frames cross-faded, the
- * lesson's "two Swiftees" bug — from the moment he flies in to the moment he flies off. He
- * hovers while he speaks, looking at Momo.
- *
- * Every step has a backstop on the wall clock: a voice that never starts is heard silently after
- * START_WAIT, a line ends by its length plus 0.6 s whatever the audio does, and the whole visit
- * ends within CAP — the game is waiting on it, and must never be left waiting for good.
- */
 (function (global) {
   'use strict';
 
   var FLY_IN = 1400, FLY_OUT = 950, WATCH = 700, HOLD = 1000, BETWEEN = 260;
   var WORD = 320, START_WAIT = 1200, CAP = 20000;
-  /* HIS ART: the lesson's own flight strip (the user: "use swiftee-inspect-flight.webp") — four
-     wingbeat frames side by side, 543 x 724 each, drawn one frame at a time, a frame every STEP ms as
-     the lesson flies it. Every frame registers the same: the top of his head at TOP, his feet at
-     FEET, of the frame's height. The strip looks to the right; FACE mirrors it to look left. */
   var STRIP = 'assets/swiftee/swiftee-inspect-flight.webp', FRAMES = 4, FW = 543, FH = 724, STEP = 110;
   var TOP = 0.185, FEET = 0.776;
-  /* HIS SIZE, in the game's stage px (times its zoom): the bird BIRD tall, head to feet; and WHERE
-     HE HOVERS — in the open sky beside Momo, AHEAD of him (to his right, over the broken path),
-     his feet LIFT below the top of Momo's head, so he is a little above Momo, looking at him;
-     LEAN tilts him toward Momo. */
   var BIRD = 220, FRAME_H = BIRD / (FEET - TOP), FRAME_W = FRAME_H * FW / FH;
   var AHEAD = 320, LIFT = 40, LEAN = -4;
   var SW = 1920, SH = 1080;
@@ -53,8 +18,6 @@
 
   /* ---- the strip ---- */
   var strip = null;
-  /** Fetch and decode his flight strip now, so it is in hand when he is needed (the lesson loads
-      the same file, so it is usually in the cache already). */
   function load() {
     if (strip) return strip.ready;
     var img = new global.Image();
@@ -72,7 +35,6 @@
     ctx.drawImage(strip.img, (n % FRAMES) * FW, 0, FW, FH, 0, 0, w, h);
   }
 
-  /* ---- the box: the lesson's own (index.html .visit-bubble, the look of #bubble) ---- */
   function bubble(doc) {
     var el = doc.createElement('div');
     el.className = 'visit-bubble';
@@ -84,8 +46,6 @@
       '<div class="visit-line"></div>';
     return el;
   }
-  /* IN THE LESSON'S LANGUAGE (src/core/i18n.js, ?lan=): the line, and its key words found by
-     the same lists the lesson's key words are — Momo, and polygons */
   var I = global.I18N && global.I18N.on ? global.I18N : null;
   function isKey(w) { return I ? (I.isWord(w, 'nameMomo') || I.isWord(w, 'termPolygon')) : KEY.test(w); }
   function setWords(el, text) {
@@ -104,10 +64,6 @@
     return spans;
   }
 
-  /**
-   * One visit. `frame` is the game's <iframe>; `where` what the game reported; `lines` are
-   * [{ t, vo }]; `exit` 'left' or 'right'. Resolves when he has flown off.
-   */
   function run(o) {
     var doc = global.document, where = o.where || {}, lines = o.lines || [];
     var reduced = reducedMotion();
@@ -124,9 +80,6 @@
 
     var zoom = where.zoom || 1, st = where.stage || { x: 0, y: 0, w: 1, h: 1 };
     var lip = where.lip || { x: 1500, y: 840 };
-    /* WHERE HE HOVERS — IN THE AIR BESIDE MOMO, WATCHING HIM (the user: "Swiftee on air, flying,
-       watching Momo, and gives the dialogue"): in the open sky over the broken path, a little above
-       Momo's head and to his right, leaning toward him. Never off the stage, never down on the ice. */
     var head = where.head || { x: 520, y: 480 };
     var perch = { x: Math.max(FRAME_W * zoom * 0.5, Math.min(head.x + AHEAD * zoom, SW - FRAME_W * zoom * 0.5)),
                   y: Math.min(head.y + LIFT * zoom, lip.y - BIRD * zoom * 0.6) };
@@ -145,13 +98,11 @@
     canvas.style.transformOrigin = '50% ' + (FEET * 100).toFixed(1) + '%';
 
     var t0 = now();
-    // face: -1 looks left (the strip mirrored) — at Momo while he hovers; in flight, where he is going
     var pos = null, tilt = 0, face = -1, bob = true, raf = 0, gone = false;
 
     function place() {
       var g = geo(), fw = g.fw, fh = g.fh;
       var feet = pos || g.page(perch.x, perch.y);
-      // a hover: a slow rise and fall with the wingbeat, and a little sway (not while he flies in or out)
       var hov = bob && !reduced && !pos;
       var left = feet.x - fw / 2, top = feet.y - fh * FEET + (hov ? Math.sin(now() / 230) * fh * 0.025 : 0);
       if (hov) { face = -1; tilt = LEAN + Math.sin(now() / 610) * 3; }      // looking at Momo, swaying
@@ -170,7 +121,6 @@
     }
     function tick() {
       if (gone) return;
-      // the wingbeat: one frame every STEP ms, round and round, from the moment he appears
       drawFrame(ctx, reduced ? 1 : Math.floor((now() - t0) / STEP) % FRAMES, cw, ch);
       place();
       raf = global.requestAnimationFrame(tick);
@@ -214,9 +164,6 @@
         (function step() {
           if (gone) { done(); return; }
           var t = now() - t0;
-          /* THE CLOCK THE WORDS FOLLOW: the voice's own while this line is on air; once it has been
-             heard and is off, every word is in; never heard — no clip, muted, refused — the wall's,
-             after START_WAIT if a voice was asked for and simply has not begun. */
           var on = (V && V.id === id && V.at) ? V.at() : null;
           if (on != null) heard = true;
           var clock = on != null ? on : heard ? Infinity : (a && t < START_WAIT) ? -1 : t - (a ? START_WAIT : 0);

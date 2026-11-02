@@ -1,26 +1,4 @@
-/*!
- * juice.js — the feel. Every effect screens.js can ask for.
- *
- * Two rules, both structural rather than remembered:
- *
- *   ADDITIVE     Every transform runs with `composite: 'add'`, so an effect
- *                layers on top of whatever stage.js or swiftee.js is already
- *                animating instead of overwriting it. A wobble during a
- *                drag does not snap the shape back to its untransformed
- *                place when it ends.
- *
- *   HARMLESS     Every entry point tolerates a null target, a missing
- *                Element.animate, and reduced motion. Nothing here is load
- *                bearing; if it all no-ops the game still teaches.
- *
- *   Juice.stage(container)                  // one-time: where confetti lands
- *   Juice.pop(el, { scale })
- *   Juice.wobble(el) / refuse(el) / buzz(el) // "not that one"
- *   Juice.collect(el) / celebrate(el)       // "yes"
- *   Juice.flash(el)
- *   Juice.confetti(near, { count, offsetX })   // a burst, from a place
- *   Juice.sparkle(el)                          // a small glint, for an ordinary right answer
- */
+// juice.js — the feel.
 (function (global) {
   'use strict';
 
@@ -50,25 +28,8 @@
     ], { duration: 520, easing: 'ease-out', fill: 'forwards' }).finished.then(function () { el.remove(); }, function () { el.remove(); });
   }
 
-  /* ------------------------------------------------------------------ *
-   * Helpers
-   * ------------------------------------------------------------------ */
-
   function can(el) { return !!(el && el.animate && !reduced); }
 
-  /**
-   * SVG elements have no useful default transform origin, and a percentage
-   * origin resolves against the user-space viewBox rather than the shape.
-   * `fill-box` + `center` makes a scale mean the same thing on a <g> as on
-   * a <div>, which is the only way one effect can serve both.
-   *
-   * But it must not be forced on an element that has already chosen its own
-   * pivot. Swiftee's is `50% 87.7%` — the baseline the sprite sheet registers
-   * every frame against — and a single Juice.squash() on him rewrote it to
-   * `center`, which silently moved him 22px down the screen and left his feet
-   * hanging off the bottom of the window for the rest of the session. An
-   * effect is allowed to be ignored; it is not allowed to relocate its target.
-   */
   function centred(el) {
     try {
       if (el.style.transformOrigin) return el;     // it has a pivot of its own
@@ -78,23 +39,6 @@
     return el;
   }
 
-  /**
-   * AN SVG POSITION IS AN ATTRIBUTE, AND NOT EVERY ENGINE ADDS TO IT.
-   *
-   * Most of the stage is placed by `transform="translate(x,y)"`, and ADDITIVE
-   * above counts on the effect being added to that. Chrome adds to it. Safari
-   * starts the addition from `none`: the pop on a card dropped in its bin
-   * replaced translate(600,400) with a bare scale(1.18), so for the length of
-   * the pop the card was drawn at the stage's top-left corner, and bounced
-   * there. (The separate `scale` property is no way round it: it scales about
-   * the parent's origin, and slid the same card 85px.)
-   *
-   * So while an effect runs, the attribute is copied into the inline style,
-   * where every engine adds to it. Same property and same origin, so the copy
-   * draws exactly where the attribute did. It is kept in step if the scene
-   * moves the element meanwhile (a card dragged again during its recoil), and
-   * the last effect to end takes it away and leaves the attribute in charge.
-   */
   function holdBase(el, a) {
     if (!el.transform || !el.transform.baseVal || !a || !a.finished) return;
     var h = el._juiceBase;
@@ -141,10 +85,6 @@
     return null;
   }
 
-  /* ------------------------------------------------------------------ *
-   * Effects
-   * ------------------------------------------------------------------ */
-
   var Juice = {
 
     /** Where particles are drawn. Safe to call more than once. */
@@ -175,8 +115,6 @@
     },
 
     /** Side-to-side shake. "That is not the one," without words. */
-    // A NUDGE, NOT A SHAKE: four pixels and barely a turn. Nine pixels and
-    // two and a half degrees read as the thing being told off.
     wobble: function (el, o) {
       o = o || {};
       var d = o.distance == null ? 4 : o.distance;
@@ -189,8 +127,6 @@
       ], { duration: o.duration || 380, easing: 'ease-in-out' }).finished;
     },
 
-    /** A buzz: a quick small shiver, side to side — "not that one" felt, like a phone's
-        buzz, not a telling-off. Clearer than the wobble, over in a third of a second. */
     buzz: function (el, o) {
       o = o || {};
       var d = o.distance == null ? 6 : o.distance;
@@ -216,10 +152,6 @@
       ], { duration: o.duration || 360 }).finished;
     },
 
-    /* THE VERDICT, ON THE THING ITSELF. A wrong answer glows red for a moment
-       and recoils; a right one glows green. A drop-shadow on the element, so
-       it follows any shape — a card, a knob, a whole polygon — and fades
-       back to nothing: the colour is the answer, it is not left on. */
     bad: function (el, o) {
       o = o || {};
       if (!can(el)) return Promise.resolve();
@@ -269,11 +201,6 @@
       ], { duration: o.duration || 700, easing: 'cubic-bezier(.22,1,.36,1)' }).finished;
     },
 
-    /**
-     * A brightness pulse. Opacity rather than a filter, because SVG strokes
-     * inside a <g> pick up opacity consistently across engines and `filter`
-     * on an SVG group is expensive on low-end tablets.
-     */
     flash: function (el, o) {
       o = o || {};
       if (!can(el)) return Promise.resolve();
@@ -285,11 +212,6 @@
       return a.finished;
     },
 
-    /**
-     * Paper confetti over the whole play area. `near` only decides where the
-     * burst is centred; the particles live in the overlay layer so they can
-     * fall past the edges of an SVG viewBox.
-     */
     confetti: function (near, o) {
       o = o || {};
       if (reduced || !host || !host.ownerDocument) return Promise.resolve();
@@ -305,9 +227,6 @@
       var done = [];
       flash(doc, cx, cy);
       if (o.fromEdge && r) {
-        // FROM BEHIND. Each piece starts on the edge of the thing and flies
-        // away from its centre, so the burst reads as coming out from under
-        // the card rather than being sprayed on top of it.
         var L = r.left - hostRect.left, T = r.top - hostRect.top, Wd = r.width, Ht = r.height;
         var mx = L + Wd / 2, my = T + Ht / 2;
         for (var q = 0; q < n; q++) {
@@ -324,15 +243,6 @@
       return Promise.all(done);
     },
 
-    /**
-     * A SMALL GLINT FOR AN ORDINARY RIGHT ANSWER.
-     *
-     * Confetti is a milestone: a sort finished, a shape built, the lesson
-     * over. A correct card on a question is not one, and a party-sized burst
-     * off every right tap made the big moments read the same as the small
-     * ones. This is a handful of tiny ice-and-gold stars thrown a short way
-     * from the thing that was right, gone in under a second.
-     */
     sparkle: function (el, o) {
       o = o || {};
       if (reduced || !host || !host.ownerDocument) return Promise.resolve();
@@ -350,13 +260,6 @@
     set reducedMotion(v) { reduced = !!v; }
   };
 
-
-  /**
-   * One piece of confetti. BIG ENOUGH TO SEE, and it tumbles: it pops out
-   * with a little swell, arcs up and over, flutters as it falls (a paper
-   * scrap turning edge-on and back) and fades near the ground. Three kinds
-   * — a strip, a dot, a star — in bright party colours with a white glint.
-   */
   function piece(doc, cx, cy, o) {
     var el = doc.createElement('div');
     var kind = Math.random();
@@ -374,8 +277,6 @@
     var speed = (180 + Math.random() * 300) * (o.speed || 1);   // o.speed: shorter throws keep a burst close to its card
     var dx = Math.cos(angle) * speed;
     var rise = Math.sin(angle) * speed;
-    // (the fall is scaled with the throw: a short burst that still dropped three hundred pixels
-    // landed on the cards below it, as if they had burst too)
     var fall = (300 + Math.random() * 360) * (o.speed || 1);
     var spin = (Math.random() - 0.5) * 1400;
     var dur = 1500 + Math.random() * 900;

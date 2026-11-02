@@ -1,23 +1,12 @@
-/* PART 2, CROSSING 2 — "Draw all the diagonals."
- *
- * The second replaced crossing, and the first with a different mechanic. The learner
- * draws EVERY diagonal of the slab rather than one; when they are all there the shape
- * is solved and splits into four pieces across two crevasses.
- *
- * The diagonals cross, leaving four triangles. Two pieces seat in each crevasse,
- * with a slot sized for each piece.
- */
+// PART 2, CROSSING 2 — "Draw all the diagonals."
 import { test, expect } from '@playwright/test';
 import { boot, G, waitState, jsErrors } from './helpers.mjs';
 
-/** Drop the game onto Part 2's crossing `n` (1-based), at the moment it goes live. */
 async function enterCrossing(page, n) {
   await page.evaluate(i => {
     const g = window.iceAgeGame, G = g.debug();
     G.phase = 7; G.phasesDone = 7; G.l1 = null; G.gapsThisPhase = null;
-    G.p2i = i;                       // which Part 2 crossing
-    // A fast boot may already be in GLACIER_BREAK_2. Leave that state first so
-    // _force rebuilds the gaps and slots for this crossing's own slab.
+    G.p2i = i;
     g._force('RUN_SEGMENT_2');
     g._force('GLACIER_BREAK_2');
   }, n - 1);
@@ -42,8 +31,6 @@ test.describe('crossing 2 — draw all the diagonals', () => {
       };
     });
     expect(r.corners, 'four corners').toBe(4);
-    /* A QUADRILATERAL HAS EXACTLY TWO DIAGONALS — n(n-3)/2 — and the level computes
-       that from the shape rather than being told, so a different slab needs no edit. */
     expect(r.need, 'two diagonals to find').toBe(2);
     expect(r.gaps, 'two crevasses: two pieces bridge each').toBe(2);
     // and it is a real undercut crevasse, not the flat box the first attempt drew
@@ -78,9 +65,6 @@ test.describe('crossing 2 — draw all the diagonals', () => {
     }
   });
 
-  /* THE SAME DIAGONAL TWICE IS NOT A MISTAKE. The learner has drawn a real diagonal and
-     simply drawn it already, so it must not be counted, must not solve the level, and
-     must not cost them the slab the way a side does. */
   test('the same diagonal twice counts once and costs nothing', async ({ page }) => {
     await boot(page, { speed: 900, fast: 4 });
     await enterCrossing(page, 2);
@@ -118,11 +102,6 @@ test.describe('crossing 2 — draw all the diagonals', () => {
     const errors = await boot(page, { speed: 900, fast: 4 });
     await enterCrossing(page, 2);
     await page.evaluate(() => { window.iceAgeGame._l2Cut(0, 2); window.iceAgeGame._l2Cut(1, 3); });
-    /* READ IN THE FRAME THE BRIDGE COMPLETES. BRIDGE_2_COMPLETE clears gapA/gapB when it
-       hands on to the next crossing, and at fast:4 that window can open and close between
-       two polls now that the frame loop keeps real time on a slow renderer (sub-stepped,
-       not capped). So the measuring happens inside the check, on every animation frame,
-       and the numbers come out of the one frame where the pieces are seated. */
     const r = await (await page.waitForFunction(() => {
       const G = window.iceAgeGame.debug();
       if (G.state !== 'BRIDGE_2_COMPLETE') return false;

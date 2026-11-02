@@ -1,38 +1,13 @@
-/*!
- * polygon-math.js — every geometric judgement the game makes.
- *
- * This file decides whether the learner is right. If anything here is wrong
- * the game teaches the wrong thing with total confidence, so it is small,
- * dependency-free, and tested against the exact shapes in the storyboard.
- *
- * Vertices are [{x, y}, ...] in screen space (y down). Winding does not
- * matter; every test normalises for it.
- *
- *   Poly.isConvex(v)              // all diagonals inside
- *   Poly.diagonalsFrom(i, n)      // the n-3 non-adjacent partners of vertex i
- *   Poly.isDiagonalInside(v,i,j)  // the concave-pentagon moment
- *   Poly.classify(v)              // { sides, simple, convex, equilateral, equiangular, regular }
- *   Poly.regular(n, r, cx, cy)    // generator
- */
+// polygon-math.js — every geometric judgement the game makes.
 (function (global) {
   'use strict';
 
   var EPS = 1e-9;
 
-  /* ------------------------------------------------------------------ *
-   * Tolerances for "equal" — measured against a dragged shape on a touch
-   * screen, so they have to be forgiving. Too tight and a regular pentagon
-   * the child never touched reads as irregular after one rounding pass;
-   * too loose and an obviously lopsided one reads as regular.
-   * ------------------------------------------------------------------ */
   var TOL = {
     sideRatio: 0.025,   // 2.5% of the mean side length
     angleDeg:  2.0      // degrees
   };
-
-  /* ------------------------------------------------------------------ *
-   * Primitives
-   * ------------------------------------------------------------------ */
 
   function cross(o, a, b) {
     return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
@@ -72,16 +47,6 @@
     return inside;
   }
 
-  /* ------------------------------------------------------------------ *
-   * Structure
-   * ------------------------------------------------------------------ */
-
-  /**
-   * No two non-adjacent edges cross. A child dragging a vertex "inward" can
-   * drag it clean through the far side and make a bowtie — that is not a
-   * concave pentagon, it is not a polygon at all, and every other test
-   * below is meaningless on it. Check this first and clamp or reject.
-   */
   function isSimple(v) {
     var n = v.length;
     if (n < 3) return false;
@@ -95,11 +60,6 @@
     return true;
   }
 
-  /**
-   * Every turn is the same direction. This is the *definition* the game
-   * teaches operationally ("all diagonals inside"), and the two agree for
-   * simple polygons — see the test file for the proof-by-storyboard.
-   */
   function isConvex(v) {
     var n = v.length;
     if (n < 3) return false;
@@ -124,10 +84,6 @@
     }
     return out;
   }
-
-  /* ------------------------------------------------------------------ *
-   * Diagonals
-   * ------------------------------------------------------------------ */
 
   function isAdjacent(i, j, n) {
     var d = Math.abs(i - j);
@@ -154,15 +110,6 @@
     return out;
   }
 
-  /**
-   * Does the diagonal i–j lie entirely inside the polygon?
-   *
-   * Two checks, both needed: the midpoint must be inside (catches the
-   * storyboard's concave pentagon, where the diagonal across the dent sits
-   * wholly outside), and the segment must not cross any edge (catches a
-   * diagonal that pokes out and comes back in, whose midpoint could be
-   * inside by luck).
-   */
   function isDiagonalInside(v, i, j) {
     var n = v.length;
     if (isAdjacent(i, j, n)) return false;   // that is a side, not a diagonal
@@ -183,10 +130,6 @@
       return !isDiagonalInside(v, d[0], d[1]);
     });
   }
-
-  /* ------------------------------------------------------------------ *
-   * Measurement — the "suspiciously alike" screens
-   * ------------------------------------------------------------------ */
 
   function sideLengths(v) {
     var n = v.length, out = [];
@@ -225,13 +168,6 @@
     return allClose(interiorAngles(v), tol == null ? TOL.angleDeg : tol);
   }
 
-  /**
-   * Regular = all sides equal AND all angles equal. The storyboard's own
-   * page 21 states exactly this, and it has two deliberate traps built in:
-   * a rhombus (equal sides, unequal angles) and a rectangle (equal angles,
-   * unequal sides). Both are irregular. Test both, or ship a game that
-   * calls a rhombus regular.
-   */
   function isRegular(v) {
     return isSimple(v) && isConvex(v) && isEquilateral(v) && isEquiangular(v);
   }
@@ -255,10 +191,6 @@
     };
   }
 
-  /* ------------------------------------------------------------------ *
-   * Generators
-   * ------------------------------------------------------------------ */
-
   /** Regular n-gon, one vertex straight up, like every shape in the deck. */
   function regular(n, r, cx, cy) {
     var out = [];
@@ -269,10 +201,6 @@
     return out;
   }
 
-  /**
-   * Move vertex i toward the centroid by fraction t (0 = unchanged,
-   * 1 = at the centroid). This is "drag the vertex inward" as data.
-   */
   function pullInward(v, i, t) {
     var c = centroid(v);
     var out = v.map(function (p) { return { x: p.x, y: p.y }; });
@@ -296,22 +224,8 @@
     return Math.hypot(p.x - (a.x + dx * t), p.y - (a.y + dy * t));
   }
 
-  /* NOT ONLY UNCROSSED — APART.
-   *
-   * isSimple() counts two edges that merely touch as fine, so a corner
-   * dragged past the far side of a pentagon was parked exactly ON that side:
-   * the outline pinched into two lobes meeting at a point, and classify()
-   * called it a perfectly good concave pentagon — a correct answer that
-   * looks broken. So the corner in hand, and the two sides it carries, keep
-   * a gap from every part of the outline they are not joined to: six
-   * hundredths of the shape's own size, a few pixels on the card, enough that
-   * a dent is always a dent and never a pinch. */
   function clearOf(v, i, gap) {
     var n = v.length, prev = (i - 1 + n) % n, next = (i + 1) % n, p = v[i];
-    /* AND CLEAR OF ITS OWN NEIGHBOURS. Nothing here kept the corner off the two corners beside
-       it: dragged at one, it sat on top of it — a side of zero length, a pentagon drawn with
-       four visible corners, told "it's still a pentagon". Each of its two sides keeps at least
-       0.4 of the shape's mean radius, and no corner of the three it moves becomes a needle. */
     var minSide = sizeOf(v) * 0.4;
     if (Math.hypot(p.x - v[prev].x, p.y - v[prev].y) < minSide || Math.hypot(p.x - v[next].x, p.y - v[next].y) < minSide) return false;
     var ang = interiorAngles(v), needle = function (a) { return a < 20 || a > 340; };   // a spike out, or a slit in
@@ -334,12 +248,6 @@
     return r / (v.length || 1);
   }
 
-  /**
-   * Given a proposed new position for vertex i, return the nearest position
-   * that keeps the polygon simple — and clear of itself (see clearOf). Lets
-   * a drag stop at the edge of validity instead of turning into a bowtie, or
-   * a pinch, mid-gesture.
-   */
   function clampSimple(v, i, proposed, opts) {
     var gap = opts && opts.gap != null ? opts.gap : sizeOf(v) * 0.06;
     var trial = v.map(function (p) { return { x: p.x, y: p.y }; });

@@ -1,14 +1,4 @@
-/*!
- * stage.js — everything the learner sees and touches, except Swiftee.
- *
- * One SVG, viewBox 1000×562, scaled by CSS. The scene kinds (BUILD) and a
- * set of incremental ops from screens.js; the interaction types (INTERACT),
- * each returning a promise the director awaits.
- *
- * Nothing here decides right or wrong. Every judgement is a call into
- * polygon-math.js on the live vertices, so the shape on screen and the
- * verdict can never disagree.
- */
+// stage.js — everything the learner sees and touches, except Swiftee.
 (function (global) {
   'use strict';
 
@@ -19,25 +9,10 @@
 
   var svg, layers = {}, st = {};
 
-  /* SEATING. Every panel is laid out under the plank's band, because a scene
-     is often carried into a screen that shows a plank. On a screen with no
-     plank at all — Swiftee says the line — that band is empty, and the card
-     sat low. So the whole scene (panel, shape, controls, effects) is drawn
-     with one translate on its layers: lifted to centre the card when the
-     screen is plank-free, and eased back down when a plank arrives on a
-     carried scene. Stage coordinates never change; the few readers that map
-     stage to page (pt, contentParts, contentBox, nook, peekAnchor, the
-     measuring flight) add seatY. */
   var seatY = 0, plankFree = false;
   var SEAT_LAYERS = ['panel', 'poly', 'ui', 'fx'];
   function applySeat(animate) {
     var p = (st.kind === 'polygon' && st.panel) ? st.panel : null;
-    /* CENTRED ON WHAT IS THERE. A fixed lift of 52 centred a full card, and a
-       card with its answer row under it — and left a card whose row had gone
-       (lets-change, drag-inward, whoa carry the Inside/Outside card on)
-       sitting high over 180px of empty snow. The scene is the card, plus the
-       control band when it has one, centred in the stage; its foot never
-       comes below Next's top (495), and the lift never passes 64. */
     var target = 0;
     if (plankFree && p) {
       var band = p.controls ? CONTROL_GAP + CONTROL_H : 0;
@@ -60,25 +35,12 @@
     });
   }
   var onTap = function () {};       // game.js hooks perTap feedback here
-  /* The things the child does, by name — vertex:selected, diagonal:start,
-     measurement:complete, answer:selected — for the director's event stream.
-     game.js connects it; the stage only says what happened. */
   var onEvent = function () {};
   function evt(name, payload) { try { onEvent(name, payload || {}); } catch (e) {} }
   var cleanup = [];                 // listeners to remove when an interaction ends
 
-  /* ------------------------------------------------------------------ *
-   * DOM helpers
-   * ------------------------------------------------------------------ */
-
-  /* THE WORDS ON THE BOARD IN THE LESSON'S LANGUAGE (src/core/i18n.js, ?lan=): every label, tag,
-     answer and reading is drawn through mk(), so it is turned here — "Inside", "Convex", "6 cm".
-     What a thing IS stays English (data-label, the answers, the cue words), so nothing that
-     decides anything changes; only the letters drawn do. */
   function inLang(text) { return (global.I18N && I18N.on) ? I18N.tr(text) : text; }
 
-  /** A picture's address as this browser asks for it: its AVIF twin where it shows AVIF
-      (src/core/preload.js pick), the .webp everywhere else. */
   function pic(u) { return global.Preload && Preload.pick ? Preload.pick(u) : u; }
   function mk(tag, attrs, parent) {
     var e = document.createElementNS(NS, tag);
@@ -97,39 +59,11 @@
     return { x: q.x, y: q.y - seatY };   // into the seated layers' own space
   }
   function on(el, ev, fn, opts) { el.addEventListener(ev, fn, opts); cleanup.push(function () { el.removeEventListener(ev, fn, opts); }); }
-  /* (`opts.demo` — or `opts.pulse` where there is no gesture to show —
-     builds a hint from the screen as it is NOW and returns its stop function.) */
-  /* THE INTERACTION HINT (the user's spec, 2026-09-25) — one manager for
-   * every tap, drag, swipe, draw, select and measure:
-   *
-   *   FIRST TIME   the first time the child meets an interaction TYPE (a
-   *                vertex to pick, a line to draw, a card to sort…), its short
-   *                demonstration — a hand, a ghost of the gesture — plays as
-   *                soon as the game hands over, once per type.
-   *   IDLE         after that, whenever they have been still for 3 s, the
-   *                same short hint again, and again after another 3 s.
-   *   ANY PRESS    takes it down at once; a moving pointer or a tap restarts
-   *                the 3 s (a pointer drifting toward the ghost's end mark is
-   *                the child following the hint, so moving does not hide it).
-   *
-   * NEVER over anything else: a hint waits (hintGate, from game.js) while his
-   * voice is playing, the words are still arriving, he is moving or reacting,
-   * a transition is up, or an answer's feedback is showing — so it only ever
-   * plays while the lesson is doing nothing but waiting for the child. The
-   * demonstrations show the gesture and never the answer; they are drawn on
-   * the fx layer from the shapes as they are NOW, and change nothing real.
-   * Everything is cleared with the interaction (cleanup) on a screen change,
-   * Back or Restart. */
   var HINT_FIRST_MS = 700, HINT_IDLE_MS = 3000, HINT_SHOW_MS = 1800;
   var hintSeen = {};                         // interaction types already demonstrated
   var hintType = 'input';                    // the type the current interaction is (waitFor)
   var hintGate = function () { return true; };
   var hintRearm = null;                      // the live ladder's clock (hintRestart)
-  /* HELD WHILE HE SPEAKS (game.js holdInput → Stage.hold). While he is saying
-     something back to an answer, or popping up or down behind the swipe
-     card, nothing on the stage can be touched — no card, corner, line, zone
-     or key. Stopped once, at the top of the stage (mount), so no interaction
-     has to know about it. */
   var holdOn = false;
   function hintLadder(opts) {
     if (reduced() || !svg) return;
@@ -145,27 +79,16 @@
         // the lesson must be doing nothing but waiting for the child
         var open = true; try { open = hintGate() !== false; } catch (e) { open = true; }
         if (!open) { blocked = true; t = setTimeout(tick, 250); return; }
-        // IDLE MEANS IDLE SINCE THE LESSON HANDED BACK (the user: after the
-        // first tap, the hand comes only after 3 s of the child being idle).
-        // A wait that ran out while he was busy — the measuring walk, his
-        // reply to an answer — starts again, in full, from the moment he is
-        // done: the child has not been idle at all yet. Only a gesture's very
-        // first demonstration goes as soon as the lesson is free.
         if (blocked && hintSeen[type]) { blocked = false; arm(HINT_IDLE_MS); return; }
         blocked = false;
         var first = !hintSeen[type];
         hintSeen[type] = true;
         hide();
         try { stop = (show && show()) || null; } catch (e) { stop = null; }
-        // said on the event stream, so the companion can make his ONE small
-        // gesture toward it (game.js) without the stage knowing he exists
         evt('hint:show', { rung: first ? 'first' : 'idle', type: type });
         arm(HINT_SHOW_MS + HINT_IDLE_MS);    // another 3 s of stillness after this one
       }, ms);
     };
-    // (a child who has pressed has used the gesture: its first-time
-    // demonstration is no longer owed, and every hint from now on waits for
-    // 3 s of stillness)
     on(svg, 'pointerdown', function () { pressing = true; hintSeen[type] = true; hide(); clearTimeout(t); });
     var release = function () { pressing = false; arm(HINT_IDLE_MS); };
     on(svg, 'pointerup', release);
@@ -182,28 +105,6 @@
     arm(hintSeen[type] ? HINT_IDLE_MS : HINT_FIRST_MS);
   }
 
-  /**
-   * THE TAP GHOST. Two ice rings close on the place to tap, again and
-   * again, until the child touches the stage. The tapping equivalent of the
-   * drag ghost: it shows the gesture, on the first of the things to tap.
-   */
-  /**
-   * WHERE TO TAP: THE THING ITSELF BREATHES.
-   *
-   * This drew a ring that grew out of the tap point and faded — a ripple.
-   * On a card it read as a target painted over the picture, and on the
-   * choose-the-polygons grid it was drawn over a CORRECT card, which handed
-   * the child the answer. What is tappable now swells and settles, a little
-   * out of step with its neighbours, so the invitation is the object and
-   * every valid object gets it.
-   *
-   * Animates `scale`, never `transform`: half the furniture here is placed
-   * by a transform attribute and animating that would throw it to the origin.
-   */
-  /* ONCE, NOT FOREVER. A hint is a nudge the child can notice and then
-     forget; a pulse that never stops is a screen talking over them. `o.strong`
-     is the ladder's clearer rung: a little bigger, twice. A line has no body
-     to swell, so a side brightens instead. */
   function pulseHint(els, o) {
     o = o || {};
     if (reduced() || !svg) return function () {};
@@ -233,30 +134,11 @@
     return stop;
   }
 
-
-  /* ------------------------------------------------------------------ *
-   * THE HAND (assets/ui/hand.webp, built by tools/build-hand.js)
-   *
-   * The ladder's last rung shows the gesture with a hand, because that is
-   * what a child copies: a glove whose FINGERTIP (HandArt.tip, measured from
-   * the artwork) lands exactly on the thing, presses, and lifts. It is about
-   * a fingertip's size beside a corner knob — big enough to read as a hand,
-   * small enough never to cover the shape it points into — with a soft shadow
-   * under it so it floats just above the glass.
-   *
-   * It only ever shows a MOVE, never an answer: it taps a corner when any
-   * corner is right, a side when every side is to be measured, the stepper
-   * the target asks for; it rides a drag ghost. It never taps a choice.
-   * ------------------------------------------------------------------ */
   var HAND_H = 62;   // stage units; the glove is 62 tall, its tip ~8 across
   if (global.HandArt && typeof Image !== 'undefined') {
-    // warmed once the picture format is known (index.html's probe), so it is the file drawn
     var warmHand = function () { try { (new Image()).src = pic(HandArt.src); } catch (e) {} };
     if (global.ImgFormat && ImgFormat.ready && !ImgFormat.settled) ImgFormat.ready.then(warmHand); else warmHand();
   }
-  /** A glove with its fingertip at (x, y) in `parent`. Mirrored when the
-      glove would run off the stage's right edge, so it always comes in from
-      the side there is room on. */
   function handAt(parent, x, y) {
     var A = global.HandArt; if (!A || !A.src) return null;
     var h = HAND_H, w = h * A.w / A.h, tx = A.tip.x * w, ty = A.tip.y * h;
@@ -272,8 +154,6 @@
     ripple.style.transformBox = 'fill-box'; ripple.style.transformOrigin = 'center';
     return { g: g, img: im, ripple: ripple, side: flip ? -1 : 1 };
   }
-  /** Where a hint target is, in stage units: a knob's centre, a line's
-      middle, a pill's box. */
   function centreOf(el) {
     if (!el) return null;
     if (el._rect) return { x: el._rect.x + el._rect.w / 2, y: el._rect.y + el._rect.h / 2 };
@@ -282,9 +162,6 @@
     if (tag === 'line') return { x: (+el.getAttribute('x1') + +el.getAttribute('x2')) / 2, y: (+el.getAttribute('y1') + +el.getAttribute('y2')) / 2 };
     try { var b = el.getBBox(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; } catch (e) { return null; }
   }
-  /** THE TAP, SHOWN: in from below and to the side, onto the thing, two
-      presses — the glove dips, a ring leaves the fingertip — and away. Once
-      per rung; the ladder's press, or the interaction ending, takes it down. */
   function tapHand(p, o) {
     o = o || {};
     if (reduced() || !svg || !p || !isFinite(p.x) || !isFinite(p.y)) return function () {};
@@ -324,8 +201,6 @@
 
   function endInteraction() {
     cleanup.splice(0).forEach(function (f) { f(); });
-    // NOTHING INACTIVE SHOWS A HAND. Whatever an interaction dressed as
-    // touchable is plain again the moment the interaction is over.
     if (svg) {
       svg.style.cursor = '';
       var dressed = svg.querySelectorAll('[style*="cursor"]');
@@ -335,26 +210,11 @@
   function pathOf(v) { return v.map(function (p, i) { return (i ? 'L' : 'M') + p.x.toFixed(1) + ' ' + p.y.toFixed(1); }).join(' ') + ' Z'; }
   function juice(name, el, o) { if (global.Juice && el && Juice[name]) Juice[name](el, o); }
 
-  /**
-   * THE GHOST SHOWS THE MOVE. Where a screen asks for a drag, a translucent
-   * knob (or a translucent copy of the thing to drag) leaves the start, slides
-   * to where the drag goes, fades, and goes again — until the child touches
-   * the stage, when it is gone for good. It never shows an answer the child
-   * must find; it shows the gesture.
-   *
-   * Returns a stop function; the interaction's cleanup calls it too.
-   */
   function gestureGhost(from, to, opts) {
     opts = opts || {};
     if (reduced() || !svg) return function () {};
     var g = mk('g', { 'class': 'gesture-ghost', 'pointer-events': 'none' }, layers.fx);
     var mover;
-    /* A LINE DRAWN, NOT A CORNER DRAGGED (opts.line — the draw-diagonal hint; the user: "the
-       ghost looks like the vertex itself is being stretched"). A copy of the corner's knob used
-       to slide away from the corner with a trail behind it, which read as the corner being
-       pulled out of the shape. Now nothing leaves the corner: it stays exactly where it is,
-       and a faint line grows out of it, its end travelling to the corner it joins — the hand's
-       fingertip on that end — reaches it, holds a moment, and fades. */
     var drawn = null;
     if (opts.line) {
       var glen0 = Math.hypot(to.x - from.x, to.y - from.y) || 1;
@@ -391,38 +251,14 @@
       { translate: dx + 'px ' + dy + 'px', opacity: 0, offset: 1 }
     ];
 
-    /* WHERE THE MOVE ENDS, AND IT STAYS THERE.
-     *
-     * The ghost slid from the start to the end and faded, and the end faded
-     * with it: a child who looked up a second late saw a hand vanishing
-     * somewhere over the shape and nothing to say where it had been going.
-     * The end is marked now — a dashed ice ring round the place the drag
-     * finishes, with a dot at its heart — and the ring is the one part of the
-     * hint that stays: it rises as the ghost sets off, catches the ghost as it
-     * lands (one small pop), and is still there after the ghost has gone,
-     * perfectly still, until the child touches the screen. The ladder's
-     * press takes it down (hide -> stop), and so does the interaction ending.
-     * Not a moving hint: a mark. */
     var ms = opts.duration || 3200;
     var endG = mk('g', { 'class': 'gesture-ghost-end', 'pointer-events': 'none',
                          transform: 'translate(' + to.x + ',' + to.y + ')' }, layers.fx);
-    // A SOFT PATCH OF LIGHT, NOT A RING. It was a dashed ice ring with a dot
-    // at its heart, and on a corner it read as a target painted over the knob
-    // (the user: "remove dashes ring, it look odd"). The light is the same
-    // mark without the drawing; a corner's own knob is its heart (endDot).
-    // NO MARK WHERE THE MOVE ENDS (the user, twice: "remove this" — the glow
-    // and dot left on the snow between the sorting bins, and over the corner
-    // to stretch). The ghost and the hand show the move; a mark left behind
-    // after them read as a stray spot. The group stays, empty, so the timing
-    // and the clean-up below are unchanged.
     endG.style.opacity = '0';
 
     var anims = [];
-    // ONCE PER RUNG of the hint ladder, not on a loop: the move is shown, and
-    // then the child has the screen to themselves again.
     var times = opts.times || 1, delay = opts.delay == null ? 120 : opts.delay;
     if (drawn && drawn[0].animate) {
-      // grows with the hand — out of the corner as it presses, to the other as it arrives
       var L0 = drawn.len + 'px';
       drawn.forEach(function (ln) {
         try {
@@ -441,10 +277,6 @@
       drawn.forEach(function (ln) { ln.style.strokeDasharray = '14 12'; ln.style.strokeDashoffset = '0px'; });
     }
     if (mover && mover.animate) anims.push(mover.animate(frames, { duration: ms, iterations: times, delay: delay }));
-    /* THE CORNER IT GOES TO LIGHTS AS THE LINE REACHES IT (opts.target — the connect hint:
-       "adjacent vertex briefly highlights → ghost line reaches it"): the knob swells a size
-       and brightens just before the line lands, holds while the line holds, and settles as
-       the line fades. Animates `scale`, never `transform`; cancelled with the rest (stop). */
     if (opts.target && opts.target.animate) {
       try {
         opts.target.style.transformBox = 'fill-box'; opts.target.style.transformOrigin = 'center';
@@ -459,9 +291,6 @@
         ], { duration: ms, iterations: times, delay: delay }));
       } catch (e) {}
     }
-    /* AND A HAND DOES IT. The glove comes down onto the start, presses, and
-       carries the ghost along the move with its fingertip on it; at the end it
-       lifts off and away, leaving the mark where the move finishes. */
     var hand = opts.hand === false ? null : handAt(g, from.x, from.y);
     if (hand && hand.g.animate) {
       var hs = hand.side, dxy = dx + 'px ' + dy + 'px';
@@ -525,10 +354,6 @@
     cleanup.push(stop);
     return stop;
   }
-  /* A BURST FROM BEHIND THE DOT (the user: "confetti bursts behind each connected dot"): the
-     corner a diagonal has just reached throws a small ring of confetti out from under itself —
-     a dozen bits in the lesson's colours, flying out, dropping a little and fading. Drawn in
-     the shape's group under the corner dots, so it comes from behind the dot, not over it. */
   function dotBurst(i) {
     var k = knobOf(i);
     if (!k || reduced() || !k.animate || !st.polyG || !k.parentNode) return;
@@ -536,7 +361,6 @@
     var host = k.parentNode, first = host.querySelector('.knob');
     var g = mk('g', { 'class': 'dot-burst', 'pointer-events': 'none' }, host);
     if (first) host.insertBefore(g, first);
-    // (deep, saturated colours: pastels vanished against the pale glass the corners stand on)
     var cols = ['#ffb300', '#ff3d7f', '#00a8f0', '#2fbf4f', '#8a5cff', '#ff7a00'];
     for (var q = 0; q < 16; q++) {
       var ang = (q / 16) * Math.PI * 2 + Math.random() * 0.4, dist = 32 + Math.random() * 26;
@@ -558,31 +382,10 @@
   }
   /** The visible knob at vertex i (the touch disc over it is st.vertEls[i]). */
   function knobOf(i) { return (st.knobEls && st.knobEls[i]) || null; }
-  // (the stage's `gain` is how loud this cue is to be, 0..1 of itself: SFX's `level`)
   function sfx(name, o) {
     if (!global.SFX) return;
     SFX.play(name, (o && typeof o.gain === 'number') ? Object.assign({}, o, { level: o.gain }) : o);
   }
-  /* ------------------------------------------------------------------ *
-   * Scene generation
-   *
-   * Every delayed callback in this file used to be a bare setTimeout, and
-   * reset() — which tears the scene down and builds the next one — cancelled
-   * none of them. So a callback scheduled by one screen ran against the next:
-   * a staggered checklist row playing its tick on a screen that has no
-   * checklist, the touch affordance being switched on for an interaction that
-   * had already been replaced, a sort item fading itself in after its tray was
-   * gone.
-   *
-   * None of that is visible as an error. It shows up as a sound with no cause
-   * and a screen that lights up something nobody asked about, which is the
-   * hardest class of bug to find by looking.
-   *
-   * So the scene has a number, reset() advances it, and later() refuses to run
-   * anything scheduled by an older one. Every timer in this file goes through
-   * it. The count of what it has refused is exposed, because a mechanism that
-   * silently does nothing is indistinguishable from one that is not wired up.
-   * ------------------------------------------------------------------ */
   var sceneGen = 0;
   var sceneTimers = [];
   var staleSuppressed = 0;
@@ -614,30 +417,13 @@
   }
   function reduced() { return !!(global.Juice && Juice.reducedMotion); }
 
-  /* ------------------------------------------------------------------ *
-   * Mount and background
-   * ------------------------------------------------------------------ */
-
   function mount(container) {
     svg = document.createElementNS(NS, 'svg');
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     svg.setAttribute('class', 'stage');
     svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-    // OVERFLOW VISIBLE, SO THE PAINTING CAN LEAVE THE BOX. The lesson is a
-    // 1000x562 board fitted inside the window, and on any other shape of
-    // screen that leaves a strip the board does not reach. Letting the
-    // background layer paint past the viewBox — and only the background
-    // layer draws out there — means the sky and the snow run to the edge of
-    // the glass instead of stopping at a line.
     svg.style.cssText = 'display:block;width:100%;height:100%;touch-action:none;user-select:none';
     container.appendChild(svg);
-    // a finger on the glass: while it is down the board is the child's, and
-    // a vocabulary word does not light anything under their hand (emphasize)
-    /* THE HOLD WHILE HE ANSWERS swallows a press — except on a card of a choose-all question
-       (multi-select, st.tapThrough). There each card is its own answer, and a child who has
-       found one polygon reaches straight for the next: that press was swallowed while he was
-       still saying "Great job!", so the second right card never lit up, which read as the
-       green glow being gone. Every card press is answered on the card, at once. */
     svg.addEventListener('pointerdown', function (e) {
       if (!holdOn) return;
       var through = st.tapThrough;
@@ -651,14 +437,6 @@
     ['bg', 'panel', 'poly', 'ui', 'fx'].forEach(function (n) {
       layers[n] = mk('g', { 'class': 'layer-' + n }, svg);
     });
-    // `fx` is pure feedback — the rubber-band line while a diagonal is being
-    // drawn, the ghost while an endpoint is dragged — and it is the topmost
-    // layer, so anything in it covers the vertices the child has to grab.
-    // Those strokes are 7px wide and run straight through the vertex they
-    // start from, and `opacity: 0` does not exempt an element from hit
-    // testing: the pointerdown landed on the ghost and the drag never began.
-    // Nothing in this layer is ever interactive, so say so once, here,
-    // rather than remembering it at each element.
     layers.fx.setAttribute('pointer-events', 'none');
     drawVista();
     armPress();
@@ -670,59 +448,14 @@
     return api;
   }
 
-  /* ------------------------------------------------------------------ *
-   * The vista — painted artwork, plus a layer of weather over it.
-   *
-   * The backdrop is a single image drawn to the full viewBox. Behind it
-   * sits the old gradient sky, so a missing or slow file degrades to a
-   * clean sky rather than a white hole.
-   *
-   * Over it, three things move, none of which the learner ever interacts
-   * with and all of which stop dead under reduced motion. They are all light
-   * and particles, deliberately: anything with a drawn edge sits on top of a
-   * painting instead of joining it.
-   *
-   *   snow     drifting six-armed crystals, each with its own fall time,
-   *            sway and spin, seeded once and looped forever with WAAPI
-   *            rather than per-frame JS — plus a gust held paused in reserve
-   *            for Stage.flurry(), which the transition raises before it
-   *            covers the screen
-   *   glints   occasional sparkles on the snowfield, staggered so they never
-   *            pulse in unison
-   *   shimmer  one slow band of light travelling across the ice
-   *
-   * All of it lives in the `bg` layer, which reset() does not clear — it is
-   * painted once at mount and then left alone for the whole lesson.
-   * ------------------------------------------------------------------ */
-
   var HORIZON = 405;          // where the painted snowfield begins, in viewBox units
 
-  /* THE LOG HIS PERCH IS (Stage.perch): it stands on the snow at the left of the ground; he
-   * flies onto it at the end of the intro and sits there through the lesson.
-   *
-   * ON TOP OF THE SNOW, NOT IN IT (the user: "Swiftee looks behind the log"). He was sunk
-   * 22 units into the cap with a copy of the log laid over his feet, and that read as a bird
-   * standing behind the log. Nothing is drawn over him now: his feet are a few units into the
-   * cap's top surface — in front of its back edge, well above its front — so the whole of him
-   * shows, sitting on the log, and his shadow lands on the snow under him.
- */
-  /* THE PERCH IS THE USER'S OWN STONE (assets/source/stone-snowy.avif → assets/bg/stone-snowy.webp,
-     trimmed to its opaque box and brought to 720 wide; the user: "add this stone for Swiftee to
-     stand on instead of the log"): a long blue boulder under a deep cap of snow, drifts at both
-     feet. Placed by what touches: its lowest opaque row (`foot`, the drifts) on the snow line;
-     he stands in the middle of the cap (`at`), whose back edge is `crest` rows down the
-     picture. The cap's top is a broad surface seen from above — its front lip is a third of
-     the way down the picture — so his feet go LOG_SINK units in from the back edge, well
-     onto the top, and he reads as standing on the snow, not behind it. (The names stay `LOG`:
-     the perch handlers, the camera's blur and the tests call it that.) */
   var LOG = { src: 'assets/bg/stone-snowy.webp?v=16b51c48', x: 38, w: 320, iw: 720, ih: 250, foot: 249, crest: 0, at: 0.5, ground: 520 };
   LOG.h = LOG.w * LOG.ih / LOG.iw;
   LOG.y = LOG.ground - LOG.h * (LOG.foot / LOG.ih);
   var LOG_SINK = 22;
   function perchPoint() { return { x: LOG.x + LOG.w * LOG.at, y: LOG.y + LOG.h * (LOG.crest / LOG.ih) + LOG_SINK }; }
   var perchLog = null;
-  // ambient element counts — see ambientLife(). Halved, and no wind streaks (the animation
-  // review: background motion is noticed second, and must never compete with the lesson)
   var SNOW = 12, GUST = 16, GLINTS = 4;   // (the gust is the snow wipe's own flurry, paused until it is needed)
   var ambient = [];           // running WAAPI animations, so they can be stopped
   var snowAnims = [];         // just the snowfall, so a gust can speed it up
@@ -740,26 +473,10 @@
       // the panel: a slab of ice, lit from above
       '<linearGradient id="panelFace" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".93"/><stop offset=".55" stop-color="#f2fbff" stop-opacity=".88"/><stop offset="1" stop-color="#d9eefb" stop-opacity=".9"/></linearGradient>' +
       '<linearGradient id="panelSheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".85"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient>' +
-      // the camera's softness on the log (Stage.blurLog): scenery on the intro's close shot
       '<filter id="logSoft" x="-8%" y="-8%" width="116%" height="116%"><feGaussianBlur stdDeviation="0"/></filter>' +
       // the soft halo behind the compare card in focus (focus())
       '<filter id="cardGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"/></filter>';
 
-    /* THE PAINTING IS ONE LAYER, AND IT IS NOT THIS ONE.
-     *
-     * The backdrop used to be drawn twice: once here, fitted to the 1000x562
-     * board, and once behind the whole window so the strip either side of the
-     * board was not bare. Two copies of one picture at two scales meet along
-     * a line, and that line is exactly what "the background is not fitting"
-     * was — a seam between two versions of the same mountains.
-     *
-     * The window-wide copy (#backdrop in index.html, the same trick the title
-     * screen uses) is now the only one. On a 16:9 screen it lands pixel for
-     * pixel where this one did; on any other shape it simply continues past
-     * the board instead of stopping at it. The weather still belongs here,
-     * because it is drawn in board coordinates like everything else.
-     */
-    // the log, on the snow (hidden until a screen stands him on it: perch), under the weather
     perchLog = mk('g', { 'class': 'perch-log', 'pointer-events': 'none' }, layers.bg);
     perchLog.style.opacity = '0';
     var li = mk('image', { x: LOG.x, y: LOG.y.toFixed(1), width: LOG.w, height: LOG.h.toFixed(1),
@@ -786,29 +503,8 @@
     loopAnim(sun, [{ opacity: 0.45 }, { opacity: 0.8 }, { opacity: 0.45 }],
              { duration: 9000, easing: 'ease-in-out' });
 
-    // No drifting clouds. The backdrop is painted, clouds and all, and the
-    // vector wisps that used to cross it read as stray shapes laid over the
-    // art rather than as weather in it — flat, hard-edged and a different
-    // white. Snow and light work over a painting; drawn clouds do not.
-
-    // --- snowfall -------------------------------------------------------
-    // Six-armed crystals, not dots. At these sizes a filled circle reads as
-    // white noise over the painting; a lattice reads as snow. The shape comes
-    // from the same generator the transition uses for its enormous flakes, so
-    // the one that swings across the screen between two screens is visibly
-    // the same crystal that has been drifting past all lesson.
-    //
-    // Seeded once. Each flake carries its own duration and negative delay, so
-    // the field is already mid-fall on the first frame instead of starting as
-    // an empty sky that fills in. Each is its own compositor layer and its own
-    // infinite WAAPI animation, and the target is a low-end tablet, so the
-    // count stays low and the small ones use the cheapest of the three builds.
     snowAnims = seedSnow(g, SNOW, 3.2, 8.4, 1);
 
-    // --- the gust, held in reserve ---------------------------------------
-    // Bigger, faster flakes that are not running and not visible until the
-    // transition asks for them. The storm has to build before the screen is
-    // covered, or the cover arrives out of nowhere.
     gustG = mk('g', { 'class': 'gust' }, g);
     gustG.style.opacity = '0';
     gustG.style.transition = 'opacity 240ms linear';
@@ -843,15 +539,6 @@
     ], { duration: 17000, easing: 'ease-in-out' });
   }
 
-  /**
-   * Seed one field of falling crystals into `parent`.
-   *
-   * `slow` scales the fall time: the gust uses half, so its flakes visibly
-   * outrun the calm ones when it arrives rather than merely adding to them.
-   * The build is picked by size — the small distant flakes get the bare star,
-   * which is a fifth of the path data of a full dendrite nobody could resolve
-   * at that scale anyway.
-   */
   function seedSnow(parent, count, rMin, rMax, slow) {
     var out = [], i;
     for (i = 0; i < count; i++) {
@@ -870,8 +557,6 @@
         'stroke-linecap': 'round', 'stroke-linejoin': 'round',
         opacity: (0.3 + Math.random() * 0.5).toFixed(2)
       }, parent);
-      // The crystal is drawn around its own origin, so the box it turns about
-      // is its own — without this it would orbit the viewBox corner.
       f.style.transformBox = 'fill-box';
       f.style.transformOrigin = 'center';
 
@@ -886,14 +571,6 @@
     return out;
   }
 
-  /**
-   * Thicken the weather, or let it settle again.
-   *
-   * The transition calls this a beat before it covers the screen: the gust
-   * joins the calm snow and the calm snow speeds up, so by the time the big
-   * crystals arrive it is already snowing hard. Without it the cover reads as
-   * an effect switching on. With it, the storm closes in.
-   */
   function flurry(on) {
     gusting = !!on;
     if (!gustG) return;
@@ -902,241 +579,57 @@
     snowAnims.forEach(function (a) { try { a.playbackRate = on ? 3.4 : 1; } catch (e) {} });
   }
 
-  /** Stop the weather. Used when the page is hidden, so a backgrounded tab costs nothing. */
   function ambientPlay(on) {
     ambient.forEach(function (a) {
       try { on ? a.play() : a.pause(); } catch (e) {}
     });
-    // Resuming the tab must not also resume a gust nobody asked for.
     if (on && !gusting) gustAnims.forEach(function (a) { try { a.pause(); } catch (e) {} });
   }
 
-  /* ------------------------------------------------------------------ *
-   * Panels and polygons
-   * ------------------------------------------------------------------ */
-
-  /* THE SCREEN READS TOP TO BOTTOM: INSTRUCTION, OBJECT, INTERACTION.
-   *
-   *   TOP      the plank's band. Two lines of it, at the widest the game
-   *            runs, come down to about 117 stage units; nothing the lesson
-   *            draws starts above this line, so the plank never covers it.
-   *   BOTTOM   the foot, above the progress bar.
-   *   CONTROL  the row of answers or the stepper bar: one height, one gap,
-   *            always directly under the panel it belongs to, so a control
-   *            is found where the eye lands after the object — not parked at
-   *            the bottom edge because there happened to be room there.
-   */
   var TOP = 120;
   var BOTTOM = H - 16;
   var CONTROL_H = 56;
   var CONTROL_GAP = 16;
 
-  /* The look of every card the stage draws itself. The artwork cards carry
-     their own; these keep the drawn ones — bins, the stepper bar, the
-     checklist, a tag — from each inventing a radius and a rim. */
   var UI = {
     radius: 18, rim: 2.5,
     paper: '#fff8ee', paperRim: '#d9bd92',        // warm, so the ice is the only blue
     title: 22
   };
 
-  /* The learning object. One blue, used for nothing else on the stage, with
-     an edge that is a darker step of the same colour rather than a black
-     line — a coloured shape with a soft edge, not a diagram. */
   var SHAPE = { fill: '#5f97f0', edge: '#2f5fc4', edgeW: 3.5 };
 
-  /* WHAT THE CHILD IS BEING SHOWN, OR CAN TAKE HOLD OF. One gold, with a
-     deep amber edge, for every highlight and every handle: it is the
-     stepper's coins and the yellow pill, so "gold means touch me or look
-     here" holds across the game. Pure yellow on the blue shape read as a
-     warning stripe; cream knobs with brown rims read as buttons from
-     another game. */
-  /* FROZEN, NOT GOLD. The gold knobs and amber rings read as coins from
-     another game against the ice. Everything the child can take hold of is
-     now cut from the same ice as the cards: a knob of frost-white with a
-     deep-water edge, a picked one of bright glacier cyan, a second one of
-     aqua, and the thing that is WRONG — a diagonal that runs outside — in
-     aurora violet, which is the irregular concept's own colour and the one
-     hue on this stage that is neither blue nor warm. Highlighted sides are
-     ice-white over a deep-water under-edge, so they stand off the blue. */
-  // fill: A CORNER THE LESSON MARKS — the one being dragged, the dent, the
-  // corner a line reached — is Swiftee's green like the picked one, never
-  // a cyan of its own (the user: "why this color not using swiftee color")
   var HI = { fill: '#34b4a4', edge: '#0b4f9e', line: '#eafcff', lit: '#4be0ff', hot: '#7ff0d0',
              bad: '#b98cff', badLit: '#7a4cff', knob: '#eaf9ff', rim: '#4fb8ea',
-             /* THE CORNER TO WORK WITH — the one picked, the one to drag, the other end of a
-                diagonal — is Swiftee's green (not yellow: the user), and it wears a WHITE rim:
-                green and the shape's blue are two mid tones that ran together, and the rim is
-                what stands the dot off the shape (renderPoly). */
              picked: '#34b4a4' };
-  /** A lit line: the glow first (wider, translucent, the same dashes), then the ice core. Returns [glow, core]. */
-  /**
-   * THE GLOW IS ON THE LINE ITSELF. An SVG blur filter takes its region from
-   * the element's own box, and a thin tick lying nearly along an axis has a
-   * box a few pixels tall — the glow came out cropped to a slot, and on a
-   * vertical tick to nothing. A CSS drop-shadow grows its own region and
-   * follows the dashes, so every lit line glows the same way, whole.
-   */
-  /**
-   * The lit look: ONE tight shadow, not a haze.
-   *
-   * Two stacked drop-shadows at 3px and 7px put a halo round every stroke
-   * wider than the stroke itself, and on a dashed line — where the halo
-   * closes over the gaps — the whole thing read as out of focus. One shadow
-   * at 2px reads as light coming off the line and leaves the edge sharp.
-   */
   function litGlow(col) {
     return 'filter: drop-shadow(0 0 2px ' + col + ');';
   }
-  /** A lit line: an ice core with its own glow. Returns [core, core] — the same element twice, for callers that kept a glow and a core. */
   function litLine(parent, attrs, o) {
     o = o || {};
     var bad = !!o.bad;
-    /* THE ONE THAT GOES OUTSIDE, SEEN AT A GLANCE (the convex / concave clarity brief: "make at
-       least one dashed diagonal clearly go outside"). It was a pale lavender (HI.bad) with a violet
-       glow, and on the pale ice outside the shape — which is where an outside diagonal lies — it
-       all but disappeared. Now a deep violet dash with a thin white halo: dark against the ice,
-       lifted off the blue where it crosses the shape. Still the lesson's violet for "the odd
-       one", still dashed where it is a diagonal. */
     var glowCol = bad ? 'rgba(255, 255, 255, 0.95)' : (o.warm ? '#ffb020' : HI.lit), coreCol = bad ? HI.badLit : (o.warm ? '#ffe27a' : HI.line);
     var core = mk('line', Object.assign({}, attrs, { stroke: coreCol, style: litGlow(glowCol) }), parent);
     return [core, core];
   }
-  // LINES ARE GOLD. A diagonal, a drawn segment, the side being measured:
-  // each is a gold dash or stroke, the one lit thing on the blue shape. The
-  // diagonal that has fallen OUTSIDE is violet instead, so the child sees
-  // the odd one without reading anything.
 
   var PANELS = {
-    // THE NEXT BUTTON LIVES IN THE BOTTOM-RIGHT CORNER, always, over the
-    // stage. At h:460 this slab ran to y 520 and Next starts at 493, so on
-    // every screen that offers Next the button sat on the corner of the
-    // lesson — a fixed number against a fixed number, wrong everywhere.
-    // y 100, not 60: the instruction plank occupies the top band of every
-    // screen now, and at 60 this slab ran up underneath it. Height comes down
-    // with it so the foot still clears the Next button.
-    // BIGGER, AND IN FROM THE CORNER. At 500..960 × 120..485 the slab left
-    // a hundred and forty units of nothing between him and it, another
-    // sixty above it to the plank, and stopped short of the floor to clear
-    // Next — which it never needed to, because Next lives right of x 855
-    // and the slab can simply end before that. So: shifted left to 380,
-    // up to 108 (fourteen under the plank's foot), and down to the floor,
-    // 456 × 438: nearly square around a shape that nearly is, and a fifth
-    // bigger. Its right edge, 836, keeps clear of Next.
-    // 396..852 × 108..538: in from the corner, clear of Next (x 855+, y 495+)
-    // and 18 under the plank's foot. When no plank is on the screen the whole
-    // scene is SEATED higher — see applySeat() — so the card is centred.
-    // 452, NOT 396: the layout audit measured a 30–60px gap between his line
-    // and the card and 190px of empty ice to its right — the card crowded the
-    // bird and left the far side to nobody. Seated, the card's foot ends
-    // above Next's top (applySeat keeps it there), so it can use that room.
-    // 440 × 100, 480 × 440 (the user's layout rule: "Swiftee on the left, the card on the
-    // right, large enough for clear interaction"): the right-hand side used, its right edge 920
-    // still short of the HUD's corner, its left edge clear of the column his line takes
     right:  { x: 440, y: 100, w: 480, h: 440 },
-    // WITHOUT HIM, THE LESSON TAKES THE MIDDLE. The right-hand slab exists
-    // to leave the bottom-left to Swiftee. On the twenty-eight screens he is
-    // not on, it left half the screen to nobody; this is what a 'right'
-    // request becomes when he is off.
-    // Nearly square, because the thing it frames nearly is: a 600-wide slab
-    // around a pentagon was two thirds glass, and the shape read as small.
-    // The same slab, centred: the measuring screens, where he waits inside
-    // it, and the screens he is off.
     solo:   { x: 272, y: 108, w: 456, h: 430 },
-    // THE MEASURING SLAB: the wide ice frame the user supplied, at its own
-    // aspect (1672×941), the full height of the band and nearly the width
-    // of the stage. He waits small in its bottom-left corner and the shape
-    // has the middle to be big in. Chosen by panelFor() for a 'measure'
-    // room when he is not standing on the ice beside the card.
-    // Centred in the whole height, with the same air above and below: he
-    // narrates these screens, so no plank ever sits over this slab. Its
-    // right edge stops at 912 and its top at 49, just clear of the HUD.
-    // 100..900 × 34..484, its own aspect: clear of the HUD's corner above
-    // and of Next below, which used to sit on this slab's bottom-right rim.
     measure: { x: 100, y: 34, w: 800, h: 450, frame: 'measure' },
-    // THE INSTRUCTION CARD COMES DOWN TO y 115. It is pinned top-left and
-    // capped to whatever room the lesson leaves beside it — but a centred
-    // panel leaves 200 units, which is narrower than the sentence is tall, so
-    // the cap is refused and the card sits ABOVE the lesson instead. That
-    // only works if the lesson actually starts below it, which at y 70 it did
-    // not: the card lay across the top quarter of the slab.
     center: { x: 230, y: 128, w: 540, h: 330 },
-    // THE COMPARE PAIR WAS PUSHED INTO THE RIGHT-HAND HALF and drawn small
-    // with it: 490 to 985 of a 1000-wide stage, so the whole left third was
-    // empty and the two shapes being compared were the smallest things on the
-    // screen. The margin existed to keep clear of Swiftee, who stood bottom
-    // left — he goes up into the corner on these screens now, so the lesson
-    // can have the room. Centred on 500, and half again as tall.
-    // 290, not 306: at 306 the pair reached 556px on a 720 window and he
-    // stands centre-bottom on one of these screens with his head at 547.
-    // 150, not 128: he peeks over the left one, and his head has to clear a
-    // one-line plank above it. The check lines below still end above the foot.
-    // Shifted right of centre by 60: he stands on the ice at the left of
-    // the pair and instructs from there, and the pair's right edge (882)
-    // stays clear of the HUD.
-    // x 270 / 608: the band between the stage's edge and the left card is
-    // where his line goes, and at 238 it was too narrow for "Compare the
-    // diagonals in both pentagons." in three rows, so the line fell under
-    // the cards. The pair's right edge (914) still clears the stage's own
-    // margin and Next (which starts at y 495, below the pair's 440).
-    // UP, so the tags under them are in the picture. At y 150 the pair's
-    // name tags landed at 470 of a 562 stage — on the snow, level with the
-    // progress bar, reading as a caption printed under a slide rather than
-    // as part of the game.
-    // ACROSS, NOT CENTRED. The pair used to start at x 270, which left a
-    // 218px column on his side of the stage — narrower than a speech bubble
-    // can render — so the placement had nowhere beside him to put a line and
-    // sent every one of them to the band along the top of the screen, six
-    // hundred pixels from the bird saying it. Moved right, the column is 248
-    // and the longest line on these screens sits at his head in three rows.
-    // 278 OF COLUMN, NOT 248. The longest line on these screens — "At least
-    // one diagonal outside means concave polygon." — is four rows in a 248px
-    // box and three in a 278px one, and four rows is the width at which the
-    // placement gives up on standing beside him and puts the words in the
-    // band along the top of the screen instead. Thirty pixels of column is
-    // the difference between his line being his and being a caption.
     left2:  { x: 330, y: 118, w: 290, h: 290, frame: 'compare' },
     right2: { x: 652, y: 118, w: 290, h: 290, frame: 'compare' }
   };
 
-  /* ------------------------------------------------------------------ *
-   * THE OPTION ROW OWNS THE BOTTOM OF THE STAGE.
-   *
-   * The row of answer buttons is pinned to the bottom edge, and the panels
-   * were sized as though it were not there: the right-hand panel runs to 520
-   * in a 562-tall stage and the row starts at 484, so on every screen that
-   * asks a question the buttons were drawn across the foot of the panel —
-   * over the stepper's own card on the builder screens, over whatever caption
-   * was under the shape on the rest.
-   *
-   * Nothing about that depended on the window, the content or the device. It
-   * was two fixed numbers that overlapped, so it was wrong everywhere.
-   *
-   * A panel on a screen that asks a question stops above the band. Screens
-   * that ask nothing keep the full height — reserving the band on all of them
-   * would buy empty space on two thirds of the lesson to solve a problem it
-   * does not have.
-   * ------------------------------------------------------------------ */
   function panelFor(name, spec) {
     var p = PANELS[name] || PANELS.right;
-    // The right-hand slab is for a bird standing bottom-left, so his bubble
-    // has the left half to open in. Off, or up in the top-left corner where
-    // his bubble opens along the top band, the lesson takes the middle.
-    // (on the log at the left of the ground, too: the card takes the right — the user: "if
-    // Swiftee is on the left, the main learning card is on the right", never centred)
     var standsLeft = global.Swiftee && /^(left|log$)/.test(Swiftee.pos || '');
     if (p === PANELS.right && !standsLeft) {
       p = (spec && spec.room === 'measure' && global.CardFrame && CardFrame.measure) ? PANELS.measure : PANELS.solo;
     }
     var controls = spec && ((spec.choices && spec.choices.length) || spec.controls);
     if (!controls) return p;
-    // A panel with a control under it stops above the control, and the pair
-    // is centred in the band between the plank and the foot — so a screen
-    // with a question is balanced, not weighted to whichever edge had room.
-    // Sized from the top it is actually given (TOP), not from the free
-    // panel's own y: measured from 108 and then placed at 120, the card ran
-    // twelve units into the gap above its control, and the stepper sat four
-    // units under the card instead of sixteen.
     var floor = BOTTOM - CONTROL_H - CONTROL_GAP;
     var h = Math.min(p.h, Math.max(240, floor - TOP));
     var slack = (BOTTOM - TOP) - (h + CONTROL_GAP + CONTROL_H);
@@ -1150,46 +643,6 @@
     return Math.min(y, BOTTOM - CONTROL_H / 2);
   }
 
-  /**
-   * The slab the lesson stands on.
-   *
-   * It was one flat white rectangle with a thin blue outline, which is what a
-   * website card looks like — in a game about ice, on a painted glacier. It
-   * is a slab now: lit along its top edge, deepening to pale blue at the
-   * bottom, with a darker underside beneath it so it has thickness. That is
-   * the same grammar as everything else in this game — the speech bubble, the
-   * instruction card and the buttons all have a rim and an underside — so the
-   * panel stops being the one piece of furniture from somewhere else.
-   *
-   * THE SHAPE IS STILL THE HERO. Four crystals sit in the corners at a tenth
-   * opacity and nothing sits anywhere else: the middle, where the polygon
-   * goes, is clean ice. A theme that competes with the thing being taught is
-   * not a theme, it is clutter — which is why the frost is in the corners,
-   * the gradient is gentle, and there is no pattern across the face.
-   *
-   * Everything is drawn in viewBox units, so it scales with the stage and
-   * needs no breakpoints of its own.
-   */
-  /**
-   * The slab a shape is DISPLAYED on.
-   *
-   * THIS IS THE CARD FOR THINGS YOU CANNOT TOUCH. The game now has two, and
-   * the difference between them is the affordance: an option — anything in
-   * the sorting tray, the swipe deck, the choose-the-polygons grid — sits in
-   * the small block of ice, and a shape that is simply being shown to you
-   * sits on this one. A child can tell which is which before they reach for
-   * it, which one slab used for both could never say.
-   *
-   * It was drawn here: a face, a rim, an underside, four frost crystals and a
-   * sheen, about forty lines of it. It is the artwork now, so what the lesson
-   * shows and what the designer drew cannot drift apart, and redrawing it is
-   * a file swap.
-   *
-   * `_face` is the area INSIDE its rim, which is what the shape and its
-   * caption have to stay within. The bottom rim is a sixth of the card, so a
-   * caption placed against the bottom of the PANEL sits on the frame rather
-   * than on the ice.
-   */
   function panel(p, opts) {
     opts = opts || {};
     var g = mk('g', { 'class': 'panel' }, layers.panel);
@@ -1212,53 +665,10 @@
                    fill: 'url(#panelFace)', stroke: '#a3d4ef', 'stroke-width': 3 }, g);
     }
 
-    // A CARD NEVER POPS (the user, more than once): a panel slides up (rise) or simply fades in;
-    // what is drawn on it — the shape — may still spring in
     if (opts.enter !== false) enter(g, opts.enter === 'rise' ? 'rise' : 'fade');
     return g;
   }
 
-  /**
-   * The little pop or rise as a thing arrives.
-   *
-   * Animates the independent `scale` and `translate` properties, never
-   * `transform`. A sort item is positioned by a `transform="translate(x,y)"`
-   * attribute, and a WAAPI animation of `transform` replaces that outright
-   * for its whole duration — so every item in the tray was drawn at the top
-   * left corner of the stage for 460ms and then snapped into place. `scale`
-   * and `translate` compose with the attribute instead of overwriting it.
-   */
-  /* A THING ARRIVES; IT DOES NOT BOUNCE IN.
-   *
-   * The lesson's objects — a card, a polygon, a pair of pentagons — came in
-   * from seventy per cent with an overshoot, which is a toy landing, and a
-   * shape the child is about to study should arrive as itself: up a few
-   * pixels, from just under full size, settled. Only the small pieces of UI
-   * — a name tag, a badge, an answer — keep a hint of spring ('ui'), because
-   * those are meant to feel like things you press. */
-  /* ------------------------------------------------------------------ *
-   * THE WORD AND THE THING ARRIVE TOGETHER.
-   *
-   * "Are they inside or outside?" was said over an empty foot of the stage,
-   * and then both answers were dealt in together once the sentence was over
-   * — so the button that says "Inside" arrived a second after the word did,
-   * and the child had to connect the two by themselves. A piece of UI that
-   * a line names can wait for its word instead: it is built where it goes,
-   * held invisible and untouchable, and it comes in (the same small 'ui'
-   * entrance) in the frame the bubble reveals the word that names it. "Inside"
-   * appears on "inside", "Outside" on "outside"; a name tag on the word it
-   * says; a bin on its category; the stepper on "sides".
-   *
-   * NOTHING WAITS FOR EVER. If the word never comes — the line was changed,
-   * motion is reduced, the words were all shown at once by a tap — everything
-   * still held is shown when the line is over or when the child is handed
-   * control (releaseHeld, called by game.js as an input arms). A new scene
-   * forgets the old scene's holds. Reduced motion holds nothing at all.
-   * ------------------------------------------------------------------ */
-  /* THE SHAPES THE CHILD MADE, by what they were asked to make and how many
-     sides it had — kept across scenes (a scene reset does not clear it; a
-     Restart does, via Stage.forgetMade). Copies, so nothing the card does to
-     them can reach back. */
   var made = {};
   function rememberMade(cond, verts, moved) {
     if (!cond || !verts || verts.length < 3) return;
@@ -1283,12 +693,6 @@
     heldForWord.push({ words: list, el: el, onShow: onShow || null });
     return true;
   }
-  /* SOMETHING THAT HAPPENS ON A WORD, rather than a thing that appears on
-     one: the outside diagonal of the compare pair is drawn as "outside" is
-     said. Same queue, same guarantees — a line tapped through says every word
-     at once, and whatever is still waiting when the child is handed control
-     happens then (releaseHeld). Motion is the action's own business, so this
-     waits for the word even with reduced motion. */
   function onWord(words, run) {
     var list = (Array.isArray(words) ? words : [words]).map(wordKey).filter(Boolean);
     if (!list.length || typeof run !== 'function') return false;
@@ -1319,7 +723,6 @@
     if (!w) return 0;
     var still = [], shown = 0;
     heldForWord.forEach(function (h) {
-      // (`nth`: the second "sides" of a line, not the first — the regular / irregular rule)
       if (h.words.indexOf(w) >= 0) { h.seen = (h.seen || 0) + 1; if (!h.nth || h.seen >= h.nth) { showHeld(h); shown++; } else still.push(h); }
       else still.push(h);
     });
@@ -1332,7 +735,6 @@
     all.forEach(function (h, i) { showHeld(h, h.run ? 0 : i * 90); });
     return all.length;
   }
-  /** Take a word's action off the queue without running it (it was done another way). */
   function dropWord(h) { heldForWord = heldForWord.filter(function (x) { return x !== h; }); }
 
   var ENTER_MS = 380;
@@ -1342,13 +744,8 @@
       ? [{ translate: '0 12px', opacity: 0 }, { translate: '0 0', opacity: 1 }]
       : kind === 'ui'
       ? [{ scale: '.94', translate: '0 8px', opacity: 0 }, { scale: '1.02', translate: '0 0', opacity: 1, offset: .7 }, { scale: '1', translate: '0 0', opacity: 1 }]
-      // A CARD BEING INTRODUCED: it grows in from a little small and low,
-      // fading up, and eases to rest (a screen that shows the card first and
-      // only then brings him in)
       : kind === 'intro'
       ? [{ scale: '.9', translate: '0 22px', opacity: 0 }, { scale: '1.012', translate: '0 -2px', opacity: 1, offset: .72 }, { scale: '1', translate: '0 0', opacity: 1 }]
-      // A CARD THAT IS SIMPLY THERE (the user: "the cards still pop"): it fades up in place,
-      // no size change at all — what is on it may move; the card does not
       : kind === 'fade'
       ? [{ opacity: 0 }, { opacity: 1 }]
       : [{ scale: '.94', translate: '0 8px', opacity: 0 }, { scale: '1', translate: '0 0', opacity: 1 }];
@@ -1357,37 +754,6 @@
   }
   var INTRO_MS = 620;
 
-  /**
-   * Fit a polygon into the room its panel actually has.
-   *
-   * THE SHAPE FILLS THE CARD; THE CARD DOES NOT PAD THE SHAPE.
-   *
-   * This used to be three constants that did not know about each other: a
-   * fixed fraction of the panel's short side for the size, dead centre for
-   * the position, and a fixed percentage lift on top. Nothing in that chain
-   * knew what else was on the screen, so the slack pooled wherever the
-   * arithmetic left it — on a 460x406 panel whose caption sits BESIDE the
-   * shape rather than under it, a hundred pixels of it ended up as a band of
-   * empty card along the bottom, under a shape that had been pushed up to
-   * make room for something that was never going there.
-   *
-   * It is a fit now. The box is worked out first — the panel, less a margin,
-   * less the strip a caption or a badge needs WHEN one is coming — and the
-   * shape is built at unit size, measured, and scaled until it touches the
-   * sides of that box. Two consequences worth having: there is no slack left
-   * to pool anywhere, and a pentagon and a hexagon in the same panel come out
-   * the same visual weight, which a common circumradius never gave them —
-   * a hexagon is 15% wider than a pentagon at the same r.
-   *
-   * The fit also replaces the clamp that used to follow it. A shape sized to
-   * its box cannot leave the box, so there is nothing left to correct.
-   */
-  /**
-   * The clear face of a panel: the card, less the frame around it.
-   *
-   * The artwork's rim is not a hairline — the bottom of it is a sixth of the
-   * card — so the box a shape may use is not the box the panel occupies.
-   */
   function panelFace(p) {
     var F = global.CardFrame && (CardFrame[p.frame || 'panel'] || CardFrame.panel);
     var q = F && F.pane;
@@ -1399,66 +765,15 @@
     opts = opts || {};
 
     var face = panelFace(p);
-    // Tight to the glass. The face is already inset from the rim by the
-    // artwork's own measurement, so the margin here only keeps a vertex off
-    // the inner edge; more than that was shape-sized emptiness.
-    // (a clear rim of glass all round — the user, the inside/outside card: the pentagon's corners
-    // sat on the card's edge, its diagonals reaching the frame; five percent keeps the shape
-    // plainly ON the card, and still the biggest thing on it)
     var mx = Math.max(face.w * 0.05, 22), mt = Math.max(face.h * 0.06, 22);
-    // Room for what is drawn beneath it, and none when nothing is.
-    // Room for a word on a plate under the shape: the plate is 38 units, so
-    // a fifth of the face was more than the word needed and left the shape
-    // small and high. Thirteen percent seats the plate and keeps the shape
-    // near the middle.
-    // Room for the tag under the shape: 13% of a full slab, and never less
-    // than the tag's own height plus air (it is 40 tall, kept 32 off the
-    // foot), so the word never sits on the shape's bottom edge.
     var mb = opts.below ? Math.max(face.h * 0.13, 76) : Math.max(face.h * 0.06, 22);
-    // A SHAPE THAT WILL BE MEASURED keeps a margin all round: the readings
-    // sit outside its sides, and the measurer walks outside them too, and
-    // both have to stay on the glass.
-    // 12%, not 15%: on the wide measuring slab the face is short, and the
-    // readings (a 28-tall plate 28 outside the side) fit in twelve.
-    // and never less than 64: the measuring sprite stands on the side, some
-    // 58 units out from it, and must not reach the rim on any side
-    // 48: the walking bird stands 3 out from the side and is 45 tall at the
-    // 56 cell, so his head stays on the glass; a reading tag sits within 44.
-    /* THE MEASURING ROOM, RE-MEASURED.
-     *
-     * These margins were cut for the old readout: a 66-wide ice plate pushed
-     * straight out from each side, which needed up to forty units of clear
-     * card beside every edge. The readout is a dimension line now — fifteen
-     * units out, a five-unit tick, and the figure sitting in a gap in the
-     * line — so it needs barely half that, and the shape was left swimming in
-     * a card it no longer had to share. The shape is the lesson; the room
-     * around it is only what the marks actually occupy. */
     if (opts.room === 'measure') { mx = Math.max(face.w * 0.045, 32); mt = Math.max(face.h * 0.04, 30); mb = Math.max(mb, face.h * 0.07, 32); }
-    // A COMPARE CARD THAT IS MEASURED (screen 29 — the user: "make the shape big, and show the
-    // side and angle like the swipe card"): the shape as big as the glass allows, with just the
-    // room its centimetre readings need off each side
     if (opts.room === 'labels') { mx = Math.max(face.w * 0.07, 17); mt = Math.max(face.h * 0.07, 17); mb = mt; }
     var box = { x: face.x + mx, y: face.y + mt, w: face.w - mx * 2, h: face.h - mt - mb };
-    /* STEPPED RIGHT, AWAY FROM HIS BUBBLE. On the measuring card the left
-       side's reading ('6 cm') sits outside the shape — exactly where his
-       standing line lives, and the two crowded each other (the user:
-       'the 6cm not look visible due to dialouge box, shift the shape on
-       right side'). The shape is fitted into the right of the card's face
-       instead of its middle; the readings on the right still keep their
-       margin from the rim (the fit below works inside this box). */
     if (opts.room === 'measure') { var stepR = Math.min(56, box.w * 0.08); box.x += stepR; box.w -= stepR; }
 
-    // Built at unit size WITH its deformations, so what gets measured is what
-    // gets drawn: a dented or stretched shape has a different bounding box
-    // from the regular one it started as.
-    // a given outline (the child's own shape) is fitted exactly as it is
     var u = opts.shape && opts.shape.length >= 3 ? opts.shape.map(function (q) { return { x: q.x, y: q.y }; })
           : Poly.regular(n, 1, 0, 0);
-    // 0.92, not 0.72. Pulled 72% of the way to the centre, a pentagon's top
-    // vertex lands three hundredths of a radius below its neighbours: a
-    // flat top with a red line along it, which no child reads as a dent.
-    // At 92% it sits well inside the line between them — a clear notch,
-    // and the diagonal that runs outside plainly runs outside.
     if (opts.dent != null) u = Poly.pullInward(u, opts.dent, 0.92);
     if (opts.stretch != null) u[opts.stretch] = { x: u[opts.stretch].x, y: u[opts.stretch].y - 0.55 };
 
@@ -1470,11 +785,7 @@
       if (q.y > hi.y) hi.y = q.y;
     });
 
-    // The handles are painted OUTSIDE the outline, so the fit leaves room for
-    // them; otherwise a corner dot hangs over the edge of the panel.
     var fill = opts.fill == null ? 0.96 : opts.fill;
-    // a flat line has no height to fit: give it the height of a corner, so
-    // the line is drawn at the width a two-sided corner would have
     var ext = { x: Math.max(hi.x - lo.x, 0.5), y: Math.max(hi.y - lo.y, 1.24) };
     var k = Math.min((box.w - VERT_PAINT * 2) / ext.x,
                      (box.h - VERT_PAINT * 2) / ext.y) * fill;
@@ -1486,19 +797,6 @@
     return { verts: v, cx: cx, cy: cy, r: k };
   }
 
-  /* A DIAGONAL DRAWN THE WAY A HAND DRAWS IT.
-   *
-   * The five used to be stroked in with a dash-offset trick: a solid line
-   * that wiped across in 0.7s and then, at the end, snapped into dashes — and
-   * the next one started before the last had landed, 0.42s apart, so the
-   * star arrived as a flicker of overlapping strokes a child could not
-   * follow. Now each one GROWS from its first corner to its second, already
-   * dashed (the dashes are measured from where it starts, so they do not
-   * crawl), with a small bright point at its tip like the end of a pencil,
-   * eased in and out; and it waits for the one before to land. One line, one
-   * corner to another, five times — which is what "the diagonals of this
-   * pentagon" are. Stepped by frame, and it gives up quietly if the line is
-   * taken off the stage under it. */
   function drawIn(dg, pair, a, b, delay, each) {
     var lines = pair.filter(function (x, i, all) { return x && all.indexOf(x) === i; });
     var dur = Math.max(500, Math.min(1000, (each || 1150) - 250));
@@ -1534,47 +832,25 @@
 
     st.fill = mk('path', { d: pathOf(v), fill: 'url(#' + candy(SHAPE.fill) + ')', stroke: SHAPE.edge, 'stroke-width': SHAPE.edgeW, 'stroke-linejoin': 'round' }, g);
 
-    // diagonals
-    // (a drawn diagonal is a result on the figure, not something to press: it takes no pointer
-    // events, so a press near it always reaches the corner under it — the final pass)
     st.diagG = mk('g', { 'pointer-events': 'none' }, g);
     (st.diagonals || []).forEach(function (d, k) {
       var a = v[d[0]], b = v[d[1]];
       var outside = !Poly.isDiagonalInside(v, d[0], d[1]);
       var hl = st.highlightOutside && outside;
-      // one group per diagonal — glow under, line over — so updatePoly can
-      // find diagonal k as child k whatever is drawn for it
       var dg = mk('g', {}, st.diagG);
-      // ONCE THE DENT IS MADE, ONLY THE ONE THAT MATTERS. Five dashed lines
-      // over a shape that has just changed is a tangle; the child needs to
-      // see the one diagonal that now runs outside, alone.
       if (st.onlyOutside && !outside) dg.style.display = 'none';
       var pair = litLine(dg, {
         x1: a.x, y1: a.y, x2: b.x, y2: b.y,
-        // THIN (the user: "use thin line for showing diagonals"): a fine dashed line across
-        // the shape, the glow doing the lighting; the same weight in updatePoly() below
         'stroke-width': hl ? 3.2 : (d.solid ? 2.6 : 2), 'stroke-linecap': 'round',
         'stroke-dasharray': d.solid ? null : '14 12'
       }, { bad: hl });
       var line = pair[1];
       if (d.animate && !reduced()) {
-        // ONCE. The flag lives on the diagonal itself, and renderPoly runs
-        // again for anything that touches the shape — a word lighting up, a
-        // corner dressed — so a flag left standing replayed the whole
-        // five-line draw-in every time, which looked like the animation
-        // stuttering back to the start. It is spent as it is used.
         d.animate = false;
         drawIn(dg, pair, a, b, d.delay || 0, d.each);
       }
     });
 
-    // THE GHOST SHOWS THE MOVE, IT DOES NOT DRAW THE ANSWER. A dashed line
-    // from the picked vertex to the right one was the answer, printed on
-    // the shape; what the child needs is to see the gesture. So a faint line
-    // grows out of the picked vertex to the other, holds, fades and goes
-    // again — until the child does it, when st.ghost is cleared. (No knob
-    // slides along it any more: a copy of the corner leaving the corner read
-    // as the vertex being stretched — the user.)
     if (st.ghost) {
       var ga = v[st.ghost.from], gb = v[st.ghost.to];
       var gg = mk('g', { 'class': 'ghost-demo', 'pointer-events': 'none' }, g);
@@ -1595,14 +871,6 @@
       }
     }
 
-    /* A SIDE THE CHILD MADE IS A SIDE OF THE POLYGON, AND LOOKS IT (the Screen 7 vertex brief:
-       "the completed side must NOT remain cyan … same dark-blue stroke, same width, same
-       opacity, no glow, no special highlight"). The ice line under the finger was the drag
-       preview only, and it is gone on the drop. The side being named (st.segment) is one line
-       in the outline's own stroke, exactly over the outline — nothing to see, but a line the
-       word "side" can trace as it is said (emphasize) and the tag can point at. A side already
-       found (st.sidesDone) draws nothing at all: it is the outline. Neither ever takes a
-       pointer — a finished line is never the line being dragged. */
     if (st.segment) {
       var sa = v[st.segment[0]], sb = v[st.segment[1]];
       var segEl = mk('line', { x1: sa.x, y1: sa.y, x2: sb.x, y2: sb.y, stroke: SHAPE.edge, 'stroke-width': SHAPE.edgeW,
@@ -1614,18 +882,10 @@
     st.edgeEls = [];
     for (var i = 0; i < n; i++) {
       var e1 = v[i], e2 = v[(i + 1) % n];
-      // 46 units wide — well past a fingertip on every screen the game runs
-      // on — so a side is hit by a tap anywhere near it, not only on the line
       var edge = mk('line', { x1: e1.x, y1: e1.y, x2: e2.x, y2: e2.y, stroke: 'transparent', 'stroke-width': 46, 'stroke-linecap': 'round', 'class': 'edge', 'data-i': i }, g);
       st.edgeEls.push(edge);
     }
 
-    /* A SIDE STILL TO MEASURE BREATHES, the whole length of it. It was a dot
-       at its middle, which read as a corner to tap; the side itself is the
-       thing, so the side softly brightens and dims — each a beat after the
-       one before — until it has been measured, and then it is still. The
-       wide edge above takes the tap anywhere along it. (st.sideDotEls keeps
-       its name: the hints and the word "side" find the to-do marks there.) */
     st.sideDotEls = [];
     (st.sideTodo || []).forEach(function (si, order) {
       var p1 = v[si], p2 = v[(si + 1) % n];
@@ -1640,63 +900,12 @@
     st.measG = mk('g', { 'class': 'measurements' }, g);
     if (st.measure) drawMeasurements(st.measG);
 
-    // ---- vertices ----
-    //
-    // THE ONE THING A CHILD HAS TO SEE IS WHAT THEY CAN TOUCH.
-    //
-    // These were #1030c8 dots on a #5a8dee polygon — dark blue on mid blue,
-    // nine units across on a thousand-unit stage. On the screen where the
-    // instruction is "Pick any vertex", there was nothing to tell a
-    // seven-year-old which part of the picture was theirs. Colour alone is
-    // never the signal either, so a touchable vertex is bigger AND amber AND
-    // ringed AND breathing (see alive()).
-    //
-    // A CREAM CORE WITH A DARK AMBER RING, because a vertex sits ON the
-    // outline: half of it is over the blue fill and half over the pale panel,
-    // and no single colour reads against both. Measured against #5a8dee and
-    // #f2fbff: the old dot managed 2.84 and 8.78, solid amber managed 1.83,
-    // and this manages 3.06 and 9.46 — it fixes the weak side without giving
-    // up the strong one. Warm, so it still speaks the same language as the
-    // Next button, the play button and the speech bubble's rim: in this game
-    // warm means "you can touch this".
-    //
-    // NO SEPARATE HIT CIRCLE. A wider transparent circle over each vertex is
-    // the usual way to give small fingers a bigger target, and here it stalled
-    // the lesson outright: the handlers for picking and dragging are bound to
-    // the vertex ELEMENTS, so a tap that landed on the invisible disc over the
-    // top reached something with no handler and nothing happened. The target
-    // grows by growing the dot instead — nine units to fourteen — and the
-    // glow, the breathing and the press response do the rest of the work of
-    // being findable.
-    // A SMALL KNOB TO SEE, A WIDE DISC TO TOUCH. The knob a child sees is
-    // eight units across — a point, not a coin — and under it is nothing;
-    // over it is an unpainted disc of fifteen, and THAT is the vertex the
-    // handlers, the finger and the QA gate meet. The disc is on top, so a
-    // tap lands on the element that owns the handler (the earlier failure
-    // with a hit circle was a disc UNDER the dot, reached by nothing). What
-    // the child sees move, pulse or pop is the knob, so every visual ref to
-    // a vertex resolves to the knob and every handler to the disc.
     st.vertEls = []; st.knobEls = [];
     var touch = !!st.touchVerts;
     for (var j = 0; j < n; j++) {
       var col = st.vcolor && st.vcolor[j] ? st.vcolor[j] : null;
       var shown = !!(col || st.showVerts);
-      // (NO RING round the corner the child chose — the user: "remove the large rings around
-      // vertex dots". The dot itself says it: gold, and a size up.)
-      /* SCREEN 7's CORNERS EACH HAVE ONE STATE (st.vstate — the Screen 7 vertex brief; set by
-         setVertexStates): 'anchor', the one corner a line is drawn from, green; a corner a line
-         may go to now ('adjacent-available' for a side, 'diagonal-available' for a far corner —
-         open from the start), a white point; and a corner a line may not go to — 'side-used-
-         disabled', the far end of a side already made, or 'inactive', once the diagonal is in — which
-         is a plain corner of the polygon: the outline's own dot, full strength, never breathing,
-         never lit, never touched. With no state (every other screen) a corner is drawn as before. */
       var vs = st.vstate ? st.vstate[j] : null;
-      /* A CORNER THAT IS DONE WITH KEEPS ITS LOOK (the user, screen 7: "do not change the vertex
-         … just make it disabled, do not change the dot style, and dim it" — and again "after
-         creating the diagonal why the vertex point change?"): a side's far end, every corner once
-         the diagonal is made, a far corner a diagonal has already reached — the same white point
-         as the corners still open, dimmed, never breathing, out of reach of every press. They used
-         to turn into the outline's small dark dot, which read as a different kind of corner. */
       var spent = vs === 'side-used-disabled' || vs === 'inactive' || vs === 'diagonal-used';
       var knob = mk('circle', {
         cx: v[j].x, cy: v[j].y,
@@ -1709,17 +918,11 @@
         'pointer-events': 'none'
       }, g);
       if (vs) knob.setAttribute('data-state', vs);
-      // 18 units: 36 across, which is 37px on a 1024-wide window and more on
-      // anything bigger — the 36–44px a finger needs, however small the
-      // knob it lands on looks.
       var c = mk('circle', {
         cx: v[j].x, cy: v[j].y, r: 18,
         fill: '#000', 'fill-opacity': 0, stroke: 'none',
         'class': 'vertex', 'data-i': j
       }, g);
-      // (with states, only the anchor takes a press — a line only ever starts there; the corners
-      // it may go to are found by where the finger is, so nothing else needs one, and a corner
-      // that is done with is out of reach of every press, hover and drop)
       c.style.pointerEvents = touch && (vs ? vs === 'anchor' : true) ? 'all' : 'none';
       if (vs) c.setAttribute('data-state', vs);
       if (st.breathe && !col && touch) knob.style.animationDelay = (j * 0.22).toFixed(2) + 's';   // one after another, round the shape
@@ -1728,11 +931,6 @@
     }
   }
 
-  /**
-   * Update geometry in place during a drag: path, diagonals, edges, vertex
-   * positions. No nodes are created or destroyed, so pointer capture and
-   * listeners survive every move. renderPoly() is for structural changes.
-   */
   function updatePoly() {
     var v = st.verts, n = v.length, i;
     if (st.fill) st.fill.setAttribute('d', pathOf(v));
@@ -1742,14 +940,6 @@
         var d = st.diagonals[i], a = v[d[0]], b = v[d[1]], G = groups[i];
         var out = !Poly.isDiagonalInside(v, d[0], d[1]);
         var hl = st.highlightOutside && out;
-        // (the same weight renderPoly() draws them at: at 6/5 the diagonals thickened the
-        // moment a corner was dragged, and thinned again when it was let go)
-        /* ONLY THE LINES (the user: "see the glow and thick dashes, it looks odd"). A diagonal is
-           one line now (litLine), but while it draws itself in, its group also holds the moving
-           tip's dot — two children, so the line was taken for the glow under a core, and
-           repainted 9 wide in the glow's cyan whenever a corner moved during a draw-in (make-
-           concave's spring-back as its diagonals arrive): thick bright dashes until the next
-           full redraw. The dot is not a line. */
         var kids = [].filter.call(G.childNodes, function (el) { return el.tagName === 'line'; }), w = hl ? 3.2 : (d.solid ? 2.6 : 2);
         for (var q = 0; q < kids.length; q++) {
           var L = kids[q], isGlow = kids.length > 1 && q === 0;
@@ -1775,12 +965,6 @@
     if (st.measG) { while (st.measG.firstChild) st.measG.removeChild(st.measG.firstChild); if (st.measure) drawMeasurements(st.measG); }
   }
 
-  // Actual measuring frames, kept upright and entirely outside the edge.
-  // Both the tape and the character use SVG coordinates, including on resize.
-  /* THE ORDER THE WALK GOES ROUND THE SHAPE — each side with the corner it starts at and the
-     corner it ends at, so one side's end is the next side's start and the walker never has to
-     go back (the user, screen 24: "one continuous demonstration — do not reset him after every
-     side"). Clockwise rings walk the sides in order; the other way round, in reverse. */
   function walkOrder() {
     var V = st.verts || [], n = V.length, shoe = 0, out = [];
     for (var i = 0; i < n; i++) { var P1 = V[i], P2 = V[(i + 1) % n]; shoe += P1.x * P2.y - P2.x * P1.y; }
@@ -1788,20 +972,12 @@
     else for (var q = n - 1; q >= 0; q--) out.push({ side: q, start: (q + 1) % n, end: q });
     return out;
   }
-  /* opts (the continuous walk): `first` — he flies out to this side's start (else he is already
-     there, from the side before); `last` — he flies home from its end (else he stays out, and
-     the next side's walker takes over where this one stops); `angle` — the walk without the
-     tape, to reach a corner; `homeOpacity` — what he was before the walk began. */
   function measureSide(index, done, opts) {
     opts = opts || {};
     var first = opts.first !== false, last = opts.last !== false;
     var frames = global.MeasuringFrames;
     if (reduced() || !frames || !global.requestAnimationFrame) { done(); return; }
     var a = st.verts[index], b = st.verts[(index + 1) % st.verts.length];
-    // CLOCKWISE, ALWAYS. Vertex order is the shape's own; in screen
-    // coordinates a positive shoelace sum is a clockwise ring, so a side is
-    // walked from its first vertex to its second when the ring is clockwise
-    // and the other way round when it is not.
     var shoe = 0, VV = st.verts;
     for (var si = 0; si < VV.length; si++) { var P1 = VV[si], P2 = VV[(si + 1) % VV.length]; shoe += P1.x * P2.y - P2.x * P1.y; }
     if (shoe < 0) { var swap = a; a = b; b = swap; }
@@ -1810,23 +986,10 @@
     var angle = Math.atan2(dy, dx) * 180 / Math.PI;
     var center = Poly.centroid(st.verts), nx = -dy / length, ny = dx / length;
     if (nx * ((a.x + b.x) / 2 - center.x) + ny * ((a.y + b.y) / 2 - center.y) < 0) { nx = -nx; ny = -ny; }
-    // 56: small enough that, standing on the side, his head stays inside the
-    // slab's face with a 48-unit margin — and the shape gets the rest.
     var cell = 56, baseline = cell * frames.baseline / frames.cell;
-    // WHERE THE TAPE IS IN HIS HAND, measured from the sheet: the housing and
-    // its tongue lie at y 136..185 of the 256 cell (centre 158), from x 86.
-    // The drawn tape runs along the side at that height above his feet and
-    // ends under the housing, so the tape he holds and the tape on the shape
-    // are one tape.
     var sc = cell / frames.cell, TAPE_Y = 158, TAPE_HEAD = 86;
     var TAPE_OUT = 3 + (frames.baseline - TAPE_Y) * sc;
-    var TAPE_TRAIL = (128 - TAPE_HEAD) * sc - 4 * sc;   // how far the strip stops short of his feet' centre
-    // Minimum projection of the full upright sprite box onto the outward
-    // normal. This keeps every pixel outside, even along the bottom edge.
-    // ON THE LINE. His feet are on the side itself and his body stands out
-    // from it, the way an ant walks the edge of a leaf; the sprite is turned
-    // to the side's outward normal in tick(). Three units keeps his soles
-    // just clear of the stroke.
+    var TAPE_TRAIL = (128 - TAPE_HEAD) * sc - 4 * sc;
     var ON_LINE = 3;
     var g = mk('g', { 'class': 'swiftee-measuring', 'pointer-events': 'none', 'aria-hidden': 'true', 'data-side': index }, layers.fx);
     g.style.opacity = '0';   // nothing at the side until he has flown there
@@ -1848,27 +1011,10 @@
     var raf = null, started = null, stopped = false;
     var duration = Math.max(1600, Math.min(2600, length * 10));   // a walk the child can watch
 
-    /* HE FLIES TO THE SIDE, MEASURES IT, AND FLIES BACK.
-     *
-     * The measuring sprite used to appear at the side while he vanished from
-     * his mark, and vanish while he reappeared: two cuts, both sudden. Now
-     * the bird on his mark flies to the start of the side and fades as the
-     * measuring sprite takes over there; when the tape is laid he fades back
-     * in at the far end and flies home. One bird, one journey. Skipped when
-     * he is not on screen, or motion is reduced, or the element cannot
-     * animate — then it is the old cut. */
     var M = svg.getScreenCTM && svg.getScreenCTM();
     var page = function (x, y) { return M ? { x: M.a * x + M.e, y: M.d * (y + seatY) + M.f } : null; };
     var flies = !!(companion && companion.animate && global.Swiftee.bounds && parseFloat(opacity || '0') > 0.05 && M);
 
-    /* THIS SEQUENCE OWNS HIM, from the flight out to the flight home.
-     *
-     * The measuring walk is a dedicated animation and nothing generic may
-     * touch the companion while it runs — a face played by a tap, the resting
-     * loop, an idle hint, being shown by a line of dialogue. Before this lock
-     * one of those did exactly that: the per-tap "well done" face put him back
-     * on his mark, visible, while his measuring self was still out walking the
-     * side. swiftee.js defers whatever is asked for until release() below. */
     var owns = !!(global.Swiftee && Swiftee.lock);
     if (owns) Swiftee.lock('measuring');
     var released = false;
@@ -1903,14 +1049,11 @@
       stopped = true;
       if (raf !== null) global.cancelAnimationFrame(raf);
       g.remove();
-      // (between two sides of one walk he stays out of sight on his mark: the next walker is him)
       if (companion && restore !== false) companion.style.opacity = opacity;
       var at = cleanup.indexOf(stopper); if (at >= 0) cleanup.splice(at, 1);
     }
     var stopper = function () { stop(true); };
     cleanup.push(stopper);
-    // The walk ends: the tape is laid. On the last side he comes home; otherwise the next side
-    // begins where this one stopped.
     function finish() {
       if (stopped) return;
       if (!last) { stop(false); done(); return; }
@@ -1928,9 +1071,6 @@
       marks.forEach(function (mark, i) { mark.setAttribute('visibility', i * 6 <= drawn ? 'visible' : 'hidden'); });
       var px = a.x + dx * progress, py = a.y + dy * progress;
       var wx = px + nx * ON_LINE, wy = py + ny * ON_LINE;
-      // Turned so his "up" is the side's outward normal, and mirrored when
-      // the walk runs against the sheet's own left-to-right stride, so he
-      // always faces the way he is going.
       var rot = Math.atan2(nx, -ny) * 180 / Math.PI;
       var rr = rot * Math.PI / 180, rx = Math.cos(rr), ry = Math.sin(rr);   // the sprite's "right", in stage space
       var faceLeft = (dx * rx + dy * ry) < 0;
@@ -1952,8 +1092,6 @@
     else begin();
   }
 
-  // One continuous performance owns the character and tool for the entire
-  // demonstration. The protractor follows geometry; the bird stays upright.
   function angleMeasurer() {
     var frames = global.AngleMeasuringFrames;
     if (reduced() || !frames || !global.requestAnimationFrame) return null;
@@ -1961,8 +1099,6 @@
     var g = mk('g', { 'class': 'swiftee-angle-measuring', 'pointer-events': 'none', 'aria-hidden': 'true' }, layers.fx);
     var instrument = mk('g', { 'class': 'angle-protractor' }, g);
     var scale = frames.scale, cell = frames.cell, anchor = frames.anchor;
-    // Every image is a COMPLETE generated pose, including the wing and
-    // held tool. Only the empty rectangular atlas cell is isolated; no masks.
     var bird = mk('g', { 'class': 'angle-performer' }, instrument);
     var sprite = mk('svg', { x: -anchor.x * scale, y: -anchor.y * scale,
       width: cell * scale, height: cell * scale, viewBox: '0 0 ' + cell + ' ' + cell,
@@ -1976,8 +1112,6 @@
                y: (Math.sin(a)*local.x+Math.cos(a)*local.y)*scale };
     }
     function selectPose(frame, rotation) {
-      // Register the complete drawings at the torso when the wing changes
-      // pose. Swiftee keeps his position; the newly drawn tool moves with his wing.
       var old = bodyOffset(activeFrame, pose.rotation), next = bodyOffset(frame, rotation);
       pose.x += old.x-next.x; pose.y += old.y-next.y;
       activeFrame = frame; pose.rotation = rotation;
@@ -2008,8 +1142,6 @@
     cleanup.push(stop);
     function paint() {
       instrument.setAttribute('transform', 'translate(' + pose.x + ',' + pose.y + ') rotate(' + pose.rotation + ')');
-      // The pose already draws the wing and tool at this angle. Only the
-      // small calibration correction turns the complete drawing, never the bird alone.
       bird.setAttribute('transform', 'rotate(' + (-frames.poses[activeFrame].angle) + ')');
       sheet.setAttribute('x', -(activeFrame % frames.cols) * cell);
       sheet.setAttribute('y', -Math.floor(activeFrame / frames.cols) * cell);
@@ -2039,20 +1171,12 @@
       var a = Math.atan2(prev.y - p.y, prev.x - p.x), b = Math.atan2(next.y - p.y, next.x - p.x);
       var sweep = ((b - a) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
       if (!Poly.contains(v, { x: p.x + Math.cos(a + sweep / 2) * 2, y: p.y + Math.sin(a + sweep / 2) * 2 })) sweep -= 2 * Math.PI;
-      // The generated protractor opens above its baseline; this ray keeps
-      // that semicircle inside the polygon while the bird follows its grip.
       var base = sweep < 0 ? a : b, rotation = base * 180 / Math.PI;
       var chosen=0, error=Infinity;
       frames.poses.forEach(function (drawing,i) {
         var delta=Math.abs(norm(rotation-drawing.angle));
         if(delta<error){error=delta;chosen=i;}
       });
-      /* HIM BESIDE THE SHAPE, NOT ON IT. The tool's baseline can lie along EITHER side of the
-         corner with its face opening into the angle: along `base`, or half a turn round along the
-         other side. Each way, each complete pose puts his body somewhere different. Of the ways
-         that keep him near upright (the drawing turned no more than 30° from how it was drawn),
-         the one with his body outside the polygon is used; the nearest pose as before otherwise.
-         (At the right-hand corner of the pentagon the first way stood him on the shape.) */
       var other = (base === a ? b : a) * 180 / Math.PI + 180, best = null;
       [rotation, other].forEach(function (rot) {
         frames.poses.forEach(function (drawing, i) {
@@ -2104,29 +1228,6 @@
     };
   }
 
-  /**
-   * SIDES OF A LENGTH, ANGLES OF A SIZE — who matches whom.
-   *
-   * Returns a mark number per index: every index of the same measurement
-   * gets the same number, 1 for the largest set of equals, then 2, then 3.
-   * That is how a figure in a textbook is marked, and it is why one tick
-   * across two sides means what it means. Rounded before grouping, or a
-   * pixel of drag would split a set of equals into two.
-   */
-  /* EQUAL OR NOT, SHOWN ON A COMPARE CARD (screen 29: the regular and the irregular pentagon).
-     `sides`: a tick across the middle of every side, as a geometry book marks them — sides of one
-     length share a count of ticks (marksBy); `angles`: an arc in every corner, nested the same way.
-     All one group (the regular card): gold, one each. More than one (the irregular card): violet,
-     the counts telling the lengths apart. Drawn one after another on the card itself, so they dim
-     and return with it (focus). */
-  /* ON A MEASURED CARD, THE READINGS THEMSELVES (screen 29 — the user: "show the side and angle
-     like the middle swipe card … not the lines, they look odd"): every side its length in
-     centimetres, set just off its middle, and every corner a small filled wedge with its degrees
-     on the shape's face — the swipe card's own marks (shapeMarks), in the shape's own ink. Both
-     cards are read with ONE ruler, the regular pentagon's side being 3 cm, so the irregular one's
-     numbers are measured against the same scale; a rounding that would print two different sides
-     alike gains a decimal (decimalsFor). Placed clear of each other and of the outline
-     (labelSpace), one after another as the word is said. */
   function compareReadings(c, what, g, items) {
     var v = c.verts, n = v.length, cen = Poly.centroid(v), ink = '#0f3f8f';
     var ref = st.compare.left && st.compare.left.verts ? Poly.sideLengths(st.compare.left.verts) : Poly.sideLengths(v);
@@ -2215,7 +1316,6 @@
         items.push(ag);
       }
     }
-    // (each mark fades in, one after another — no pop, no bounce: the regular / irregular brief)
     items.forEach(function (it, i) {
       if (reduced()) return;
       it.style.opacity = 0;
@@ -2240,42 +1340,6 @@
     return { mark: mark, groups: order.length };
   }
 
-  /**
-   * THE READINGS ON THE SHAPE.
-   *
-   * A number is for reading a ruler; a mark is for seeing a match. This
-   * draws whichever the moment calls for, and never both at once.
-   *
-   *   measuring the sides   each tap puts that side's length on an ice tag.
-   *                         The equal-side ticks do NOT arrive with them: a
-   *                         tick says "this side matches that one", which is
-   *                         a statement about the whole shape, so they come
-   *                         together once the last side is in.
-   *
-   *   measuring the angles  the centimetre tags come off. Five tags, five
-   *                         arcs and five numbers on one pentagon is a wall
-   *                         of type; from here the ticks carry the sides,
-   *                         which is exactly what a textbook figure does.
-   *
-   *   once they differ      the numbers go altogether. Each set of equal
-   *                         sides takes its own number of ticks and each set
-   *                         of equal angles its own number of arcs, so "these
-   *                         three still match and those two no longer do" is
-   *                         seen at a glance instead of being worked out from
-   *                         ten numbers printed over each other.
-   */
-  /* HOW MANY DECIMALS BEFORE UNEQUAL SIDES LOOK UNEQUAL.
-   *
-   * A rounded number lies: 114 units and 120 units are different sides and
-   * both come out "4 cm", so a figure printing whole centimetres would claim
-   * an equality the shape does not have. That is why the measuring screens
-   * stop printing numbers the moment the sides differ — but the stretching
-   * screen is ABOUT the sides differing, and a child told to watch the sides
-   * change needs to see them change. So instead of dropping the numbers, find
-   * the shortest rounding that still tells them apart: if any two sides the
-   * shape says are different would print the same, everything gains a decimal
-   * place until they do not. `marks` is the grouping the ticks use, so the
-   * numbers and the ticks can never disagree. */
   function decimalsFor(vals, marks, unit, cap) {
     for (var d = 0; d <= cap; d++) {
       var ok = true;
@@ -2298,35 +1362,12 @@
     var sides = listOf(st.measure.sides), angles = listOf(st.measure.angles);
     var sMark = marksBy(L, sides, 15), aMark = marksBy(A, angles, 3);   // half a centimetre, three degrees
     var measuringAngles = !!st.measure.angles;
-    /* THE STRETCHING SCREEN KEEPS ITS NUMBERS.
-     *
-     * "Watch the sides and angles!" and then the numbers vanish the instant
-     * the child does: sideText was false whenever angles were being measured,
-     * and the degrees dropped out as soon as two corners differed — so the
-     * one screen whose whole point is watching a measurement change was the
-     * one that stopped showing measurements the moment it started changing.
-     *
-     * With `units` the sides print throughout, rounded to whatever it takes
-     * to keep unequal sides looking unequal (decimalsFor), and the corners go
-     * back to arcs. Centimetres a seven-year-old has met; degrees they have
-     * not, and ten numbers on one shape is a wall of type either way. */
     var units = !!st.measure.units;
     var sideText  = units || (!measuringAngles && sMark.groups <= 1);
     var sideTicks = !units && sides.length === n;
-    /* THE ANGLES ARE PLAYED WITH TOO. On the stretching screen the corners
-       carry their degrees, live, the same way the sides carry centimetres:
-       drag the corner and both change under the child's hand. They used to
-       go back to nested rings (the textbook's "not the same size" mark),
-       which says that two corners differ but not how, and read as a sign in
-       a language the lesson never taught. A number is what a child can
-       watch change. */
     var angleText = units || aMark.groups <= 1;
     var cmU = st.cmUnit || 30;
     var sideDec = units ? decimalsFor(L, sMark.mark, cmU, 2) : 0;
-    /* A SIDE THAT DID NOT CHANGE READS AS IT DID (stretching one corner moves two sides; the other
-       three were relabelled "4.9 cm" from "5 cm" because the others needed a decimal). A whole
-       number keeps its plain form — "6 cm" — and only the sides that moved show their decimals;
-       the groups still never print the same (decimalsFor). */
     var cmText = function (len) { var t = (len / cmU).toFixed(sideDec); if (/\.0+$/.test(t)) t = t.replace(/\.0+$/, ''); return t + ' cm'; };
 
     for (var i = 0; i < n; i++) {
@@ -2335,43 +1376,12 @@
         var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
         var dx = mx - c.x, dy = my - c.y, len = Math.hypot(dx, dy) || 1;
         var ux = dx / len, uy = dy / len;
-        /* OUT ALONG THE SIDE'S OWN NORMAL, not away from the centre. For a side beside a dent the
-           centre is off to one side, and "away from it" pointed along the side at a corner — the
-           length printed over that corner's degrees ("4 cm" on "48°", screen 27). The normal that
-           leaves the shape is the one whose foot is outside it. */
         var sl0 = Math.hypot(b.x - a.x, b.y - a.y) || 1, nx0 = (b.y - a.y) / sl0, ny0 = -(b.x - a.x) / sl0;
         if (Poly.contains(v, { x: mx + nx0 * 3, y: my + ny0 * 3 })) { nx0 = -nx0; ny0 = -ny0; }
         if (!Poly.contains(v, { x: mx + nx0 * 3, y: my + ny0 * 3 })) { ux = nx0; uy = ny0; }
         var t = mk('g', { 'class': 'meas', 'data-side': i }, g);
         if (sideText) {
-          /* A TICK ACROSS THE SIDE, AND ITS LENGTH BESIDE IT.
-           *
-           * This was a dimension line: a second line held off the side for
-           * its whole length, capped at both ends — a line running along the
-           * side, which read as another side. A measured side is marked the
-           * way a geometry book marks one: a short stroke CROSSING it at its
-           * middle, square to it, and the figure just outside the shape. The
-           * side itself is never redrawn.
-           *
-           * Once every side is in, the gold equal-side ticks below take the
-           * middle instead (a mark per group of equal sides), so the tick
-           * here is only drawn while that claim is not yet made. */
           var dink = HI.edge || '#0b4f9e';
-          /* NO MARK ACROSS A SIDE WHILE THE SIDES ARE STILL BEING MEASURED.
-             A stroke across a side is how a figure says "this one matches that
-             one" — the conclusion — and it was drawn on each side as it was
-             measured, before there was anything to compare it with. While the
-             tape is still going round, a measured side shows its length; the
-             marks come when the last side is in (sideTicks, below: one mark
-             per group of equal sides, dealt in one after another).
-             AND NONE ON THE STRETCHING SCREEN EITHER. Its live readout kept a
-             stroke at each middle for the number to hang from — the same
-             stroke that means "equal" — so a pulled, lopsided pentagon still
-             wore five matching marks while its numbers said otherwise. The
-             number stands beside the side on its own; the corners carry
-             their degrees. */
-          // the figure outside the side, pushed out by its own size so it
-          // never sits on the stroke, and kept on the glass
           var dtext = cmText(L[i]);
           var dtw = dtext.length * 9.5, dth = 17;
           var doff = 16 + Math.abs(ux) * (dtw / 2) + Math.abs(uy) * (dth / 2);
@@ -2400,19 +1410,10 @@
       }
       // a live readout names each corner by its number, so no rings on top
       if (has(st.measure.angles, i)) drawArc(g, i, angleText ? A[i] : null, units ? 1 : (aMark.groups > 1 ? (aMark.mark[i] || 1) : 1));
-      // AN ANGLE STILL TO MEASURE SHOWS ITSELF, not a dot: its wedge in outline,
-      // breathing, is the thing to tap; the tap fills it and its degrees come
       else if (st.angleTodo) drawArc(g, i, null, 1, true);
     }
     untangle(g);
   }
-  /* NO READING ON ANOTHER (the final pass, screen 27). A sharp corner or a dent brings a side's
-     length and a corner's degrees into the same few units, and one was printed over the other.
-     Each reading is one text; any two whose boxes meet are pulled apart — the degrees further
-     along their corner's bisector, into the shape, and a length further out along its side's
-     normal — a few units at a time until nothing overlaps, and kept on the glass. Boxes are
-     measured from the text (17px bold ≈ 9.5 units a character), not the layout, so a live drag
-     does not force a reflow every frame. */
   function untangle(g) {
     var els = [].slice.call(g.querySelectorAll('text.meas-num'));
     if (els.length < 2) return;
@@ -2436,13 +1437,10 @@
       for (var i = 0; i < els.length; i++) for (var j = i + 1; j < els.length; j++) {
         var A = boxOf(els[i]), B = boxOf(els[j]);
         if (A.r <= B.l || B.r <= A.l || A.b <= B.t || B.b <= A.t) continue;
-        // the degrees give way (they have the inside of their corner to move into); two of a kind: both
         var ai = /°/.test(els[i].textContent), aj = /°/.test(els[j].textContent);
         if (ai && !aj) push(els[i], 6);
         else if (aj && !ai) push(els[j], 6);
         else {
-          // two of a kind (two corners, two sides): apart from each other, along the line between
-          // them — both inward along their bisectors could meet in the middle
           var sx = (B.l + B.r - A.l - A.r) / 2, sy = (B.t + B.b - A.t - A.b) / 2, sn = Math.hypot(sx, sy);
           if (sn < 0.5) { sx = 0; sy = 1; sn = 1; }
           move(els[i], -sx / sn * 4, -sy / sn * 4); move(els[j], sx / sn * 4, sy / sn * 4);
@@ -2462,37 +1460,18 @@
 
   // `todo`: the angle not measured yet — its wedge in outline, no number
   function drawArc(g, i, deg, rings, todo) {
-    // INTO THE MEASUREMENTS GROUP. This said `ag` — itself, before it
-    // existed — so every arc and every number was parented to undefined and
-    // landed in the ui layer instead, where renderPoly() never clears them.
-    // Dragging a corner stacked a fresh set of five numbers on the old ones
-    // every frame: the "119°93°" smear over a corner of the distort screen.
     var ag = mk('g', { 'data-angle': i }, g);   // the arc and its number, one thing to pop in
     var v = st.verts, n = v.length, p = v[i], q = v[(i + n - 1) % n], s = v[(i + 1) % n];
-    // SMALL, AND FILLED: a wedge in the corner, the size a textbook draws
-    // one, not a wide open arc half way along both sides
     var a1 = Math.atan2(q.y - p.y, q.x - p.x), a2 = Math.atan2(s.y - p.y, s.x - p.x), r = 21;
     var sweep = ((a2 - a1) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
-    // THE ANGLE IS DRAWN THE WAY A GEOMETRY BOOK DRAWS IT: a line, not a
-    // fill. A gold arc inside the corner, from one side to the other, and
-    // for a right angle the small square instead — the mark the child will
-    // meet in every textbook after this one, lit gold so it is a game's.
     var large = sweep > Math.PI ? 1 : 0;
     var x1 = p.x + Math.cos(a1) * r, y1 = p.y + Math.sin(a1) * r, x2 = p.x + Math.cos(a2) * r, y2 = p.y + Math.sin(a2) * r;
-    // the arc from a1 to a2 the positive way round has its midpoint at a1 +
-    // sweep/2 (the mean of the two angles is wrong once they wrap at +/-pi);
-    // it is the interior arc when that midpoint is inside the shape
     var mid = a1 + sweep / 2;
     var inside = Poly.contains(v, { x: p.x + Math.cos(mid) * 10, y: p.y + Math.sin(mid) * 10 });
     var d = inside
       ? 'M' + x1 + ' ' + y1 + ' A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2 + ' ' + y2
       : 'M' + x1 + ' ' + y1 + ' A' + r + ' ' + r + ' 0 ' + (1 - large) + ' 0 ' + x2 + ' ' + y2;
-    // THE WEDGE: the corner itself, filled — from the vertex out along one
-    // side, round the arc, and back along the other — so the angle reads as
-    // a piece of the shape rather than as a line drawn near it
     var wedge = 'M' + p.x + ' ' + p.y + ' L' + x1 + ' ' + y1 + ' ' + d.slice(d.indexOf('A')) + ' Z';
-    // (the square only when the label beside it reads 90° — at 88° or 89° a square is a lie:
-    // the user, screen 27)
     if (deg != null && Math.abs(deg - 90) < 0.5) {
       // the right-angle square: two short lines meeting inside the corner
       var rs = r * 0.7, ux = Math.cos(a1) * rs, uy = Math.sin(a1) * rs, wx = Math.cos(a2) * rs, wy = Math.sin(a2) * rs;
@@ -2509,9 +1488,6 @@
     // warm gold on the cool blue shape: the one mark on it that is an angle
     mk('path', { d: wedge, fill: '#ffd35a', 'fill-opacity': 0.82, stroke: 'none' }, ag);
     var w = mk('path', { d: d, fill: 'none', stroke: '#fff4c9', 'stroke-width': 2.5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, ag);
-    // EQUAL ANGLES, EQUAL ARCS. A second and a third ring nested inside the
-    // first is how a figure says "this corner is not the same size as that
-    // one" without printing a single degree.
     for (var ri = 1; ri < (rings || 1) && deg == null; ri++) {
       var rr = r - ri * 7; if (rr < 8) break;
       var qx1 = p.x + Math.cos(a1) * rr, qy1 = p.y + Math.sin(a1) * rr, qx2 = p.x + Math.cos(a2) * rr, qy2 = p.y + Math.sin(a2) * rr;
@@ -2520,16 +1496,10 @@
         : 'M' + qx1 + ' ' + qy1 + ' A' + rr + ' ' + rr + ' 0 ' + (1 - large) + ' 0 ' + qx2 + ' ' + qy2;
       mk('path', { d: dd, fill: 'none', stroke: HI.line, 'stroke-width': 3, 'stroke-linecap': 'round', style: litGlow(HI.lit) }, ag);
     }
-    // THE NUMBER SITS INSIDE THE SHAPE, on the corner's bisector, past the
-    // wedge — degrees inside, centimetres outside, and neither on the other.
     if (deg != null) {
       var cc = Poly.centroid(v), bx = cc.x - p.x, by = cc.y - p.y, bl = Math.hypot(bx, by) || 1;
-      // (a reflex corner — a dent — along its own inside bisector: the centre of a dented shape
-      // can lie off to one side of it)
       if (sweep > Math.PI === inside) { var ia = inside ? mid : mid + Math.PI; bx = Math.cos(ia); by = Math.sin(ia); bl = 1; }
       var tx = p.x + bx / bl * (r + 24), ty = p.y + by / bl * (r + 24);
-      // ONE READING, ONE ELEMENT: the number and its unit are one centred text ("108°"), so they
-      // move together and never overlap each other; untangle() keeps it off the other readings
       mk('text', { x: tx, y: ty + 6, 'text-anchor': 'middle', 'font-size': 17, 'font-weight': 800, fill: '#f2fdff',
                    stroke: '#123a7a', 'stroke-width': 3.5, 'paint-order': 'stroke', 'stroke-linejoin': 'round',
                    'class': 'meas-num', 'data-ux': (bx / bl).toFixed(4), 'data-uy': (by / bl).toFixed(4),
@@ -2537,10 +1507,6 @@
     }
     return w;
   }
-
-  /* ------------------------------------------------------------------ *
-   * Shape library for grids and sorting — judged by Poly at runtime
-   * ------------------------------------------------------------------ */
 
   function shapeVerts(name, r, cx, cy) {
     switch (name) {
@@ -2552,24 +1518,12 @@
       case 'rhombus':   return [{ x: cx, y: cy - r * 0.6 }, { x: cx + r, y: cy }, { x: cx, y: cy + r * 0.6 }, { x: cx - r, y: cy }];
       case 'chevron':   return [{ x: cx - r, y: cy + r * .7 }, { x: cx, y: cy - r * .8 }, { x: cx + r, y: cy + r * .7 }, { x: cx, y: cy + r * .1 }];
       case 'l-shape':   return [{ x: cx - r * .8, y: cy - r * .8 }, { x: cx - r * .1, y: cy - r * .8 }, { x: cx - r * .1, y: cy + r * .1 }, { x: cx + r * .8, y: cy + r * .1 }, { x: cx + r * .8, y: cy + r * .8 }, { x: cx - r * .8, y: cy + r * .8 }];
-      // A RECTANGLE: every angle the same, the sides not — irregular for the
-      // opposite reason to the rhombus beside it in the swipe deck. Exactly two
-      // to one, so the card's "6 cm" and "3 cm" are the drawing's own proportions.
       case 'rectangle': return [{ x: cx - r, y: cy - r * 0.5 }, { x: cx + r, y: cy - r * 0.5 }, { x: cx + r, y: cy + r * 0.5 }, { x: cx - r, y: cy + r * 0.5 }];
       case 'star': { var o = []; for (var i = 0; i < 10; i++) { var a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .42 : r; o.push({ x: cx + Math.cos(a) * rr, y: cy + Math.sin(a) * rr }); } return o; }
-      // stretched until its slanting sides are exactly 4/3 of its upright ones
-      // (sqrt(0.75 s^2 + 0.25) = 4/3): the card's "4 cm" and "3 cm" are then the
-      // drawing's own, and its corners 136 and 112 degrees, which add to 720
       case 'stretched-hexagon': { var h = Poly.regular(6, r, cx, cy), s = Math.sqrt((16 / 9 - 0.25) / 0.75); return h.map(function (p) { return { x: cx + (p.x - cx) * s, y: p.y }; }); }
       default: return Poly.regular(5, r, cx, cy);
     }
   }
-  // NO TWO SHAPES ON ONE SCREEN SHARE A COLOUR. The square and the chevron
-  // were both green and the rhombus and pentagon both pink, so a sorting
-  // tray showed pairs that read as one kind before the child had looked at
-  // their corners. Colour never marks the category — the sort is judged
-  // by Poly.classify, and a green shape may land in either bin — it only
-  // tells the cards apart.
   var COLORS = { triangle: '#a97bff', square: '#2fd6c8', pentagon: '#ff7a91', hexagon: '#45bdff', octagon: '#4c8fe8',
                  rhombus: '#f06cff', chevron: '#35b06a', 'l-shape': '#ffc93c', star: '#ff9f5a', 'stretched-hexagon': '#6f8cff',
                  rectangle: '#ff9f5a' };
@@ -2580,27 +1534,11 @@
     if (name === 'circle') { mk('circle', { cx: cx, cy: cy, r: r * .85, fill: '#ffb27a', stroke: '#c9611a', 'stroke-width': 4 }, g); return g; }
     if (name === 'open-path') { mk('path', { d: 'M' + (cx - r) + ' ' + (cy + r * .7) + ' L' + (cx - r * .5) + ' ' + (cy - r * .6) + ' L' + (cx + r * .5) + ' ' + (cy - r * .6) + ' L' + (cx + r) + ' ' + (cy + r * .7), fill: 'none', stroke: '#a23bd6', 'stroke-width': 5, 'stroke-linecap': 'round' }, g); return g; }
     var v = shapeVerts(name, r, cx, cy);
-    // Edged in a darker step of its own colour, not in ink: a pink pentagon
-    // with a pink edge is a shape; with a black edge it is a diagram of one.
     mk('path', { d: pathOf(v), fill: 'url(#' + candy(col) + ')', stroke: shade(col, -0.42), 'stroke-width': 3, 'stroke-linejoin': 'round' }, g);
     g._verts = v;
     return g;
   }
 
-  /* ------------------------------------------------------------------ *
-   * Scene builders
-   * ------------------------------------------------------------------ */
-
-  /* ------------------------------------------------------------------ *
-   * THE COMPARE PAIR, TOLD AS IT IS SEEN.
-   *
-   * Two pentagons, no diagonals; then the convex one's diagonals grow one
-   * at a time while he says they are all inside; then the concave one's, the
-   * one that leaves the shape last, on the word "outside"; then both side by
-   * side with a small INSIDE / OUTSIDE under each; then each card's name on
-   * its word, which takes the small tag's place. Every diagonal is a real
-   * vertex-to-non-adjacent-vertex segment, judged by polygon-math.
-   * ------------------------------------------------------------------ */
   function compareLine(c, d, full) {
     if (d.el) { if (full) finishLine(c, d); return d.el; }
     var a = c.verts[d.a], b = c.verts[d.b];
@@ -2618,9 +1556,6 @@
     var done = d.done; d.done = null; d.wait = null;
     if (done) done();
   }
-  /* One diagonal grows from its first corner to its second, already dashed,
-     with a bright pen tip (the same hand as drawIn). Resolves when it lands,
-     or at once if the scene is taken down under it. */
   function growDiag(c, d, ms, delay) {
     if (d.state === 'drawn') return Promise.resolve();
     if (d.state === 'growing' && d.wait) return d.wait;
@@ -2652,9 +1587,6 @@
     });
     return d.wait;
   }
-  /* Where a diagonal is outside its polygon: the pieces of the segment, cut
-     wherever it crosses a side, whose middles are not inside. Their ends are
-     where it leaves the shape and comes back. */
   function outsidePieces(v, i, j) {
     var a = v[i], b = v[j], n = v.length, ts = [0, 1];
     for (var k = 0; k < n; k++) {
@@ -2696,9 +1628,6 @@
     return (c ? c.diags : []).filter(function (d) { return d.el && d.state === 'drawn' && (out == null || d.out === out); })
                              .map(function (d) { return d.el; });
   }
-  /* THE ONE THAT LEAVES. Its own violet glow, twice; the part of it that is
-     outside washed in violet for a moment; a small ring where it leaves the
-     shape; a whoop; and he is told (compare:outside), so he can be surprised. */
   function discoverOutside(c, list, side) {
     evt('compare:outside', { card: side });
     sfx('slideWhistle');
@@ -2734,8 +1663,6 @@
       });
     });
   }
-  /* A small learning mark under a card — INSIDE, OUTSIDE — sat where its
-     name will go; the name takes its place when it is said. */
   function compareMark(side, text) {
     var c = st.compare && st.compare[side];
     if (!c) return null;
@@ -2778,21 +1705,6 @@
     applySeat(false);
   }
 
-  /* THE HAND-OVER SCREEN'S GROUND (game.js readyScene): two ledges of Frozen Rush's own
-   * path, broken by a gap — the ground Momo runs on, so the screen that says "Now let's
-   * help Momo" already looks like his game. Baked by part2-frozen-rush/tools/make-ledges.mjs.
-   *
-   * Placed by the WALKING LINE, not by the pictures' corners: row 232 of both images is the
-   * top of the snow, and it lands on WALK, which is where game.js stands Swiftee's feet
-   * ('ledge', y 0.81). The scale puts the painted rock's foot (row 388) on the board's
-   * bottom edge, so on a 16:9 screen the ledge runs off the bottom like a cliff top; the
-   * shadowed stone the tool adds below it is only seen in the band under the board on a
-   * taller screen. Each lip's carved face is at a measured column (FACE), which is what
-   * sets the gap: 575..825, a quarter of the board, as in the reference.
-   *
-   * Both run well past the board's sides (-387 and 1392), because the stage paints past
-   * its viewBox on a wide window and a ledge that stopped at the board edge would end in
-   * mid-air there. */
   var LEDGE_WALK = 455, LEDGE_K = (562 - LEDGE_WALK) / (388 - 232);
   var LEDGES = [
     { src: 'assets/bg/ledge-l.webp?v=acd909af', w: 1430, h: 538, face: 1403, at: 575 },
@@ -2827,12 +1739,6 @@
       panel(p, { enter: morph ? false : spec.enter });
       var P = polygonIn(p, spec.sides || 5, { below: spec.below, room: spec.room });
       st.verts = P.verts; st.cx = P.cx; st.cy = P.cy; st.r = P.r; st.n = spec.sides || 5;
-      /* ONE PENTAGON, ONE SET OF CENTIMETRES (the user: "when Swiftee measures the sides … the
-         side will change when distort"). The measuring screens draw the same regular pentagon at
-         different sizes — the stretching card is shorter, under its instruction — and the
-         readings came from a fixed scale, so the shape he had just measured as 6 cm a side read
-         5 cm the moment the stretching began. In the measuring room the scale is the shape's
-         own: its regular side is 6 cm on every screen, however large it is drawn. */
       st.cmUnit = spec.room === 'measure' && st.verts.length > 2 ? Poly.sideLengths(st.verts)[0] / 6 : null;
       st.polyG = mk('g', { 'class': 'polygon' }, layers.poly);
       st.diagonals = [];
@@ -2846,36 +1752,14 @@
 
     'choice-grid': function (spec) {
       var opts = spec.options || [];
-      /* ALREADY ON THE TABLE: the review tool's jump puts the screen's own grid up before the
-         screen's first beat builds it again (game.js goTo), and the four shapes popped in over
-         four shapes already there — a flash. The same grid asked for twice is left as it is. */
       if (st.kind === 'grid' && st.cards && st.cards.length === opts.length && opts.length &&
           st.cards.every(function (c, i) { return c._opt && c._opt.id === opts[i].id; })) return;
       reset(); st.kind = 'grid';
-      // CENTRED. The four cells sat at 500..970 of a 1000-wide stage, so the
-      // question filled the right-hand third and the left half of the screen
-      // held nothing at all. Pulled in far enough to read as the middle of the
-      // screen, and still clear of where Swiftee stands on this one.
-      // Two by two, centred on the stage, in the band below the plank: the
-      // cells used to start at y 50 and the top row ran up under the plank.
-      // WITH HIM ON THE LEFT, THE OPTIONS TAKE THE RIGHT: a two-by-two block
-      // with the asker standing on the ice beside it and his question over
-      // his head. He asks it, so there is no plank on this screen, and the
-      // block does not hang from the plank line: the four cards are as big
-      // as the height allows, a thumb's width apart, and the block is
-      // centred in the WHOLE stage height with the same margin above and
-      // below. Its right edge stops short of the HUD's corner (x 910), so
-      // the top-right card and the buttons never meet. Sat on the plank band
-      // it started a fifth of the way down and its bottom row touched the
-      // floor. Without him the block is centred and spread to use the width.
-      // (he is at the left on the ground, or on the log arc there: the cards take the right)
       var standsLeft = global.Swiftee && /^(left|log)$/.test(Swiftee.pos);
       var HALF = standsLeft ? 124 : 98, GAP = standsLeft ? 22 : 28, band = BOTTOM - TOP;
       var OF = global.CardFrame && CardFrame.option;
       var cardH = 2 * HALF * (OF ? OF.h / OF.w : 1);
       var PITCH_X = standsLeft ? 2 * HALF + GAP : 400;
-      // (664, not 638: the block sat with unused ice to its right — the user: "shift the cards
-      // slightly right" — and its top-right card still stops short of the HUD's corner)
       var gx = standsLeft ? 664 : W / 2;
       var cells;
       if (standsLeft) {
@@ -2894,10 +1778,6 @@
         var seat = mk('g', { transform: 'translate(' + x + ',' + y + ')' }, g);
         g._card = optionCard(seat, HALF, o.shape);
         g._opt = o;
-        /* THE CARDS DO NOT POP — THE SHAPES INSIDE THEM DO (the user: "when Level 1 starts do
-           not pop the cards; instead pop the shapes inside"): the four cards are simply there,
-           still, and each shape springs up on its glass a moment after the one before. Reduced
-           motion draws them in place. */
         if (spec.enter === 'stagger' && !reduced()) {
           var shape = g.querySelector('.shape');
           if (shape && shape.animate) {
@@ -2919,39 +1799,17 @@
       sides.forEach(function (s, i) {
         var pnl = s[1], cfg = s[2] || {};
         var g = panel(pnl, { enter: spec.enter === 'split' ? 'rise' : 'pop' });
-        /* THE CHILD'S OWN SHAPE, when the card is showing the kind of shape
-           they have just made. "This one" beside a stock stretched pentagon
-           is a different pentagon from the one they pulled a minute ago; the
-           one they made is the one they understand. `made` names it (the
-           condition the drag stopped at: 'concave', 'irregular'); a screen
-           reached without making it — a jump, Back past it — shows the stock
-           shape. */
         var mine = cfg.made ? madeShape(cfg.made, cfg.sides || 5) : null;
         var room = spec.measured ? 'labels' : undefined;
         var P = polygonIn(pnl, cfg.sides || 5, mine ? { shape: mine.verts, room: room } : { dent: cfg.dent, stretch: cfg.stretch, room: room });
         var pg = mk('g', {}, layers.poly);
         mk('path', { d: pathOf(P.verts), fill: 'url(#' + candy(SHAPE.fill) + ')', stroke: SHAPE.edge, 'stroke-width': SHAPE.edgeW, 'stroke-linejoin': 'round' }, pg);
-        /* THE DIAGONALS ARE KNOWN FROM THE START AND DRAWN WHEN THEY ARE
-           TALKED ABOUT. Every vertex-to-non-adjacent-vertex segment, each
-           judged inside or not by polygon-math; a beat grows them (op.grow)
-           while the line that
-           names them is said. Their own group, under the moved corner's dot. */
         var dg = mk('g', { 'class': 'compare-diagonals' }, pg);
         var diags = Poly.allDiagonals(P.verts.length).map(function (d) {
           return { a: d[0], b: d[1], out: !Poly.isDiagonalInside(P.verts, d[0], d[1]), el: null, state: 'hidden' };
         });
-        // NO DOT ON THE MOVED CORNER. The dent is the mark; a knob on it read
-        // as something left over to press (the user: "why blue point not remove?")
-        // A NAME UNDER A CARD (the regular / irregular pair): a name tag on
-        // the ice under it, arriving on its word (holdForWord)
         var tagEl = cfg.caption ? nameTag(layers.ui, pnl.x + pnl.w / 2, pnl.y + pnl.h + 38, cfg.caption, cfg.tone) : null;
         if (tagEl && cfg.captionCue) holdForWord(tagEl, cfg.captionCue);
-        /* WHICH ONE HE MEANS. "This one" and "this one" over two pentagons that look alike from a
-           distance: each card wears its name on a tab hung on its top edge (cfg.name — "Pentagon
-           A", "Pentagon B"), clear of the marks and badges that arrive under it, and the card he
-           is talking about has a soft warm glow BEHIND it (focus()) — not a thick yellow stroke
-           (the user, screen 17): a blurred pale-gold plate under the card, so it shows round the
-           rim and never over the glass or the lines drawn on it. */
         var tab = cfg.name ? nameTag(layers.ui, pnl.x + pnl.w / 2, pnl.y + 1, cfg.name, null, { h: 32, size: 17, pad: 30, rim: 2.5 }) : null;
         if (tab) tab.setAttribute('class', 'badge name-tab');
         var ring = mk('rect', { x: pnl.x - 12, y: pnl.y - 12, width: pnl.w + 24, height: pnl.h + 24, rx: 44, fill: '#ffe08a',
@@ -2963,45 +1821,10 @@
       });
     },
 
-    /**
-     * Swipe classification: one shape, two destinations.
-     *
-     * The deck's own mechanic for this page — `originalMechanic: 'swipe'` in
-     * screens.js records that it was swapped for drag-to-bin once and has now
-     * been asked back. It is a different question from the drag-to-bin sort
-     * on page 27: that one asks "which pile does each of these belong in",
-     * this one asks "this one — left or right?", and a binary choice made
-     * with the whole hand is a better fit for a binary property than a
-     * journey across the screen.
-     *
-     * FIVE ROUNDS, ONE AT A TIME. The five shapes are never on screen
-     * together; the interaction below walks them. The zones and the hint are
-     * built once and stay put, so nothing moves under the child between
-     * rounds except the card itself.
-     *
-     * The zones are inset far enough to clear Swiftee on the left and the
-     * HUD on the right — a zone the character stands on top of is a zone the
-     * gate for "no overlay covers the lesson" would fail on, and rightly.
-     */
     'swipe-sort': function (spec) {
       reset(); st.kind = 'swipe-sort';
       st.swipe = { zones: {}, items: (spec.items || []).slice(), i: 0, spec: spec, card: null };
 
-      /* THE TWO BINS ARE THE ANSWER; THE SHAPE IS THE QUESTION.
-       *
-       * They were 316 wide against a 192 card, so two thirds of the screen
-       * was taken by the places to put the shape and the shape itself was the
-       * smallest thing on it — a child looking for what to decide had to look
-       * past the decision to find it. The bins are destinations: they need to
-       * be big enough to read, to hit, and to hold a pile, and no bigger. The
-       * corridor they leave is the stage now, and the card in it is where the
-       * eye goes first.
-       */
-      /* BIGGER, AND IN THEIR OWN PROPORTIONS. They were 232 x 268 — a nearly square card
-         stretched a sixth taller than it is drawn — with a 460 corridor between them and the
-         outer third of each half of the screen empty. They are 286 wide now, as tall as their
-         artwork says, and level with the card in hand, twelve in from each edge; the corridor
-         left is the card's width and a margin either side. */
       var ZW = 286, ZM = 12;
       [{ id: 'regular', x: ZM },
        { id: 'irregular', x: W - ZM - ZW }].forEach(function (z) {
@@ -3012,19 +1835,8 @@
         var ZH = Z0 ? Math.round(ZW * Z0.h / Z0.w) : 268, ZY = Math.round(SWIPE_HOME.y - ZH / 2);
         var g = mk('g', { 'class': 'zone', 'data-zone': z.id }, layers.ui);
 
-        /* THE ZONE IS THE ARTWORK, AND THE WORD IS LETTERED ON ITS GLASS.
-         *
-         * The frames are blank cards — the supplied orange one for regular, a
-         * violet one for irregular — so the title is drawn here, in the card's
-         * ink on a band of its colour, inside the top of the pane. The shelf
-         * for what the child has caught begins under it. */
         var Z = Z0;
         var TITLE_H = 50, titleBottom = 0;
-        /* THE WHOLE ZONE TAKES A TAP. The artwork is not hit-testable (its
-           transparent corners must not catch taps meant for the card), so a
-           tap anywhere on the glass found nothing under it and did nothing —
-           only the title strip answered. The tap is the swipe's accessible
-           twin; it has to work wherever a child would press. */
         mk('rect', { x: z.x + 6, y: ZY + 6, width: ZW - 12, height: ZH - 12, rx: 24,
                      fill: '#000', 'fill-opacity': 0, 'class': 'zone-hit' }, g);
         if (Z) {
@@ -3037,8 +1849,6 @@
           var pane = Z.pane || { x: 0.06, y: 0.09, w: 0.88, h: 0.82 };
           var px0 = z.x + ZW * pane.x, pw = ZW * pane.w, py0 = ZY + ZH * pane.y + 10;
           mk('rect', { x: px0 + 14, y: py0, width: pw - 28, height: TITLE_H, rx: 15, fill: c.face, opacity: 0.30 }, g);
-          // (the baseline a third of the way below the band's middle: the band's optical centre
-          // for a capital-led word with no descenders)
           mk('text', { x: z.x + ZW / 2, y: py0 + TITLE_H / 2 + 10.5, 'text-anchor': 'middle', 'font-size': 30,
                        'font-weight': 800, fill: c.ink, text: def.label }, g);
           titleBottom = py0 + TITLE_H + 8;
@@ -3058,9 +1868,6 @@
           : { x: z.x + 26, y: ZY + 86, w: ZW - 52, h: ZH - 112 };
         g._kept = [];
         g._keptG = mk('g', { 'class': 'zone-kept' }, g);
-        // No counter. The pile itself is the count — a child can see two
-        // shapes in one zone and three in the other without being told, and a
-        // number in the corner of a picture reads as part of the picture.
         g._tone = tone;
         st.swipe.zones[z.id] = g;
         if (spec.enter !== false) enter(g, 'rise');
@@ -3072,13 +1879,6 @@
     sort: function (spec) {
       reset(); st.kind = 'sort'; st.sort = { bins: [], items: [], placed: 0, spec: spec };
       var bins = spec.bins || [];
-      // CENTRED. The row was pushed 120 to the right to leave a column for
-      // Swiftee on the left, which left the lesson sitting off-centre on every
-      // screen that uses it — and he is placed by the screen now, so the
-      // lesson does not have to make room for a guess about where he is.
-      // The collection is the point: it gets the room; 360 seats three cards
-      // at full size. The foot stops at 492 so the Convex bin's corner clears
-      // the Back pill in the bottom-left (it ended at 518, on top of it).
       var bw = 360, gap = 30, bh = 226, by = 266;
       var x0 = (W - (bins.length * bw + (bins.length - 1) * gap)) / 2;
       bins.forEach(function (b, i) {
@@ -3086,9 +1886,6 @@
         var g = mk('g', { 'class': 'bin', 'data-bin': b.id }, layers.ui);
         var c = CONCEPT[b.tone] || CONCEPT.convex;
         var tone = [c.wash, c.face, c.ink];
-        // THE BIN IS A CARD FROM THE KIT — aqua for convex, lilac for
-        // concave — with the word lettered on a band of the concept's colour
-        // inside the top of its glass. The drawn card remains as the fallback.
         var BF = global.CardFrame && CardFrame[b.tone + 'Bin'];
         var pane = { x: x + 12, y: y + 10, w: bw - 24, h: bh - 20 };
         if (BF) {
@@ -3112,10 +1909,6 @@
       var items = spec.items || [];
       var visible = items;
       st.sort.total = items.length;
-      // The tray has to fit the stage whatever the screen asks for. A fixed
-      // 132px pitch put the sixth of six shapes at x = 1005 in a 1000-wide
-      // viewBox: drawn off the edge, clipped, and impossible to drag. Derive
-      // the pitch from the width instead, and never exceed the natural one.
       var ITEM = 92, MARGIN = 24;
       var pitch = Math.min(ITEM + 12, (W - 2 * MARGIN - ITEM) / Math.max(1, visible.length - 1));
       var span = (visible.length - 1) * pitch;
@@ -3130,18 +1923,6 @@
       });
     },
 
-    /**
-     * THE END-GAME SUMMARY: everything the lesson taught, collected.
-     *
-     * One large card at a time in the middle, its idea shown by animating it
-     * — the polygon drawing itself, a corner lighting, a side drawing between
-     * two corners — with its name on a tag hung off its bottom edge. He rises
-     * from behind it to say what it is, sinks back, and the card shrinks away
-     * into the collection: the parts of a polygon down the left edge, the
-     * kinds of polygon down the right, so the middle is always clear for the
-     * card that is being shown. The screen's beats run it (screens.js
-     * summaryBeats); this only draws, and says which state it is in.
-     */
     summary: function (spec) {
       reset(); st.kind = 'summary';
       st.summary = { concepts: (spec.concepts || []).slice(), cards: {}, collected: [], active: null, state: 'SUMMARY_START' };
@@ -3149,62 +1930,13 @@
     }
   };
 
-  /* ------------------------------------------------------------------ *
-   * The end-game summary's card
-   *
-   * ONE CARD, EIGHT IDEAS. Every concept is the same card — the display
-   * slab (a thing to look at, not the block of ice a thing is touched on),
-   * a tag hung off its bottom edge — and what differs is data: which corners
-   * light, which line draws, which corner moves (SUMMARY_VISUALS). It is
-   * drawn in stage coordinates with no transform of its own until it is
-   * collected, so the word cues can trace its lines (emphasize clones them
-   * onto the effects layer) and the juice that animates `transform` cannot
-   * throw it to the origin.
-   *
-   * THE STATES, one at a time, never two (Stage.summaryState()):
-   *   SUMMARY_START → CARD_ENTER → CONCEPT_REVEAL → SWIFTEE_ENTER →
-   *   EXPLANATION → READING_PAUSE → SWIFTEE_EXIT → CARD_COLLECT →
-   *   NEXT_CONCEPT → … → FINAL_SUMMARY
-   * The card's own states are set here; his rising, his line, its reading
-   * pause and his sinking are the screen's beats, and game.js passes on the
-   * director's word for when each begins (summaryPhase).
-   * ------------------------------------------------------------------ */
   var SUM = {
-    // THE BIG CARD, IN THE CLEAR MIDDLE — and low enough that the band over
-    // it holds his line: he rises behind its top edge, and a card any higher
-    // left no room above his head, so each line went wherever there was room
-    // (top-left for one card, top-right for the next, a banner for a third)
-    // bigger, and up level with the albums beside it (the user: "why middle
-    // card not look big and centre align?") — still low enough that his line
-    // stays above his head
     card: { cx: 500, cy: 322, w: 300 },
-    shape: { cx: 500, cy: 326, r: 86 },            // the pentagon every idea is shown on
-    // THE COLLECTION: four down each edge, the parts of a polygon on the
-    // left and the kinds on the right, clear of the HUD above and of Back
-    // and Next below, each card's name with a clear gap under it
-    // the name plate sits ON the card's bottom edge, half on it — one width
-    // for all eight, so each column reads as a set
-    // BIG ENOUGH TO READ: 100 wide, the shape zoomed up inside (zoom), clear
-    // of the HUD over the top-right card and of Back and Next under the last
-    // A 2 x 2 ALBUM EACH SIDE, not a column of four: four cards crammed down
-    // the full height left each name plate on the card under it. The parts
-    // on the left, the kinds on the right; the inner columns stop short of
-    // his widest line over the big card (x 216..786, y <= 133) and the rows
-    // sit in the middle of the height, clear of the HUD and of Back / Next.
-    // 132 wide, not 104 (the user, screen 31: "noticeably larger, better use of the negative
-    // space"): the albums still stop short of the big card (350..650) and of the HUD's corner
+    shape: { cx: 500, cy: 326, r: 86 },
     mini: { w: 132, x: [[80, 224], [776, 920]], y: [200, 378], zoom: 1.12, plate: { w: 118, h: 27, size: 15.5, rim: 2 } },
     enterMs: 420, collectMs: 580
   };
 
-  /* WHAT EACH CARD SHOWS, as data.
-   *   hi     the corners that light       line   a segment between two of them:
-   *   sides  the sides lit from a corner          'side' warm, 'diag' ice, 'out' violet
-   *   wedge  the corner whose angle fills  diags  every diagonal, in turn
-   *   move   a corner that travels, [index, x, y] in radii from the middle
-   *   marks  the lesson's own equal-side notation (shapeMarks options)
-   *   draw   the polygon draws itself first
-   * Every one is checked against polygon-math by the tests (summaryGeometry). */
   var SUMMARY_VISUALS = {
     vertex:    { draw: true, hi: [0], pulse: true, near: 0 },
     side:      { hi: [0, 1], line: [0, 1, 'side'] },
@@ -3231,7 +1963,6 @@
     evt('summary:state', { state: state, card: id || S.active || null });
   }
 
-  /** A pause that belongs to the summary: resolves when it is up, or at once if the scene has gone. */
   function sumHold(ms) { return reduced() ? Promise.resolve(true) : hold(ms); }
 
   /** A line that grows from one end to the other, stepped on its own end point. */
@@ -3288,7 +2019,6 @@
     });
   }
 
-  /** The one card: the slab, the pentagon on it (drawn in its starting state), the tag. */
   function summaryCard(c) {
     var id = c.id, V = SUMMARY_VISUALS[id] || {};
     var F = global.CardFrame && CardFrame.panel;
@@ -3296,12 +2026,6 @@
     var x = SUM.card.cx - w / 2, y = SUM.card.cy - h / 2;
     var g = mk('g', { 'class': 'summary-card', 'data-concept': id }, layers.ui);
     g._rect = { x: x, y: y, w: w, h: h }; g._id = id;
-    // TWO GROUPS, ON PURPOSE. The outer one carries only the transform that
-    // puts the card in the collection; every animation of the card itself —
-    // its entrance, a word's pulse — runs on the inner one. An animation needs
-    // a transform-origin, and a transform-origin on the outer group moved the
-    // collect transform with it: the cards landed half a screen from their
-    // places and only their name tags arrived.
     var pop = mk('g', { 'class': 'summary-pop' }, g);
     g._pop = pop;
     if (F) {
@@ -3317,9 +2041,7 @@
     g._verts = v;
     g._outline = mk('path', { d: pathOf(v), fill: 'url(#' + candy(tone ? tone.face : SHAPE.fill) + ')',
                               stroke: tone ? tone.deep : SHAPE.edge, 'stroke-width': SHAPE.edgeW, 'stroke-linejoin': 'round', opacity: 0 }, vis);
-    g._linesG = mk('g', {}, vis);               // under the knobs: a line starts under its corner
-    // the two sides that meet at a corner, for the word "sides" to light
-    // (drawn invisible; a trace copies their line, not their paint)
+    g._linesG = mk('g', {}, vis);
     if (V.near != null) {
       var n0 = V.near, nv = v.length;
       g._near = [v[(n0 + nv - 1) % nv], v[(n0 + 1) % nv]].map(function (q) {
@@ -3330,15 +2052,11 @@
       return mk('circle', { cx: v[i].x, cy: v[i].y, r: 11, fill: HI.fill, stroke: shade(HI.fill, -0.45), 'stroke-width': 3, opacity: 0 }, vis);
     });
     if (V.move) g._mover = mk('circle', { cx: v[V.move[0]].x, cy: v[V.move[0]].y, r: 10, fill: HI.fill, stroke: shade(HI.fill, -0.45), 'stroke-width': 3, opacity: 0 }, vis);
-    // THE NAME, ON A TAG HUNG OFF THE BOTTOM EDGE: on the rim, below the
-    // glass, so it is attached to the card and never over what it shows
     g._tag = nameTag(pop, SUM.card.cx, y + h + 4, c.label || id, V.tone || null);
     g._tag.setAttribute('opacity', 0);
     return g;
   }
 
-  /* THE IDEA, SHOWN — in well under a second, and simply: each step is one
-     thing happening, in the order a teacher would draw it on a board. */
   function summaryReveal(g) {
     var id = g._id, V = SUMMARY_VISUALS[id] || {}, v = g._verts, t = 0;
     var line = function (a, b, kind, dur, delay) {
@@ -3349,8 +2067,6 @@
       growLine(el, a, b, dur, delay);
       return el;
     };
-    // the polygon: drawn round (the first card, where "a polygon" is the
-    // subject), faded up everywhere else
     var out = g._outline;
     out.setAttribute('opacity', 1);
     if (V.draw && !reduced() && out.animate) {
@@ -3378,8 +2094,6 @@
         try { ring.animate([{ opacity: 0.9, scale: '1' }, { opacity: 0, scale: '2.6' }], { duration: 640, delay: t - 60, iterations: 2, easing: 'ease-out' }); } catch (e) {}
       }
     }
-    // (a line that proves what a moved corner did waits for the corner: the
-    // concave card's violet diagonal is INSIDE the pentagon before the dent)
     if (V.line && !V.move) {
       var L = V.line;
       g._line = line(v[L[0]], v[L[1]], L[2], 380, t); g._lineKind = L[2];
@@ -3399,10 +2113,6 @@
       var flag = inside ? large : 1 - large, dir = inside ? 1 : 0;
       var arc = 'M' + (p.x + Math.cos(a1) * rr) + ' ' + (p.y + Math.sin(a1) * rr) +
                 ' A' + rr + ' ' + rr + ' 0 ' + flag + ' ' + dir + ' ' + (p.x + Math.cos(a2) * rr) + ' ' + (p.y + Math.sin(a2) * rr);
-      /* THE ANGLE AS THE MEASURING SCREENS DRAW IT: the corner filled, and
-         only its curve traced, in cream. It had a dark outline all the way
-         round, so two brown lines ran down the middle of the two glowing
-         sides and met under the corner's dot — the "angle stroke looks odd". */
       g._wedge = mk('g', { opacity: 0 }, g._linesG);
       mk('path', { d: 'M' + p.x + ' ' + p.y + ' L' + arc.slice(1) + ' Z', fill: '#ffd24a', 'fill-opacity': 0.9, stroke: 'none' }, g._wedge);
       mk('path', { d: arc, fill: 'none', stroke: '#fff4c9', 'stroke-width': 2.5, 'stroke-linecap': 'round' }, g._wedge);
@@ -3420,8 +2130,6 @@
       var M = V.move, to = summaryVerts(id, true)[M[0]];
       sumPop(g._mover, Math.max(0, t - 60), true);
       later(reduced() ? 0 : t + 120, function () { sfx(id === 'concave' ? 'boing' : 'slideWhistle', { gain: 0.6 }); });
-      // the dot shows the corner travelling, and goes once it is there: the
-      // new shape is the mark (the user: "why blue point not remove?")
       moveCorner(g, M[0], to, 460, t + 120, function () {
         var mv = g._mover;
         if (!mv) return;
@@ -3442,8 +2150,6 @@
       }
     }
     if (V.marks) {
-      // THE LESSON'S OWN NOTATION, on the shape as it now is: equal sides
-      // take the same tick, equal corners the same wedge
       var drawMarks = function () {
         g._vis._verts = g._verts.map(function (q) { return { x: q.x, y: q.y }; });
         var m = shapeMarks(g._vis, V.marks);
@@ -3461,8 +2167,6 @@
     return t;
   }
 
-  /* ONE CARD IN, AND ITS IDEA SHOWN. Resolves when the idea has been shown
-     and the name is on its tag — the moment he may rise to talk about it. */
   function summaryShow(id) {
     var S = st.summary;
     if (!S) return Promise.resolve(false);
@@ -3493,7 +2197,6 @@
     });
   }
 
-  /** Where a collected card lives: the first half of the lesson's order down the left, the rest down the right. */
   function summarySlot(id) {
     var S = st.summary, order = S ? S.concepts.map(function (k) { return k.id; }) : [];
     var i = Math.max(0, order.indexOf(id)), half = Math.ceil(order.length / 2) || 4;
@@ -3502,9 +2205,6 @@
     return { x: SUM.mini.x[col][gx], y: SUM.mini.y[row], col: col, row: row };
   }
 
-  /* THE CARD GOES INTO THE COLLECTION: its name lifts off, and it shrinks
-     and travels, on a slight arc, to its place at the edge, where it lands
-     with its name on a small tag of its own. Resolves once it is there. */
   function summaryCollect(id, now) {
     var S = st.summary, c = S && S.cards[id];
     if (!c || c._collected) return Promise.resolve(true);
@@ -3513,8 +2213,6 @@
     setSummary('CARD_COLLECT', id);
     var r = c._rect, cx0 = r.x + r.w / 2, cy0 = r.y + r.h / 2;
     var slot = summarySlot(id), k = SUM.mini.w / r.w;
-    // the idea itself grows inside the card as the card shrinks, so at its
-    // small size the shape and its marks still read (about the shape's middle)
     var zoomIn = function (e) {
       var z = 1 + (SUM.mini.zoom - 1) * e, sx = SUM.shape.cx, sy = SUM.shape.cy;
       if (c._vis) c._vis.setAttribute('transform', 'translate(' + sx + ',' + sy + ') scale(' + z.toFixed(4) + ') translate(' + (-sx) + ',' + (-sy) + ')');
@@ -3533,9 +2231,6 @@
       if (S.collected.indexOf(id) < 0) S.collected.push(id);
       setSummary('NEXT_CONCEPT', id);
     };
-    // its big name lifts off first: at a quarter of the size it would be unreadable
-    // (and then it GOES: faded but left in place, eight invisible tags piled
-    // up where the big card stood and counted as cards under his feet)
     var tagEl = c._tag;
     if (!now && !reduced() && tagEl.animate) { try { tagEl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150 }); } catch (e) {} }
     tagEl.setAttribute('opacity', 0);
@@ -3562,8 +2257,6 @@
     });
   }
 
-  /* ALL OF IT COLLECTED: the two columns gather in a little, each card
-     hopping into place in the order it was learned. Then he comes. */
   function summaryFinal() {
     var S = st.summary;
     if (!S) return Promise.resolve(false);
@@ -3576,8 +2269,6 @@
         [c, c._mini].forEach(function (el) {
           if (!el) return;
           if (reduced() || !el.animate) { el.style.translate = dx + 'px 0'; return; }
-          // the hop, and then its end written down and the animation let go,
-          // so sixteen finished animations are not held open to the end
           try {
             var hop = el.animate([{ translate: '0 0' }, { translate: (dx / 2) + 'px -12px', offset: 0.45 }, { translate: dx + 'px 0' }],
                                  { duration: 440, easing: 'cubic-bezier(.3,1.2,.5,1)', fill: 'forwards' });
@@ -3591,30 +2282,9 @@
     return sumHold(S.collected.length * 70 + 460);
   }
 
-  /* ------------------------------------------------------------------ *
-   * Swipe classification
-   * ------------------------------------------------------------------ */
-
-  /* THE CARD IN HAND. 96 was half of a 192 card that had to fit a 252
-     corridor; the corridor is 460 now, so the card is 304 across and the
-     shape inside it is nearly three times the area it was. Kept in one place
-     because the pile behind it is drawn from the same number. */
-  /* 176 NOW: the zones are bigger (swipe-sort) and the corridor between them is the card and
-     a margin either side, and the figure on it was the smallest thing it could be — a pentagon
-     a quarter the card's area in a lot of empty glass. */
   var SWIPE_HALF = 176;
   var SWIPE_HOME = { x: W / 2, y: 300 };   // level with the middle of the zones
 
-  /* ------------------------------------------------------------------ *
-   * THE SWIPE CARD'S FACE — top to bottom: its name, the figure as big
-   * as the glass allows, and (once it is judged) what was found.
-   * ------------------------------------------------------------------ */
-
-  /* THE SHORTEST SIDE OF EACH CARD, IN CENTIMETRES. Every other side is printed in proportion to
-     it, so the numbers are the drawing's own. They were read off a fixed scale and rounded to the
-     centimetre, which labelled a rectangle drawn 1.7 to 1 "6 cm" by "3 cm" and a hexagon's 1.27
-     to 1 sides "4 cm" and "3 cm" — and would have changed every number the moment the figure was
-     drawn bigger. */
   var SWIPE_CM = { pentagon: 3, rhombus: 3, triangle: 5, 'stretched-hexagon': 3, square: 4,
                    rectangle: 3, hexagon: 3, 'l-shape': 7 };
   // the type and the corner marks, at SWIPE_HALF
@@ -3626,8 +2296,6 @@
   }
   function textW(s, size) { return String(s).length * size * 0.54 + 4; }
 
-  /** Where things go on a swipe card of this half-width, in the card's own coordinates (it is
-      drawn centred on 0,0): the name's baseline, and the glass under it the figure may use. */
   function swipeArea(half) {
     var F = global.CardFrame && CardFrame.option;
     var halfH = half * (F ? F.h / F.w : 1);
@@ -3635,14 +2303,10 @@
     var k = half / SWIPE_HALF;
     var gl = -half + half * 2 * p.x, gw = half * 2 * p.w;
     var gt = -halfH + halfH * 2 * p.y, gh = halfH * 2 * p.h;
-    // (no name over the figure any more — the user, screen 30 — so the glass is the figure's
-    // from a few units under the rim: as big as its readings let it be, swipeFit)
     return { halfH: halfH,
              l: gl + 4 * k, r: gl + gw - 4 * k, t: gt + 8 * k, b: gt + gh - 4 * k };
   }
 
-  /** Each side's length label at its first-choice place: just off the middle of the side,
-      outside the shape, as far out as the label is deep in that direction. */
   function sideLabelBoxes(v, texts, size) {
     var n = v.length, out = [];
     for (var i = 0; i < n; i++) {
@@ -3651,8 +2315,6 @@
       var tx = (b.x - a.x) / len, ty = (b.y - a.y) / len;
       var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
       var nx = -ty, ny = tx;
-      // outward is away from the inside of THIS side — asked of the shape itself, which is
-      // right for the inner sides of a concave one, where "away from the middle" is not
       if (Poly.contains(v, { x: mx + nx * 3, y: my + ny * 3 })) { nx = -nx; ny = -ny; }
       var w = textW(texts[i], size), h = size + 1;
       var off = 6 + Math.abs(nx) * w / 2 + Math.abs(ny) * h / 2;
@@ -3671,10 +2333,6 @@
     return b;
   }
 
-  /* THE FIGURE AS BIG AS ITS OWN LABELS LET IT BE. The largest radius at which the shape and
-     every side's length, each in its first-choice place, fit the glass under the name — found by
-     halving, because the labels do not grow with the shape — and the shape and its labels are
-     centred there together, so the figure the eye sees is the thing that is centred. */
   function swipeFit(name, texts) {
     var A = swipeArea(SWIPE_HALF);
     var test = function (r) {
@@ -3694,31 +2352,16 @@
     return L.map(function (l) { return cmText(l / unit); });
   }
 
-  /**
-   * The card's face on a card of half-width `half`: the figure where swipeFit puts it, and —
-   * unless `bare`, the small copy kept on a zone's shelf — the name over it. Drawn at the size
-   * the card is drawn at (not scaled), so the copy's outline is as heavy as every other card's.
-   * Returns the vertices drawn and the layout.
-   */
   function swipeFace(g, half, name, bare) {
     var texts = swipeLengths(name), F = swipeFit(name, texts), k = half / SWIPE_HALF;
     drawShape(name, F.r * k, F.cx * k, F.cy * k, g);
-    // (no name on the card — the user, screen 30: "the student should focus on the geometry")
     return { verts: shapeVerts(name, F.r * k, F.cx * k, F.cy * k), fit: F, texts: texts };
   }
 
-  /* THE READINGS, drawn the way a geometry figure is. Each side's length just outside it. Each
-   * corner's angle as an arc from its vertex over exactly the inside of the corner — the reflex
-   * corner of a concave shape included — or, for a right angle, the small square a textbook
-   * marks one with; and its size in degrees on the shape's face beside it. Every figure is put
-   * where it is clear of the sides, of the corner marks and of every figure already down, inside
-   * the glass under the name (labelSpace); the arcs are all one radius and one weight. */
   function swipeMarks(card, face, ink) {
     var v = card._verts, n = v.length, A = Poly.interiorAngles(v), ar = face.fit.area;
     var g = mk('g', { 'class': 'units', 'pointer-events': 'none' }, card);
     var space = labelSpace(v, { cx: (ar.l + ar.r) / 2, cy: (ar.t + ar.b) / 2, w: ar.r - ar.l + 12, h: ar.b - ar.t + 12 }, SWF.arc);
-    // (each mark says which of the two it is about — u-side, u-angle — so that an explanation
-    // can light just the sides, or just the corners: the swipe's second miss)
     var txt = function (x, y, s, size, cls) {
       mk('text', { x: x.toFixed(1), y: (y + size * 0.36).toFixed(1), 'text-anchor': 'middle', 'font-size': size,
                    'font-weight': 800, fill: ink, stroke: '#ffffff', 'stroke-width': 3, 'paint-order': 'stroke',
@@ -3738,14 +2381,11 @@
       var p = v[j], q0 = v[(j + n - 1) % n], q1 = v[(j + 1) % n];
       var l0 = Math.hypot(q0.x - p.x, q0.y - p.y) || 1, l1 = Math.hypot(q1.x - p.x, q1.y - p.y) || 1;
       var u0 = { x: (q0.x - p.x) / l0, y: (q0.y - p.y) / l0 }, u1 = { x: (q1.x - p.x) / l1, y: (q1.y - p.y) / l1 };
-      // the inside of the corner, from the vertex: between the two sides, on the shape's side
       var bx = u0.x + u1.x, by = u0.y + u1.y, bl = Math.hypot(bx, by);
       if (bl < 1e-6) { bx = -u0.y; by = u0.x; bl = 1; }
       bx /= bl; by /= bl;
       if (!Poly.contains(v, { x: p.x + bx * 4, y: p.y + by * 4 })) { bx = -bx; by = -by; }
       var deg = A[j], right = Math.abs(deg - 90) < 0.6, s = SWF.right, R = SWF.arc;
-      // THE MARK STANDS OFF THE SHAPE (the user: "the angle colour is the same, the arc or
-      // square can't be seen"): white, on a dark rim of the shape's ink, over a pale wash
       var markOn = function (d, closed) {
         mk('path', { d: d, fill: closed ? '#ffffff' : 'none', 'fill-opacity': 0.42, stroke: ink, 'stroke-opacity': 0.95, 'stroke-width': 5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', 'class': 'u-angle' }, g);
         mk('path', { d: d, fill: 'none', stroke: '#ffffff', 'stroke-width': 2.4, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', 'class': 'u-angle' }, g);
@@ -3785,24 +2425,6 @@
     });
   }
 
-  /**
-   * Put a sorted shape on a zone's shelf.
-   *
-   * A FRESH ICON, NOT THE FLYING CARD. The card used to be flown into place
-   * with a translate measured from its home, left there, and trusted to have
-   * landed — three assumptions (the home is where it started, the transform
-   * composes, fill:forwards survives) any one of which puts the pile
-   * somewhere else on the screen entirely, which is where the last few ended
-   * up: stacked above the zones instead of inside them.
-   *
-   * So the card flies as decoration and is thrown away at the end of its
-   * flight, and what stays is drawn here, in the zone, in a grid derived from
-   * the shelf. It cannot land anywhere but on the shelf, and the icons shrink
-   * to fit as the pile grows rather than running out of the bottom.
-   */
-  /** The grid the shelf lays n shapes in: each seat's centre and the half
-      the card is drawn at. Asked before a card flies, so the flight ends in
-      the seat the shape will keep, and again to draw the pile. */
   function shelfSeats(zone, n) {
     var sh = zone._shelf;
     var cols = Math.min(3, Math.max(1, Math.ceil(Math.sqrt(n))));
@@ -3830,20 +2452,12 @@
       var seat = seats[i];
       var cell = mk('g', { 'class': 'kept' }, zone._keptG);
       var at = mk('g', { transform: 'translate(' + seat.x.toFixed(1) + ',' + seat.y.toFixed(1) + ')' }, cell);
-      // drawn exactly as the card that flew here was — its figure where the card had it, at
-      // the seat's size — so the swap is invisible (the name and the readings have faded on
-      // the way: at a quarter of the size they are not something to read)
       swipeFace(optionCard(at, seat.half, null), seat.half, nm, true);
       if (reduced() || !cell.animate) return;
       cell.style.transformBox = 'fill-box'; cell.style.transformOrigin = 'center';
       if (i === n - 1) {
-        // THE NEWEST ONE HAS JUST LANDED — the card flew here at this size —
-        // so it settles with a small bounce rather than growing out of nothing.
         cell.animate([{ opacity: 0.85 }, { opacity: 1 }], { duration: 160, easing: 'ease-out' });
       } else if (was[i] && (was[i].x !== seat.x || was[i].y !== seat.y || was[i].half !== seat.half)) {
-        // THE REST MAKE ROOM. When the pile re-lays for a new column or row,
-        // each shape already there slides from its old seat to its new one
-        // instead of jumping.
         var k = was[i].half / seat.half;
         cell.animate([
           { translate: (was[i].x - seat.x) + 'px ' + (was[i].y - seat.y) + 'px', scale: String(k) },
@@ -3854,23 +2468,6 @@
 
   }
 
-  /**
-   * Put the next shape on the table.
-   *
-   * Never a pop: it rises and fades in, because a card that appears fully
-   * formed reads as the same card changing shape rather than as a new
-   * question arriving.
-   */
-  /**
-   * THE ONES STILL TO COME, stacked behind the card in hand.
-   *
-   * One card alone on the ice says nothing about how long this goes on for;
-   * a child who cannot see the pile does not know whether they are near the
-   * end. Two blanks behind it, fanned left and right and a little smaller,
-   * say "there are more" without saying which shapes — the answer stays in
-   * the card that is turned over. The fan shrinks to one, then to none, so
-   * the last question looks like the last question.
-   */
   function dealStack() {
     var sw = st.swipe; if (!sw) return;
     if (sw.stackG && sw.stackG.parentNode) sw.stackG.parentNode.removeChild(sw.stackG);
@@ -3881,16 +2478,6 @@
     sw.stackG = g;
     // drawn far to near, so the nearest blank is on top of the one behind it
     for (var k = Math.min(2, left); k >= 1; k--) {
-      // The pile has to stay in the corridor between the two zones: they run
-      // to x 270 and from x 730, and the card is 304 wide at x 500, so a
-      // blank may lean about seventy pixels out before its corner is over a
-      // zone the child is meant to be dropping into.
-      // The lean and the drop are a fraction of the card, not a number of
-      // pixels: at 96 they read as a pile, and at 152 the same numbers put a
-      // second frame a few pixels off the first, which reads as a misprint
-      // rather than as cards behind cards.
-      // (tighter since the card grew to 176: the corridor either side of it is 26 now, so the
-      // blanks lean less and step down more — still a pile, and never over a zone)
       var pileK = SWIPE_HALF / 96;
       var dxk = (k === 1 ? -1 : 1) * (4 + k * 3) * pileK, scale = 1 - k * 0.06, rot = (k === 1 ? -1 : 1) * (1.5 + k);
       var c = mk('g', { opacity: String(0.92 - k * 0.16) }, g);
@@ -3903,63 +2490,25 @@
     var sw = st.swipe;
     if (!sw || sw.i >= sw.items.length) return null;
     dealStack();
-    // WHERE IT CAN GO. Both zones breathe while a card is waiting — the
-    // hint is the destination, never the answer — and stop when it lands.
     Object.keys(sw.zones).forEach(function (k) { if (sw.zones[k].classList) sw.zones[k].classList.add('hint'); });
     var name = sw.items[sw.i];
     var g = mk('g', { 'class': 'swipe-card', 'data-shape': name }, layers.ui);
-    // the card blank, then its face: the name, the figure as big as it fits, its readings
     var card = optionCard(g, SWIPE_HALF, null);
     var face = swipeFace(card, SWIPE_HALF, name);
     g.setAttribute('transform', 'translate(' + SWIPE_HOME.x + ',' + SWIPE_HOME.y + ')');
     g._name = name; g._cardEl = card;
-    // The vertices the card actually drew, not a number typed beside it:
-    // these are what Poly.isRegular judges the swipe against.
     g._verts = face.verts;
-    // the lengths and angles the answer is read off, on the card from the start (with reduced
-    // motion too: they are the evidence, not a flourish)
     swipeMarks(g, face, shade(COLORS[name] || '#5b95ee', -0.42));
     g.style.cursor = 'grab';
     g.style.touchAction = 'pan-y';
     sw.card = g;
     if (!reduced() && g.animate) {
-      // (dealt up onto the table, at its own size — a card never pops: the user)
       g.animate([{ translate: '0 26px', opacity: 0 }, { translate: '0 0', opacity: 1 }],
                 { duration: 300, easing: 'cubic-bezier(.22,1,.36,1)' });
     }
     return g;
   }
 
-  /**
-   * WHY THAT WAS NOT IT — shown on the shape, in one line.
-   *
-   * A wrong swipe used to be a shake and a "not quite", which tells a child
-   * they are wrong and nothing else. The marks the lesson taught two screens
-   * ago are put straight onto the card instead: equal sides take the same
-   * tick, so a regular shape flowers into five identical marks and an
-   * irregular one into a two-and-three. It is on the screen for a second
-   * and a half and then gone — long enough to see, too short to sit through.
-   */
-  /**
-   * THE MARKS THEMSELVES, drawn onto a card and left there.
-   *
-   * These were only ever shown to explain a wrong answer, for a second and a
-   * half. But they are not an explanation — they are the EVIDENCE, and a
-   * child asked "regular or irregular?" with no marks on the shape is being
-   * asked to judge by eye whether five sides are the same length, which is
-   * exactly the thing the ticks were invented to save them from. Equal sides
-   * take the same tick and equal corners the same arc, so the answer is
-   * something to read off the shape rather than something to guess.
-   *
-   * `all` draws the corners as well as the sides. The explanation only shows
-   * corners when the corners are the reason; the question shows both, because
-   * a child comparing has to see that the sides DO match before "but look at
-   * the corners" means anything.
-   */
-  // what makes it irregular: the sides, the angles — or, as often as not,
-  // BOTH (it used to say "the sides" whenever the sides differed, even on a
-  // card whose angles differed too). The angles are compared as the card
-  // prints them, to the degree.
   function verdictOf(v) {
     var ix = []; for (var q = 0; q < v.length; q++) ix.push(q);
     if (Poly.isRegular(v)) return 'regular';
@@ -3968,9 +2517,6 @@
     return sides && angles ? 'both' : sides ? 'sides' : 'angles';
   }
 
-  /* WHERE A FIGURE MAY GO ON A CARD: inside the glass by a margin, clear of
-     every side of the shape and of the corner wedges, and clear of every
-     figure already put down. fit() takes the first candidate that is. */
   function labelSpace(v, pane, wedgeR) {
     var M = 6, PAD = 3.5, boxes = [];
     var area = pane && pane.w ? { l: pane.cx - pane.w / 2 + M, r: pane.cx + pane.w / 2 - M,
@@ -4042,66 +2588,16 @@
     var L = Poly.sideLengths(v), A2 = Poly.interiorAngles(v);
     var idxs = []; for (var i = 0; i < n; i++) idxs.push(i);
     var sideM = marksBy(L, idxs, 6);
-    // WHAT MAKES THIS SHAPE WHAT IT IS — the same test the answer is judged
-    // by, not a guess from the sides alone. A rhombus has four equal sides
-    // and is irregular, and an explanation that only counted sides told the
-    // child it was regular: the opposite of the truth, in the one moment
-    // they were listening.
     var verdict = Poly.isRegular(v) ? 'regular' : (sideM.groups > 1 ? 'sides' : 'angles');
     var g = mk('g', { 'class': o.cls || 'why', 'pointer-events': 'none' }, card);
     var drawnNumbers = false;
 
-    /* THE MEASUREMENTS THEMSELVES, in centimetres and degrees.
-     *
-     * A tick says "this side matches that one" and leaves the child to take
-     * it on trust. A number says how long it is, and five of the same number
-     * round a pentagon is the definition of regular written on the shape.
-     *
-     * WHY THE MEASURING SCREENS DO NOT DO THIS, and why this can. Those print
-     * a number only while every side is in one group, because a rounded
-     * number lies: 114 units and 120 units are different sides and both come
-     * out "4 cm", so the figure would say equal about a shape that is not.
-     * That is a reason to round carefully, not a reason not to measure — so
-     * the rounding is checked here. If any two sides the shape says are
-     * DIFFERENT would print the same, every side gains a decimal place until
-     * they do not. The numbers never claim an equality the shape does not
-     * have.
-     */
     if (o.numbers) {
       var cen = Poly.centroid(v);
-      var UNIT = 30;                                   // the scale the measuring screens read in
-      // how many decimals it takes before unequal sides look unequal
+      var UNIT = 30;
       var sd = decimalsFor(L, sideM.mark, UNIT, 2);
 
-      /* A DIMENSION LINE, THE WAY A DRAWING MEASURES A THING.
-       *
-       * Five white pills round a pentagon are five more objects on the card,
-       * and they are the wrong kind of object: a plate is a label stuck ON
-       * the picture, and what is wanted is the picture SAYING how long its
-       * own side is. So each side gets what a technical drawing gives it — a
-       * thin line held just off the side, running exactly its length, capped
-       * at both ends by a short tick, with the figure sitting in a gap in the
-       * middle of it. It reads as part of the drawing because it IS the
-       * drawing: it measures from corner to corner, so the length it claims
-       * is the length you can see.
-       *
-       * Drawn in the shape's own ink — the darker step of its fill that the
-       * outline already uses — for the same reason the outline is: a pink
-       * pentagon measured in pink belongs to itself, and one measured in
-       * navy is a diagram someone put on top of it.
-       */
       var ink = o.ink || '#0f3f8f';
-      /* THE NUMBER ALONE, AND NEVER ON ANYTHING.
-       *
-       * The dimension lines went: a capped line held off every side ran round
-       * the shape a second time, just outside it, and on a card that is
-       * already a rim, a shape, five corner marks and ten numbers, it was one
-       * outline too many. Each side keeps only its length, set just outside
-       * its middle — and the place is CHECKED rather than assumed: the figure
-       * must sit inside the glass with a margin, clear of every side of the
-       * shape, clear of the corner marks and of every figure already placed.
-       * The first place that passes is used: out from the middle, then a
-       * little further, then slid along the side, then inside the shape. */
       var placed = labelSpace(v, o.pane || card._pane, 13);
       for (var si = 0; si < n; si++) {
         var sa = v[si], sb = v[(si + 1) % n];
@@ -4126,40 +2622,21 @@
                      'stroke-linejoin': 'round', text: text }, g);
       }
       card._labelSpace = placed;
-      /* NO DEGREES. Ten labels on one card is a wall of type, and a number of
-       * degrees is not a thing a seven-year-old reads \u2014 they have met
-       * centimetres and they have not met angles measured.
-       *
-       * THE CORNERS STILL HAVE TO SAY SOMETHING, though, and this is the one
-       * place it cannot be dropped: a rhombus has four sides of the same
-       * length and is IRREGULAR, and so does a star. Sides alone would print
-       * "4 cm" four times under a shape whose answer is irregular \u2014 the
-       * figure would be telling the child the opposite of the truth in the
-       * one moment they are looking at it. So the corners keep the arcs
-       * below: equal angles take the same number, unequal ones do not, which
-       * is the same fact without a number on it. */
       drawnNumbers = true;
     }
 
-    // the sides, marked in groups of equals \u2014 unless they are already
-    // carrying their measurement
     if (!drawnNumbers) for (var i2 = 0; i2 < n; i2++) {
       var a = v[i2], b = v[(i2 + 1) % n];
       var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, sl = Math.hypot(b.x - a.x, b.y - a.y) || 1;
       var tdx = (b.x - a.x) / sl, tdy = (b.y - a.y) / sl, tnx = -tdy, tny = tdx;
       var cnt = sideM.mark[i2] || 1;
       for (var k = 0; k < cnt; k++) {
-        // (`along`, not `o`: a var named o here overwrote the options object,
-        // so everything after the ticks forgot what it had been asked for)
         var along = (k - (cnt - 1) / 2) * 6, cx = mx + tdx * along, cy = my + tdy * along;
         litLine(g, { x1: cx - tnx * 7, y1: cy - tny * 7, x2: cx + tnx * 7, y2: cy + tny * 7,
                      'stroke-width': 3, 'stroke-linecap': 'round' }, { warm: true });
       }
     }
 
-    // AND THE CORNERS, when the corners are the reason. Equal angles take
-    // the same number of arcs, so "the sides all match but these two corners
-    // do not" is a thing the child can see rather than a thing they are told.
     if (o.all || o.numbers || verdict !== 'sides') {
       for (var j = 0; j < n; j++) {
         var p = v[j], q = v[(j + n - 1) % n], r2 = v[(j + 1) % n];
@@ -4168,45 +2645,16 @@
         var large = sweep > Math.PI ? 1 : 0;
         var mid = a1 + sweep / 2;
         var inside = Poly.contains(v, { x: p.x + Math.cos(mid) * 6, y: p.y + Math.sin(mid) * 6 });
-        /* A SMALL FILLED WEDGE WITH ITS NUMBER ON IT.
-         *
-         * The open arc was drawn big so that several of them could be nested
-         * to say "these corners match" — but the sides carry a measurement
-         * now, so the corner does not have to say it in rings: it can simply
-         * say how many degrees it is. One small wedge, filled, is a quieter
-         * mark than a stack of thin arcs and it leaves the shape's face
-         * clear, which is what keeps ten marks on one pentagon from reading
-         * as clutter.
-         *
-         * The number goes just outside the wedge on the corner's bisector,
-         * pointing into the shape, so it never sits on a side or on a tick.
-         */
         var rr = 13;
         var x1 = p.x + Math.cos(a1) * rr, y1 = p.y + Math.sin(a1) * rr;
         var x2 = p.x + Math.cos(a2) * rr, y2 = p.y + Math.sin(a2) * rr;
         var sweepFlag = inside ? large : (1 - large), dir = inside ? 1 : 0;
         var arcD = 'A' + rr + ' ' + rr + ' 0 ' + sweepFlag + ' ' + dir + ' ' + x2 + ' ' + y2;
-        /* THE CORNER MARK BELONGS TO THE SHAPE, so it is drawn in the shape's
-         * own ink. A saturated gold wedge glowing on a pink pentagon is a
-         * sticker: it is the brightest thing in the picture, it is a colour
-         * the shape does not contain, and the eye reads it as something
-         * placed on top rather than as part of what is being measured. The
-         * same darker step of the fill that the outline uses, washed back, is
-         * a corner of the shape that has been marked. */
         var aink = o.ink || '#0f3f8f';
         mk('path', { d: 'M' + p.x + ' ' + p.y + ' L' + x1 + ' ' + y1 + ' ' + arcD + ' Z',
                      fill: aink, 'fill-opacity': 0.22, stroke: aink, 'stroke-opacity': 0.85,
                      'stroke-width': 2, 'stroke-linejoin': 'round' }, g);
         if (o.degrees !== false) {
-          /* THE NUMBER SITS ON THE SHAPE'S FACE, NOT ON ITS EDGE.
-           *
-           * Pushed just past the wedge, it landed in the corner itself —
-           * where two sides, the outline and a gold wedge already are. Five
-           * numbers each crowding the busiest point of the drawing is what
-           * turned ten marks into a mess rather than a measurement. A third
-           * of the way in toward the middle puts every number on open colour,
-           * clear of the outline and clear of its own wedge, and the middle
-           * of a polygon is empty by definition. */
           var dtx = p.x + (cen.x - p.x) * 0.30;
           var dty = p.y + (cen.y - p.y) * 0.30;
           // but never so far in that two corners' numbers meet in the middle
@@ -4215,8 +2663,6 @@
             var kk = (rr + 14) / (pull || 1);
             dtx = p.x + (dtx - p.x) * kk; dty = p.y + (dty - p.y) * kk;
           }
-          // and checked like the lengths: clear of the sides, the wedges and
-          // every number already down — along the bisector, nearer or further
           if (card._labelSpace) {
             var bxl = cen.x - p.x, byl = cen.y - p.y;
             var dw = String(Math.round(A2[j])).length * 7 + 12, dh = 14, dc = [{ x: dtx, y: dty }];
@@ -4236,15 +2682,6 @@
     return { g: g, verdict: verdict };
   }
 
-  /**
-   * WHY THAT WAS NOT IT.
-   *
-   * The marks are already on the card — they are what the question is asked
-   * with — so this no longer draws a second set over the top of them. It
-   * brings the card forward and names what is there, which is the part a
-   * wrong answer actually needs: small gold ticks on a card are not an
-   * explanation a seven-year-old will look at until something asks them to.
-   */
   function whyShape(card) {
     if (!card || !card._verts || reduced()) return null;
     var already = !!(card.querySelector && card.querySelector('.units'));
@@ -4253,12 +2690,6 @@
     var r = already ? null : shapeMarks(card);
     if (!already && !r) return null;
     if (r) verdict = r.verdict;
-    // FORWARD, THEN STILL, BEFORE HE COMES UP. It was held forward for two
-    // seconds, and he rose to explain while it was: the copy of its rim laid
-    // over him stayed the card's resting size, so there were two card edges,
-    // one inside the other — and as it shrank back he was left standing on
-    // air. Now it comes forward and settles first; he pops up onto a card at
-    // rest and names what its marks show (game.js pop()).
     if (card.animate) {
       card.style.transformBox = 'fill-box'; card.style.transformOrigin = 'center';
       try {
@@ -4294,30 +2725,11 @@
     });
   }
 
-  /**
-   * Lay out the cards a bin has been given, inside the bin.
-   *
-   * THE OLD GRID OVERLAPPED BY ARITHMETIC. A card is 112 square drawn at
-   * 0.8, so it paints 90 across; the grid stepped 110 along a row and 80 down
-   * to the next. Eighty is less than ninety: the second row began ten pixels
-   * before the first one ended, every time, and a third row hung out through
-   * the bottom of the bin. Nothing about it depended on the content, so it
-   * was wrong on every screen and every device equally.
-   *
-   * The grid is derived from the bin and from how many cards are in it, and
-   * every card is re-laid whenever one lands — so three cards are drawn
-   * large and six shrink to fit rather than piling up on each other. Capped
-   * at the original 0.8 so a bin holding one card does not blow it up.
-   */
   function packBin(bin) {
     var items = bin._items || [];
     if (!items.length) return;
     var r = bin._pane || bin._rect;
-    var PAD_X = bin._pane ? 6 : 12, PAD_TOP = bin._pane ? 6 : 56, PAD_BOT = bin._pane ? 6 : 12;   // a pane already excludes the title band
-    // ONE ROW, ONE SIZE. A card the child drops keeps the size it had in
-    // the tray, and the row fills left to right in the order they came —
-    // the bin is wide enough for every card that can belong in it. Only if
-    // a row could not fit does the whole row shrink, together.
+    var PAD_X = bin._pane ? 6 : 12, PAD_TOP = bin._pane ? 6 : 56, PAD_BOT = bin._pane ? 6 : 12;
     var ITEM_W = 92, gapX = 16, n = items.length;
     var roomW = r.w - PAD_X * 2;
     var k = Math.min(1, (roomW - gapX * (n - 1)) / (n * ITEM_W));
@@ -4332,33 +2744,10 @@
     });
   }
 
-  /**
-   * An option: the card, and the shape printed on its glass.
-   *
-   * THE CARD IS THE SUPPLIED ARTWORK, not a drawing of it. There were four
-   * hand-built rectangles here — the sorting tray, the swipe card, the icons
-   * stacked in a bin, the four in the choose-the-polygons grid — with four
-   * different fills and rims, three of them near-white on a white snowfield
-   * and one with a rim that was literally white-on-white. They are one
-   * <image> now, so the card cannot drift between the places it appears and
-   * redrawing it is a file swap rather than a hunt through this module.
-   *
-   * THE SHAPE GOES IN THE GLASS, NOT ON THE CARD. The frozen rim is not the
-   * same thickness on every edge — the top carries the snow caps — so the
-   * middle of the card is not the middle of the pane. Both come from
-   * card-frame.js, measured off the artwork by tools/build-card.js, and the
-   * shape is sized to the SHORT side of the pane so a wide hexagon and a tall
-   * pentagon both sit inside it.
-   *
-   * Returns the radius it drew at, because the swipe card keeps its own copy
-   * of the vertices and they have to be the ones on the screen.
-   */
   function optionCard(parent, half, name, opts) {
     var F = global.CardFrame && CardFrame.option;
     var g = mk('g', { 'class': 'shape-card' }, parent);
 
-    // The artwork is not square; forcing it into a square box would stretch
-    // the corners it is recognised by.
     var aspect = F ? F.h / F.w : 1;
     var halfH = half * aspect;
 
@@ -4380,38 +2769,10 @@
     var paneH = halfH * 2 * p.h;
     var cx = -half + half * 2 * (p.x + p.w / 2);
     var cy = -halfH + halfH * 2 * (p.y + p.h / 2);
-    // 0.86 of the half-extent: a regular polygon's width is up to twice its
-    // circumradius, and it needs air inside the glass rather than touching it.
-    // A card that will carry its measurements (the swipe card) draws the shape
-    // smaller, 0.74, so every length has room OUTSIDE its side: at 0.86 the
-    // hexagon's upright sides left 40 units to the glass, a "3 cm" needs 47,
-    // and the figure fell back inside the shape onto the 120° marks.
     var r = Math.min(paneW, paneH) / 2 * ((opts && opts.fill) || 0.86);
 
     if (name) drawShape(name, r, cx, cy, g);
 
-    /* PICKED, AND WRONG.
-     *
-     * The card is a picture, so there is no fill or stroke on it to change —
-     * which is exactly how the choose-the-polygons grid lost its feedback the
-     * moment the artwork replaced the drawn rectangle: it was recolouring the
-     * card's first child, and the first child became an <image>. Tapping the
-     * right shape did nothing visible at all.
-     *
-     * A ring around the block, a tick in the corner, and a pop. All three are
-     * built here and hidden, so marking a card is a colour change rather than
-     * a DOM edit under a finger that is still on it. */
-    // A RIGHT CARD GLOWS GREEN AND THROWS CONFETTI FROM BEHIND ITSELF; a
-    // wrong one flushes red and shrinks back. No ring, no tick: the glow is
-    // the verdict, and the burst comes out from under the card's edges
-    // rather than being sprayed over the shape.
-    /* THE VERDICT IS A GLOW, DRAWN — AND NO POP (the user, Level 1, several times: "why does
-       the card pop, and no glow?"). The glow was a CSS `filter` of stacked drop-shadows on this
-       SVG group, which Chrome draws and Safari/iPad quietly does not, so on a tablet the only
-       thing seen was the scale bounce that went with it. Now it is geometry: a halo rect behind
-       the card (blurred by the stage's own SVG filter, #cardGlow, which every browser renders)
-       and a crisp rim around it, green for right, red for wrong, faded in — and the card itself
-       never changes size. (mark-good / mark-bad stay on the group as the state's name.) */
     var halo = null;
     g._mark = function (state) {
       if (g.classList) {
@@ -4430,10 +2791,6 @@
       mk('rect', { x: -half - 2, y: -halfH - 2, width: 2 * (half + 2), height: 2 * (halfH + 2), rx: rx * 0.8, ry: rx * 0.8,
                    fill: 'none', stroke: deep, 'stroke-width': 5, 'stroke-opacity': 0.9 }, halo);
       if (!reduced() && halo.animate) { try { halo.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: 'ease-out', fill: 'backwards' }); } catch (e) {} }
-      /* AND, FOR A RIGHT ANSWER, ONE QUICK POP WITH THE BURST (the user, after seeing the halo
-         alone: "when the user taps the card, pop the card with the confetti burst"): a small,
-         fast bounce — up six percent and back in a third of a second — the same moment the
-         confetti leaves its edges. A wrong card only flushes red; it does not move. */
       if (state === 'correct' && !reduced() && g.animate) {
         g.style.transformBox = 'fill-box'; g.style.transformOrigin = 'center';
         try { g.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.06)', offset: 0.45 }, { transform: 'scale(1)' }], { duration: 340, easing: 'cubic-bezier(.3,1.4,.5,1)' }); } catch (e) {}
@@ -4450,7 +2807,6 @@
     g.setAttribute('transform', 'translate(' + x + ',' + y + ')');
     g._home = { x: x, y: y }; g._name = name;
     g._verts = shapeVerts(name, card._pane.r, card._pane.cx, card._pane.cy);
-    // as on Level 1 (the user): the card fades in where it stands, and the shape on it springs up
     if (!reduced() && g.animate) {
       try { g.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240, delay: i * 90, easing: 'ease-out', fill: 'backwards' }); } catch (e) {}
       var shape = g.querySelector('.shape');
@@ -4465,57 +2821,6 @@
     return g;
   }
 
-  /* ------------------------------------------------------------------ *
-   * The one button
-   *
-   * Every pressable thing on this stage drew its own rectangle: a pale
-   * pastel fill, a thin outline, dark text. Several places, several slightly
-   * different versions, and all of them looking like a slide — an option
-   * looked the same as the card behind it, a badge looked the same as an
-   * option, and none of them looked like they could be pressed.
-   *
-   *   a saturated face — the colour carries the meaning, so it has to BE a
-   *                      colour, not a tint of white
-   *   a darker lip     — underneath, not around. Thickness is what makes a
-   *                      thing look pressable; an outline makes it look
-   *                      printed. Same grammar as the speech bubble, the
-   *                      instruction card and the ice panel, so the whole
-   *                      game is made of one material
-   *   a top highlight  — light across the upper half, so the face reads as
-   *                      curved rather than flat
-   *   white bold type  — on the colour, not dark type on a tint
-   *
-   * `press: true` sets the cursor, and that is the signal Stage.alive()
-   * keys off — so anything pressable inherits the halo, the breathing and
-   * the squash for free. A badge is the same object without it: same
-   * material, obviously not a control.
-   */
-  /* ------------------------------------------------------------------ *
-   * Colour has two jobs here, and they must never be the same colour.
-   *
-   * EVALUATION answers "did I get that right?" — green yes, coral no. It is
-   * about the child.
-   *
-   * CONCEPT answers "what kind of shape is this?" — convex, concave, regular,
-   * irregular. It is about the shape, and none of the four is a mistake.
-   *
-   * They used to share one palette. The Convex bin, the Regular drop zone and
-   * the first of every pair of option buttons were drawn in the same green as
-   * a correct answer; the Concave bin, the Irregular zone and the second
-   * option were the same pink as a wrong one. So a child sorting shapes into
-   * a green box and a pink box was being told, in the fastest-reading
-   * language a screen has, that half the shapes were wrong — and asked to put
-   * a perfectly good concave hexagon in the "wrong" box.
-   *
-   * The two palettes now share no hue. EVAL is used only where the game is
-   * judging an answer; nothing else may touch it.
-   *
-   * Each concept carries four values, because a category shows up as a
-   * button, a drop zone and a label: "face" is the saturated body, "deep" is
-   * the shadow under it and the plate white type sits on, "wash" is the tint
-   * a drop zone is filled with, and "ink" is type on that wash. White on
-   * every `deep` clears 4.5:1, and every `ink` on its own `wash` clears 7:1.
-   * ------------------------------------------------------------------ */
   var EVAL = {
     yes: ['#58c47c', '#2e8a4e'],
     no:  ['#f0789e', '#b93c66']
@@ -4524,30 +2829,14 @@
   var CONCEPT = {
     convex:    { face: '#2bb8d6', deep: '#0f6f86', wash: '#e4f8fc', ink: '#0b5566' },
     concave:   { face: '#f2a222', deep: '#95590a', wash: '#fff3dd', ink: '#6d4100' },
-    /* REGULAR IS ORANGE EVERYWHERE (the user: "the swipe's colours do not match the Regular and
-       Irregular collection cards"): the Regular pile on the swipe screen is the supplied orange
-       card (assets/source/reg.webp) and the Irregular pile the supplied violet one, but "regular"
-       wore teal everywhere else — the Regular tag on the comparison, the Regular card in the
-       collection — so the same idea had two colours. One now: the pile's orange, with a deep
-       burnt-orange for type on it (white on `deep` still clears 4.5:1, `ink` on `wash` 7:1). */
     regular:   { face: '#f08a2c', deep: '#a04e0a', wash: '#fff0e0', ink: '#7a3300' },
     irregular: { face: '#9270e6', deep: '#54399e', wash: '#f1ebfe', ink: '#3d2775' }
   };
 
-  /** The four words this lesson sorts shapes by. Anything else is not a
-      category and must not borrow a category's colour. */
   function conceptOf(text) {
     var k = String(text == null ? '' : text).trim().toLowerCase();
     return CONCEPT[k] ? k : null;
   }
-
-  /* Options that are not categories — "Inside"/"Outside", "Still equal" —
-     need to look like a row of arcade buttons without claiming to mean
-     anything by their colour.
-
-     WARM, AND DARK-INKED. The cool blue and violet pair read as interface
-     rather than as something to press, and white type on a light warm face is
-     unreadable, so each of these carries its own ink as a third value. */
 
   /* [face, lip, ink] — ink optional, white when absent. */
   var PILL_TONES = {
@@ -4558,46 +2847,6 @@
     uiDanger:  EVAL.no
   };
 
-  /**
-   * A LABEL. Not a button.
-   *
-   * "Convex" under a shape is the game TELLING the child what the shape is.
-   * It was drawn with pill(): a saturated face, a darker lip under it and a
-   * gloss highlight along the top — which is the exact vocabulary this game
-   * uses for the things you press. So the one word on the screen that is a
-   * statement of fact looked like the control you were being asked to use,
-   * and a child who pressed it got nothing, which teaches them that pressing
-   * things in this game sometimes does nothing.
-   *
-   * A tag is flat: the concept's wash, a thin rim in the concept's deep, the
-   * concept's ink. No lip, no gloss, no pointer. It reads as a caption
-   * attached to the shape, which is what it is.
-   *
-   * It also fixes an overlap the pill caused. The badge is placed by its
-   * CENTRE and the lip hangs 7px below the face, so a label positioned to
-   * clear the bottom of the panel by its own half-height was still crossing
-   * the edge by the depth of a lip it did not need.
-   */
-  /** A NAME TAG under a card: the ice plate the shape's own label uses, sized to its words. */
-  /**
-   * AND IT WENT BACK TO BEING A BUTTON.
-   *
-   * Everything above was written, and then the tag was given a drop shadow
-   * and a bright white rim inside its edge — the two marks that say "this
-   * lifts off the page and can be pressed". A shadow is depth and depth is
-   * an invitation; the inner rim is the gloss every real button here wears.
-   * "Regular pentagon" and "Irregular pentagon" sat under the two shapes
-   * looking exactly like the pair of answer buttons the child had been
-   * tapping all lesson, and they are not answers — they are the names of
-   * what is above them.
-   *
-   * So: flat. The concept's wash, one thin rim in the concept's deep, the
-   * concept's ink, and nothing underneath it. It sits ON the ice rather than
-   * over it, which is what a caption does. A tone gives it the concept's
-   * colours; without one it is warm ice.
-   */
-  // `o` { h, size, pad, w, rim }: a smaller plate, for a word on a card — `w`
-  // a fixed width (a column of them reads as one set), `rim` its line
   function nameTag(parent, x, y, text, tone, o) {
     var c = CONCEPT[tone] || null;
     var g = mk('g', { 'class': 'badge' }, parent);
@@ -4618,9 +2867,6 @@
     return g;
   }
 
-  /* A TAB THAT LEARNS ITS CARD'S NAME (the MASTER brief §12): "Pentagon A" becomes "Convex
-     pentagon" on the word that names it — the same pill on the same spot, re-measured round
-     its new words and coloured in the concept's own tone. */
   function renameTag(g, text, tone) {
     if (!g || !g._text || !g._face || !g._rect) return;
     var c = CONCEPT[tone] || null, t = g._text;
@@ -4651,8 +2897,6 @@
     }, g);
     g._text = t;
     g._rect = { x: o.x, y: o.y - h / 2, w: o.w, h: h };
-    // The live badge changes what it says WHILE the child drags a vertex, so
-    // it has to be able to change what it is, too.
     g._retint = function (tone) {
       var cc = CONCEPT[tone];
       face.setAttribute('fill', cc ? cc.wash : UI.paper);
@@ -4662,10 +2906,6 @@
     return g;
   }
 
-  /* Lighten or darken a hex colour. The gloss on a button is the same
-     colour at four brightnesses, so the palette carries one and this makes
-     the rest — a table of eighty hand-picked values would be a table nobody
-     could keep in step. */
   function shade(hex, t) {
     var n = parseInt(hex.slice(1), 16);
     var r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
@@ -4674,31 +2914,6 @@
     return '#' + ((1 << 24) + (mix(r) << 16) + (mix(g) << 8) + mix(b)).toString(16).slice(1);
   }
 
-  /**
-   * A button.
-   *
-   * THE ARTWORK, IN THREE PIECES. assets/source/image.avif is a sheet of
-   * finished buttons; tools/build-buttons.js cuts the ones this lesson draws
-   * out of it and measures where each round end finishes.
-   *
-   * A button here is every width from a 64-unit stepper key to a 184-unit
-   * answer, and the sheet is one aspect ratio, so the picture cannot simply
-   * be scaled to fit: a round end becomes an oval and the specular highlight
-   * smears across the face. It is drawn as three pieces instead — the left
-   * cap at its true proportions, the right cap at its true proportions, and
-   * the sliver between them stretched to fill. That middle is a flat vertical
-   * gradient, which is the only part of a pill that CAN stretch without
-   * deforming.
-   *
-   * Each piece is a nested <svg> with a viewBox over the region it wants,
-   * which is how SVG crops an image: an <image> has no source rectangle.
-   *
-   * WHICH BUTTONS EXIST is decided in the build tool, and the sheet cannot
-   * supply the four CATEGORY colours — two of its twenty are the green and
-   * the red that mean right and wrong. Categories are flat tags and tinted
-   * drop zones, never buttons. A tone the sheet does not carry falls through
-   * to the drawn gloss below, which is the same shape in the same light.
-   */
   function pill(parent, o) {
     var tone = PILL_TONES[o.tone] || PILL_TONES.blue;
     var w = o.w, h = o.h == null ? 62 : o.h;
@@ -4712,9 +2927,6 @@
 
     var B = global.ButtonFrame && ButtonFrame[o.tone];
 
-    // THE WORD FILLS THE PILL. A pill was 150 wide whatever it said, so
-    // "Inside" swam in it and a long word crowded it. Measured first, the
-    // pill is as wide as its word plus the two round caps — no empty face.
     var size = o.size || Math.round(h * 0.52);
 
     if (B) {
@@ -4723,8 +2935,6 @@
       drawn = drawnPill(g, tone, x, top, w, h, r, lip);
     }
 
-    // FLAT AND BOLD. No shadow under the word: on a matte pill a shadow
-    // read as a smear. Dark ink on the light pills, white on the dark ones.
     var DARK_ON = { uiPrimary: 1 };
     var ink = o.ink || (DARK_ON[o.tone] ? '#3a2410' : '#ffffff');
     var t = mk('text', {
@@ -4736,8 +2946,6 @@
 
     g._text = t;
     g._rect = { x: x, y: top, w: w, h: h };
-    // Kept so a badge can change what it says WHILE the child drags: the
-    // shape turns concave under their hand and the label has to follow.
     g._retint = function (name) {
       var p = PILL_TONES[name] || PILL_TONES.blue;
       var nb = global.ButtonFrame && ButtonFrame[name];
@@ -4767,11 +2975,6 @@
       im.setAttribute('href', pic(B.src));
       pieces.push(im);
     };
-    /* NO SEAM BETWEEN THE PIECES. Three pieces meeting edge to edge meet at
-       a fraction of a pixel, and each is antialiased on its own, so a
-       hairline of whatever is behind showed down both joins. The stretch is
-       drawn first and a little wider, tucked under both caps; the caps are
-       drawn over it, and there is no join left to see through. */
     var tuck = Math.min(2, Math.max(0, w / 2 - cap));
     put(x + cap - tuck, w - cap * 2 + tuck * 2, B.cap, B.w - B.cap * 2);   // the stretch, under the caps
     put(x, cap, 0, B.cap);                                                // left cap
@@ -4808,17 +3011,6 @@
     return { paint: paint };
   }
 
-
-  /* One gradient per colour, made once and reused: a button is drawn up to
-     six times on a screen and the gloss is the same every time.
-     Asked of the DOM rather than remembered in a map, because the map would
-     go on claiming a gradient exists after the defs it lived in were cleared,
-     and every button drawn after that would have no face. */
-  /* THE SHAPE IS A SOLID THING, not a swatch. A flat fill with a dark line
-     round it is a diagram; the same colour lit from above and deepening
-     toward its foot, with an edge that is its own darker step, is a piece
-     of coloured candy sitting on the ice — which is what a seven-year-old
-     should want to pick up. One gradient per colour, made once. */
   function candy(hex) {
     var id = 'candy' + hex.slice(1);
     if (!svg) return id;
@@ -4862,20 +3054,6 @@
     return id;
   }
 
-
-
-  /**
-   * A y below the shape with real clearance, never past the panel.
-   *
-   * Anything that sits "under the polygon" has to clear the LOWEST VERTEX,
-   * not a fixed height. A hexagon has a vertex at the very bottom where a
-   * pentagon has a flat side well above it, and a fixed height put the word
-   * through the corner of one and left a gap under the other.
-   */
-  /**
-   * The lowest a caption may reach when a row of option buttons is up, or
-   * null when there is no row.
-   */
   function choiceCeiling() {
     if (!st.choiceEls || !st.choiceEls.length) return null;
     var top = Infinity;
@@ -4883,34 +3061,9 @@
     return top === Infinity ? null : top - 18;
   }
 
-  /**
-   * Move anything already on the stage up off the option row.
-   *
-   * Clamping a caption when it is DRAWN is not enough, because on several
-   * screens the row is built after it: the polygon and its "Diagonal" label
-   * go up first, the options arrive a beat later, and the label had nothing
-   * to clamp against at the time. So the row, once it exists, pushes.
-   *
-   * Running animations are finished first. The entrance pop is a transform,
-   * and a transform attribute set underneath a running transform animation
-   * is simply ignored — which is the same bug as the pulsing play button,
-   * one layer down.
-   */
   function liftAboveChoices() {
     var ceil = choiceCeiling();
     if (ceil == null) return;
-    // THE SLAB TOO, AND BY SHRINKING RATHER THAN MOVING.
-    //
-    // Some screens never build a stage: they inherit the one before and add a
-    // question to it. panelFor() never sees those, so the slab is still the
-    // full height it was given for a screen with no buttons, and the row
-    // arrives across its foot — two thirds of each button on the card.
-    //
-    // It cannot be moved up: the shape is drawn in another layer against
-    // coordinates taken from this box, and sliding the picture alone would
-    // leave the polygon floating beside it. Made shorter, the shape stays
-    // exactly where the child left it — which matters here, because the whole
-    // point of these screens is the shape they just distorted.
     if (st.panelEl && st.panel) {
       var over = (st.panel.y + st.panel.h) - ceil;
       if (over > 0) {
@@ -4919,12 +3072,6 @@
         st.panelEl._rect.h = nh;
         var im = st.panelEl.querySelector('image, rect');
         if (im) im.setAttribute('height', nh);
-        /* …UNLESS THE SHAPE WOULD THEN HANG OVER THE SHORTER GLASS (the user's screenshot: the
-           pentagon on the card's bottom rim, low on the card). A shape the child has not
-           touched is refitted — brought down to the room left, if it must be, and set in the
-           middle of the face. A shape they distorted sits on the measuring slab with its
-           readings' margins and clears the shorter face already, so it is left exactly where
-           they put it. */
         var pf2 = panelFace(st.panel), v2 = st.verts;
         if (v2 && v2.length) {
           var lo2 = Infinity, hi2 = -Infinity;
@@ -4956,18 +3103,8 @@
     });
   }
 
-  /* A vertex is drawn as a disc with a stroke, and on touch it is drawn
-     bigger still. Clearing the CENTRE of the lowest one leaves a caption
-     sitting on the dot; the clearance has to start from the edge of what is
-     actually painted. */
   var VERT_PAINT = 12;   // a knob is r11 now
 
-  /* WHERE A NAME TAG MAY GO ON THE GLASS: clear of every side, every corner
-     (its knob, the chosen corner's ring and their glow), every diagonal, the
-     inside of the shape and the frame's corner crystals. `r` is the plate's
-     box. Tested against the shape itself, not its bounding box: the box of a
-     pentagon is a third empty glass, and ruling all of it out is how the tag
-     ended up on the one place left — over the corner knob. */
   function distToRect(p, r) {
     var dx = Math.max(r.x0 - p.x, 0, p.x - r.x1), dy = Math.max(r.y0 - p.y, 0, p.y - r.y1);
     return Math.sqrt(dx * dx + dy * dy);
@@ -5004,13 +3141,6 @@
     for (var d = 0; d < ds.length; d++) if (v[ds[d][0]] && v[ds[d][1]] && segHitsRect(v[ds[d][0]], v[ds[d][1]], R)) return false;
     return !Poly.contains(v, { x: (r.x0 + r.x1) / 2, y: (r.y0 + r.y1) / 2 });
   }
-  /* BESIDE THE SIDE IT NAMES. The first place along the side's outward
-     normal — nearest the side, then sliding along it — where the whole plate
-     is clear (tagClear). Returns the text baseline, or null if the card has
-     no such place. The plate is tw × 40, its centre 7 above the baseline. */
-  /* A PLATE ON THE SHAPE'S OWN FACE: wholly inside it, and clear of its
-     sides, its corners and its diagonals — the open blue a tag can sit on
-     when the glass beside a side has no room for one. */
   function tagInside(r) {
     var v = st.verts; if (!v || !v.length) return false;
     var pad = 8, R = { x0: r.x0 - pad, y0: r.y0 - pad, x1: r.x1 + pad, y1: r.y1 + pad }, n = v.length;
@@ -5022,14 +3152,6 @@
     for (var d = 0; d < ds.length; d++) if (v[ds[d][0]] && v[ds[d][1]] && segHitsRect(v[ds[d][0]], v[ds[d][1]], R)) return false;
     return true;
   }
-  /* BESIDE THE SIDE IT NAMES, SQUARE TO ITS MIDDLE. Outside the shape first:
-     straight out from the middle of the side at every distance before any
-     slide along it, so the tag and its arrow line up with the side rather
-     than drifting to the first gap they find. If the glass beside the side
-     has no room — a steep side near the card's edge — the tag goes INSIDE,
-     on the shape's own face, and the arrow points out at the side. Returns
-     the text baseline, or null. The plate is tw × 2hy, centred `lift` above
-     the baseline. */
   function besideSide(a, b, tw, hy, lift, faceFirst) {
     hy = hy || 20; lift = lift == null ? 7 : lift;
     var m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
@@ -5065,17 +3187,6 @@
     return Math.min(floorY, lowest + (gap == null ? 52 : gap));
   }
 
-
-  /**
-   * THE SHAPE MAKES ROOM FOR ITS NAME. A scene built on one screen is
-   * named on a later one — "Side", "Diagonal" — and the shape was fitted
-   * to the whole face before the word existed, so the tag landed on its
-   * bottom edge and on the rim. Now, when the tag needs `need` units under
-   * the lowest corner and there are not that many, the whole polygon slides
-   * up if the top has the room, and otherwise shrinks about its top edge
-   * until it does — animated as one piece, so the child sees the shape
-   * step up to let its name in.
-   */
   function makeRoomBelow(floorY, need) {
     var v = st.verts; if (!v || !v.length || !st.panel) return;
     var lo = Infinity, hi = -Infinity, xl = Infinity, xr = -Infinity;
@@ -5092,8 +3203,6 @@
     st.verts = v.map(function (p) { return { x: cx + (p.x - cx) * k, y: newTop + (p.y - lo) * k }; });
     st.cx = cx; st.cy = newTop + (hi - lo) * k / 2; if (st.r) st.r *= k;
     renderPoly();
-    // one piece: the group is drawn where it now belongs and animated from
-    // where it was — scaled about its top-centre, then moved
     var g = st.polyG;
     if (g && g.animate && !reduced()) {
       g.style.transformBox = 'fill-box'; g.style.transformOrigin = '50% 0%';
@@ -5104,15 +3213,6 @@
     }
   }
 
-  /**
-   * THE NAME GOES UNDER THE CARD, NOT IN IT. A tag inside the glass took
-   * the shape's room and sat on its bottom edge; under the card, in the
-   * band the answer buttons use, it is a name tag on the thing it names.
-   * The card gives up its foot for it — shortened to the control line, as
-   * panelFor() would have built it had the name been declared — and the
-   * shape steps up to fit the smaller face (makeRoomBelow), as big as that
-   * face allows.
-   */
   function bandBelow() {
     if (!st.panel || !st.panelEl) return;
     var ceil = BOTTOM - CONTROL_H - CONTROL_GAP;
@@ -5143,10 +3243,6 @@
     return out;
   }
 
-  /* ------------------------------------------------------------------ *
-   * Incremental ops
-   * ------------------------------------------------------------------ */
-
   function resolveVertex(ref) {
     if (typeof ref === 'number') return ref;
     if (ref === 'picked') return st.picked == null ? 0 : st.picked;
@@ -5172,9 +3268,6 @@
         if (knobOf(i)) juice('pop', knobOf(i), { scale: 0.5 });
       }
       if (h.diagonal === 'outside') {
-        // Entered with the pentagon still convex — a jump, a restart — there
-        // is no outside diagonal to show, so the vertex is pulled in first:
-        // the screen then says what it shows.
         if (global.Poly && Poly.classify && !Poly.classify(st.verts).concave) {
           var c0 = Poly.centroid(st.verts), p0 = st.verts[0];
           st.verts[0] = { x: c0.x + (p0.x - c0.x) * 0.1, y: c0.y + (p0.y - c0.y) * 0.1 };
@@ -5183,27 +3276,9 @@
         st.highlightOutside = true; st.onlyOutside = true; renderPoly(); juice('flash', st.diagG);
       }
     },
-    /**
-     * A label on one side of the shape.
-     *
-     * OUTSIDE THE SHAPE, ALWAYS. It used to sit at the segment's midpoint
-     * plus a fixed (+110, -40): up and to the right, whatever the side was.
-     * On the bottom edge of a pentagon that is INTO the polygon — the word
-     * "Side" landed on the fill, on top of the right-hand vertex, with its
-     * leader line crossing the shape to reach a midpoint a few pixels away.
-     *
-     * A fixed offset cannot work, because which way is "away" depends on
-     * which side is labelled. The label now sits along the segment's outward
-     * normal — the direction from the shape's centre through the midpoint —
-     * so it is beside the side it names and clear of the shape whichever
-     * side that is, and the leader crosses nothing.
-     */
     label: function (l) {
       st.labelSpec = specOf(l);
       if (st.labelEl) st.labelEl.remove();
-      /* A NAME ON THE CARD'S TOP EDGE (l.at 'top'): a tab hung on the rim, the compare pair's
-         kind — the shape's name without a tag under the card, so the card keeps its size and
-         its place (the user: "no tag below the card", "do not resize it"). */
       if (l.at === 'top' && st.panel) {
         var tg = nameTag(layers.ui, st.panel.x + st.panel.w / 2, st.panel.y + 1, l.text, null, { h: 32, size: 17, pad: 30, rim: 2.5 });
         tg.setAttribute('class', 'label name-tab');
@@ -5212,24 +3287,11 @@
         if (l.enter && !reduced()) enter(tg, 'ui');
         return;
       }
-      /* THE LINE A POINTED TAG NAMES: the side just made (st.segment), or — l.at 'diagonal' —
-         the diagonal just drawn: its name beside it on the figure, with an arrow to it, not
-         printed under the card (the user: "label → arrow → the actual diagonal"). */
       var lastDiag = st.diagonals && st.diagonals.length ? st.diagonals[st.diagonals.length - 1] : null;
       var seg = l.at === 'diagonal' ? (lastDiag ? [lastDiag[0], lastDiag[1]] : null) : st.segment;
       var x, y, m = null;
       if (l.at === 'below-polygon' || !seg) {
-        // Below the SHAPE, not at the bottom of the panel. Pinned to the
-        // panel it sat at a fixed height whatever the shape did, and a
-        // hexagon — which has a vertex at the very bottom, where a pentagon
-        // has a flat side well above it — reached down into the word. The
-        // clearance is measured from the lowest vertex, and only falls back
-        // to the panel when the shape leaves no room.
         var lceil = choiceCeiling();
-        /* ON THE GLASS, UNDER THE SHAPE (inside: true), when the card has the
-           room: the name belongs on the card beside the line it names. In the
-           band under the card it sat on the stage's floor with Back and the
-           progress bar, a card's height from its diagonal. */
         var under = null;
         if (l.inside && st.panel && lceil == null && st.verts && st.verts.length) {
           var utw = String(l.text).length * 15 + 36;
@@ -5261,39 +3323,19 @@
       } else {
         var a = st.verts[seg[0]], b = st.verts[seg[1]];
         m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-        // (a diagonal's name goes on the shape's face beside it first: an arrow from outside
-        // would cross a side on its way in, and seem to point at that)
         var beside = besideSide(a, b, String(l.text).length * 13 + 28, 17, 6, l.at === 'diagonal');
         if (beside) { x = beside.x; y = beside.y; }
         else {
-        // (no clear place beside it on this card: the older search, which
-        // keeps the tag on the glass and off the shape's box)
         var nx = m.x - st.cx, ny = m.y - st.cy;
         var len = Math.sqrt(nx * nx + ny * ny) || 1;
         var OUT = 74;
         x = m.x + nx / len * OUT;
         y = m.y + ny / len * OUT;
-        // and never off the glass, however the shape is oriented: the word
-        // used to land on the rim of the card
         var pfc = st.panel ? panelFace(st.panel) : { x: 0, y: 0, w: W, h: H };
-        // the tag is 40 tall about y-7, so 32 from the foot keeps its whole
-        // plate on the glass and off the rim
         x = Math.max(pfc.x + 70, Math.min(pfc.x + pfc.w - 70, x));
-        // a tag on the glass stays on the glass; one in the band under the
-        // card stays above the foot of the stage
         if (y <= pfc.y + pfc.h) y = Math.max(pfc.y + 40, Math.min(pfc.y + pfc.h - 32, y));
         else y = Math.min(y, BOTTOM - 14);
 
-        /* AND NEVER ON THE SHAPE ITSELF.
-         *
-         * The tag is pushed out from the middle of the side it names, and
-         * then pulled back inside the glass — and on a card the shape nearly
-         * fills, those two pull against each other and the word ends up
-         * lying across the very outline it is pointing at, with its string
-         * crossing the shape. A tag on top of the thing it names is worse
-         * than a tag further away, so if the plate still covers the shape it
-         * is walked outwards along the same line until it is clear, and it
-         * is allowed onto the rim to get there. */
         if (st.verts && st.verts.length) {
           var tw = (String(l.text).length * 15) + 36;
           var bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
@@ -5309,23 +3351,6 @@
                    py - 27 < by1 + 6 && py + 13 > by0 - 6;
           };
 
-          /* OFF THE SHAPE, AND OFF THE FRAME.
-           *
-           * This walked the tag outwards until it cleared the shape and then
-           * clamped it to the STAGE — which threw away the clamp to the glass
-           * a few lines above and let it finish on the card's rim, across a
-           * moulded corner and its snow cap. Two clamps pulling opposite ways,
-           * and the last one won.
-           *
-           * The rim is not fair game: it is the most decorated part of the
-           * picture, and a white plate lying over a corner reads as a mistake
-           * whatever it is pointing at. So the search is two-dimensional now —
-           * out along the line from the middle of the side, and sideways
-           * along the rim from there — and it takes the first place that is
-           * both clear of the shape and wholly on the glass. If the card is
-           * too full for any such place to exist, the tag stays on the glass
-           * and overlaps the shape, because a tag over the thing it names is
-           * still the lesser of the two. */
           var glassX0 = pfc.x + tw / 2 + 14, glassX1 = pfc.x + pfc.w - tw / 2 - 14;
           var glassY0 = pfc.y + 44, glassY1 = pfc.y + pfc.h - 18;
           var onGlass = function (px, py) {
@@ -5359,21 +3384,6 @@
         }
       }
       var g = mk('g', { 'class': 'label' }, layers.ui);
-      // THE WORD ON A PLATE. Ink straight on the glass sat on the rim and the
-      // grain; a small paper plate, the same one the stepper and the
-      // checklist use, gives it a place. Measured after it is set, so the
-      // plate is as wide as the word.
-      // A NAME TAG, NOT A BUTTON. On cream with a tan rim the word read as
-      // something to press. Cut from the same ice as the cards — frost-white
-      // glass with a glacier rim, deep-water lettering — it reads as a tag
-      // pinned to the thing it names, and the leader is its string.
-      // (a size down from 26: a name on a card, not a heading — and a smaller
-      // plate finds a clear place beside a side where the big one found none)
-      /* A GAME TAG, NOT A LABEL (the user: "the diagonal arrow does not look good — not
-         gamified"): a pill in the colour of the thing it names — gold for a lit line, the
-         glacier blue for a side — over a soft shadow, and a curved leader with a chunky
-         rounded head, white-edged so it reads over the blue shape. Everything is in stage
-         units, so it is the same tag at every screen size. */
       var LF = 22, LH = 36, LPAD = 16;
       var tone = l.at === 'diagonal' ? (HI.lit || '#ffc83d') : HI.rim, toneDeep = shade(tone, -0.35);
       var lt = mk('text', { x: x, y: y, 'text-anchor': 'middle', 'font-size': LF, 'font-weight': 800,
@@ -5386,9 +3396,6 @@
       var sheen = mk('rect', { x: px0 + 6, y: py0 + 4, width: pw - 12, height: LH * 0.38, rx: LH * 0.19, fill: tone, 'fill-opacity': 0.16, 'pointer-events': 'none' }, g);
       g.insertBefore(sheen, lt); g.insertBefore(plate, sheen); g.insertBefore(shadow, plate);
       if (l.arrow && m) {
-        /* THE LEADER: it leaves the pill's edge, bends a little on its way (a string, not a
-           ruler line), and its head stops just short of the line it names, pointing straight
-           at it — never a dot on the line (the user: "use an arrow to point, not a dot"). */
         var pcx = x, pcy = y - 6, phx = pw / 2, phy = LH / 2;
         var dx = m.x - pcx, dy = m.y - pcy, d = Math.sqrt(dx * dx + dy * dy) || 1, ax = dx / d, ay = dy / d;
         var te = Math.min(dx ? phx / Math.abs(dx) : Infinity, dy ? phy / Math.abs(dy) : Infinity);
@@ -5398,7 +3405,6 @@
         if (te < 1) {
           var run = (bx - sx) * ax + (by - sy) * ay;
           if (run > 2) {
-            // bent a fifth of its length to the side, and drawn twice: a white edge under the colour
             var cx2 = (sx + bx) / 2 - ay * Math.min(14, run * 0.2), cy2 = (sy + by) / 2 + ax * Math.min(14, run * 0.2);
             var dpath = 'M' + sx.toFixed(1) + ' ' + sy.toFixed(1) + ' Q' + cx2.toFixed(1) + ' ' + cy2.toFixed(1) + ' ' + bx.toFixed(1) + ' ' + by.toFixed(1);
             mk('path', { d: dpath, fill: 'none', stroke: '#ffffff', 'stroke-width': 7.5, 'stroke-linecap': 'round', 'stroke-opacity': 0.9 }, g);
@@ -5431,8 +3437,6 @@
           x = st.panel.x + st.panel.w / 2;
           y = controlY();
         } else {
-          // Clear of the SHAPE, not at a fixed height above the panel's foot —
-          // which a hexagon's bottom vertex reached straight through.
           x = st.cx;
           y = belowShape(30, 34);
           if (st.choiceEls && st.choiceEls.length) y = Math.min(y, H - 64 - 60);
@@ -5446,9 +3450,6 @@
       st.badges[key] = g; if (b.live) st.liveBadge = g;
       // a tag put under a card that has stepped back steps back too
       if (b.under && st.compareFocus && b.under !== 'compare.' + st.compareFocus) dimTag(g, true, st.compareStyle === 'lean');
-      /* AS IT APPEARS: the small learning mark in its place goes, and — when
-         it is being introduced, not put back — its chime, a few sparkles and
-         his nod (compare:react). */
       var side = b.under && b.under.indexOf('compare.') === 0 ? b.under.split('.')[1] : null;
       var shown = function () {
         if (side) dropMark(side, true);
@@ -5463,11 +3464,6 @@
       if (b.enter && !reduced()) enter(g, 'ui');
       shown();
     },
-    /* The compare pair's diagonals: `card` left / right / both. They grow
-       one after another (`each` apart, `ms` each) and the beat lasts until
-       they have; `outsideOn` holds the ones that leave the shape for that
-       word; `instant` draws whatever is not drawn yet, at once (a screen
-       reached by a jump or by Back). */
     grow: function (o) {
       if (!o || !st.compare) return null;
       var waits = [];
@@ -5497,8 +3493,6 @@
       });
       return waits.length ? Promise.all(waits) : null;
     },
-    /* A word of the line and what answers it on the pair: `pulse` the named
-       card(s) (left / right / both), `lift` a card's inside diagonals, `sfx`. */
     onWord: function (list) {
       (Array.isArray(list) ? list : [list]).forEach(function (w) {
         if (!w || !w.word) return;
@@ -5506,14 +3500,8 @@
           if (w.sfx) sfx(w.sfx, { gain: w.gain || 0.5 });
           // the focus moves on its word too: the line turns from one card to the other
           if (w.focus && st.compare) focus(w.focus === 'even' ? 'compare' : 'compare.' + w.focus, w.focus === 'even' ? 'even' : (w.style || 'lean'));
-          // THE EVIDENCE ON ITS WORD (screen 29: "All the SIDES and ANGLES are equal…"): the card's
-          // side ticks or angle arcs, drawn as the word is said (compareEvidence)
           if (w.evidence && st.compare) compareEvidence(w.evidence.card, w.evidence.what);
-          // a lighting on its word (the inside screen: the diagonals light as he says "inside")
           if (w.lit) apply({ lit: w.lit, litEach: w.each });
-          // A CORNER THAT COMES UP ON ITS WORD (drag-inward — the user: "when VO says pull this
-          // vertex the vertex point not appear and sync?"): the point was hidden until the drag
-          // armed, two seconds after "vertex"; now it pops in as the word is said
           if (w.knob != null && st.verts && st.verts[w.knob] && st.polyG) {
             st.vcolor = st.vcolor || {}; st.vcolor[w.knob] = HI.picked;
             // (and breathing from that word on — screen 10's "this vertex")
@@ -5541,9 +3529,6 @@
         if (!m[side]) return;
         var g = compareMark(side, m[side]);
         if (!g || m.enter === false || reduced()) return;
-        // ON ITS WORD (m.cue — the user: "the Inside/Outside text must appear at the same time
-        // the concept is shown, not later or on the next screen"): the mark waits for the voice
-        // to say it, and pops as the line it names is drawn
         if (m.cue && holdForWord(g, String(m[side]).toLowerCase(), function () { enter(g, 'ui'); sfx('pop', { gain: 0.35 }); })) return;
         g.style.opacity = 0;
         later(i * 240, function () { g.style.opacity = ''; enter(g, 'ui'); sfx('pop', { gain: 0.35 }); });
@@ -5556,16 +3541,8 @@
         var all = Poly.allDiagonals(st.n);
         st.diagonals = all.map(function (pair, k) { return Object.assign(pair, { animate: seq, delay: k * (d.each || 200), each: d.each }); });
         st.segment = null; st.vcolor = null; renderPoly();
-        /* THE BEAT LASTS UNTIL THE LAST LINE HAS LANDED. Five diagonals drawn one after
-           another are some six seconds of animation, and the op handed back nothing — so the
-           sparkle, his look at the shape and the screen's auto-advance all ran over a star
-           still drawing itself, and the lesson went on before it was complete (the user:
-           "before the line animation completes, why jump to the next screen?"). The same
-           timing drawIn uses, plus a breath to see the finished star. */
         if (seq && all.length) {
           var each = d.each || 200, dur = Math.max(500, Math.min(1000, (d.each || 1150) - 250));
-          // (a plain timer, not later(): a promise the director is waiting on must always
-          // settle — a scene rebuilt under it would otherwise leave the beat hanging for good)
           return new Promise(function (res) { setTimeout(res, (all.length - 1) * each + dur + 200); });
         }
       }
@@ -5573,15 +3550,10 @@
     choices: function (list, spec) {
       if (st.choiceG) { st.choiceG.remove(); st.choiceG = null; }
       if (!list) {
-        // no row left to answer with: nothing should still point at its
-        // buttons, and the card is no longer sitting above a band
         st.choiceEls = [];
         if (st.panel && st.panel.controls) { st.panel.controls = false; applySeat(true); }
         return;
       }
-      // `cue`: each answer waits for the word that names it (holdForWord).
-      // true reads the words off the label itself ("Inside" on "inside");
-      // an object says which word, for an answer the line never says whole.
       var cue = spec && spec.cue;
       var cueFor = function (label) {
         if (!cue) return null;
@@ -5589,48 +3561,21 @@
         return cue[label] || null;
       };
       var g = mk('g', { 'class': 'choices' }, layers.ui); st.choiceG = g; st.choiceEls = [];
-      // SMALLER. At 216x64 of a 1000x562 stage these came out 276x82 real
-      // pixels on a laptop — a pair of slabs that took the eye before the
-      // question did. This is still well past a 44px finger target at every
-      // size the game runs at, and it lets the row sit clear of the card
-      // rather than jammed against it.
-      // Under the object, sized to be found and not to be looked at first:
-      // a row of answers is the third thing on the screen, after the plank
-      // and the shape.
-      // ONE SIZE, ONE COLOUR. Two answers in two colours and two widths read
-      // as two different kinds of thing; they are the same kind of thing.
-      // Every pill in the row is the sun-yellow one, as wide as the longest
-      // word wants, and no narrower than a comfortable finger.
       var longest = list.reduce(function (n, t) { return Math.max(n, String(t).length); }, 0);
       var bw = Math.max(150, Math.min(250, longest * 13 + 62)), gap = 24, bh = 50;
       var row = list.length * bw + (list.length - 1) * gap;
       var x0 = (st.panel ? st.panel.x + st.panel.w / 2 : W / 2) - row / 2;
       var rowCentre = x0 + row / 2;
-      // Directly under the panel (controlY), never off the foot. A panel
-      // built before its question arrived is full height; liftAboveChoices()
-      // then shortens it to clear the row, as it always has.
       var y = controlY();
       x0 = Math.max(14, Math.min(x0, W - row - 14));
       list.forEach(function (label, i) {
         var x = x0 + i * (bw + gap);
-        // An option that NAMES a category is drawn in that category's colour,
-        // so the word on the button, the bin it belongs in and the badge it
-        // earns all agree. Everything else gets a colour that means nothing —
-        // enough for a row to read as separate choices, never enough to hint
-        // which one is right.
-        // THE NEW KIT'S BUTTON: the glossy gold capsule every other control in
-        // the game now wears (btn-uiPrimary), not the matte lesson pill
         var b = pill(g, {
           x: x, y: y, w: bw, h: bh, label: label,
           tone: 'uiPrimary',
           press: true, attrs: { 'class': 'choice', 'data-label': label }
         });
         st.choiceEls.push(b);
-        /* `hold`: LAID OUT NOW, SHOWN WHEN IT CAN BE PRESSED (level 12: "The diagonals are
-           inside." and then one "Inside" button). Added in a later beat, the row made the card
-           shrink and the shape jump up the moment the line ended; built with the screen, the
-           card has its final size from the start, and the button waits — hidden, out of reach —
-           until the input arms (releaseHeld), with or without reduced motion. */
         if (spec && spec.hold) {
           b.style.opacity = '0'; b._held = true; b._heldEvents = b.style.pointerEvents || ''; b.style.pointerEvents = 'none';
           heldForWord.push({ words: [], el: b, onShow: null });
@@ -5641,8 +3586,6 @@
         if (spec && spec.enter === false) return;          // (its entrance is the caller's: `merge`)
         if (!reduced()) { b.style.opacity = 0; later(90 * i, function () { b.style.opacity = 1; enter(b, 'ui'); }); }
       });
-      // Each pill is now as wide as its word, so the row is laid again from
-      // the real widths and centred where the fixed row would have been.
       var total = st.choiceEls.reduce(function (n, b) { return n + b._rect.w; }, 0) + gap * (list.length - 1);
       var cursor = rowCentre - total / 2;
       st.choiceEls.forEach(function (b) {
@@ -5658,10 +3601,6 @@
     measurements: function (m) {
       if (m === 'live') { st.measure = { sides: 'all', angles: 'all', units: true }; renderPoly(); }
     },
-    /* THE END-GAME SUMMARY, driven by the screen's beats: `card` brings one
-       in and shows its idea, `collect` puts it away, `final` gathers the
-       collection. Each returns a promise the beat waits on, so no state of it
-       ever overlaps the next. */
     summary: function (o) {
       if (!o || st.kind !== 'summary') return null;
       if (o.card) return summaryShow(o.card);
@@ -5671,7 +3610,6 @@
     }
   };
 
-  /* A SPEC WITHOUT ITS ENTRANCE: what to build, not how it arrived. */
   function specOf(o) {
     if (!o || typeof o !== 'object') return o;
     var c = JSON.parse(JSON.stringify(o));
@@ -5679,21 +3617,6 @@
     return c;
   }
 
-  /* THE SCENE, WRITTEN DOWN.
-   *
-   * Back used to rebuild a screen from the nearest one that declared a
-   * scene — which gives the right pentagon but not the child's pentagon: not
-   * the corner they picked, the diagonal they drew, the dent they pulled, the
-   * sides they measured. So a screen that had any of that on it could not be
-   * landed on, and Back from "Yay! You made a diagonal." skipped six screens
-   * to "Pick any vertex." Now game.js writes the scene down as each screen
-   * begins, and restore() puts back exactly that — the same card in the same
-   * place, the same shape, the same marks — so Back is one screen, like Next.
-   *
-   * Plain data only: no elements, nothing that belongs to a running
-   * animation. Scenes a screen always builds for itself (the grid, the sort,
-   * the swipe, the vista) are not written down; that screen's own beats
-   * rebuild them. */
   function snapshot() {
     if (!st.kind || !st.buildSpec || !/^(polygon|compare)$/.test(st.kind)) return st.kind ? { kind: st.kind } : null;
     var copy = function (o) { return o == null ? (o === undefined ? null : o) : JSON.parse(JSON.stringify(o)); };
@@ -5750,7 +3673,6 @@
     if (!spec) return;
     if (spec.kind) BUILD[spec.kind] && BUILD[spec.kind](spec);
     if (spec.highlight) op.highlight(spec.highlight);
-    // (a sequential draw-in hands back a promise: the beat is over when the last line is)
     var drawing = spec.diagonals && !spec.kind ? op.diagonals(spec) : null;
     if ('ghost' in spec && !spec.kind) op.ghost(spec.ghost);
     if (spec.label && !spec.kind) op.label(spec.label);
@@ -5759,11 +3681,7 @@
     // the side that was named, and its tag, fade before the next try
     if (spec.side === null) clearSide();
     if (spec.side === 'done') freezeSide();
-    // (the connecting step's last state, EXPLANATION, is the lesson's to say: screens.js)
     if (spec.connectState) setConnect(spec.connectState);
-    /* THE CORNERS SHOWN BEFORE THEY ARE ASKED FOR (the user: "the dots appear before 'Select
-       any vertex'"): up, softly, ahead of the line — so its word "vertex" has corners to swell
-       (emphasize) — and touchable once the input that follows is armed. */
     if (spec.dots != null && st.polyG) {
       var were = !!st.showVerts;
       st.showVerts = !!spec.dots; st.touchVerts = !!spec.dots; renderPoly();
@@ -5775,18 +3693,10 @@
     if ('choices' in spec) op.choices(spec.choices, spec);
     if (spec.measurements) op.measurements(spec.measurements);
     if (spec.returnItem && st.sort && st.sort.dragging) returnItem(st.sort.dragging);
-    /* THE DENT MADE FOR THEM (`autoConcave: { vertex }` — screen 21's second miss): the corner
-       travels inward past the line between its neighbours over a second, the shape and its
-       diagonals moving with it, the readout flipping as it becomes concave, and the diagonal
-       that has gone outside lights and stays lit. The beat waits for it. */
     if (spec.autoConcave && st.verts && st.polyG) {
       var ai = spec.autoConcave.vertex || 0, av = st.verts[ai], ac = Poly.centroid(st.verts);
       var at = st.verts.length === 4 ? 1.3 : 0.88;
       var target = { x: av.x + (ac.x - av.x) * at, y: av.y + (ac.y - av.y) * at }, from = { x: av.x, y: av.y };
-      /* SHOWN SLOWLY, THEN NAMED (the final pass, `settle` / `hold`): the corner travels in over
-         `ms` with the diagonals plain, the shape settles, a breath (`settle`), and only then
-         does the diagonal that has gone outside light — and it is held (`hold`) before the beat
-         ends, so the change is seen before it is explained. Without them: lit as it goes. */
       var paced = spec.autoConcave.settle != null;
       st.highlightOutside = !paced; st.showVerts = true; st.touchVerts = false; st.breatheAt = null;
       st.vcolor = {}; st.vcolor[ai] = HI.picked; renderPoly();
@@ -5816,8 +3726,6 @@
         if (global.requestAnimationFrame && ms) global.requestAnimationFrame(step); else step(0);
       });
     }
-    /* THE RIGHT ANSWER SHOWN (`reveal`: a choice's label — the second miss of a two-try
-       question): that button goes green and glints, the way it would have for the child. */
     if (spec.reveal && st.choiceEls) {
       var doReveal = function () {
         (st.choiceEls || []).forEach(function (b) {
@@ -5829,12 +3737,6 @@
       // (on its word, `cue`, when he says it)
       if (!(spec.cue && onWord(spec.cue, doReveal))) doReveal();
     }
-    /* THE TWO ANSWERS BECOME ONE (`merge`: a label — the inside / outside question after its second
-       miss, the user: "remove the two buttons and replace them with ONE centered Inside … do not
-       simply hide Outside and leave a gap"). The row is rebuilt as one pill, centred under the
-       card where the pair's middle was; the old pair slides in to that middle as it fades, and
-       the new pill arrives in its place, green — the answer shown. It takes no press until the
-       input after it arms. */
     if (spec.merge && st.choiceG) {
       var doMerge = function () {
       if (!st.choiceG) return;
@@ -5858,21 +3760,9 @@
       }
       later(reduced() ? 0 : 480, function () { if (oldG.parentNode) oldG.remove(); });
       };
-      /* ON ITS WORD (`cue` — the user, screens 12 and 28: "when the VO says inside, give the Inside
-         option green and the other option gone"): the right answer turns green and the other
-         leaves as he says it, not half a second after the line. */
       if (!(spec.cue && onWord(spec.cue, doMerge))) doMerge();
     }
-    /* THE DIAGONALS LIT, AND LEFT LIT (`lit: 'diagonals'` — a two-try question's explanation):
-       each brightens in turn and stays glowing while he explains, so the lines he is talking
-       about are the brightest thing on the card — not a flash that has gone by the time he
-       says why. A scene rebuilt after it draws them plain again. */
     if (spec.lit === 'diagonals' && st.diagG) {
-      /* LIT ON ITS WORD, AND PLAINLY (the user, the inside / outside explanation: "not sync with
-         vo?"): brightening white dashes by a quarter showed nothing, and it ran before the line.
-         Now each diagonal turns a thin GOLD dash — the lesson's colour for "look here" — one
-         quickly after another (`litEach`, ms apart), and stays gold while he explains. Still
-         dashed, the same fine width: a diagonal, lit, never a side. */
       var each = spec.litEach != null ? spec.litEach : 260;
       [].slice.call(st.diagG.childNodes).filter(function (g) { return g.style && g.style.display !== 'none'; }).forEach(function (g, k) {
         later(reduced() ? 0 : k * each, function () {
@@ -5886,8 +3776,6 @@
       });
     }
 
-    // the compare sequence: words that answer, diagonals that grow (a beat
-    // that lasts until they have), and the small marks
     if ('quietWords' in spec) st.quietWords = !!spec.quietWords;
     if (spec.onWord) op.onWord(spec.onWord);
     var growing = spec.grow ? op.grow(spec.grow) : null;
@@ -5897,10 +3785,6 @@
     return growing || drawing;
   }
 
-  /* ------------------------------------------------------------------ *
-   * Focus
-   * ------------------------------------------------------------------ */
-
   function targets(ref) {
     if (!ref) return [];
     if (ref === 'polygon' || ref === 'polygon.vertices') return ref === 'polygon' ? [st.polyG] : (st.knobEls || st.vertEls || []);
@@ -5909,9 +3793,6 @@
     if (ref.indexOf('polygon.vertex.') === 0) { var i = +ref.split('.')[2]; return knobOf(i) ? [knobOf(i)] : []; }
     if (ref === 'segment.endpoint') return st.segment && knobOf(st.segment[1]) ? [knobOf(st.segment[1])] : [];
     if (ref === 'diagonal.endpoints') {
-      // while it is still the live segment, that; afterwards the last
-      // diagonal drawn — which is what "this diagonal" means on the screen
-      // that names it, and it used to resolve to nothing at all there.
       var dd = st.segment || ((st.diagonals || []).length ? st.diagonals[st.diagonals.length - 1] : null);
       return dd && knobOf(dd[0]) ? [knobOf(dd[0]), knobOf(dd[1])] : [];
     }
@@ -5928,9 +3809,6 @@
   // `soft`: the lighter step back of the compare sequence ('lean')
   function dimTag(el, dim, soft) {
     if (!el || !el.style) return;
-    // A TAG STILL WAITING FOR ITS WORD STAYS HIDDEN. Stepping its card back set its opacity to
-    // 0.6, which was the tag appearing, faded, before it was said ("Irregular pentagon" up while
-    // he was still on "regular"); it takes the card's state when its word comes (showHeld).
     if (el._held) { el._dimLater = { dim: dim, soft: soft }; return; }
     el.style.transition = 'opacity 320ms ease, filter 320ms ease';
     el.style.opacity = dim ? (soft ? .6 : .42) : '';
@@ -5939,7 +3817,6 @@
 
   function focus(ref, style) {
     var els = targets(ref);
-    // BOTH CARDS, EVENLY: the pair side by side again, nothing stepped back
     if (style === 'even' && st.compare) {
       st.compareFocus = null; st.compareStyle = null;
       Object.keys(st.compare).forEach(function (k) {
@@ -5951,12 +3828,6 @@
       return;
     }
     if ((style === 'dim-others' || style === 'lean') && st.compare) {
-      // The card not being talked about steps back — paler, drained of
-      // colour — and the one that is comes forward with a soft glow, so the
-      // eye has nowhere else to go. Remembered: Swiftee peeks from behind
-      // the card in focus, not from behind the one that has stepped back.
-      // 'lean' is the lighter step back of the compare sequence: the other
-      // card is still easy to see, only less important.
       var soft = style === 'lean';
       st.compareFocus = ref.split('.')[1]; st.compareStyle = style;
       Object.keys(st.compare).forEach(function (k) {
@@ -5966,12 +3837,6 @@
           el.style.filter = dim ? (soft ? 'saturate(.55) brightness(1.03)' : 'saturate(.25) brightness(1.04)') : '';
           el.style.transition = 'opacity 320ms ease, filter 320ms ease';
         });
-        // No glow on the one in focus: the card's face is translucent glass,
-        // and a drop-shadow showed through it as a pale line inside the rim.
-        // The other card stepping back is the whole cue.
-        // AND ITS NAME TAG STEPS BACK WITH IT. "Convex" stayed full strength
-        // under a card that had faded to grey, so the one bright thing on the
-        // stepped-back side was a label for the card nobody was talking about.
         dimTag((st.badges || {})['compare.' + k], dim, soft);
         dimTag(c.tag, dim, soft);
         dimTag((st.compareMarks || {})[k], dim, soft);
@@ -5985,53 +3850,11 @@
       if (!e) return;
       if (e.classList && e.classList.contains('vertex')) { e.setAttribute('opacity', 1); e.setAttribute('r', 15); }
       if (reduced() || !e.animate) return;
-      // ONCE, SOFTLY. Three swells at a quarter over size was the loudest
-      // thing on the screen at the very moment the child was being told what
-      // to do; the thing named gives one small breath and settles, and the
-      // hint ladder takes over if they need more.
-      // ONE AT A TIME (the user: "do not pulse multiple vertices at the same time"): two
-      // things named together — a diagonal's two ends — breathe one after the other.
       e.style.transformBox = 'fill-box'; e.style.transformOrigin = 'center';
       e.animate([{ scale: '1' }, { scale: '1.14' }, { scale: '1' }], { duration: 700, delay: i * 700, iterations: 1, easing: 'ease-in-out' });
     });
   }
 
-  /**
-   * Ring whatever `ref` names, in `color`, for a moment.
-   *
-   * This is the stage half of dual-coding.js: the term lights up in the
-   * speech bubble in this colour at the same instant the thing it names
-   * lights up here, and the shared hue is what binds the word to the
-   * picture. It is deliberately a ring around the element rather than a
-   * recolouring of it — the lesson's own highlighting (a picked vertex, an
-   * outside diagonal in red) carries meaning that must not be overwritten
-   * by a label cue.
-   *
-   * Drawn into `fx`, which is pointer-events: none, so a halo can never sit
-   * between a child and the vertex they are reaching for.
-   */
-  /* ------------------------------------------------------------------ *
-   * THE WORD, SHOWN ON THE BOARD.
-   *
-   * A highlighted word in the bubble is not decoration: at the moment it
-   * appears, the thing it names answers it — briefly, in a warm light that
-   * belongs to the orange of the word, and then back to the lesson's own
-   * colours. "vertex" and the corners swell; "side" and the side brightens;
-   * "diagonal" and the diagonals draw over themselves; "inside" and the
-   * inside of the shape glows; "outside" and a band of light runs round the
-   * outside of its outline.
-   *
-   * WHAT IT MUST NEVER DO IS ANSWER. A word lights what the sentence already
-   * points at, or everything of its kind equally: "Which of these are
-   * polygons?" lights every card at once, never the right ones; "convex" on
-   * the sorting screen lights the Convex bin, never the convex shapes in the
-   * tray. A word with nothing on the board to name — an action, a shape not
-   * made yet — lights nothing.
-   *
-   * One mapping, here, keyed by the vocabulary's own ids (dual-coding.js
-   * TERMS); nothing per screen. Short (300–600ms), one effect at a time, and
-   * never while the child is dragging (a live drag keeps the board theirs).
-   * ------------------------------------------------------------------ */
   var WARM = 'rgba(255, 150, 40, 0.85)';
   function warmPulse(els, o) {
     o = o || {};
@@ -6054,14 +3877,11 @@
   }
   /** The polygon's own outline, as a path to borrow the shape of. */
   function outlineOf() { return st.fill && st.fill.getAttribute && st.fill.getAttribute('d'); }
-  /** Light a region for a moment: the inside of the shape, or a band round its outside. */
   function regionGlow(d, outside) {
     if (!d || !layers.fx) return 0;
     var g = mk('g', { 'class': 'concept-glow', 'pointer-events': 'none' }, layers.fx);
     var el;
     if (outside) {
-      // a wide soft stroke on the outline, clipped to the OUTSIDE of the
-      // shape (a board-sized rectangle with the shape cut out of it)
       var id = 'outside-clip-' + (++glowSeq);
       var defs = mk('defs', {}, g);
       var cp = mk('clipPath', { id: id }, defs);
@@ -6092,12 +3912,6 @@
     for (var i = 0; i < A.length; i++) if (A[i] > 180.5) out.push(i);
     return out;
   }
-  /* THE SUMMARY'S WORDS NAME WHAT IS ON ITS CARD. "Vertex" swells the corner
-     that lit, "sides" traces the sides that meet there, "angle" the wedge,
-     "diagonals" the lines drawn across; "inside" and "outside" glow the
-     shape; "equal" its marks; the kind of polygon, the card's own name. Only
-     the card in the middle answers — the collected ones have had their say —
-     except in the last line, where "polygon" is all of them. */
   function summaryWord(term, line) {
     void line;
     var S = st.summary; if (!S) return 0;
@@ -6126,10 +3940,6 @@
       default: return 0;
     }
   }
-  /* THE SIDES, THEN THE ANGLES, AS HE SAYS THEM (the compare pair — the user, screen 29: "animate
-     the corresponding mathematical feature at the same moment"). Each side is drawn over in warm
-     light out of its corner, one after another round the shape; each corner gets an arc inside
-     it, one after another; both hold a moment and fade, and change nothing real. */
   function traceSides(v) {
     if (!v || !v.length || reduced()) return 0;
     var g = mk('g', { 'class': 'word-sides', 'pointer-events': 'none' }, layers.fx), n = v.length;
@@ -6148,8 +3958,6 @@
     v.forEach(function (p, i) {
       var a = v[(i + n - 1) % n], b = v[(i + 1) % n];
       var a1 = Math.atan2(a.y - p.y, a.x - p.x), a2 = Math.atan2(b.y - p.y, b.x - p.x);
-      // THE ARC THROUGH THE INSIDE OF THE CORNER: from the side to the previous corner round
-      // to the side to the next, the way that passes the direction of the shape's middle
       var bis = Math.atan2(c.y - p.y, c.x - p.x), TAU = 2 * Math.PI;
       var d1 = ((a2 - a1) % TAU + TAU) % TAU, db = ((bis - a1) % TAU + TAU) % TAU;
       var sweep = db < d1 ? 1 : 0, span = sweep ? d1 : TAU - d1, large = span > Math.PI ? 1 : 0;
@@ -6166,15 +3974,11 @@
   }
   function emphasize(term, ctx) {
     if (!svg || reduced() || dragging()) return 0;
-    // (a screen whose words are cued to their own evidence — `quietWords`: the regular / irregular
-    // pair — takes no generic lighting on top: "only the evidence that matches the words")
     if (st.quietWords) return 0;
     var kind = st.kind, line = String((ctx && ctx.line) || '').toLowerCase();
     if (kind === 'summary') return summaryWord(term, line);
     switch (term) {
       case 'polygon':
-        // (not the answer cards: every card swelling at once on the word was the pulse the user
-        // asked to have gone — "cards should remain stable until the user interacts")
         if (kind === 'grid') return 0;
         // "this one" is the card in focus; "both" and no focus, the pair
         if (kind === 'compare') return warmPulse(Object.keys(st.compare || {}).filter(function (k) { return !st.compareFocus || /both/.test(line) || k === st.compareFocus; })
@@ -6183,11 +3987,7 @@
         if (kind === 'swipe-sort') return warmPulse(st.swipe && st.swipe.card ? [st.swipe.card] : [], { peak: '1.03' });
         return warmPulse([st.polyG]);
       case 'vertex': {
-        // "another vertex", "a different vertex": the OTHER corners; "this
-        // vertex", "the same vertex": the one the lesson has marked
         var mine = relevantKnobs(), all = (st.knobEls || []).filter(function (k) { return k && k.getAttribute('opacity') !== '0'; });
-        // SCREEN 7: "a different vertex" is a corner a line may go to NOW — never a used end —
-        // each in turn, not all at once (the vertex brief)
         if (st.vstate && /\b(another|different|other)\s+vert/.test(line)) {
           return warmPulse(st.vstate.map(function (vs, q) { return /-available$/.test(vs) ? knobOf(q) : null; }), { gap: 240 });
         }
@@ -6197,8 +3997,6 @@
         return warmPulse(mine);
       }
       case 'side':
-        // THE PAIR: the sides of the card in focus, drawn over one after another as he says
-        // it (the user, screen 29: the line follows the VO — sides on "sides")
         if (kind === 'compare') { var fs = st.compareFocus ? st.compare[st.compareFocus] : null; return fs ? traceSides(fs.verts) : 0; }
         if (st.segLine) return trace([st.segLine]);
         if (st.sideDotEls && st.sideDotEls.filter(Boolean).length) return warmPulse(st.sideDotEls, { peak: '1.6' });
@@ -6213,13 +4011,10 @@
           cards.forEach(function (k) { var pg = st.compare[k].pg; if (pg) dl = dl.concat([].slice.call(pg.querySelectorAll('line'))); });
           return dl.length ? trace(dl) : 0;
         }
-        // only the diagonals that are showing: the dent screen hides the ones
-        // that stayed inside, and a word must not flash them back
         var shown = st.diagG ? [].slice.call(st.diagG.childNodes).filter(function (g) { return g.style.display !== 'none'; }) : [];
         return shown.length ? trace(shown) : 0;
       }
       case 'angle': {
-        // THE PAIR: an arc in each corner of the card in focus, one after another, on "angles"
         if (kind === 'compare') { var fa = st.compareFocus ? st.compare[st.compareFocus] : null; return fa ? traceAngles(fa.verts) : 0; }
         var wedges = st.measG ? [].slice.call(st.measG.querySelectorAll('[data-angle]')) : [];
         return wedges.length ? warmPulse(wedges, { peak: '1.15' }) : warmPulse(relevantKnobs());
@@ -6234,8 +4029,6 @@
         }
         return regionGlow(outlineOf());
       case 'outside':
-        // the diagonal that leaves the card in focus, once it is drawn (the
-        // sequence draws it on this very word, and lights it itself)
         if (kind === 'compare') { var f2 = st.compareFocus ? st.compare[st.compareFocus] : null; return f2 ? liftLines(drawnLines(f2, true), true) : 0; }
         return regionGlow(outlineOf(), true);
       case 'equal': {
@@ -6284,14 +4077,6 @@
   var pressed = false;
   function dragging() { return pressed; }
 
-  /**
-   * Re-draw the geometry of `els` in `color`, over the top, then fade it.
-   *
-   * A copy rather than a recolour, because the lesson's own strokes carry
-   * meaning — a diagonal is red precisely when it has fallen outside the
-   * shape, and a label cue must not overwrite that for a second and a half.
-   * Every layer shares the svg's user space, so a clone needs no transform.
-   */
   function trace(els, color) {
     var lines = [];
     els.forEach(function (e) {
@@ -6303,21 +4088,9 @@
     if (!lines.length) return 0;
     var drawn = 0;
     lines.slice(0, 24).forEach(function (src, i) {
-      /* A LINE STILL DRAWING ITSELF IN IS NOT TRACED. On the screens where
-         the diagonals arrive while he talks about them, the clone froze the
-         line at whatever length the word caught it — a fat frost band
-         stopping in the middle of the shape (the user: "a light glow look
-         croped") — and a line not yet begun gave no band at all. The ones
-         already drawn carry the emphasis; the ones still arriving are
-         already the brightest thing on the card. */
       if (src.__drawing) return;
       var copy;
       try { copy = src.cloneNode(false); } catch (e) { return; }
-      // renderPoly() sets the dash pattern as an inline *style* while a
-      // diagonal draws itself in, and style beats attribute — leaving the
-      // clone dashed, with the white original showing through the gaps, so
-      // the cue arrived as a washed-out beige instead of the term's colour.
-      // The trace wants to be one solid stroke, so drop the style outright.
       copy.removeAttribute('style');
       copy.setAttribute('class', 'dc-trace');
       // frost over the blue, whatever the word's ink (see halo())
@@ -6328,8 +4101,6 @@
       copy.setAttribute('fill', 'none');
       copy.removeAttribute('stroke-dasharray');
       copy.setAttribute('opacity', 0);
-      // never under a finger: a nine-pixel stroke over the shape swallowed
-      // taps aimed at what it was emphasizing
       copy.setAttribute('pointer-events', 'none');
       layers.fx.appendChild(copy);
       drawn++;
@@ -6351,55 +4122,24 @@
     var t = targets(ref); return t[0] || st.polyG || svg;
   }
 
-  /* ------------------------------------------------------------------ *
-   * Interactions
-   * ------------------------------------------------------------------ */
-
   function nearestVertex(p, exclude, within) {
     var best = -1, bd = Infinity;
     st.verts.forEach(function (v, i) { if (i === exclude) return; var d = Math.hypot(v.x - p.x, v.y - p.y); if (d < bd) { bd = d; best = i; } });
-    // 76, not 60: a seven-year-old's finger covers the corner it is aiming
-    // at, and the difference between "nearly there" and "nothing happened"
-    // was sixteen pixels on a shape whose corners are a hundred apart.
-    // (`within`: a drawn line asks for less — the corner itself — because a line let go near a
-    // corner but not on it must not lock there; drawDiagonals)
     return bd < (within || 76) ? best : -1;
   }
 
-  /**
-   * THE LINE LANDED ON NOTHING — say so, and show where it may go.
-   *
-   * Letting go in the middle of the shape used to do nothing at all: the
-   * ghost vanished, the line went home and the child was told neither that
-   * they had missed nor what they were aiming at. Silence is the one answer
-   * a lesson may never give. The corners that would have taken the line
-   * breathe for a moment, and he says where it goes.
-   */
   function missedCorner(targets, said, busy) {
-    // the corners it may go to light up for a moment — lit and still, not breathing: one pulse
-    // on the screen at a time (the user), the corner the line starts from; and the card does
-    // not shake — it stays exactly where it is (`busy`: a new drag already under way keeps them)
     showTargets(targets || [], true);
     later(1400, function () { if (!(busy && busy())) showTargets([], false); });
     onTap('wrong', said || { t: 'Drop it on a corner!', vo: 'fb15' });
   }
 
-  /**
-   * Drag one or more vertices. Pointerdown is delegated to the polygon group
-   * and matched by data-i, so it survives any re-render; move/up listen on
-   * the SVG so they keep firing wherever the pointer goes.
-   */
   function dragVertices(idxs, moveFn, upFn, ctx) {
     var active = -1, pid = null, last = null, grab = { x: 0, y: 0 };
     idxs.forEach(function (i) {
       var h = st.vertEls[i]; if (h) { h.style.cursor = 'grab'; h.style.pointerEvents = 'all'; }
       var k = knobOf(i); if (k) k.setAttribute('opacity', 1);
     });
-    /* ONE FINGER HOLDS ONE CORNER. The drag is the pointer that took the corner, and only it:
-       a second finger on the glass moved the corner too, and a release the stage never heard
-       (the capture lost, a mouse let go over something else) left the corner following the
-       pointer with no button down. The move is also heard from the window, so a corner held
-       past the stage's edge still follows (clampToCard keeps it on the card). */
     var win = svg.ownerDocument.defaultView || global;
     function down(e) {
       var t = e.target; if (!t || !t.classList || !t.classList.contains('vertex')) return;
@@ -6407,11 +4147,6 @@
       if (global.Input && Input.guarded) return;
       if (active >= 0 || (e.button != null && e.button > 0)) return;
       active = i; pid = e.pointerId; last = pt(e);
-      /* TAKEN WHERE IT IS (the drag-inward fix: "re-grabbing the vertex causes no jump"). The
-         finger lands anywhere on the corner's wide disc, not on its centre, and the corner was
-         moved to the finger itself on the first move — a jump of up to the disc's radius, which
-         on a corner already moved in read as the shape resetting. The offset from the finger to
-         the corner is kept for the whole drag, so the corner moves only as far as the finger. */
       var cv = st.verts && st.verts[i];
       grab = cv ? { x: cv.x - last.x, y: cv.y - last.y } : { x: 0, y: 0 };
       try { svg.setPointerCapture && svg.setPointerCapture(e.pointerId); } catch (x) {}
@@ -6426,8 +4161,6 @@
     function up(e) {
       if (!mine(e)) return;
       var i = active; active = -1; pid = null;
-      // (a cancelled touch has no real point: the corner's last one is where it was let go; and
-      // it is not a release the child made — `cancelled`, for the drags that must not judge it)
       var cancelled = !!e && (e.type === 'pointercancel' || e.type === 'lostpointercapture');
       upFn(e && e.type === 'pointerup' ? pt(e) : last, i, { cancelled: cancelled });
     }
@@ -6436,23 +4169,6 @@
     if (ctx && ctx.onCancel) ctx.onCancel(endInteraction);
   }
 
-  /**
-   * HOW DEEP THE DENT IS — as a fraction of the shape's own radius.
-   *
-   * The distance of vertex i inside the line between its two neighbours,
-   * positive once it has crossed toward the middle. A polygon becomes
-   * concave the instant its vertex crosses that line, and at that instant
-   * it still looks convex with a knob sitting on a flat edge — which is
-   * what a live "Concave" badge over an apparently flat top was reporting.
-   * So the concave activities ask for a depth, not a crossing.
-   *
-   * Measured against the mean radius, NOT against the neighbours' chord.
-   * Against the chord the same-looking notch scores differently on every
-   * shape — a pentagon's vertex sits 0.69 radii inside its neighbours'
-   * chord and a hexagon's only 0.5 — so one threshold was unreachable on
-   * the pentagon and far too easy on the hexagon. A fraction of the radius
-   * is a depth in pixels on the screen, which is the thing being judged.
-   */
   function dentDepth(v, i) {
     var n = v.length, a = v[(i + n - 1) % n], b = v[(i + 1) % n], p = v[i];
     var dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
@@ -6464,24 +4180,10 @@
     R = (R / n) || 1;
     return d * side / R;
   }
-  // HOW DEEP BEFORE IT COUNTS. Fifteen percent of the shape's radius — on a
-  // card-sized polygon a notch of about twenty-five pixels, which nobody
-  // can mistake for a straight edge. The answer and the live badge both
-  // wait for it, so the word and the picture always agree.
-  /* DEEPER, AND CLEARLY REFLEX (the user, screen 14: "the student can stop too early after
-     creating a quadrilateral-like shape"): at fifteen percent the corner had only just crossed
-     the line between its neighbours (the pentagon with a flat top), and the diagonal across the
-     dent barely left it. Eighteen percent of the mean radius, AND an inward corner of at least
-     198° (dentAngleOk) — on the pentagon that is the corner pulled some five sixths of the way
-     to the middle, a notch nobody can miss, and still well short of the middle itself (the
-     line between the neighbours is at seven tenths, and the middle gives only 0.28). */
   var DENT_MIN = 0.18, DENT_REFLEX = 198, STRAIGHT_BAND = 12;
   function dentAngleOk(v, i) { var A = Poly.interiorAngles(v); return A[i] >= DENT_REFLEX; }
   function isDented(v, i) { return Poly.classify(v).concave && dentDepth(v, i) >= DENT_MIN && dentAngleOk(v, i); }
-  var DENT_SNAP = 0.22, CONVEX_KEEP = 0.2;    // the smallest dent the drag lands on; how far outside the line a corner stays (a corner of ~156°, never a flat one)
-  /* The dent drag's one degree of freedom: how far in along the line from the corner's rest
-     to the middle (`start` → centroid), from not at all to well past the middle (a four-sided
-     shape's dent lies beyond it). The pointer is projected onto that line. */
+  var DENT_SNAP = 0.22, CONVEX_KEEP = 0.2;
   var DENT_REACH = 1.6;
   function inwardOnly(i, p, start) {
     if (!start) return p;
@@ -6505,7 +4207,6 @@
     if (want == null) return p;
     return { x: p.x + nx * (want - d) * R, y: p.y + ny * (want - d) * R };
   }
-  /* A corner sprung back to `to` over a third of a second, the shape following (screens 14/21). */
   function springBack(i, to) {
     if (!st.verts || !st.verts[i]) return;
     var from = { x: st.verts[i].x, y: st.verts[i].y }, t0 = null;
@@ -6520,20 +4221,9 @@
     global.requestAnimationFrame(step);
   }
 
-
   var INTERACT = {
 
-    /**
-     * The end of a screen: the lesson goes on from here.
-     *
-     * Named for the gesture it used to be. It was the Next button's gate; now
-     * game.js autoAdvance calls Input.advance() once everything on the screen
-     * has been said and seen, and only that resolves it.
-     */
     'tap-anywhere': function (spec, ctx) {
-      // (Nothing on the stage is pressed here any more: the lesson goes on by itself —
-      // game.js autoAdvance — so the stage keeps its ordinary cursor. It was a hand over the
-      // whole stage while this was the Next button's gate.)
       return new Promise(function (resolve) {
         if (!global.Input) { on(svg, 'pointerdown', function () { resolve({ result: 'tap' }); }); return; }
         Input.mode('dialogue');
@@ -6547,16 +4237,8 @@
     'vertex-pick': function (spec, ctx) {
       return new Promise(function (resolve) {
         if (global.Input) Input.mode('polygon');
-        /* THE POINTS ARE THERE BEFORE THE INSTRUCTION, AND ANSWER ITS WORD (the user: "the dots
-           appear before 'Select any vertex'", "on 'vertex', pulse the dots"). The screen puts
-           them up ahead of the line; "vertex" swells them one after another; and this input,
-           armed once the line has been said, makes them touchable. None of them breathes on
-           its own after that — every one is a right answer. If the child waits, the hand taps
-           one: the lowest on the right, where the glove lies outside the shape. */
         var v0 = st.verts || [], sug = 0;
         v0.forEach(function (p, j) { if (p.x + p.y > v0[sug].x + v0[sug].y) sug = j; });
-        // (usually already up — the screen puts them there before its line, stage `dots` — and
-        // pulsed on the line's word "vertex"; if not, they come up now)
         var were = !!st.showVerts;
         st.showVerts = true; st.touchVerts = true; st.breathe = false; st.breatheAt = null; renderPoly();
         if (!were && !reduced()) (st.knobEls || []).forEach(function (k) {
@@ -6564,13 +4246,9 @@
         });
         st.vstate = null;
         setConnect('IDLE_VERTEX');
-        // ON THE FIRST IDLE HINT, not the last: tapping is the move, and a child who has not
-        // tapped yet is shown it — on the corner that is breathing, and that one only
         var pickHand = function (strong) {
           return both(pulseHint([knobOf(sug)].filter(Boolean), strong ? { strong: true } : null), tapHand(v0[sug]));
         };
-        // (and the ghost hand shows the tap after a second and a half of
-        // stillness, not two and a half: it is the first thing asked of them)
         hintLadder({
           pulse: function () { return pickHand(false); },
           demo: function () { return pickHand(true); }
@@ -6597,39 +4275,19 @@
     'drag-vertex': function (spec, ctx) {
       return new Promise(function (resolve) {
         if (global.Input) Input.mode('polygon');
-        // Every vertex may be taken: dress them all as handles, now that
-        // they are. A single named vertex keeps its own highlight instead.
-        // (any corner may be taken, and ONE breathes as the suggestion — the top one — so there is
-        // one pulsing dot, never five: the user, screen 21)
         var sug = spec.suggest == null ? 0 : spec.suggest;
         if (spec.vertex === 'any') { st.showVerts = true; st.touchVerts = true; st.breatheAt = {}; st.breatheAt[sug] = true; cleanup.push(function () { st.breatheAt = null; }); }
         renderPoly();
         var idxs = spec.vertex === 'any' ? st.verts.map(function (_, i) { return i; }) : [spec.vertex];
         var start = null, done = false, held = -1, grabAt = null;
-        // (a dent drag with no counted tries — drag-inward — keeps every release: see the release)
         var keep = spec.until === 'concave' && !spec.attempts;
-        /* SMALL DRAGS ADD UP THROUGH THE HELD BAND (the drag-inward fix). Near the line between
-           its neighbours the corner is held a clear corner (offTheLine) until the finger has
-           crossed that line — so a drag that ended in the band left the corner held, and the next
-           small drag began from the held corner again: the finger's way in was lost every time,
-           and small drags could never reach the dent. `ahead` is where the finger had taken the
-           corner (before the hold); the next drag carries on from there. The corner itself never
-           jumps on a grab — it is held exactly where it was until the finger crosses the line. */
         var ahead = {}, lead = { x: 0, y: 0 };
         var liveDiags = spec.live === 'diagonals' || spec.live === 'both', liveBadge = spec.live === 'badge' || spec.live === 'both';
         if (liveDiags) st.highlightOutside = true;
-        // the gesture: from the vertex, inward toward the middle to make a
-        // dent, or out along its own line to stretch the shape
         var ghostOf = function () {
           if (done) return null;
           var gi = idxs[0], gv = st.verts[gi], gc = Poly.centroid(st.verts);
           var glen = Math.hypot(gc.x - gv.x, gc.y - gv.y) || 1;
-          // THE GHOST SHOWS THE WHOLE MOVE. A fixed 78px hop was shorter than
-          // the drag the screen accepts — it taught a gesture that fails —
-          // so the dent ghost goes most of the way to the middle, which is
-          // what making a notch actually takes.
-          // (on a four-sided shape the line between a corner's neighbours runs through the
-          // middle, so the dent is PAST the middle: the ghost goes there)
           var gt = st.verts.length === 4 ? 1.3 : 0.9;
           var to = spec.until === 'concave'
             ? { x: gv.x + (gc.x - gv.x) * gt, y: gv.y + (gc.y - gv.y) * gt }
@@ -6647,11 +4305,6 @@
                : spec.until === 'irregular' ? (!Poly.isRegular(st.verts) && !!start && Math.hypot(np.x - start.x, np.y - start.y) >= (spec.minMove || 0))
                : false;
         };
-        // a single named vertex wears its knob from the start; when any may
-        // be taken they all show as handles and the one in hand lights on touch
-        // THE ONE TO DRAG BREATHES ("Drag the highlighted vertex." — the user:
-        // "I want to pulse the dot"): a swell and a glow until it is taken,
-        // again if it is let go short of the answer, and not once it is done
         if (spec.vertex !== 'any') {
           idxs.forEach(function (i) { st.vcolor = st.vcolor || {}; if (!st.vcolor[i]) st.vcolor[i] = HI.picked; });
           st.breatheAt = {}; idxs.forEach(function (i) { st.breatheAt[i] = true; });
@@ -6666,8 +4319,6 @@
         dragVertices(idxs, function (p, i) {
             if (done) return;
             if (held !== i) {
-              // TAKEN. Where this drag began, for the verdict on release, and
-              // the point in hand lit, so the child sees which one they hold.
               held = i; grabAt = { x: st.verts[i].x, y: st.verts[i].y };
               if (!start) start = grabAt;
               breathe(i, false);
@@ -6677,24 +4328,7 @@
               lead = keep && ahead[i] ? { x: ahead[i].x - st.verts[i].x, y: ahead[i].y - st.verts[i].y } : { x: 0, y: 0 };
             }
             if (lead.x || lead.y) p = { x: p.x + lead.x, y: p.y + lead.y };
-            /* AND IT STAYS ON THE CARD.
-             *
-             * clampSimple only stops the outline crossing itself; nothing
-             * stopped the corner leaving the ice altogether, so a child could
-             * drag a vertex out onto the snow and the shape they were being
-             * taught about was half off the thing it was drawn on. The glass
-             * is the boundary, with room left for the knob and its ring. */
-            /* THE DENT IS A SLIDE INWARD (the user: "the child can still stretch the point
-               outside and make a quadrilateral, then it bounces back — I want a condition so
-               they cannot"): on a dent drag the corner moves only along the line from where it
-               was toward the middle of the shape — never outward, never sideways onto a side's
-               line — so the shape cannot be stretched or flattened on the way, and the purple
-               diagonal appears only for a real dent (offTheLine, below). */
             var np = Poly.clampSimple(st.verts, i, spec.until === 'concave' ? inwardOnly(i, clampToCard(p), start) : clampToCard(p));
-            /* NEVER A STRAIGHT CORNER (the user, screen 27: "the student should not be able to
-               create a 180° angle"): stretching a corner, a step that would flatten it — or a
-               neighbour — to within STRAIGHT_BAND of 180° is not taken; the corner stays where
-               it was. (The dent drags must pass through 180° to go inward, so not there.) */
             if (spec.until === 'irregular') {
               var was = st.verts[i]; st.verts[i] = np;
               var An = Poly.interiorAngles(st.verts), nn = st.verts.length;
@@ -6702,48 +4336,25 @@
               st.verts[i] = was;
               if (flat) np = was;
             }
-            /* NEVER A FLAT CORNER (the user, the dent drags: "the user can drag to make a
-               quadrilateral, and the purple line shows outside"). A corner near the line between
-               its neighbours — a hair outside it, or inside it but short of a real dent — makes
-               the shape look like it has lost a corner, and lights a diagonal that has barely
-               left it. So that band is skipped: on the way in the corner stays a clear corner
-               until the finger has crossed the line, and then it goes straight to the smallest
-               real dent (DENT_SNAP); the shape is always either convex or plainly concave. */
             if (spec.until === 'concave') { if (keep) ahead[i] = { x: np.x, y: np.y }; np = offTheLine(i, np); }
             st.verts[i] = np;
             updatePoly();
             if (liveBadge && st.liveBadge) {
-              // the readout flips when the dent is one a child can SEE — the
-              // same depth the answer is judged by. A shape concave by a hair
-              // that still reads convex must not be called concave.
               var cc = isDented(st.verts, i);
               st.liveBadge._text.textContent = inLang(cc ? 'Concave' : 'Convex');
               if (st.liveBadge._retint) st.liveBadge._retint(cc ? 'concave' : 'convex');
             }
           }, function (p, i, how) {
-            // JUDGED ON RELEASE. The vertex stays where the finger let go.
-            // If the shape has become what was asked, that is the answer;
-            // if not, he says so, the knob shakes, and the child tries again
-            // from where they left it. A touch that hardly moved is not a
-            // try and gets no verdict.
             if (done) return;
             var from = grabAt || st.verts[i]; held = -1; grabAt = null;
             evt('vertex:dragged', { vertex: i });
             if (!judge(i)) breathe(i, true);
-            /* A POINTER THE SYSTEM CANCELLED IS NOT A RELEASE (the drag-inward fix: "pointer
-               cancellation must not erase accepted progress or trigger success"): on a drag that
-               keeps its progress the corner stays exactly where it was, and nothing is judged —
-               the next real release is. */
             if (keep && how && how.cancelled) { breathe(i, true); st.lastEl = knobOf(i) || st.polyG; return; }
             if (judge(i)) {
               done = true; st.lastEl = st.polyG; endInteraction();
               // the vertex they moved keeps its knob: the dent IS a vertex
               st.vcolor = {}; st.vcolor[i] = HI.picked;
-              // the dent is made: the diagonals that stayed inside step back,
-              // and the one that went outside is the whole picture
               if (liveDiags) st.onlyOutside = true;
-              // KEPT: the shape the child made, so a later card that shows
-              // "a concave pentagon" or "an irregular pentagon" can show theirs
               if (spec.until) rememberMade(spec.until, st.verts, i);
               renderPoly(); resolve({ result: 'correct', vertex: i });
               return;
@@ -6751,24 +4362,9 @@
             var moved = Math.hypot(st.verts[i].x - from.x, st.verts[i].y - from.y);
             if (moved < 6) return;
             st.lastEl = knobOf(i) || st.polyG;
-            /* NOT CONCAVE YET IS PROGRESS, NOT A MISS (the drag-inward fix: "a tiny valid inward
-               drag remains in place after release; several small drags accumulate toward
-               completion"). On the one dent drag that counts no tries — "Help me pull this vertex
-               inside." — the corner stays where it was let go (clampSimple has already kept it a
-               valid, five-sided shape) and the next drag starts from there: no spring back. He
-               still says how much further to go (the user: "why u not add pull it more
-               feedback?") — "Pull it in more!", soft: no miss sound, no red, no shake. The two-try
-               screens (make-concave, `attempts`) keep their own teaching, below. */
             if (keep) { onTap('wrong', { t: 'Pull it in more!', vo: 'fb11' }, { soft: true }); return; }
-            /* NOT FAR ENOUGH: THE CORNER GOES BACK (the user, screen 14: a corner left on the line
-               between its neighbours made the pentagon look like a quadrilateral — wrong for the
-               lesson). It springs back to where it started, so the shape is a pentagon again,
-               and he says how much further to pull — no miss sound, no red. */
             if (spec.until === 'concave' && from) springBack(i, from);
             else juice('wobble', knobOf(i) || st.polyG);
-            /* A TRY THAT COUNTS (spec.attempts — screen 21's two-attempt teach): a release short of
-               the answer ends this input as a miss, and the screen's beats answer it (the
-               diagonals shown, the rule; then, the second time, the dent made for them). */
             if (spec.attempts) { done = true; endInteraction(); resolve({ result: 'wrong', vertex: i }); return; }
             onTap('wrong', spec.until === 'concave' ? { t: 'Pull it in more!', vo: 'fb11' }
                          : spec.until === 'irregular' ? { t: 'Try again! Stretch the corner a little further.', vo: 'fb40' } : null,
@@ -6780,21 +4376,10 @@
     choice: function (spec, ctx) {
       return new Promise(function (resolve) {
         if (global.Input) Input.mode('polygon');
-        // Both answers breathe when the child has been still a while — never
-        // the right one alone, which would be the answer given away.
-        // (no idle pulse: two answers swelling together said nothing but "look at me" — the
-        // buttons read as buttons; the animation review)
         (st.choiceEls || []).forEach(function (b) {
-          // THE HAND COMES BACK FOR A RETRY. endInteraction() strips every
-          // cursor when an answer lands; the retry input arms the same
-          // buttons again, and they must look live again — a child reads a
-          // button with no hand and no change as a button that is finished.
           b.style.cursor = 'pointer';
           on(b, 'pointerdown', function (e) {
             e.preventDefault(); st.lastEl = b;
-            /* `continue`: THE ANSWER IS ALREADY SHOWN (the inside / outside question's merged
-               "Inside" after its second miss). The tap goes on — it is not another attempt, so no
-               verdict, no flash, no praise: result 'tap'. */
             if (spec['continue']) {
               if (b.getAttribute('data-label') !== spec.correct) return;
               sfx('select', { gain: 0.5 });
@@ -6804,13 +4389,8 @@
             var ok = b.getAttribute('data-label') === spec.correct;
             evt('answer:selected', { label: b.getAttribute('data-label'), correct: ok });
             if (ok && global.Juice && Juice.sparkle && !reduced()) { try { Juice.sparkle(b); } catch (x) {} }
-            // _retint, not firstChild: a pill draws its LIP first, so setting
-            // a fill on the first child recoloured the three-pixel shadow
-            // under the button and left the face it sits on untouched.
             if (ok && b._retint) b._retint('uiSuccess');
             if (!ok && b._retint) {
-              // the wrong one flushes red for a moment and comes back, so
-              // the child sees which they pressed and that it is still there
               b._retint('uiDanger');
               later(650, function () { if (b._retint) b._retint('uiPrimary'); });
             }
@@ -6821,24 +4401,6 @@
       });
     },
 
-    /**
-     * Swipe a shape left for Regular or right for Irregular.
-     *
-     * ONE SUBMISSION PATH. The swipe, a tap on a zone and the arrow keys all
-     * end in classify(), so there is exactly one place where an answer is
-     * judged, one place that locks input and one place that advances the
-     * round. Three parallel copies of that logic is how a fast double-swipe
-     * ends up skipping a question or finishing the practice twice.
-     *
-     * JUDGED FROM THE SHAPE, NOT FROM A TABLE. Poly.isRegular runs on the
-     * card's own vertices, so the answer cannot drift from the drawing —
-     * redraw a shape and the answer follows it. Colour means nothing here.
-     *
-     * A WRONG ANSWER KEEPS THE SAME CARD. It nudges toward the side that was
-     * chosen, the zone says "not quite", and the card springs back. Nothing
-     * is removed, nothing is revealed, and the child tries again — which is
-     * the only way a classification practice teaches rather than tests.
-     */
     swipe: function (spec, ctx) {
       return new Promise(function (resolve) {
         if (global.Input) Input.mode('polygon');
@@ -6849,8 +4411,6 @@
         var THRESHOLD = W_CARD * 0.2;
         var resolving = false, dragging = false, demo = null;
         var startX = 0, startY = 0, dx = 0, pid = null;
-        // HELD WHILE HE IS UP (Stage.hold): the card cannot be taken hold of,
-        // and a zone or an arrow key does nothing, until he is back down
         function held() { return holdOn; }
 
         function place(card, x, rot, scale) {
@@ -6859,9 +4419,6 @@
             (scale ? ' scale(' + scale + ')' : ''));
         }
 
-        /* A card's journey, stepped on its own transform attribute (so it
-           turns and scales about its own middle), eased out, with an optional
-           lift at the middle of the path. Reduced motion lands it at once. */
         function flyCard(card, a, b, ms, lift, then) {
           var set = function (p) {
             card.setAttribute('transform', 'translate(' + p.x.toFixed(2) + ',' + p.y.toFixed(2) + ') rotate(' + p.rot.toFixed(2) + ')' + (Math.abs(p.s - 1) > 1e-3 ? ' scale(' + p.s.toFixed(4) + ')' : ''));
@@ -6881,8 +4438,6 @@
         }
 
         function sideOf(x) { return x < -THRESHOLD ? 'regular' : x > THRESHOLD ? 'irregular' : null; }
-        // the tilt the card is drawn at for a given pull, the same in the
-        // drag and in the flight that follows it
         function tiltOf(x) { return Math.max(-1, Math.min(1, x / (THRESHOLD * 2.2))) * 6; }
 
         /* the pile lights as a card LANDS in it (never before it has left) */
@@ -6905,9 +4460,6 @@
           var card = sw.card;
           var right = Poly.isRegular(card._verts) ? 'regular' : 'irregular';
           var ok = answer === right;
-          // (`correct` travels with the event: game.js holds the input for a wrong answer, which
-          // his reply then releases — a right card is answered by the card itself and must not
-          // leave the next one locked for the failsafe's three seconds)
           evt('answer:selected', { item: card._name, zone: answer, correct: ok });
           resolving = true;
           st.lastEl = card;
@@ -6918,54 +4470,17 @@
             Object.keys(sw.zones).forEach(function (k) { if (sw.zones[k].classList) sw.zones[k].classList.remove('hint'); });
             juice('pop', card);
             leanZone(null, false);
-            /* RIGHT — THEN AWAY. The card glows green where the child let go of it and, a beat
-               later, flies into its pile, its readings fading on the way; the zone lights up as
-               it LANDS rather than before it has left. */
             if (card._cardEl && card._cardEl._mark) card._cardEl._mark('correct');
             var landIn = function () { zoneLit(zone); };
-            // THE SHAPE IS COLLECTED, NOT DISCARDED.
-            //
-            // It used to shrink and fade out, which is tidy and tells the
-            // child nothing: five rounds went by and the two zones stayed as
-            // empty as they started. The card travels into the zone it earned
-            // and STAYS there, small, in a row — so the piles fill up as the
-            // practice goes on and the progress is the thing on the screen
-            // rather than a number somewhere else.
-            //
-            // It keeps its own drawing, so what is sitting in the Regular pile
-            // is visibly the pentagon that was just judged.
-            // THE CARD IS PLACED ON THE ZONE. It flies from where the child
-            // let go, in a low arc, to the very seat on the shelf it will
-            // keep — shrinking to the pile's size on the way and straightening
-            // as it lands — and is swapped for the kept drawing there, at the
-            // same size, so nothing vanishes and nothing appears. It used to
-            // be flung out past the zone, shrink to nothing and fade while a
-            // copy popped up on the shelf: two events where the child made one.
-            /* ONE FLIGHT, FROM THE HAND TO THE SEAT. It was a CSS animation of
-               translate, rotate and scale on an SVG group — and an SVG group
-               turns and shrinks about the corner of the stage, not about
-               itself, so the card jumped as it set off; and it shrank to
-               seat/96 of its size when the card is 152 across, so it landed
-               half again too big and then snapped down. It is stepped on the
-               card's own transform now, which turns and scales it about its
-               own middle: from exactly where the child let go, along a low
-               arc, straight into the seat on the shelf it keeps, at exactly
-               the size of the card that is left there. Nothing bounces. */
-            // (a short beat — the green seen — then away: the second-long hold that let the old
-            // verdict tag be read left the card looking stuck — the user)
             later(reduced() ? 0 : 200, function () { collect(card, zone, dx, tiltOf(dx), landIn); });
           } else {
             sfx('wrong');
             juice('refuse', card);
             card._misses = (card._misses || 0) + 1;
-            // WRONG, AND WHAT TO LOOK AT: a red glow for as long as it can be seen, and the tag
-            // under the card saying which of the two does not hold
             if (card._cardEl && card._cardEl._mark) {
               card._cardEl._mark('wrong');
               later(1100, function () { if (card._cardEl) card._cardEl._mark(null); });
             }
-            // the marks go on the card and he names what they show (on the second miss the
-            // card is not brought forward here: the teaching sheet lifts it, once it is home)
             var why = card._misses >= 2 ? verdictOf(card._verts) : whyShape(card);
             var z = sw.zones[answer];
             if (z && !reduced() && z.animate) {
@@ -6975,16 +4490,11 @@
             var pulledBack = dx, tiltBack = tiltOf(dx);
             if (card._misses < 2) {
               onTap('wrong',
-                // (never the answer itself on a first miss: "regular" is the child's to say)
-                // "Try again!" and the one thing the card's measurements show (asked for: only
-                // "Try again", never "Look —")
                 why === 'regular' ? { t: 'Try again! Every side and every angle is equal.', vo: 'fb35' } :
                 why === 'sides'   ? { t: 'Try again! The sides are not all equal.', vo: 'fb36' } :
                 why === 'angles'  ? { t: 'Try again! The angles are not all equal.', vo: 'fb37' } :
                 why === 'both'    ? { t: 'Try again! The sides and the angles are not all equal.', vo: 'fb38' } : null,
                 { tries: 1, marked: true });
-              // NOT A SWING AND A SPRING: it glides back to the middle, where the
-              // marks on it say why (whyShape), and waits for another try
               var reset2 = function () {
                 dx = 0; place(card, 0, 0);
                 leanZone(null, false);
@@ -6994,13 +4504,6 @@
               flyCard(card, { x: SWIPE_HOME.x + pulledBack, y: SWIPE_HOME.y, rot: tiltBack, s: 1 }, { x: SWIPE_HOME.x, y: SWIPE_HOME.y, rot: 0, s: 1 }, 260, 0, reset2);
               return;
             }
-            /* THE SAME CARD WRONG TWICE: NO THIRD TRY (the user's swipe brief). The card stays
-               locked in the middle while he says, in one line, which pile it belongs in and
-               why — naming the answer this time, since the child has had two goes at it —
-               with the marks that show the reason lit on the card as he speaks (the sides'
-               lengths, the corners' arcs, or both); then, once he is down again, it glides
-               into the pile it belongs in, is kept there like any other, and the next card
-               is dealt. Nothing more is said: the pile filling is the point. */
             var rightZone = sw.zones[right];
             var putAway = function () {
               if (!st.swipe || sw.card !== card) return;
@@ -7019,26 +4522,14 @@
               leanZone(null, false);
               // (still resolving: the card is locked)
               evt('swipe:home', { i: sw.i, back: true, locked: true });
-              /* THE TEACHING SPOTLIGHT (the user's brief): the play blurs and dims under the
-                 sheet, this card — the one they answered — comes a little forward, and he
-                 stands beside it and says which pile it belongs in and why (the screen's
-                 `teach` lines, screens.js), the sides and the corners lit on the card as he
-                 names them (Stage.teach 'sides' / 'angles'); then the sheet lifts and the card
-                 glides into its own pile (`after`, once he is down again). */
               onTap('wrong', null, { tries: 2, marked: true, teach: { el: card, kind: why || 'both', fit: 'swipe' },
                                      after: function () { later(reduced() ? 0 : 320, explain); } });
-              // never stuck: with nobody to say it (reduced motion, a review jump) the card
-              // goes to its pile once the reason has been seen
               later(14000, explain);
             };
             flyCard(card, { x: SWIPE_HOME.x + pulledBack, y: SWIPE_HOME.y, rot: tiltBack, s: 1 }, { x: SWIPE_HOME.x, y: SWIPE_HOME.y, rot: 0, s: 1 }, 260, 0, settle);
           }
         }
 
-        /* THE CARD INTO ITS PILE, from where it is (`pulled` off the middle, at `tilt`), in a
-           low arc to the seat it keeps there, shrinking to the pile's size on the way — and
-           the next card, or the end. One flight for a right answer and for a card put away
-           after its second miss, so both land the same way. */
         function collect(card, zone, pulled, tilt, landed) {
           var seat = zone ? shelfSeats(zone, zone._kept.length + 1)[zone._kept.length] : null;
           var tx = seat ? seat.x : SWIPE_HOME.x, ty = seat ? seat.y : SWIPE_HOME.y;
@@ -7057,8 +4548,6 @@
               dealCard();
               arm();
               resolving = false;
-              // the next card is on the table: game.js brings him up behind
-              // it to ask about it, and down again before it can be taken
               later(420, function () { if (st.swipe && sw.card && !dragging) evt('swipe:home', { i: sw.i, dealt: true }); });
             });
           };
@@ -7069,9 +4558,6 @@
         /* ---- the demonstration: the hint ladder's top rung ---- */
         function runDemo() {
           if (reduced() || !sw.card || !sw.card.animate) return null;
-          // A GHOST SHOWS THE MOVE. The card itself stays where the child will
-          // take hold of it; a translucent copy slides out along the left arc
-          // and fades, then along the right, until they do.
           stopDemo();
           var ghost = sw.card.cloneNode(true);
           ghost.setAttribute('class', 'swipe-ghost');
@@ -7131,8 +4617,6 @@
           var m = svg.getScreenCTM();
           var scale = m ? m.a : 1;
           dx = (e.clientX - startX) / (scale || 1);
-          // the card is on rails: this is a left-or-right question, not a
-          // free drag, so vertical travel is ignored entirely
           var t = Math.max(-1, Math.min(1, dx / (THRESHOLD * 2.2)));
           place(sw.card, dx, t * 6);
           leanZone(sideOf(dx), !!sideOf(dx));
@@ -7177,13 +4661,6 @@
           on(sw.card, 'lostpointercapture', onCancel);
         }
         hintLadder({
-          /* THE DESTINATIONS BREATHE, NOT THE CARD. He is peeking from behind
-             the card, hidden by a copy of its rim laid over him; pulsing the
-             card scaled it out from under that copy (off-centre, eighteen
-             pixels at 1900 wide), and the copy became a flat band of ice
-             across his face. The card holds still while he is behind it; the
-             two zones it can go to pulse instead — "put it there", which is
-             the hint anyway. */
           pulse: function () {
             var zs = Object.keys(sw.zones || {}).map(function (k) { return sw.zones[k]; }).filter(Boolean);
             return zs.length ? pulseHint(zs) : null;
@@ -7191,8 +4668,6 @@
           demo: runDemo
         });
 
-        // Tapping a zone does the same thing as swiping to it — the swipe is
-        // the experience, but it must never be the only way in.
         Object.keys(sw.zones).forEach(function (id) {
           var g = sw.zones[id];
           g.style.cursor = 'pointer';
@@ -7213,20 +4688,12 @@
       return new Promise(function (resolve) {
         if (global.Input) Input.mode('polygon');
         var need = st.cards.filter(function (c) { return c._opt.correct; }).length, got = 0;
-        // NO PULSE ON THE CARDS (the user: "remove the continuous pulse animation from the
-        // answer cards … cards should remain stable until the user interacts with them"). The
-        // idle hint swelled every card in play every few seconds while the child was deciding;
-        // they stand still now, and answer a press — the glow, the pop, a burst or a buzz.
-        // every card answers its own press, even while he is still speaking (see the hold, mount)
         st.tapThrough = st.cards.slice();
         cleanup.push(function () { st.tapThrough = null; });
         st.cards.forEach(function (c) {
           c.style.cursor = 'pointer';
           on(c, 'pointerdown', function (e) {
             e.preventDefault(); if (c._done || c._off) return;
-            // ONE PRESS, ONE ANSWER: a double click on a wrong card is one miss, not two — and a
-            // card pressed again while he is still answering its miss (the QA checkpoints:
-            // "duplicate taps are ignored while feedback runs") is not a second miss either
             var at = Date.now(); if (c._pressedAt && at - c._pressedAt < 450) return; c._pressedAt = at;
             if (c._missAt && at - c._missAt < 2500) return;
             st.lastEl = c;
@@ -7234,20 +4701,10 @@
             if (c._opt.correct) {
               c._done = true; got++; c.style.cursor = '';
               if (c._card) c._card._mark('correct');
-              // (`last`: the one that completes the question — game.js cheers the level, not the card)
               onTap('correct', null, { last: got >= need, marked: true });
               if (got >= need) { endInteraction(); resolve({ result: 'correct' }); }
             } else {
-              /* EACH WRONG CARD KEEPS ITS OWN COUNT (the user's spec). The
-                 first miss on it is a short hint and it stays in play; the
-                 second on that SAME card is the stronger word, and the card
-                 is put out — dimmed, still readable, no longer touchable —
-                 for the rest of this question. The right cards and the other
-                 wrong one are never touched by it, and nothing is revealed.
-                 A new question builds new cards, so nothing carries over. */
               c._misses = (c._misses || 0) + 1; c._missAt = at;
-              // (spec.outAfter: on Level 1 the explanation comes with the FIRST miss — the user:
-              // "do not make the student fail twice" — so the card goes out after it)
               var out = c._misses >= (spec.outAfter || 2);
               if (c._card) c._card._mark('wrong');
               if (out) { c._off = true; c.style.cursor = ''; c.style.pointerEvents = 'none'; }
@@ -7257,7 +4714,6 @@
                 // (the entrance left an inline opacity on it; the class decides now)
                 if (out && c.classList) { c.style.opacity = ''; c.classList.add('card-off'); }
               });
-              // (with the card's own clue: a circle's curve, an open path's gap — screens.js `reason`)
               onTap('wrong', null, { card: c._opt.id, tries: c._misses, out: out, reason: c._opt.reason, marked: true });
             }
           });
@@ -7277,20 +4733,11 @@
           if (st.sideTodo || st.angleTodo) { st.sideTodo = null; st.angleTodo = false; if (st.polyG) renderPoly(); }
         });
         st.measure = st.measure || {}; st.measure[isSides ? 'sides' : 'angles'] = [];
-        // the corners take the tap (touchVerts) but show no dot: each angle
-        // still to measure is drawn in outline instead (st.angleTodo)
         st.showVerts = false; st.touchVerts = !isSides && !spec.auto; st.angleTodo = !isSides && !spec.auto;
         // every side starts on the to-do list, marked by a dot at its middle
         st.sideTodo = isSides ? st.verts.map(function (_, k) { return k; }) : null;
         renderPoly();
         var cls = isSides ? 'edge' : 'vertex';
-        // WHERE TO TAP. Every target still waiting carries a soft pulse — a
-        // glow along the side, a breath on the corner — and loses it the
-        // moment it has been measured, so the pulse is always the to-do list.
-        /* HE MEASURES THEM HIMSELF (spec.auto — the side-measuring screen since the Part 1
-           review). Nothing is offered to tap: no pulse, no hand, no pointer; after a breath every
-           side goes on the queue and the walk takes them one at a time, each dot going as its
-           side is begun, at the pace the walk has always had. */
         var auto = !!spec.auto, angleRig = null;
         var hint = function () {
           if (auto) return;
@@ -7307,18 +4754,10 @@
           return isSides ? (st.sideDotEls || []).filter(function (d, q) { return d && !seen[q]; })
                          : (st.measG ? [].slice.call(st.measG.querySelectorAll('.angle-todo')) : []);
         };
-        // every one of them is to be measured: the hand taps the next — from
-        // the first idle hint, because "tap the sides" is a move no screen
-        // before has asked for
         if (!auto) hintLadder({
           pulse: function () { var t = todo(); return both(pulseHint(t), tapHand(centreOf(t[0]))); },
           demo: function () { var t = todo(); return both(pulseHint(t, { strong: true }), tapHand(centreOf(t[0]))); }
         });
-        /* HE MEASURES THEM HIMSELF, IN ONE WALK (spec.auto — the user, screens 24 and 26): out to
-           the first corner, round the shape side after side — the tape laid along each, or, for
-           the angles, an arc filled at each corner he reaches — and home from the last. The
-           queue is the sides in the order the walk goes round (walkOrder), so no side sends him
-           back to where he started. */
         var order = auto ? walkOrder() : null, walkOf = {};
         if (order) order.forEach(function (w) { walkOf[w.side] = w; });
         var homeOpacity = auto && global.Swiftee && Swiftee.el ? Swiftee.el.style.opacity : null;
@@ -7356,10 +4795,6 @@
             if (cancelled) return;
             count++;
             st.measure[isSides ? 'sides' : 'angles'].push(at); renderPoly();
-            // (EVERY READING STAYS BRIGHT — the user: "why u dehighlighted the measure angle numbers,
-            // this is a bug": each angle measured was set to 40 % while the walk went on — the one
-            // just measured too — so the degrees he had read out were faded until the last corner)
-            // the new reading pops in; the ones already there stay put
             var fresh = st.measG && st.measG.querySelector(isSides ? '.meas[data-side="' + i + '"]' : '[data-angle="' + at + '"]');
             if (fresh) enter(fresh, 'pop');
             st.lastEl = isSides ? st.edgeEls[i] : (knobOf(at) || st.vertEls[at]);
@@ -7368,9 +4803,6 @@
             onTap('correct'); measuring = false;
             if (count >= need) {
               st.sideTodo = null; st.angleTodo = false; renderPoly();
-              // THE LAST SIDE IS IN, AND NOW THE MARKS SAY IT: the equal-side
-              // ticks are dealt in round the shape one after another — the
-              // conclusion drawn when there is something to conclude
               if (isSides && st.measG && !reduced()) {
                 var ticks = st.measG.querySelectorAll('.eq-tick');
                 for (var tk = 0; tk < ticks.length; tk++) {
@@ -7382,7 +4814,6 @@
                 }
                 if (ticks.length) sfx('sparkle', { gain: 0.5 });
               }
-              // (measured by him, the ticks are given the time to be seen before the lesson goes on)
               if (auto) later(1400, function () { if (!cancelled) { endInteraction(); resolve({ result: 'correct' }); } });
               else { endInteraction(); resolve({ result: 'correct' }); }
             }
@@ -7405,17 +4836,6 @@
       return new Promise(function (resolve) {
         if (global.Input) Input.mode('polygon');
         var S = st.sort;
-        /* A CARD IS HELD BY ONE FINGER, AND LET GO WHEREVER THAT FINGER LIFTS.
-         *
-         * The drag used to listen on the stage alone, and it took its pointer capture before
-         * lifting the card above the others — and moving an element in the document drops the
-         * capture it holds. So a card let go over the speech bubble, the buttons, or past the
-         * edge of the window never heard the release: it stayed where it was, still "held",
-         * and followed the pointer about with no button down. Now the card is raised first and
-         * captured after; the move, the release and a cancelled touch are heard from the whole
-         * window; a mouse that moves with no button pressed means a release was missed and ends
-         * the drag; one card is held at a time; and while held it cannot leave the stage. Let
-         * go anywhere but a bin, it glides home. */
         var win = svg.ownerDocument.defaultView || global;
         var ITEM_HALF = 46;
         function armItem(item) {
@@ -7474,17 +4894,9 @@
               bin._items = bin._items || [];
               bin._items.push(item);
               packBin(bin);
-              // RIGHT: the short "Keep going!" every right answer on the way gets (game.js PRAISE_FOR —
-              // the user, screen 22: no "Yes! It's convex…" line here, the same short feedback as
-              // the levels before; "Great job!" when the level is done)
               onTap('correct', null);
               if (S.placed >= S.total) { S.done = true; endInteraction(); resolve({ result: 'correct' }); }
             } else {
-              // A MISS IS THE SHAPE TAUGHT UP CLOSE — on that card's spec.teach-th miss (2 on
-              // the convex/concave sort: the first is brief feedback and another try — the
-              // user, screen 22; the second is explained, and with spec.autoPlace the lesson
-              // then puts it in its bin: game.js lifts the card with Stage.teach). The card
-              // goes home first.
               item._misses = (item._misses || 0) + 1;
               var teachIt = spec.teach && item._misses >= spec.teach;
               onTap('wrong', null, teachIt ? { teach: { el: item, concave: !!c.concave } } : null);
@@ -7493,10 +4905,6 @@
           });
         }
         S.items.forEach(armItem);
-        /* TAUGHT, THEN ANSWERED FOR THEM (spec.autoPlace). A card that was dropped in the wrong
-           bin is taught up close at once (teachShape) and, as the lesson puts it down, it goes
-           into the bin it belongs in and is locked there — not back into the tray to be failed
-           again. It is not scored as an answer: nobody chose it. */
         S.autoTeach = !!spec.autoPlace;
         S.autoPlace = function (item) {
           if (!item || item._placed || S.done) return null;
@@ -7519,8 +4927,6 @@
           S.done = true; endInteraction(); resolve({ result: 'correct', auto: true });
           return true;
         };
-        // the gesture: a ghost of the first card slides down toward the bins
-        // and fades — the move, not the answer — until the child takes one
         var firstLeft = function () { return S.items.filter(function (it) { return !it._placed; })[0]; };
         hintLadder({
           pulse: function () { var f = firstLeft(); return f ? pulseHint([f]) : null; },
@@ -7537,23 +4943,6 @@
     }
   };
 
-  /* ------------------------------------------------------------------ *
-   * A LINE FROM A CORNER, DRAWN BY THE FINGER
-   *
-   * Both diagonal screens are the same gesture: from the corner the child
-   * chose, to a corner that is neither beside it nor already joined to it.
-   * These are the pieces of that gesture, so both screens feel identical:
-   *
-   *   the corners it may go to light up as the drag begins, and only those;
-   *   the line runs from the chosen corner to the finger, and within SNAP of
-   *   a corner it may go to it jumps there — a magnetic snap, with an icy
-   *   tick — so a finger that is nearly there is there;
-   *   let go anywhere else and the line slides back home;
-   *   a new diagonal shimmers once.
-   *
-   * Everything is in the stage's own units and read from the corners as they
-   * are now, so a resize or a moved corner can never leave a line behind.
-   * ------------------------------------------------------------------ */
   var SNAP = 60;
 
   /** Is the pair (a, b) already a diagonal on the shape? Pairs are unordered. */
@@ -7570,9 +4959,6 @@
                         style: litGlow(HI.lit) }, layers.fx);
   }
 
-  /** Light the corners a line may go to (or put them back as they were).
-      Attributes only — no re-render, so the corners the child is holding on
-      to keep their handlers and the drag can be tried again at once. */
   var KNOB_ATTRS = ['opacity', 'r', 'fill', 'stroke', 'stroke-width'];
   function showTargets(idxs, on) {
     (st.knobEls || []).forEach(function (k, i) {
@@ -7590,13 +4976,6 @@
     });
   }
 
-  /** Move the line's free end: to the finger, or snapped to a corner it may
-      join. Returns the corner it is snapped to, or -1.
-      (`finger`: where the finger really is, when `p` is that point held inside the card. The
-      snap is measured from the FINGER — a corner near the card's edge stayed snapped while the
-      finger went on far past the card, because the held end sat beside it, and a line let go
-      off the card locked there: the code's own rule is that a line let go on the card's frame
-      goes home.) */
   function followFinger(line, from, p, valid, was, finger) {
     var best = -1, bd = SNAP, f = finger || p;
     valid.forEach(function (j) { var q = st.verts[j], d = Math.hypot(q.x - f.x, q.y - f.y); if (d < bd) { bd = d; best = j; } });
@@ -7613,8 +4992,6 @@
     return best;
   }
 
-  /** A line let go in the wrong place goes home, gently, and is gone.
-      x2/y2 are attributes, not CSS, so it is stepped by frame for 200ms. */
   function retract(line, from, then) {
     var a = st.verts[from];
     var finished = false;
@@ -7632,9 +5009,6 @@
     }());
   }
 
-  /** A new diagonal catches the light once — or, the first one the child
-      finds for themselves (`found`), twice and slower: the glow is the
-      answer, so it lasts long enough to be seen while "Yay!" arrives. */
   function shimmer(k, found) {
     if (reduced() || !st.diagG) return;
     var g = st.diagG.childNodes[k], ln = g && g.querySelector('line');
@@ -7650,47 +5024,14 @@
     } catch (e) {}
   }
 
-  /* THE CONNECTING STEP, AS A STATE (the Screen 7 vertex brief's flow). Pick → connect has
-     moments in which the shape must not take a line — while he names a side, while the next
-     instruction is still being said, while the diagonal is cheered — and the stage says which
-     one it is in, so nothing overlaps and a test can ask:
-       IDLE_VERTEX           corners showing, any one may be picked
-       ANCHOR_SELECTED       the corner is theirs (the anchor); the instruction is being given
-       SIDE_HINT             a line may be drawn from it, to a neighbour: the first side (the
-                             idle ghost, if it comes, draws that side)
-       SIDE_DRAG             a finger is down, making a side; the preview line follows it
-       SIDE_COMPLETE         it landed on a neighbour: a side, being named
-       ENDPOINT_DISABLED     that neighbour is done with (setVertexStates), the next line said
-       NEXT_SIDE_READY       a line may be drawn to the other neighbour: the second side
-       SECOND_SIDE_COMPLETE  it landed there: the second side, being named
-       DIAGONAL_INSTRUCTION  both sides are made: the far corners are the places to go now,
-                             and "Let’s connect it to a different vertex." is being said
-       DIAGONAL_READY        a line may be drawn to a far corner
-       DIAGONAL_DRAG         a finger is down, making the diagonal
-       DIAGONAL_CREATED      it landed on a far corner: the diagonal, locked
-       INTERACTION_LOCKED    nothing on the shape takes a press any more
-       EXPLANATION           "Yay! You made a diagonal!" (screens.js, stage connectState)
-     A line is only taken in the three READY states; every other state belongs to the lesson. */
   var CONNECT_READY = { SIDE_HINT: 1, NEXT_SIDE_READY: 1, DIAGONAL_READY: 1 };
   function setConnect(state, detail) {
     if (st.connect === state) return;
     st.connect = state;
-    // (the last few, in order, for a test to read the flow back: Stage.state.connectLog)
     (st.connectLog = st.connectLog || []).push(state);
     if (st.connectLog.length > 40) st.connectLog.shift();
     evt('connect:state', Object.assign({ state: state }, detail || {}));
   }
-  /* EACH CORNER'S STATE ON SCREEN 7 (the Screen 7 vertex brief), from the anchor and the sides
-     made — never from a selected flag alone:
-       anchor               the corner picked; the only place a line starts; never disabled
-       adjacent-available   a neighbour with no side yet: where a SIDE may go
-       side-used-disabled   a neighbour a side has been made to: visible — the same white point,
-                            dimmed — and out of every press, hover, drop, pulse and hint
-       diagonal-available   a far corner, from the start: where the DIAGONAL may go
-       inactive             once the diagonal is made (`locked`), every corner that is not the
-                            anchor or a used end (the same white point, dimmed)
-     The side being named (st.segment) counts as made the moment it lands: its end is disabled
-     on the drop. */
   function sideEnds() {
     var ends = (st.sidesDone || []).map(function (sd) { return sd[1]; });
     if (st.segment) ends.push(st.segment[1]);
@@ -7701,15 +5042,7 @@
     for (var q = 0; q < st.n; q++) if (q !== from && Poly.isAdjacent(from, q, st.n) && ends.indexOf(q) < 0) left++;
     return left;
   }
-  /* `free` (the hexagon's "draw all the diagonals from this vertex", sidesOk): the far corners
-     are diagonal targets from the start, the neighbours are sides the child may make on the
-     way — each disabled once made — and a far corner a diagonal has already reached is
-     'diagonal-used': done with, drawn and treated like a used side end. */
   function setVertexStates(from, locked, free) {
-    // (THE FAR CORNERS ARE OPEN FROM THE START — the user: "why diagonal vertex disable? … revert
-    // it, user have to connect the vertex to make diagonal": a line may go to any corner; a
-    // neighbour makes a side, which is named and its corner disabled, and a far corner makes the
-    // diagonal, whether or not a side came first. They closed until both sides were made.)
     var ends = sideEnds(), diag = true, out = [];
     for (var q = 0; q < st.n; q++) {
       if (q === from) out.push('anchor');
@@ -7723,17 +5056,11 @@
     evt('connect:vertices', { states: out.slice() });
     return out;
   }
-  /** The side that was named goes: its mark and its tag fade, and the shape is
-      as it was before the line was drawn (the corner stays theirs). */
-  /* The named side kept, frozen, and its corner spent (screens.js `side: 'done'`): only its
-     tag goes. The next try can only be a new corner. */
   function freezeSide() {
     var tag = st.labelEl, from = st.picked;
     if (st.segment) { st.sidesDone = (st.sidesDone || []).concat([st.segment.slice()]); st.segment = null; }
     st.segLine = st.segGlow = null;
     if (tag) { st.labelEl = null; st.labelSpec = null; fadeOut(tag); }
-    // ENDPOINT_DISABLED; and with both sides made the lesson turns to the diagonal — the far
-    // corners are now the places a line may go (DIAGONAL_INSTRUCTION, while that is said)
     var toDiagonal = st.vstate && from != null && sidesLeft(from) === 0;
     if (st.vstate && from != null) setVertexStates(from);
     if (st.vstate) setConnect('ENDPOINT_DISABLED', { from: from });
@@ -7765,106 +5092,46 @@
 
   function drawDiagonals(spec, count, ctx) {
     return new Promise(function (resolveRaw) {
-      /* THE RESULT IS LOCKED THE MOMENT IT IS IN (the final pass: DIAGONAL_CREATED → LOCK_INTERACTION
-         → DIALOGUE). Its handlers go with the interaction, but the pointer mode stayed 'polygon'
-         and the corners stayed touchable under "Yay! You made a diagonal!", so a press there
-         looked live. Now the input is locked and the corners take no presses until the next
-         interaction arms (which sets both again: a new preview line from the same corner). */
       var resolve = function (r) {
         if (global.Input) Input.mode('locked');
-        // (their pointer events only — not st.touchVerts, which is also how the corners are
-        // drawn: white points, not small dark dots, for as long as the figure is up)
         (st.vertEls || []).forEach(function (c) { if (c && c.style) { c.style.pointerEvents = 'none'; c.style.cursor = ''; } });
         resolveRaw(r);
       };
       if (global.Input) Input.mode('polygon');
       var from = spec.from === 'picked' ? (st.picked == null ? 0 : st.picked) : spec.from;
-      /* `sides`: CONNECT IT TO ANY CORNER, AND FIND OUT. The child joins their
-         corner to another themselves. A neighbour (by vertex ORDER, i±1,
-         wrapping at the first and last corner — Poly.isAdjacent) makes a
-         SIDE: it lights for a moment and the lesson names it. Any other
-         corner makes the DIAGONAL.
-         THE OTHER CORNERS ARE POINTS TO CONNECT TO. They vanished when the
-         corner was picked — only the chosen one remained — and, asked to
-         "connect it to another vertex", the child had one dot on the screen
-         and nothing to connect it to (the user: "why points not added").
-         From the moment the connecting starts they are back, as plain
-         corner points, and their own stays bright and ringed; the one the
-         line snaps to grows under the finger. */
       var sides = !!spec.sides;
-      /* `sidesOk` (the hexagon, the "remove hexagon tag + disable used side vertices" brief): the
-         task is still every diagonal from this corner (count), judged per line as before — but a
-         line to a NEIGHBOUR is not a wrong answer: it is a side, accepted quietly, drawn as the
-         polygon's own edge (nothing over it), and that neighbour is done with for good. The anchor
-         never is. Each corner's state is the same machine as the connect screen's (vstate). */
       var sidesOk = !sides && !!spec.sidesOk;
-      // THE CORNER TO DRAW FROM breathes — it, and nothing else (the user: "subtle pulse only on
-      // the active dot") — while it waits to be taken
       st.picked = from; st.vcolor = {}; st.vcolor[from] = HI.picked; st.showVerts = true; st.touchVerts = true;
-      // (each corner's state, from the anchor and the sides made so far: setVertexStates)
       if (sides) setVertexStates(from); else if (sidesOk) setVertexStates(from, false, true); else st.vstate = null;
       st.breatheAt = {}; st.breatheAt[from] = true; renderPoly();
       var still = function (on) { var fk = knobOf(from); if (fk && fk.classList) fk.classList.toggle('breathe', !!on); };
       cleanup.push(function () { st.breatheAt = null; still(false); });
-      /* THE CORNER THE LINE STARTS FROM TAKES A HAND. It is the one thing on
-         the shape to press, and it showed the plain arrow: the corners are
-         rebuilt after every line, so the hand is put back each time. */
       var dressFrom = function () { var c = st.vertEls && st.vertEls[from]; if (c) c.style.cursor = 'grab'; };
       dressFrom();
-      // THE READY STATE FOR WHERE THE LESSON IS: the first side, the second, or the diagonal
       var readyState = function () { return sidesLeft(from) === 0 ? 'DIAGONAL_READY' : ((st.sidesDone || []).length ? 'NEXT_SIDE_READY' : 'SIDE_HINT'); };
       if (sides) setConnect(readyState(), { from: from });
       var made = 0, active = false, hot = -1;
       var line = previewLine(from);
       var valid = function () { return Poly.diagonalsFrom(from, st.n).filter(function (j) { return !diagonalUsed(from, j); }); };
-      /* WHERE A LINE MAY GO IS WHAT THE CORNERS' STATES SAY (the Screen 7 vertex brief): ANY
-         CORNER — a neighbour makes a SIDE, named and then done with, and a far corner the
-         DIAGONAL (the user: "user have to connect the vertex to make diagonal"). A used end is not
-         a place a line may go: it is never snapped to, never lit, and a line let go on it simply
-         goes home (release, below). */
       var targets = function () {
         if (!sides && !sidesOk) return valid();
         return (st.vstate || []).map(function (vs, q) { return /-available$/.test(vs) ? q : -1; }).filter(function (q) { return q >= 0; });
       };
-      // THE MOVE, SHOWN — once the child has been still a while (hintLadder).
-      // First the corners a line may go to breathe; then a ghost runs from the
-      // chosen corner to one of them. It gives no answer away: every corner
-      // it may go to is a diagonal, and the child still chooses.
       hintLadder({
-        // connecting, the one that breathes first is their own corner, where
-        // the line starts (any of the others is somewhere it may go)
-        // ONLY THE CORNER THE LINE STARTS FROM (the user: "pulse only the currently interactive
-        // point"): it is the one thing to press; the corners a line may go to stay still
         pulse: function () { return pulseHint([knobOf(from)].filter(Boolean)); },
         demo: function () {
-          // THE GHOST FOLLOWS THE LESSON (the Screen 7 brief): before a side has been made it
-          // draws a SIDE — to a neighbour, which lights as the line reaches it; once the side
-          // is named it draws the DIAGONAL, to a far corner, which lights the same way. Keyed
-          // on whether a side exists, not on the input being a retry: a retry before any side
-          // must still show the side. (A LINE drawn out of the corner, which stays where it
-          // is — gestureGhost `line`; one ghost at a time, taken down by a press: hintLadder.)
-          // (a side while a neighbour is still free — the FIRST ghost is always a side — and never
-          // to a corner that is done with: targets() holds only the corners available now)
           var t;
           if (sides && sidesLeft(from) > 0) { var nb = targets().filter(function (q) { return Poly.isAdjacent(from, q, st.n); }); t = nb.indexOf((from + 1) % st.n) >= 0 ? (from + 1) % st.n : nb[0]; }
           else t = sides ? targets()[0] : valid()[0];
           return t == null ? null : gestureGhost(st.verts[from], st.verts[t], { line: true, target: knobOf(t) });
         }
       });
-      /* THE LINE STAYS ON THE CARD (the user: "the dragged line must never extend outside the
-         card"). Wherever the finger goes, the free end stops at the edge of the glass. */
       var face = st.panel ? panelFace(st.panel) : null;
       var inCard = function (p) {
         if (!face) return p;
         return { x: Math.max(face.x + 10, Math.min(face.x + face.w - 10, p.x)),
                  y: Math.max(face.y + 10, Math.min(face.y + face.h - 10, p.y)) };
       };
-      /* ONE FINGER, HEARD WHEREVER IT GOES. The drag is the pointer that took the corner. Its
-         moves and its release are listened for on the window, not only on the stage — a line
-         let go over the HUD, off the stage or outside the window was never released, and was
-         left standing wherever the finger had been — and a mouse that comes back with no
-         button down has let go somewhere we did not hear: that drag is over, and the line goes
-         home. */
       var pid = null;
       var win = (svg.ownerDocument && svg.ownerDocument.defaultView) || global;
       // Delegated: the source vertex element is rebuilt after each diagonal.
@@ -7898,17 +5165,7 @@
       var release = function (e) {
         if (!active) return; active = false; pid = null;
         svg.style.cursor = '';
-        /* IT LOCKS ONLY ON A CORNER (the user: "the line should become fixed only when it
-           reaches a valid target vertex"). The corner it snapped to while moving, or one the
-           finger was let go on (a fingertip's reach of it) — never the nearest corner
-           to a line let go along a side, in the open glass or on the card's frame: that line
-           goes home, and the corners stay ready to try again. */
         var j = hot >= 0 ? hot : nearestVertex(pt(e), from, 44);
-        /* A DIAGONAL ALREADY MADE IS A RESULT, NOT A TRY (the final pass: "a completed diagonal must
-           become a locked learning result"). A line taken from the corner along a diagonal that is
-           already there, to its far corner, is not a new connection and not a wrong one — "Try
-           again!" for it read as the finished diagonal being judged again. That diagonal catches
-           the light once ("this one is made"), the new line goes home, and the try stands. */
         if (j >= 0 && diagonalUsed(from, j)) {
           var made0 = (st.diagonals || []).findIndex(function (d) { return (d[0] === from && d[1] === j) || (d[1] === from && d[0] === j); });
           if (made0 >= 0) shimmer(made0);
@@ -7917,11 +5174,7 @@
           retract(line, from, function () { line = previewLine(from); });
           return;
         }
-        // (and never on a corner that is not available now — a used end: no verdict, no flash,
-        // nothing lit; the line goes home, below)
         if (sides && j >= 0 && targets().indexOf(j) < 0) j = -1;
-        // (the hexagon: a used side end takes no line and gives no feedback — it goes home quietly,
-        // not as a miss: "no 'Try again' feedback" for a disabled vertex)
         if (sidesOk && j >= 0 && targets().indexOf(j) < 0) {
           hot = -1; showTargets([], false); still(true);
           retract(line, from, function () { line = previewLine(from); });
@@ -7933,9 +5186,6 @@
           still(true);
           retract(line, from, function () { line = previewLine(from); });
           if (sides) {
-            // NOTHING WAS CONNECTED, SO THERE IS NO VERDICT (the Screen 7 vertex brief: "remove/
-            // reset only the preview line, keep anchor selected, keep vertex states unchanged,
-            // allow retry"). The preview goes home; every corner stays as it was.
             setConnect(readyState(), { from: from });
             return;
           }
@@ -7945,17 +5195,11 @@
         var ok = !Poly.isAdjacent(from, j, st.n) && !diagonalUsed(from, j);
         st.lastEl = knobOf(j) || st.vertEls[j];
         if (sidesOk && !ok && Poly.isAdjacent(from, j, st.n)) {
-          // A SIDE ON THE WAY: made, the preview gone, the edge the polygon's own, its end
-          // disabled, the anchor still the anchor — and a fresh preview line for the next drag
           line.remove();
           st.sidesDone = (st.sidesDone || []).concat([[from, j]]);
           setVertexStates(from, false, true); renderPoly(); dressFrom(); still(true);
           line = previewLine(from);
           evt('side:made', { from: from, to: j });
-          /* AND ANSWERED AS A MISS (the user: "if user drag to the side vertex why do not add wrong
-             glow and feedback?"): the task is diagonals, so the side glows red for a moment — the
-             edge itself and its corner — and fades back to the plain edge, with the miss sound,
-             his reaction, "Try again!" and the rule (the screen's reminder) */
           var a0 = st.verts[from], b0 = st.verts[j];
           if (a0 && b0 && st.polyG && !reduced()) {
             var flash = mk('line', { x1: a0.x, y1: a0.y, x2: b0.x, y2: b0.y, stroke: '#ff5a5a', 'stroke-width': 5,
@@ -7969,12 +5213,6 @@
           return;
         }
         if (sides && !ok && Poly.isAdjacent(from, j, st.n)) {
-          /* A SIDE (the Screen 7 vertex brief): accepted; the ice preview line is taken away;
-             the side is the polygon's own edge, looking exactly like the others (renderPoly
-             draws nothing over it but a line in the outline's stroke, for the word "side" to
-             trace); its end is done with at once (side-used-disabled); the anchor stays the
-             anchor. The lesson names it ("This is a side of the polygon."), and the next try is
-             a fresh preview line from the same corner. */
           var second = (st.sidesDone || []).length > 0;
           line.remove();
           st.segment = [from, j]; st.ghost = null;
@@ -7988,19 +5226,12 @@
         }
         if (ok) {
           if (sides) {
-            // (the sides stay made, and their ends stay disabled — the brief: "keep all previously
-            // used side endpoints disabled"; they are the outline, so there is nothing to take down)
             st.segment = null;
             if (st.labelEl) { st.labelEl.remove(); st.labelEl = null; st.labelSpec = null; }
           }
           line.remove(); line = previewLine(from);
-          // (connecting: the corner it reached shows as a corner too — a
-          // diagonal joins two vertices, and a line into a hidden corner read
-          // as a line that stopped in mid-air)
           if (sides) st.vcolor[j] = HI.picked;
           st.diagonals = st.diagonals || []; st.diagonals.push(Object.assign([Math.min(from, j), Math.max(from, j)], { solid: true })); st.ghost = null;
-          // (the diagonal is a locked result: every corner but the anchor and the used ends is
-          // inactive now, and none takes a press — the input is locked on resolve)
           if (sides) setVertexStates(from, true);
           else if (sidesOk) setVertexStates(from, made + 1 >= count, true);   // (its far end is used now)
           renderPoly(); made++;
@@ -8032,23 +5263,6 @@
     });
   }
 
-  /* ------------------------------------------------------------------ *
-   * A SHAPE TAUGHT UP CLOSE — the convex/concave sort's second miss (the
-   * user's spec). The play steps back under a dim, soft sheet; the card
-   * that went in the wrong bin comes up out of the tray to the middle,
-   * large, with a small breath; the part he names lights on it as he says
-   * it — the corner that goes inward and the diagonal that leaves the
-   * shape, or every corner pointing out and the diagonals staying inside —
-   * and then it flies back to its place in the tray and the sheet lifts.
-   * Nothing is sorted for the child, and nothing of the play is touched: a
-   * copy is lifted, on a layer of its own, and the card waits hidden.
-   *
-   *   var T = Stage.teach(item)     T.open()  → Promise (up and in)
-   *                                 T.show('notch' | 'outside' | 'corners' | 'inside')
-   *                                 T.close() → Promise (back, sheet gone)
-   * ------------------------------------------------------------------ */
-  // scale 3: at 2.3 the lifted card read as one of the tray ("the size of
-  // the card not look big?") — three times the tray card fills the middle
   var TEACH = { scale: 3, flyMs: 620, backMs: 520, out: '#7a4cff', warm: '#ffc83d' };
   function teachShape(item, opts) {
     opts = opts || {};
@@ -8067,14 +5281,6 @@
     };
     var mid = { x: W / 2 + 40, y: H * 0.52, s: TEACH.scale };   // a touch right: he stands at its left
     var from = toStage(item) || { x: mid.x, y: mid.y, s: 1 };
-    /* THE SWIPE CARD IS ALREADY LARGE AND IN THE MIDDLE (opts.fit 'swipe'): it comes forward
-       only a little — a touch bigger, a touch up and to the right of where it was, so it is
-       plainly the same card — rather than flying to the sort's three-times seat (the brief:
-       "do not make the card jump dramatically into another position"). */
-    /* IN PLACE, AND ALONE (the user: "bug: 2 layers and one is cropped in the explanation"):
-       shifted sideways, the enlarged copy uncovered the deck of cards waiting under it — a
-       second, blurred, cut-off card at its edge. It grows where it stands, and the deck under
-       it is faded out for as long as the sheet is up. */
     var deck = opts.fit === 'swipe' ? layers.ui.querySelector('.swipe-stack') : null;
     if (opts.fit === 'swipe') mid = { x: from.x, y: from.y - 6, s: from.s * 1.1 };
     var deckShown = function (on) {
@@ -8082,8 +5288,6 @@
       deck.style.transition = 'opacity .3s ease';
       deck.style.opacity = on ? '' : '0';
     };
-    // the copy, and a layer on it for what lights up (in the card's own units,
-    // so it grows with the card)
     var copy = item.cloneNode(true);
     st.teachCopy = copy;
     copy.removeAttribute('style'); copy.setAttribute('class', 'teach-card');
@@ -8116,9 +5320,7 @@
     // the corner that goes inward: the most reflex one, the highest of equals
     var dent = -1;
     A.forEach(function (a, i) { if (a > 180.5 && (dent < 0 || a > A[dent] + 0.5 || (Math.abs(a - A[dent]) <= 0.5 && v[i].y < v[dent].y))) dent = i; });
-    var sw = 1.9;                                       // local units: ~4-5 stage units once grown
-    // THE CORNER ITSELF, a dot with a white rim that pulses — no ring round it (the user,
-    // screen 22: "remove the large rings around vertex dots; use the actual vertex dots")
+    var sw = 1.9;
     var ring = function (p, delay, col) {
       var r = mk('circle', { cx: p.x, cy: p.y, r: 3.6, fill: col || TEACH.warm, stroke: '#ffffff', 'stroke-width': 1.3, 'class': 'teach-ring' }, fx);
       r.style.animationDelay = (delay || 0) + 'ms';
@@ -8133,15 +5335,7 @@
         s.style.animationDelay = (i * 140) + 'ms';
       });
     };
-    /* SOLID IS A SIDE, DASHED IS A DIAGONAL (the convex / concave clarity brief: "sides = solid
-       straight lines, diagonals = dashed lines ... do not style diagonals the same way as
-       sides"). `diag` says which this line is. It used to be keyed on `bad`, which drew the two
-       SIDES into a dent dashed and the diagonal that leaves the shape SOLID — the rule the whole
-       lesson draws by, inverted, on the one sheet that explains it. The violet still marks the
-       diagonal that goes outside. */
     var grow = function (a, b, delay, bad, diag) {
-      // butt caps: a round cap reached a few pixels past the corner it ends
-      // on — a white nub outside the shape, inside the corner's ring
       var l = litLine(fx, { x1: a.x, y1: a.y, x2: a.x, y2: a.y, 'stroke-width': bad ? 2.3 : 1.9, 'stroke-linecap': 'butt',
                             'stroke-dasharray': diag ? '4.2 3.4' : 'none' }, { bad: bad })[0];
       later(delay || 0, function () {
@@ -8169,16 +5363,8 @@
         global.requestAnimationFrame ? global.requestAnimationFrame(function () { sheet.classList.add('on'); }) : sheet.classList.add('on');
         deckShown(false);
         sfx('menuWhoosh', { gain: 0.5 });
-        // (it arrives and holds still: the breathing that followed was one more thing moving
-        // while he explains — "remove decorative motion")
         return fly(from, mid, TEACH.flyMs, true);
       },
-      /* ONE CONCEPT AT A TIME (the swipe / sort explanation brief: "Swiftee's spoken concept = the
-         ONLY visual concept receiving emphasis"). Each word's visual replaces the last one's —
-         what an earlier word lit fades as the next concept is named — and nothing decorative
-         runs with it: no sparkles, no breathing card, and no corner dots unless the words are
-         about a corner. A diagonal is its dashed line alone; an angle is an arc in the corner,
-         never a dot on it; a side is its solid line. */
       show: function (what) {
         if (!copy.parentNode) return;
         var glowOn = function (sel) {
@@ -8188,14 +5374,11 @@
                             { duration: 900, easing: 'ease-in-out' }); } catch (e) {}
           });
         };
-        // (the emphasis that goes WITH a concept already shown — "…outside", "…inside" — keeps it;
-        // every new concept clears the stage first)
         if (what !== 'outsideGlow' && what !== 'insideGlow') [].slice.call(fx.childNodes).forEach(function (el) { fadeOut(el); });
         if (what === 'notch' && dent >= 0) {
           // "This CORNER goes inward": that corner, and only it
           ring(v[dent], 0, TEACH.warm); sfx('tick', { gain: 0.6 });
         } else if (what === 'outside' && dent >= 0) {
-          // "at least one DIAGONAL outside": the one across the dent, a violet dash — no dots on its ends
           var a2 = v[(dent + n - 1) % n], b2 = v[(dent + 1) % n];
           grow(a2, b2, 0, true, true).setAttribute('class', 'teach-diag teach-out');
           sfx('zip', { gain: 0.5 });
@@ -8207,7 +5390,6 @@
           v.forEach(function (p, i) { later(i * 110, function () { if (copy.parentNode) ring(p, 0, TEACH.warm); }); });
           sfx('tick', { gain: 0.6 });
         } else if (what === 'inside') {
-          // "All DIAGONALS": the diagonals from one corner (both, on a four-sided shape), dashed
           var pairs = [];
           for (var j = 2; j <= n - 2; j++) pairs.push([0, j]);
           if (n === 4) pairs.push([1, 3]);
@@ -8217,18 +5399,11 @@
           // "…INSIDE": those diagonals catch the light, inside the shape
           glowOn('.teach-in');
         } else if (what === 'sides') {
-          /* THE SIDES, AS HE SAYS "SIDE(S)": each side traced, solid, one after another — violet
-             where it does not match the others (marksBy: the largest set of equal lengths is the
-             match) — and the lengths printed on the card pulse with them. */
           var L = Poly.sideLengths(v), sm = marksBy(L, v.map(function (_, i) { return i; }), 15);
           v.forEach(function (p, i) { grow(p, v[(i + 1) % n], i * 140, sm.mark[i] !== 1, false); });
           pulseHint([].slice.call(copy.querySelectorAll('.u-side')), { strong: true });
           sfx('tick', { gain: 0.6 });
         } else if (what === 'angles') {
-          /* THE ANGLES, AS HE SAYS "ANGLE(S)": an arc inside each corner — gold where it matches
-             the others, violet where it does not — one after another, and the arcs and degrees on
-             the card pulse with them. An arc, not a dot: an angle is the opening between two
-             sides, and a dot on the corner reads as a vertex. */
           var am = marksBy(A, v.map(function (_, i) { return i; }), 3), c0 = Poly.centroid(v), R = 7.2, TAU = 2 * Math.PI;
           v.forEach(function (p, i) {
             later(i * 110, function () {
@@ -8248,8 +5423,6 @@
         }
       },
       close: function () {
-        // on a sort that answers a taught card (autoPlace), the card is put in its bin FIRST, so
-        // the copy flies to the seat it now has there rather than back to the tray
         var S2 = st.sort, bin = (S2 && S2.autoTeach && S2.autoPlace) ? S2.autoPlace(item) : null;
         var home = toStage(item) || from;
         fx.style.transition = 'opacity .25s ease'; fx.style.opacity = '0';
@@ -8276,10 +5449,6 @@
     return api;
   }
 
-  /* A CARD NOT KEPT GOES HOME — it glides back to its place in the tray from wherever it was
-     let go, rather than vanishing there and reappearing here; one dropped on the wrong bin
-     (`refused`) gives its small shake once it has arrived. Taking it up again mid-glide stops
-     the glide where the card is (item._glide). */
   function returnItem(item, refused) {
     if (!item || item._placed) return;
     var from = item._pos, to = item._home;
@@ -8300,65 +5469,22 @@
     requestAnimationFrame(step);
   }
 
-  /* ------------------------------------------------------------------ *
-   * Keeping the interaction alive
-   * ------------------------------------------------------------------ */
-
-
-  /**
-   * Breathe whatever the child is meant to touch, for as long as they have
-   * to decide.
-   *
-   * focus() pulses a target three times and stops. That is right as an
-   * announcement and useless as an invitation: a seven-year-old thinking for
-   * fifteen seconds spends twelve of them looking at a still picture, and a
-   * still picture of a shape is a slide. Everything touchable now keeps a
-   * slow breath until the answer is in — staggered, so the screen ripples
-   * rather than throbbing in unison, which is the difference between a scene
-   * that is alive and one that is flashing at you.
-   *
-   * Touchables are found by their inline cursor rather than from a list.
-   * Every one of them sets cursor:pointer as it is built, so this cannot fall
-   * out of step with a new interaction the way a hand-kept set of selectors
-   * would — and there is exactly one thing to remember when adding one.
-   *
-   * It animates `scale`, never `transform`. Half the furniture on this stage
-   * is positioned by a transform attribute, and animating transform replaces
-   * it — which is how the sort items once spent half a second stacked at the
-   * SVG origin.
-   */
   function alive(on) {
     if (svg) {
       var was = svg.querySelectorAll('.touchable');
       for (var k = 0; k < was.length; k++) was[k].classList.remove('touchable');
     }
     if (!on || !svg) return;
-    // The dressing survives reduced motion even though the breathing does
-    // not: someone who has asked for less movement still has to be able to
-    // see what they are meant to touch.
     if (reduced()) return;
 
     var els = svg.querySelectorAll('[style*="cursor: pointer"],[style*="cursor:pointer"]');
     for (var i = 0; i < els.length; i++) {
       var e = els[i];
-      // The same signal that earns the breath earns the look. A class rather
-      // than inline paint, so it cannot fight whatever the lesson is already
-      // saying with colour — a picked vertex, an outside diagonal in red.
       if (e.classList) e.classList.add('touchable');
     }
 
-    // NO IDLE ANIMATION. Everything a target does now, it does in answer to
-    // the pointer — see the .touchable rules in the stylesheet. What used to
-    // be here was an infinite breath on every target at once, which is the
-    // screen talking over the child rather than waiting for them.
   }
 
-  /**
-   * Turn an element about its own middle — but never overwrite a pivot it
-   * already has. A sprite or a marker with its own transform-origin has it
-   * for a reason, and quietly replacing it is how the character once sat
-   * twenty-two pixels below the ground for a whole session.
-   */
   function pivot(e) {
     if (e.style && !e.style.transformOrigin) {
       e.style.transformBox = 'fill-box';
@@ -8367,26 +5493,6 @@
     return e;
   }
 
-  /**
-   * Press feedback, for anything at all that can be touched.
-   *
-   * One delegated listener rather than a handler per element: it finds the
-   * nearest touchable ancestor of whatever was hit and squashes it. Without
-   * this a tap is answered only by whatever the lesson does next, which on a
-   * wrong answer can be most of a second later — long enough for a child to
-   * wonder whether the screen noticed them at all.
-   */
-  /**
-   * Everything touchable answers the finger, and makes a noise doing it.
-   *
-   * One delegated listener rather than a handler per control: the squash and
-   * the click belong to "this is a button", not to what the button does, and
-   * a new interaction should not have to remember to ask for them.
-   *
-   * THE SOUND IS ON THE PRESS, not on the verdict. A child who taps and hears
-   * nothing until the game has decided whether they were right has had no
-   * answer for three hundred milliseconds — long enough to tap again.
-   */
   function armPress() {
     if (!svg) return;
     on(svg, 'pointerdown', function (ev) {
@@ -8419,29 +5525,15 @@
 
   function waitFor(spec, ctx) {
     var fn = INTERACT[spec.type];
-    // what the hint manager calls this interaction (a measure of sides and
-    // of angles are two things to learn)
     hintType = spec.type + (spec.targets ? ':' + spec.targets : '');
     if (!fn) { if (global.console) console.warn('Stage: no interaction "' + spec.type + '"'); return Promise.resolve({ result: 'correct' }); }
 
-    // tap-anywhere is reading, not doing. Breathing the polygon's vertices
-    // while the child is only meant to read the line invites a tap that does
-    // nothing, which is worse than no invitation at all.
     var invite = spec.type !== 'tap-anywhere';
-    // A frame late on purpose: the interaction builds its own furniture — the
-    // choice row, the sort tray — inside fn(), so asking now would find the
-    // previous screen's.
     if (invite) later(60, function () { alive(true); });
 
     var p;
     try { p = fn(spec, ctx); }
     catch (e) { alive(false); throw e; }
-    // THE FIRST THING THE CHILD SEES WHEN IT IS THEIR TURN: the things to
-    // touch pop once, in turn — "here". Then the idle ladder takes over: a
-    // pulse (and a hand, for a tap) after 2.5s of stillness, the move itself
-    // shown by a hand after 7s. Not on a retry: the child has just used them.
-    // (not the answer cards of Level 1 — multi-select — which must stay still until they are
-    // touched: the user, "why do they still scale up after the VO says polygons?")
     if (invite && !spec.retry && spec.type !== 'multi-select') later(90, function () { var t = armTargets(spec); if (t.length) pulseHint(t, { pop: true }); });
     return Promise.resolve(p).then(
       function (r) { alive(false); return r; },
@@ -8449,37 +5541,13 @@
     );
   }
 
-  /**
-   * Is the stage showing nothing but scenery?
-   *
-   * game.js uses this to decide where Swiftee belongs. On a screen with a
-   * polygon or a card grid he has to stand out of the way; on a screen that
-   * is only him talking, standing off to one side just leaves a large empty
-   * space where the lesson should be, so he takes the middle instead.
-   */
   function isEmpty() { return !st.kind; }
 
-  /**
-   * The screen-space box the lesson content occupies, or null when there is
-   * none. Everything overlaid on the stage — the speech bubble, the
-   * instruction card — is sized against this rather than against a guessed
-   * percentage, which is what stops a long line of dialogue from growing
-   * across the shape the child is being asked to look at.
-   *
-   * The panel layer is included because it is visible lesson furniture. The
-   * bubble may use gaps between individual pieces via contentParts(), but it
-   * must not cover the slab that visually groups those pieces.
-   */
   function contentBox() {
     if (!svg || !st.kind) return null;
     var m = svg.getScreenCTM && svg.getScreenCTM();
     if (!m) return null;
     var box = null;
-    // 'panel' INCLUDED. It was not, so the slab the whole lesson stands on
-    // was invisible to everything that asks where the lesson is — and the
-    // speech bubble, which keeps clear of the lesson by asking exactly this,
-    // was placed across the middle of it on six screens. The shape and the
-    // controls were being avoided; the card they sit on was not.
     ['panel', 'poly', 'ui'].forEach(function (name) {
       var layer = layers[name];
       if (!layer || !layer.getBBox || !layer.childNodes.length) return;
@@ -8492,45 +5560,17 @@
         : { x: b.x, y: b.y, r: b.x + b.width, b2: b.y + b.height };
     });
     if (!box) return null;
-    // viewBox units -> CSS pixels, through the live matrix, so this is right
-    // at every letterbox and every zoom.
     var p = svg.createSVGPoint();
     p.x = box.x; p.y = box.y + seatY; var tl = p.matrixTransform(m);
     p.x = box.r; p.y = box.b2 + seatY; var br = p.matrixTransform(m);
     return { left: tl.x, top: tl.y, right: br.x, bottom: br.y, width: br.x - tl.x, height: br.y - tl.y };
   }
 
-  /**
-   * The lesson's pieces as separate boxes, in page pixels.
-   *
-   * contentBox() unions them, which is right for "how much room is left at
-   * the side" and wrong for "is there a gap in the middle". On the sorting
-   * screen the tray sits at the top and the bins at the bottom with a clear
-   * band between them, and the union hides that band completely — so the
-   * speech bubble concluded there was nowhere to go and sat on the shapes.
-   */
-  /**
-   * The boxes the lesson actually occupies.
-   *
-   * PAINTED, NOT REPORTED. A button is three nested <svg> slices of one
-   * picture, and getBoundingClientRect on a nested <svg> gives the bounds of
-   * the CONTENT inside it rather than the viewport that clips it — so a
-   * 184-unit button measured 244, and two buttons with a 30-unit gap between
-   * them appeared to overlap by a tenth of their area. Anything the stage
-   * built knows its own box and records it as _rect; that is the one to
-   * believe, and getBoundingClientRect is the fallback for the rest.
-   */
   function contentParts(opts) {
     if (!svg || !st.kind) return [];
-    // `glass`: the slab itself does not count, only what is drawn on it —
-    // for a bird waiting INSIDE the card, whose words belong beside him on
-    // the glass rather than banished above the rim.
     var sel = ((opts && opts.glass) ? '' : '.panel, ') + '.polygon, .meas, .card, .sort-item, .bin, .choice, .shape, .badge, .summary-card';
     var out = [];
     var nodes = svg.querySelectorAll(sel);
-    // Through the live matrix, as contentBox() does. Scaling by the svg box
-    // alone put every painted rect 96px too high on a 4:3 screen, where the
-    // stage is letterboxed inside the element and its top is not the top.
     var m = svg.getScreenCTM && svg.getScreenCTM();
     var px = function (x) { return m ? m.a * x + m.e : x; }, py = function (y) { return m ? m.d * y + m.f : y; };
     for (var i = 0; i < nodes.length; i++) {
@@ -8555,9 +5595,6 @@
       var S = st.summary;
       return S ? S.collected.map(function (id) { return { id: id, el: S.cards[id] }; }).filter(function (c) { return c.el; }) : [];
     },
-    /* ONE CARD'S IDEA AGAIN (the review: CARD_SELECTED → LOCK_OTHER_CARDS → REPLAY_EXPLANATION →
-       SETTLE): the others rest (faded), the card gives a small lift, and what it draws — its corners,
-       its lines — is cleared and drawn again, where it sits. `null` puts every card back (READY). */
     summaryReplay: function (id) {
       var S = st.summary;
       if (!S) return Promise.resolve(false);
@@ -8582,27 +5619,18 @@
       var ms = summaryReveal(c);
       return sumHold((ms || 0) + 200).then(function () { setSummary('SETTLE', id); return true; });
     },
-    /** How many of the shape's diagonals lie outside it, as it stands (game.js test: 'manyOutside'). */
     outsideCount: function () {
       if (!st.verts || st.verts.length < 4) return 0;
       return Poly.allDiagonals(st.verts.length).filter(function (d) { return !Poly.isDiagonalInside(st.verts, d[0], d[1]); }).length;
     },
-    /** The card's face and the shape's box, in page pixels: the nook beside
-        the shape where a bird waiting in the corner can be spoken from. */
     nook: function () {
       if (!st.panel || !st.polyG || !svg || !svg.getScreenCTM) return null;
       var m = svg.getScreenCTM(); if (!m) return null;
       var pf = panelFace(st.panel);
       var face = { left: m.a * pf.x + m.e, top: m.d * (pf.y + seatY) + m.f, right: m.a * (pf.x + pf.w) + m.e, bottom: m.d * (pf.y + pf.h + seatY) + m.f };
-      // the shape's own outline, not the readings and tags hung round it:
-      // those sit inside the shape's margin, and the bubble may pass over
-      // that margin on its way to his head
       var poly; try { poly = (st.fill || st.polyG).getBoundingClientRect(); } catch (e) { return null; }
       return { face: face, poly: poly };
     },
-    /** The slab Swiftee peeks over or stands beside: the panel, or the left of a compared pair. */
-    /** The swipe card now, against its home: the rim copy laid over him
-        follows this, so it never hangs where the card used to be. */
     swipeCardOffset: function () {
       var S = st.swipe, card = S && S.card;
       if (!card) return null;
@@ -8612,8 +5640,6 @@
                cx: SWIPE_HOME.x, cy: SWIPE_HOME.y + seatY };
     },
     peekAnchor: function (o) {
-      // THE SUMMARY: behind the card in the middle, at the middle of its top
-      // edge, the same place for every card — and nowhere while it travels
       if (st.kind === 'summary') {
         var sc = st.summary && st.summary.active ? st.summary.cards[st.summary.active] : null;
         if (!sc || sc._collected) return null;
@@ -8630,37 +5656,12 @@
         }
       }
       if (st.swipe) {
-        /* HE COMES UP BEHIND THE CARD IN HAND, not behind a bin.
-         *
-         * He used to peek over the Regular zone, off at the left edge, and
-         * ask "where does this polygon belong?" from the far side of the
-         * screen from the polygon. Behind the card he is asking ABOUT the
-         * thing he is standing behind, and the question, the shape and the
-         * face asking it are one group in the middle instead of three things
-         * spread across the width. He drops back before the child drags.
-         *
-         * The frame is the card's own, so the rim copy drawn over him
-         * (syncPeekRim in game.js) is the same ice he is behind. */
         var ch = SWIPE_HALF * ((global.CardFrame && CardFrame.option)
                                ? CardFrame.option.h / CardFrame.option.w : 1);
-        // THE STRIP OVER HIM IS THE CARD'S OWN TOP, exactly where the card is:
-        // the card layer is seated (seatY) and this was not, so the copy of
-        // the rim hung that far below the real one and cut across the card.
-        // And only while the card is at home: once it is being dragged, or is
-        // flying to a zone, there is no rim there to be behind (null — he
-        // stands down and the strip is taken away).
         var card = st.swipe.card;
         var tm = card && /translate\(\s*([-\d.]+)[\s,]+([-\d.]+)\s*\)/.exec(card.getAttribute('transform') || '');
         var home = !!card && (!tm || (Math.abs(+tm[1] - SWIPE_HOME.x) < 0.5 && Math.abs(+tm[2] - SWIPE_HOME.y) < 0.5));
-        // (o.home: where the card's home is whether or not it is there — the
-        // rim copy is placed on it and then follows the card, swipeCardOffset)
         if (!home && !(o && o.home)) return null;
-        // `at` is where along the card's width his head comes up. A bin is
-        // peeked over near its corner cap; a card the whole screen is about
-        // is peeked over in the MIDDLE, so he and the shape and the question
-        // line up as one column instead of leaning off to one side.
-        // `pops`: he pops up and down behind it — head over the rim — and
-        // game.js measures the rise so that, down, nothing of him shows.
         return { frame: 'option', at: 0.5, pops: true,
                  x: SWIPE_HOME.x - SWIPE_HALF, y: SWIPE_HOME.y - ch + seatY,
                  w: SWIPE_HALF * 2, h: ch * 2 };
@@ -8668,14 +5669,9 @@
       return null;
     },
     onTap: function (fn) { onTap = fn || function () {}; },
-    /** game.js: the input has just been handed back (after he popped down) —
-        the stillness a hint waits for starts now, not from before he spoke */
     hintRestart: function () { if (hintRearm) hintRearm(); },
     /** game.js: hold the stage's input while he speaks (see holdOn) */
     hold: function (on) { holdOn = !!on; },
-    /** game.js: the log arc on the left of the ground — shown on the screens that sit him on
-        it (screens.js `log`), fading in or out (`ms` 0: simply there, as the intro opens);
-        perchAt: where his feet go on it, as fractions of the board, for his 'log' mark */
     perch: function (on, ms) {
       if (!perchLog) return;
       var want = on ? '1' : '0';
@@ -8684,9 +5680,6 @@
       perchLog.style.opacity = want;
     },
     perchAt: function () { var p = perchPoint(); return { x: p.x / W, y: p.y / H }; },
-    /** game.js: the log out of focus with the painting behind it (the user: "the log must also
-        be blurred" on the intro's close shot) — `sd` in board units, set every frame of the
-        camera's move so it comes into focus with the rest of the scene, never all at once */
     blurLog: function (sd) {
       if (!perchLog || !svg) return;
       var f = svg.querySelector('#logSoft feGaussianBlur');
@@ -8694,8 +5687,6 @@
       if (sd > 0.05) { f.setAttribute('stdDeviation', sd.toFixed(2)); perchLog.setAttribute('filter', 'url(#logSoft)'); }
       else { perchLog.removeAttribute('filter'); f.setAttribute('stdDeviation', '0'); }
     },
-    /** game.js: while a card is being taught, IT is the content the bubble
-        keeps clear of — everything else is dimmed scenery under the sheet */
     teachBox: function () { return st.teachCopy && st.teachCopy.parentNode ? st.teachCopy.getBoundingClientRect() : null; },
     /** game.js: lift a card out and teach it (see teachShape) */
     teach: function (el, opts) { return teachShape(el, opts); },
@@ -8704,15 +5695,9 @@
     /** Forget which interactions have been demonstrated (Restart). */
     forgetHints: function () { hintSeen = {}; },
     onEvent: function (fn) { onEvent = fn || function () {}; },
-    /** A plank-free screen lifts a lone card to the centre; a plank seats it under the band. Animated. */
     seat: function (free) { plankFree = !!free; applySeat(true); },
     get seatY() { return seatY; },
-    /* How long an answer row of n takes to be dealt: the director holds the
-       question until it has, so no answer is live before it can be seen. */
     choicesEnterMs: function (n) { return reduced() ? 0 : 90 * Math.max(0, (n || 0) - 1) + ENTER_MS; },
-    /* THE WORD AND THE THING (holdForWord). game.js calls said() for every
-       word as the bubble reveals it, and releaseHeld() when control is handed
-       over, so nothing a line names is ever left hidden. */
     said: said,
     releaseHeld: releaseHeld,
     /** The board answers a vocabulary word (see THE WORD, SHOWN ON THE BOARD). */
@@ -8721,34 +5706,23 @@
     forgetMade: function () { made = {}; },
     /** Where the pick → connect step is (setConnect), or null off it. */
     connectState: function () { return st.connect || null; },
-    /* SCREEN 7's CORNER STATES END WITH SCREEN 7 (game.js runScreen, at every screen's start):
-       the sides made there, and their disabled ends, are its own. The screens after it draw
-       their corners as they always have — on the next one a neighbour is a wrong answer, and
-       must look like any other corner. */
     leaveConnect: function () {
       if (!st.vstate && !st.sidesDone && !st.segment) return;
       st.vstate = null; st.sidesDone = null; st.segment = null; st.segLine = st.segGlow = null;
       if (st.polyG && st.verts) renderPoly();
     },
     flurry: flurry,
-    /* How many delayed callbacks from a finished scene have been refused.
-       A test reads this: a suppression mechanism that never suppresses
-       anything looks exactly like one that was never wired up. */
     get staleSuppressed() { return staleSuppressed; },
     get pendingTimers() { return sceneTimers.length; },
     get svg() { return svg; }, get state() { return st; },
     shapeVerts: shapeVerts,
-    /** Where the end-game summary is: its state, the card in the middle, what has been collected. */
     summaryState: function () { var S = st.summary; return S && st.kind === 'summary' ? { state: S.state, active: S.active, collected: S.collected.slice() } : null; },
-    /* His part of it — rising, the line, its reading pause, sinking — is the
-       director's; game.js passes each on as it begins. */
     summaryPhase: function (name) {
       var S = st.summary;
       if (st.kind !== 'summary' || !S || !S.active) return;
       if (['SWIFTEE_ENTER', 'EXPLANATION', 'READING_PAUSE', 'SWIFTEE_EXIT'].indexOf(name) < 0) return;
       setSummary(name, S.active);
     },
-    /** What a summary card shows, as geometry, for the tests to check against polygon-math. */
     summaryGeometry: function (id) {
       var V = SUMMARY_VISUALS[id]; if (!V) return null;
       return { start: summaryVerts(id, false), end: summaryVerts(id, true), hi: (V.hi || []).slice(), line: V.line ? V.line.slice() : null,

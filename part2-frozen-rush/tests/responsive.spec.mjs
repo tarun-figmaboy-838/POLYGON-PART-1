@@ -1,16 +1,4 @@
-/* RESPONSIVE, AND NO RUNAWAY BUFFERS. The owner asked for the game to be reviewed across every
-   device and for the memory to be safe on all of them. These are the invariants that came out of
-   that review, each one a fault that was actually found and fixed:
-
-     a tap during a puzzle was tested against the world point it would have been WITHOUT the
-     push-in, up to 96px from the rope it was aimed at;
-     the interface was sized in viewport units although it lives inside a letterboxed stage, so
-     it was 22% oversized on a phone in landscape and half-size on a 4K screen;
-     the sky was resampled every frame, the wall art was cached on a swept width, and every
-     mended crossing was re-drawn for the rest of the run.
-
-   The backbuffer bound is the one that matters most on a phone: 2x of 1920x1080 is 8.3Mpx, well
-   inside the 16.7Mpx and 4096px-a-side limits that mobile GPUs impose. */
+// RESPONSIVE, AND NO RUNAWAY BUFFERS.
 import { test, expect } from '@playwright/test';
 import { boot, force, waitState } from './helpers.mjs';
 
@@ -27,7 +15,6 @@ test.describe('responsive, and the buffers', () => {
       const want = L.unfilled[0];
       const target = L.shapes.find(s => s.kind === want && s.state === 'hang');
       const z = G.zoom, fx = G.zoomVX, fy = G.zoomVY;
-      // the rope's cut stretch, mapped the way the renderer maps it — i.e. where the eye sees it
       const wx = target.anchorX, wy = (target.y - target.h / 2) - 60;
       const sx = fx + (wx - fx) * z, sy = fy + (wy - fy) * z;
       const st = document.getElementById('stage').getBoundingClientRect();
@@ -62,7 +49,6 @@ test.describe('responsive, and the buffers', () => {
 
   test('the caches are bounded: two skies, a dozen walls, and off-screen crossings are not drawn', async ({ page }) => {
     await boot(page, { fast: 4 });
-    // play through several crossings, which is what used to grow the caches
     await force(page, 'GLACIER_BREAK_1');
     await waitState(page, 'PHASE_ACTIVE', 60_000);
     const r = await page.evaluate(async () => {
@@ -89,17 +75,9 @@ test.describe('responsive, and the buffers', () => {
       const st = document.getElementById('stage').getBoundingClientRect();
       const el = document.getElementById('instruction'); el.hidden = false; el.classList.remove('leaving');
       document.getElementById('instruction-text').textContent = 'Cut the TRIANGLE.';
-      /* LAYOUT, NOT THE PAINTED BOX. The sign drops in on its ropes and the drop rotates it
-         a couple of degrees; a rotated box's client rect is its bounding box, which is up to
-         10% taller than the panel is. Measured mid-drop at one size and settled at the other,
-         that alone read as the interface being a different share of the stage. offsetHeight
-         is the laid-out height and no transform can touch it — the same reason Tutorial.hugWords
-         measures words that way. */
       const pillEl = document.getElementById('instruction-pill');
       const pill = { height: pillEl.offsetHeight, width: pillEl.offsetWidth };
       const txt = parseFloat(getComputedStyle(document.getElementById('instruction-text')).fontSize);
-      /* No jump button to measure any more: the stage IS the control, so the sign is the
-         whole of the in-play interface and the share it takes is the whole of this check. */
       return { signH: pill.height / st.height, textH: txt / st.height, stage: st.width };
     });
     await page.setViewportSize({ width: 1920, height: 1080 });

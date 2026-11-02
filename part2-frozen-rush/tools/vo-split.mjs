@@ -1,14 +1,4 @@
-/* Cut a voice-over take into one file per spoken line, for listening to.
- *
- *     node tools/vo-split.mjs "<take>.mp3" [outDir] [gap]
- *
- * A take arrives as one long recording and the game slices it by time, so before anything
- * is wired up somebody has to know WHICH LINE IS WHICH. An energy envelope can find where
- * the lines are; it cannot tell you what they say. This writes each one out as its own
- * file so a person can play them in order and label them in a few seconds — which is the
- * only reliable way to map a take, and much cheaper than shipping a wrong mapping into a
- * game that teaches the names of shapes.
- */
+// Cut a voice-over take into one file per spoken line, for listening to.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';

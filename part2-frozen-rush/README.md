@@ -23,10 +23,7 @@ npm run test:level2       # just Level 2
 
 ## What is new in 2
 
-Version 1 shipped Level 1 and kept Level 2 as a parked draft (`drafts/level-2.draft.js`)
-that nothing imported. **Level 2 is the level now** — attached, playable, and held by
-`tests/level-two.spec.mjs`. The draft is kept in `drafts/` as the record of what was
-originally specified; it is no longer the source of anything.
+Version 1 shipped Level 1 only. **Level 2 is the level now**, held by `tests/level-two.spec.mjs`.
 
 What re-attaching it actually took, beyond wiring the states back up, is worth knowing
 because it changed the design:
@@ -44,7 +41,7 @@ because it changed the design:
   that goes right across. See the note on `CFG.levelTwo` in `engine.js`.
 - **`hexR` is 220 because three constraints bracket it** to 213–223: under 213 a crevasse
   is jumpable, over 223 the pair will not fit on a 1920 stage, and over 270 a half is
-  taller than the 234px cavity and would have to be shrunk — which RUNNER forbids. At 220
+  taller than the 234px cavity and would have to be shrunk. At 220
   the seating fit comes out at exactly 1.0.
 - **`G.helper` was dead**, so the draft's feedback lines would have been invisible. They go
   through the plank (`G.signSay`) now, the same channel every other sentence uses.
@@ -58,7 +55,7 @@ Two rules explain the whole layout:
 
 **1. `game/` is the website.** Everything in it is fetched by a URL at runtime, and
 nothing else is. That is what makes it safe to point a static host straight at it —
-Vercel's Root Directory is set to `game` (see [docs/DEPLOY.md](docs/DEPLOY.md)).
+Vercel's Root Directory is set to `game`.
 
 **2. Anything a *tool* reads but the *game* never fetches lives in `art-source/`.**
 Delivered artwork, un-sliced sprite sheets, the delivered animations, raw button renders. It stays in the
@@ -85,9 +82,7 @@ tools/                one-shot generators and the dev server. Every file says at
                       top what it consumes and what it writes.
 tests/                Playwright, run against the real engine through its debug hooks.
                       level-two.spec.mjs is Level 2's own.
-docs/                 ANIMATION.md · ANIMATION-BRIEF.md · DEPLOY.md · QA-REPORT.md
-drafts/               level-2.draft.js — the original brief, now superseded (see above)
-RUNNER.md             THE CONTRACT. Read this before changing gameplay.
+docs/                 VO-SCRIPT.md · VO-PART2.md (the voice scripts the tests read)
 ```
 
 Not in git: `node_modules/`, `test-results/`, `playwright-report/`, `qa-report/`, and
@@ -131,9 +126,3 @@ Ports 8181, 8201 and 8321 are used by the harness. A dev server left running fro
 earlier session on 8181 will be *reused* by Playwright (`reuseExistingServer`) — so if it
 belongs to a different checkout the whole suite silently tests the wrong game. Kill it
 first if the results look impossible.
-
-## Before changing gameplay
-
-[RUNNER.md](RUNNER.md) is the written contract — the curriculum, the slot model, the
-fixed things a level brief must not fight, and what the tests will hold you to. It is
-kept current, and it is the right place to look first. §15 covers Level 2.

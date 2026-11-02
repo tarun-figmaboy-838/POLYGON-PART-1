@@ -1,7 +1,4 @@
-/* THE DITCH STAGE ARRIVES IN BEATS, THE SIGN SITS IN THE LEFT BAND, AND EVERY WORD IS IN THE
-   VO SCRIPT. The owner's four points: sequence the arrival instead of showing everything at
-   once, put the sign where it cannot cover the ropes, use the game's palette on the dialogue,
-   and keep a script of every spoken line. */
+// THE DITCH STAGE ARRIVES IN BEATS, THE SIGN SITS IN THE LEFT BAND, AND EVERY WORD IS IN THE
 import { test, expect } from '@playwright/test';
 import { boot, force, waitState } from './helpers.mjs';
 import { readFileSync } from 'node:fs';
@@ -28,8 +25,6 @@ test.describe('the staged intro, the sign and the script', () => {
       }
       return seen;
     });
-    /* THE PIECES COME DOWN BEFORE THE QUESTION (the owner's order): the hole alone, then the ice
-       arriving one piece at a time, and only then the plank asking which to cut. */
     // beat 0: no sign, nothing on a rope — the hole has the stage
     const beat0 = trail.filter(s => s.beat === 0);
     expect(beat0.length, 'the hole owns a beat of its own').toBeGreaterThan(0);
@@ -37,7 +32,6 @@ test.describe('the staged intro, the sign and the script', () => {
     expect(beat0.every(s => s.ys.every(y => y < 0)), 'no option has started down yet').toBe(true);
     // the clock does not run while the tremble is still playing
     expect(trail.filter(s => s.anim === 'SHAKE').every(s => s.introT === 0), 'the beats wait for the tremble').toBe(true);
-    // beat 1: they come down ONE AT A TIME — at some frame the first is well below the last
     const beat1 = trail.filter(s => s.beat === 1);
     expect(beat1.length, 'the drop gets a beat of its own').toBeGreaterThan(0);
     const staggered = beat1.some(s => s.ys.length >= 2 && s.ys[0] - s.ys[s.ys.length - 1] > 120);
@@ -119,43 +113,20 @@ test.describe('the staged intro, the sign and the script', () => {
                powColor: pow ? getComputedStyle(pow).color : null,
                powBg: pow ? getComputedStyle(pow).backgroundImage : null };
     });
-    // white inside with a bright icy-blue keyline, the owner's call after frost-and-navy
     expect(HEX(r.BUBBLE.fill)).toBe('#ffffff');
     expect(HEX(r.BUBBLE.ink)).toBe('#3fb3e8');
     expect(r.fill, 'the drawn shape matches BUBBLE').toBe('rgb(255, 255, 255)');
     expect(r.stroke).toBe('rgb(63, 179, 232)');
     expect(r.ink, 'navy ink').toBe('rgb(12, 51, 82)');
-    // the key word is picked out by colour alone: bright orange, no highlighter card behind it
     expect(r.powColor, 'the key word is bright orange').toBe('rgb(242, 97, 0)');
     expect(r.powBg, 'no card behind the key word').toBe('none');
     expect(r.wordAnim, 'the words ease in').toBe('tutWordIn');
   });
 
   test('the sign drops straight, rebounds upward, and never shows a cut rope end', async ({ page }) => {
-    /* The panel is the plank AND the two ropes above it, resting with its top edge on the top
-       of the stage so the ropes run off the frame. Two things follow, and both are held here:
-
-       IT MAY NEVER GO BELOW ITS REST LINE. Overshoot downward — which is what a falling weight
-       really does, and what the first cut of this animation did by 5% — and the top of the
-       element comes into the picture, so the ropes' cut ends hang in the sky as two stubs.
-       The rebound is upward instead: every frame is at or above the rest line.
-
-       AND IT MOVES ON ONE AXIS. No sideways travel, no rotation (a board on two ropes cannot
-       tilt: the ropes hold it level), no scaling — so there is nothing to jitter or snap. */
     await boot(page, { fast: 2 });
     await force(page, 'GLACIER_BREAK_1');
     await waitState(page, 'PHASE_ACTIVE', 60_000);
-    /* SCRUBBED, NOT WATCHED. This used to sample once per animation frame for 1.4s and
-       require more than twelve samples. That is a frame-rate assertion wearing a
-       correctness costume: on a loaded machine the headless runner delivered exactly
-       twelve frames in that window — 8.6fps — and the test failed while the animation was
-       perfectly correct. Worse, at that rate the rebound can fall between two samples, so
-       the check that matters becomes a coin toss.
-
-       So the animation is paused and scrubbed through its own timeline instead. Sixty
-       evenly spaced positions across the active period, read back as computed style, which
-       is the same interpolation the browser paints — deterministic, frame-rate independent,
-       and it cannot miss a rebound that is really there. */
     const t = await page.evaluate(async () => {
       const p = document.getElementById('instruction-pill');
       p.style.animation = 'none'; void p.offsetWidth; p.style.animation = '';   // replay the arrival
@@ -190,15 +161,6 @@ test.describe('the staged intro, the sign and the script', () => {
     expect(turns, 'it rebounds rather than stopping dead').toBeGreaterThanOrEqual(2);
   });
 
-  /* THE TWO SCRIPTS BETWEEN THEM HOLD EVERY SPOKEN LINE, and this is what stops a
-     sentence being reworded in the engine while the sheet the voice is read from still
-     says the old words — which is precisely how a take gets recorded wrong.
-
-     It used to look for `instruction: '...' }` and expect SEVEN of them: Part 1's
-     crossings were one-line objects. Part 2's carry targets, distractors, art and a voId,
-     so every one of them ends in a comma instead and the pattern matched nothing at all —
-     the assertion had been comparing an empty list against 7 and failing ever since the
-     curriculum changed. Nine crossings now, matched however the object is laid out. */
   test('the VO scripts hold every line the learner is shown', async () => {
     const tutDoc = readFileSync('docs/VO-SCRIPT.md', 'utf8');
     const p2Doc = readFileSync('docs/VO-PART2.md', 'utf8');
@@ -210,11 +172,6 @@ test.describe('the staged intro, the sign and the script', () => {
     for (const line of instructions) {
       expect(p2Doc, `docs/VO-PART2.md is missing: ${line}`).toContain(line);
     }
-    /* The tutorial's own seven lines, as written in its step list. Either script may
-       hold one: six were recorded with Part 1 and are in VO-SCRIPT.md, and the 'use'
-       step was rewritten for Part 2's single slab, so its replacement is waiting in
-       VO-PART2.md with the nine questions. What must never happen is a line the learner
-       is shown that appears in NEITHER — that is a line nobody will know to record. */
     const spoken = [...tut.matchAll(/^\s*text: '([^']+)',$/gm)].map(m => m[1]);
     expect(spoken.length).toBeGreaterThanOrEqual(7);
     for (const line of spoken) {

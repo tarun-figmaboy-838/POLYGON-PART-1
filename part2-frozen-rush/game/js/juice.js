@@ -1,36 +1,8 @@
-/*!
- * juice.js — cartoon game feel. Squash, pop, shake, dust, hitstop.
- *
- * The whole design constraint is that this must not fight your game. It never
- * writes to `element.style.transform`, never wraps your nodes, and never takes
- * over your loop. Every effect is a Web Animations API animation with
- * `composite: 'add'`, which means the browser composes it *on top of* whatever
- * transform your render loop is already setting, sixty times a second.
- *
- * Your loop keeps writing `el.style.transform = 'translate(...)'`. Juice adds
- * `scale(1.2) rotate(3deg)` over it. Nothing conflicts, and when the effect
- * ends there is no residue — every keyframe starts and finishes at identity.
- *
- *   <script src="sfx.js"></script>     <!-- optional; combos use it if present -->
- *   <script src="juice.js"></script>
- *
- *   Juice.stage(document.getElementById('game'));   // once, for screen effects
- *
- *   Juice.pop(el);                    // collect, appear
- *   Juice.impact(el, { power: 1.4 }); // land, hit: squash + dust + shake + sound
- *   Juice.trample(el);                // the heavy one
- *   Juice.celebrate(el);              // confetti + fanfare
- *
- * No dependencies. No build step. ~11 KB.
- */
+// juice.js — cartoon game feel.
 (function (global) {
   'use strict';
 
   var doc = global.document;
-
-  /* ------------------------------------------------------------------ *
-   * Config
-   * ------------------------------------------------------------------ */
 
   var cfg = {
     intensity: 1,          // global multiplier on every amplitude
@@ -58,14 +30,6 @@
     else for (var i = 0; i < liveList.length; i++) fn(liveList[i]);
   }
 
-  /* ------------------------------------------------------------------ *
-   * Capability and accessibility
-   * ------------------------------------------------------------------ */
-
-  // Additive composition is what makes this safe. Detect it rather than
-  // assume it: without it we still run colour, opacity and particle effects,
-  // but transform effects would overwrite the game's own transform, so they
-  // are skipped instead of breaking the game.
   var ADDITIVE = (function () {
     if (!doc || !doc.createElement('div').animate) return false;
     try {
@@ -100,10 +64,6 @@
     if (mq.addEventListener) mq.addEventListener('change', function (e) { reduced = e.matches; });
   }
 
-  /**
-   * Amplitude scaler. Reduced motion damps rather than disables: a child who
-   * needs less movement still needs to know their tap registered.
-   */
   function amp(v) {
     var r = cfg.reducedMotion === true || (cfg.reducedMotion === 'auto' && reduced);
     return v * cfg.intensity * (r ? 0.35 : 1);
@@ -112,13 +72,7 @@
     return cfg.reducedMotion === true || (cfg.reducedMotion === 'auto' && reduced);
   }
 
-  /* ------------------------------------------------------------------ *
-   * Easings
-   * ------------------------------------------------------------------ */
-
   var EASE = {
-    // Overshoot and settle. This is what makes something feel alive rather
-    // than merely animated.
     back:     'cubic-bezier(0.34, 1.56, 0.64, 1)',
     // Pull back before going. Anticipation.
     anticipate: 'cubic-bezier(0.36, 0, 0.66, -0.56)',
@@ -140,10 +94,6 @@
     });
     return track(a);
   }
-
-  /* ------------------------------------------------------------------ *
-   * Element effects
-   * ------------------------------------------------------------------ */
 
   /** Volume-preserving squash: wider means shorter. Reads as physical. */
   function sq(y) { return 'scale(' + (1 / Math.sqrt(y)).toFixed(4) + ', ' + y.toFixed(4) + ')'; }
@@ -202,8 +152,6 @@
     shake: function (el, o) {
       o = o || {};
       var d = amp(o.distance == null ? 8 : o.distance);
-      // Must start AND end at zero. Starting at full amplitude snaps the
-      // element sideways on frame one instead of shaking it from rest.
       var k = [{ transform: 'translateX(0px)', offset: 0 }], n = 8;
       for (var i = 1; i < n; i++) {
         var f = 1 - i / n;
@@ -315,10 +263,6 @@
     }
   };
 
-  /* ------------------------------------------------------------------ *
-   * Screen effects
-   * ------------------------------------------------------------------ */
-
   function stage(el) {
     if (el) { stageEl = el; ensureCanvas(); }
     return stageEl || (doc && doc.body);
@@ -373,14 +317,6 @@
     return a;
   }
 
-  /**
-   * Freeze on impact. The most under-used trick in game feel: a few frames of
-   * stillness at the moment of contact reads as weight.
-   *
-   * This always stops juice animations. To stop *gameplay* too, multiply your
-   * own delta by `Juice.timeScale` in your loop — one line, and the punch goes
-   * from decorative to physical.
-   */
   function hitstop(ms) {
     var d = Math.max(0, ms == null ? 70 : ms);
     if (isReduced()) d = Math.min(d, 40);
@@ -393,10 +329,6 @@
     return d;
   }
 
-  /* ------------------------------------------------------------------ *
-   * Particles — one canvas, not N DOM nodes.
-   * ------------------------------------------------------------------ */
-
   var cv = null, g2d = null, parts = [], raf = 0;
 
   function ensureCanvas() {
@@ -406,8 +338,6 @@
     if (cv && cv.parentNode === host) return cv;
 
     cv = doc.createElement('canvas');
-    // Never intercept input. An overlay that forgets this is the classic way
-    // to make a game "stop responding" while still looking correct.
     cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;' +
                        'pointer-events:none;z-index:9999';
     if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
@@ -648,13 +578,6 @@
     }
   };
 
-  /* ------------------------------------------------------------------ *
-   * Combos — one call, one trigger, visual and sound together.
-   *
-   * Firing the effect and the cue from the same place is what keeps them in
-   * sync. Two call sites drift, and drift is exactly what reads as "cheap".
-   * ------------------------------------------------------------------ */
-
   function sfx(name, opts) {
     if (!cfg.sound || !global.SFX) return;
     global.SFX.play(name, opts);
@@ -710,10 +633,6 @@
       sfx(o.sound || 'sadTrombone');
     },
 
-    /**
-     * The heavy one. Anticipation, then the stomp: deep squash, dust ring,
-     * screen shake, hitstop, sound. Anticipation is what makes it land.
-     */
     trample: function (el, o) {
       o = o || {};
       var wind = o.anticipation == null ? 220 : o.anticipation;
@@ -749,10 +668,6 @@
       sfx(o.sound || 'wrong');
     }
   };
-
-  /* ------------------------------------------------------------------ *
-   * Public surface
-   * ------------------------------------------------------------------ */
 
   var Juice = {
     stage: stage,

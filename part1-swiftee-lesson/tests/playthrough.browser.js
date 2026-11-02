@@ -1,23 +1,5 @@
 #!/usr/bin/env node
-/*!
- * playthrough.browser.js — the whole lesson, in a real browser, via Playwright.
- *
- *   node tests/playthrough.browser.js            full 31-screen play
- *   node tests/playthrough.browser.js --checks   render and layout only (fast)
- *   node tests/playthrough.browser.js --headed   watch it
- *   node tests/playthrough.browser.js --shots <dir>
- *
- * playthrough.jsdom.js proves sequencing and logic. It cannot prove that a tap
- * lands on the thing under the finger, because jsdom has no hit testing — and
- * that is exactly how a faded-out Start button sat over the middle of the
- * screen swallowing every tap while the headless suite stayed green, and how
- * an invisible ghost line sat over the vertex a child had to grab. Those are
- * the bugs this file exists for.
- *
- * It serves the game itself on an ephemeral port, so there is nothing to start
- * first and no port to collide with. It uses the system Chrome rather than a
- * downloaded browser build.
- */
+// playthrough.browser.js — the whole lesson, in a real browser, via Playwright.
 'use strict';
 
 const { chromium } = require('playwright');
@@ -28,12 +10,6 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const CHECKS_ONLY = process.argv.includes('--checks');
 const HEADED = process.argv.includes('--headed');
-/* VOICED=1 (or --voiced): the lesson at its real pace with the voice on —
-   nothing fast-forwarded — and every frame watched for the things only a
-   voiced run shows: one voice at a time and none cut off, the input never
-   open while he is still speaking or before the lesson is waiting for the
-   child, no hint over his voice, and nothing on the page twice. Slow (the
-   whole lesson, spoken); the default run stays the fast one. */
 const VOICED = process.env.VOICED === '1' || process.argv.includes('--voiced');
 const SHOT_DIR = (() => { const i = process.argv.indexOf('--shots'); return i > 0 ? process.argv[i + 1] : null; })();
 
@@ -50,10 +26,6 @@ function serve() {
     if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
     fs.readFile(file, (err, buf) => {
       if (err) { res.writeHead(404).end('not found'); return; }
-      // The sprite-sheet cache deliberately drops its Image references and
-      // leans on the browser's own cache when a clip comes back. 'no-store'
-      // turns each of those into a fresh fetch, which is how a long run ends
-      // in ERR_INSUFFICIENT_RESOURCES.
       res.writeHead(200, {
         'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream',
         'Cache-Control': rel.startsWith('assets/') ? 'public, max-age=3600' : 'no-store'
@@ -74,33 +46,19 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   };
 
   const { server, port } = await serve();
-  // ?story=0: this plays the lesson; the story before it is played by tests/playthrough.jsdom.js
-  // LAN=hi (mr, te, gu, od): the same lesson in that language (src/core/i18n.js)
   const URL = `http://127.0.0.1:${port}/index.html?story=0` + (process.env.LAN ? '&lan=' + process.env.LAN : '');
 
-  // (CHROME=/path/to/a/chromium plays it in that browser instead of the installed Google Chrome)
   const browser = await chromium.launch({
     ...(process.env.CHROME ? { executablePath: process.env.CHROME } : { channel: 'chrome' }),
     headless: !HEADED,
     args: ['--no-sandbox', '--disable-dev-shm-usage', '--mute-audio',
            '--autoplay-policy=no-user-gesture-required',
-           // Headless Chrome's out-of-process audio service is unstable over a
-           // long run with this many short-lived oscillator nodes.
            '--disable-features=AudioServiceOutOfProcess,AudioServiceSandbox']
   });
   const context = await browser.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
   const page = await context.newPage();
   if (VOICED) await page.addInitScript(() => {
     const V = window.__voiced = { clips: [], openWhileSpeaking: [], openNotWaiting: [], hintOverVoice: [], dupes: [], words: [] };
-    /* EVERY WORD AGAINST THE VOICE. Each word in the bubble is revealed by
-       gaining .in; at that moment the voice's position in its clip is set
-       beside the word's recorded start (assets/vo/word-timings.json). A word
-       shown before it is said, or long after, is a sync fault.
-       WHICH word it is comes from WHERE it is — the words before it in its
-       bubble line, plus the words of this clip's earlier bubbles — never from
-       a running count, which any extra lit element (a term's "?") or a
-       miscounted word throws off for the rest of the line. A mark continues
-       the word before it, and each word is timed once per play. */
     let wordClip = null, partBase = 0, lastLine = null, lastText = '', seenK = null;
     const nWords = (s) => { s = String(s || '').trim(); return s ? s.split(/\s+/).length : 0; };
     document.addEventListener('DOMContentLoaded', () => {
@@ -127,9 +85,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'], attributeOldValue: true });
     });
     const P = HTMLMediaElement.prototype, play = P.play, pause = P.pause;
-    // (a clip played from its copy in memory has a blob: address with no name in it — it is the
-    // line VO has just put on air, VO.id, which is set before the element plays; without the name
-    // its spoken length is unknown and a stop in the silent tail read as a cut)
     const idOf = (el) => { const u = el.currentSrc || el.src || ''; if (/^blob:/.test(u) && window.VO && window.VO.id) return window.VO.id;
                            return u.split('/').pop().split('?')[0].replace(/\.(ogg|mp3)$/, ''); };
     P.play = function () {
@@ -173,27 +128,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   let crashed = null;
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('crash', () => { crashed = 'page crashed'; });
-  /* A request can fail for two completely different reasons, and only one of
-     them is about this build.
-
-       THE BUILD'S FAULT: a 404, or a file that is not there. That is a broken
-       reference and it must fail the suite.
-
-       THE MACHINE'S FAULT: ERR_INSUFFICIENT_RESOURCES and its relatives, which
-       Chrome raises when it cannot allocate — on a box whose commit charge is
-       already at 93%, a sprite sheet decode simply has nowhere to go. The same
-       commit, on the same files, passes when the machine is not full.
-
-     Lumping the second in with the first produced a suite that failed for
-     reasons the repository could do nothing about, and — much worse — trained
-     everyone to shrug at a red "no missing assets". They are counted apart
-     now: a 404 fails, exhaustion is reported as what it is. */
   const HOST_LIMIT = /INSUFFICIENT_RESOURCES|OUT_OF_MEMORY|ERR_INSUFFICIENT/i;
-  /* A cancelled request is not an absent one either. Under memory pressure
-     the sprite LRU drops sheets that are still in flight, and Chrome reports
-     the dead fetch as ERR_ABORTED. Whether the FILE is there is settled by a
-     stronger gate that does not need a browser at all: swiftee.test.js walks
-     the frame table and stats every sheet on disk. */
   const CANCELLED = /ERR_ABORTED|ERR_CONNECTION_ABORTED/i;
   page.on('console', (m) => {
     if (m.type() !== 'error') return;
@@ -226,21 +161,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     window.__seen = new Set();
     window.__asked = [];
     window.__cues = { correct: 0, wrong: 0 };
-    // Count the cue, then swallow it: the assertion is that the right cue
-    // fires for the right verdict, not that a headless box makes a noise.
     window.SFX.play = (n) => { if (n === 'correct') window.__cues.correct++; if (n === 'wrong') window.__cues.wrong++; return true; };
     window.SFX.sequence = () => 0;
     if (!window.__voiced) {
       window.Game.director.configure({ sayMinMs: 120, msPerWord: 8, feedbackSettleMs: 40, beatCeilingMs: 6000, readablePauseMs: 60 });
-      // A FAST RUN IS A SILENT RUN. Every line here is fast-forwarded; a real
-      // voice would hold each one for its whole clip (the voiced timing is
-      // checked on its own, word by word), so the game's sound is muted.
       if (window.SFX && SFX.isMuted && !SFX.isMuted()) SFX.mute();
     }
     window.Game.director.on('start', () => window.__seen.add(window.Game.screen));
-    // SWIFTEE IS ON SCREEN ONLY WHERE HE HAS A PURPOSE. Sampled a beat after
-    // each screen opens, against whichever screen is up at that moment; the
-    // first screen is skipped because he is still on the sleigh.
     window.__buddy = [];
     window.__startAt = {};
     window.Game.director.on('start', () => {
@@ -251,21 +178,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const el = window.Swiftee && window.Swiftee.el; if (!el) return;
         const st = window.Swiftee.state;
         const scr = window.Screens.list[s];
-        // Coming in counts as on; going out counts as off. A screen he flies
-        // into (swiftee.arrive 'fly') shows its card first and brings him in
-        // after it: waiting in the wing for that counts as coming in.
         const waitsToFly = !!(scr.swiftee && scr.swiftee.arrive === 'fly' && !window.Game.buddy.present);
         const on = parseFloat(getComputedStyle(el).opacity) > 0.05 || st === 'enter' || waitsToFly;
-        // A screen with a PURPOSE must have him; a screen he speaks on only
-        // because a line addresses the child may have him or not — he comes
-        // up for the line and drops back when the plank returns. Anywhere
-        // else he must be gone.
         const must = !!(scr.swiftee && scr.swiftee.purpose);
         const may = window.Screens.wantsBuddyAt ? window.Screens.wantsBuddyAt(s)
                   : (window.Screens.wantsBuddy ? window.Screens.wantsBuddy(scr) : must);
-        // Leaving at the end of his screen, or away measuring a side, is not absence.
-        // (the walk owns him — its lock — until he has flown home: fading back in on his mark,
-        // with the walker already gone, is still the walk)
         const leaving = st === 'exit', measuring = !!document.querySelector('.swiftee-measuring, .swiftee-angle-measuring') || /measuring/.test((window.Swiftee && window.Swiftee.locked) || '');
         const bad = must ? !(on || leaving || measuring) : (!may && on && !leaving);
         if (bad) window.__buddy.push((s + 1) + ':' + (on ? 'on' : 'off'));
@@ -282,10 +199,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await shot('01-start.png');
   await page.click('#start');
 
-
-  /* ---- the arrival ------------------------------------------------
-     He flies in. Mid-flight he should be above the spot he will land on and
-     playing the airborne loop; a second later he should be standing on it. */
   await sleep(1100);
   const inFlight = await safe(() => page.evaluate(() => {
     const r = window.Swiftee.bounds();
@@ -294,10 +207,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     return {
       visible: getComputedStyle(el).opacity !== '0',
       state: window.Swiftee.state,
-      // The arrival is a canvas now, not a sprite sheet on his element: three
-      // separately drawn sheets, none of which is a uniform grid, rendered by
-      // src/fx/sleigh-intro.js. What says it is happening is that the canvas
-      // has ink on it while he himself is still hidden.
       airborne: (function () {
         var c = document.querySelector('canvas.sleigh-intro');
         return !!(c && c.style.display !== 'none' && getComputedStyle(window.Swiftee.el).opacity === '0');
@@ -306,20 +215,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     };
   }), {});
   await shot('02-arrival.png');
-  // He arrives by sleigh now, not on the wing: mid-arrival he is playing a
-  // driving clip and is still off his mark, and a moment later he is standing
-  // on it. 'airborne' asked whether the flapping sheet was bound, which is no
-  // longer what an arrival looks like.
-  // NOT inFlight.visible. His own element is deliberately hidden for the
-  // whole arrival: the departure sheet draws Swiftee itself, so showing the
-  // element as well would put two birds on the screen. What says the arrival
-  // is happening is the canvas having ink on it WHILE he is hidden, which is
-  // exactly what 'airborne' measures now.
   t('he rides in on the sleigh', inFlight.airborne && inFlight.state === 'enter', JSON.stringify(inFlight));
 
-  // Wait for the landing rather than guessing how long it takes. A fixed
-  // sleep passes on a fast machine and fails on a busy one, which says
-  // nothing about the game and everything about the box it ran on.
   await safe(() => page.waitForFunction(
     () => { const c = window.Swiftee.el.lastChild; return window.Swiftee.state !== 'enter' &&
           !((c.getAttribute('data-sheet') || '') + getComputedStyle(c).backgroundImage).includes('flapping'); },
@@ -331,14 +228,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   })), {});
   t('he lands and settles into talking', landed.visible && landed.grounded, JSON.stringify(landed));
 
-  // ONE BIRD, AND NOTHING LEFT BEHIND.
-  //
-  // The departure sheet draws Swiftee itself, so for six seconds there are
-  // two things that could be him: the canvas and his own element. Exactly one
-  // of them is ever visible, and when the intro ends the canvas has to be
-  // both hidden and empty — a cleared-but-shown canvas would sit over the
-  // lesson catching nothing, and a hidden-but-inked one would flash the last
-  // frame back on the next resize.
   const handoff = await safe(() => page.evaluate(() => {
     const c = document.querySelector('canvas.sleigh-intro');
     let ink = 0;
@@ -355,56 +244,23 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   t('the intro hands over to exactly one bird and leaves nothing behind',
     handoff.canvasHidden && handoff.ink === 0 && handoff.swifteeShown, JSON.stringify(handoff));
 
-  // A baseline for the leak gate at the end of the run. Taken here rather than
-  // straight after the start button, because the arrival checks above have to
-  // catch him mid-flight and a settling pause before them would let him land
-  // first.
   await sleep(1200);
-  // (not the stage's scene layers: they are the scene on screen, emptied by
-  // every reset, and the lesson now ENDS on one that keeps its collection up)
   const baseline = await safe(() => page.evaluate(() => ({
     nodes: document.getElementsByTagName('*').length -
            document.querySelectorAll('.layer-panel *, .layer-poly *, .layer-ui *').length,
     anims: document.getAnimations().length
   })), { nodes: 0, anims: 0 });
 
-  // How many rows each screen's line ends up on.
-  //
-  // The bubble is meant to keep a short or middling sentence on one row —
-  // it shrinks the type rather than wrapping, down to three fifths — and the
-  // failure mode is silent: the fit runs, finds nothing to do because it is
-  // measuring the wrong thing, and the line wraps anyway. That happened twice
-  // (once counting a block's height, once counting words that were still bare
-  // text nodes), and neither showed up in any check.
-  //
-  // Sampled a beat after the line changes, so the fit and the settle pass have
-  // both finished.
   await safe(() => page.evaluate(() => {
     window.__rows = {};
     const line = document.querySelector('.bubble-line');
     if (!line) return;
     const sample = () => {
-      // ONLY A BUBBLE THAT IS UP. This counted the rows of the line element
-      // whether or not the bubble was on screen, and the bubble keeps its
-      // last line while it fades out — measured mid-teardown, at whatever
-      // width the fit had left it, against whichever screen happened to be
-      // current 900ms later. The check is "does a child see a paragraph", and
-      // a bubble nobody can see is not one they read.
       const bub = document.querySelector('#bubble');
       if (!bub || !bub.classList.contains('show')) return;
       if (parseFloat(getComputedStyle(bub).opacity) < 0.05) return;
-      // NOR ONE BEHIND THE "TURN YOUR DEVICE" SCREEN. The portrait check below narrows the window
-      // to an upright phone, where #rotate covers the lesson; a line that is up at that moment wraps
-      // at a width nobody plays at (the hand-over line, four rows at 400 px, in a voiced run).
       const turn = document.getElementById('rotate');
       if (turn && getComputedStyle(turn).display !== 'none') return;
-      // LAYOUT BOXES, NOT CLIENT RECTS. Each word rises a few pixels into
-      // place as it arrives, and a client rect includes that travel — so a
-      // line sampled half way through its reveal reported twice the rows it
-      // lays out on. offsetTop is the row the word is actually in.
-      // AND A WORD BELONGS TO THE ROW ITS MIDDLE IS IN (game.js lineRows): a key word sits a
-      // pixel or two off the plain words beside it, and bucketing tops counted one row as two —
-      // the taller letters of Telugu put "అది క్రమ బహుభుజి." at 0, 1, 33, 34, 67 and 68.
       const kids = [].slice.call(line.childNodes).filter((n) => n.nodeType === 1 && n.offsetWidth);
       if (!kids.length) return;
       const rows = [];
@@ -425,7 +281,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   const toScreen = (pts) => page.evaluate((qs) => {
     const svg = window.Stage.svg, m = svg.getScreenCTM(), pt = svg.createSVGPoint();
-    // the scene may be seated higher on a plank-free screen: the layers carry a translate the matrix does not know about
     const seat = (window.Stage && window.Stage.seatY) || 0;
     return qs.map((q) => { pt.x = q.x; pt.y = q.y + seat; const r = pt.matrixTransform(m); return { x: r.x, y: r.y }; });
   }, pts);
@@ -437,9 +292,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     for (let i = 1; i <= steps; i++) {
       await page.mouse.move(a.x + (b.x - a.x) * i / steps, a.y + (b.y - a.y) * i / steps);
     }
-    // Chrome coalesces rapid moves, and stage.js drops an item at the last
-    // position its own handler saw. Land the final move, let it be delivered,
-    // then release.
     await sleep(50);
     await page.mouse.move(b.x, b.y);
     await sleep(50);
@@ -465,18 +317,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   });
 
   async function act(spec) {
-    // Every mode change arms a short guard so the gesture that ended the last
-    // screen cannot start something on this one. A child takes longer than
-    // that to reach; a script does not.
     await page.waitForFunction(() => !window.Input.guarded, null, { timeout: 6000 }).catch(() => {});
-    // HANDED BACK: while he replies to an answer the stage takes nothing
-    // (game.js pop(): lock, his line, unlock) — nor does a child answer again
     const free = () => page.waitForFunction(() => window.Input.mode() !== 'locked', null, { timeout: 15000 }).catch(() => {});
 
     switch (spec.type) {
-      // the end of a screen: the lesson goes on by itself (game.js autoAdvance) — nothing is
-      // pressed, and a Next button showing in the lesson is a fault
-      // the summary's review (the final pass): Next shows once every card has been explained; press it
       case 'summary-review': {
         await page.waitForSelector('#next.show', { timeout: 60000 });
         await page.click('#next');
@@ -501,8 +345,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       case 'draw-diagonals': {
         const s = await st();
         const from = spec.from === 'picked' ? s.picked : spec.from;
-        // connecting (sides — the Screen 7 vertex brief): a neighbour, a side, named; the other
-        // neighbour, the second side; and only then the diagonal
         if (spec.sides && s.sidesDone === 0) { await dragPath(s.verts[from], s.verts[(from + 1) % s.n]); return; }
         if (spec.sides && s.sidesDone === 1) { await dragPath(s.verts[from], s.verts[(from + s.n - 1) % s.n]); return; }
         const used = new Set(s.diagonals.map((d) => d.slice().sort((a, b) => a - b).join('-')));
@@ -556,18 +398,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       }
 
       case 'swipe': {
-        // A REAL DRAG, not a tap on the zone.
-        //
-        // The tap fallback is what the jsdom suite uses, because jsdom has no
-        // layout to drag across. Here there is geometry, so this exercises the
-        // gesture the child will actually make — pointer down on the card,
-        // across the threshold, release — which is the only way the threshold,
-        // the pointer capture and the spring-back are ever executed.
-        //
-        // Round one gets three extra things done to it: a tiny movement, to
-        // prove a twitch does not classify anything; a swipe to the WRONG
-        // side, to prove a wrong answer keeps the same shape; and only then
-        // the right one.
         for (let guard = 0; guard < 30; guard++) {
           const st = await page.evaluate(() => {
             const S = window.Stage.state.swipe;
@@ -583,10 +413,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
           if (st === null || st === 'done') return;
           if (st === 'wait') { await sleep(140); continue; }
 
-          // HANDED BACK FIRST. He pops up behind the card to ask about each
-          // one, and to say why after a wrong answer, and the card cannot be
-          // taken until he is down again (game.js pop()): a child cannot
-          // swipe into that, and neither does this.
           const handedBack = () => page.waitForFunction(() => window.Input.mode() !== 'locked' || !window.Stage.state.swipe, null, { timeout: 15000 });
           await handedBack();
 
@@ -663,8 +489,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const screen = await safe(() => page.evaluate(() => window.Game.screen), lastScreen);
     if (screen !== lastScreen) { lastScreen = screen; lastChange = Date.now(); }
     else if (Date.now() - lastChange > (VOICED ? 180000 : 60000)) {
-      // Say what the game was waiting for; "stopped at screen 26" alone sends
-      // you back to the browser to find out why.
       stalled = await safe(() => page.evaluate(() => {
         const s = window.Stage.state, S = s.sort;
         return { screen: window.Game.screen, id: (window.Screens.list[window.Game.screen] || {}).id,
@@ -713,10 +537,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const pivot = await safe(() => page.evaluate(async () => {
     const rect = () => { const r = window.Swiftee.el.getBoundingClientRect(); return [Math.round(r.x), Math.round(r.y), Math.round(r.width)]; };
     const nap = (ms) => new Promise((r) => setTimeout(r, ms));
-    // Wait for him to stop moving before taking the first reading. He may
-    // still be settling out of the arrival flight, and a baseline measured
-    // mid-landing makes every state after it look like a shift — which is a
-    // false alarm about the one thing this check exists to catch.
     let prev = '', same = 0;
     for (let i = 0; i < 40 && same < 3; i++) {
       await nap(120);
@@ -725,18 +545,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       prev = now;
     }
     const out = [];
-    // Tag every reading with the screen it was taken on. The lesson does not
-    // stop for this check, and a reading from after a screen change is a
-    // reading of a different pose at a different size on a different mark —
-    // which looks exactly like the shift this exists to catch.
-    // (and with the mark he is on: the lesson goes on by itself now, so it can move him to his
-    // next mark in the middle of these readings — that is a walk, not a face shifting him)
     const screenOf = () => (window.Game && window.Game.screen) + '|' + (window.Swiftee && (window.Swiftee.pos + ':' + window.Swiftee.size));
-    // A MILESTONE MAY HOP; A FACE MAY NOT MOVE HIM. A celebration lifts him
-    // off the ice for a moment (swiftee.js BODY.cheer) and lands him where he
-    // stood; what this guards is his REGISTRATION — the pivot and baseline a
-    // new expression must not shift. So each reading waits for any body move
-    // on his element to finish before it measures.
     const settled = async () => {
       for (let k = 0; k < 20; k++) {
         const moving = (window.Swiftee.el.getAnimations ? window.Swiftee.el.getAnimations() : []).filter((a) => a.playState === 'running');
@@ -762,7 +571,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   const sprite = await safe(() => page.evaluate(async () => {
     const cell = window.Swiftee.el.lastChild, seen = new Set();
-    // (the frame and the sheet are the cell's data-frame / data-sheet when drawn on the canvas)
     for (let i = 0; i < 12; i++) { seen.add(cell.getAttribute('data-frame') || getComputedStyle(cell).backgroundPosition); await new Promise((r) => setTimeout(r, 60)); }
     return { frames: seen.size, image: cell.getAttribute('data-sheet') || getComputedStyle(cell).backgroundImage, scale: window.Swiftee.scale };
   }), { frames: 0, image: '' });
@@ -782,24 +590,16 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   t('Swiftee is fully on screen, not cropped at any edge',
     fitCheck.offLeft <= 1 && fitCheck.offTop <= 1 && fitCheck.offRight <= 1 && fitCheck.offBottom <= 1,
     JSON.stringify(fitCheck));
-  // The cell is 76% character; 46% of the window for the whole cell is about a
-  // third of the window for the bird, which is presence without dominance.
   t('Swiftee is not oversized', fitCheck.heightPct > 0 && fitCheck.heightPct <= 46, fitCheck.heightPct + '% of window height');
 
   const overlap = await safe(() => page.evaluate(() => {
     const box = (s) => { const e = document.querySelector(s); if (!e || !e.classList.contains('show')) return null; const r = e.getBoundingClientRect(); return r.width ? r : null; };
     const over = (a, b) => a && b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
-    // Element by element, not against one union box. The union of a tray and
-    // the bins below it spans the gap between them, and something sitting in
-    // that gap is not covering anything.
     const parts = window.Stage.contentParts ? window.Stage.contentParts() : [];
     const hits = [];
     const bubble = box('#bubble'), card = box('#instruction');
     const hud = document.querySelector('#hud').getBoundingClientRect();
     let bird = window.Swiftee.bounds && window.Swiftee.bounds();
-    // Peeking over a card he is clipped at its rim: only what shows can overlap.
-    // Peeking he is BEHIND the card by construction — cut at its rim, the frame
-    // hides the rest — so he cannot be an overlay on it.
     if (window.Swiftee.pos === 'peek') bird = null;
     const against = (r, label) => { if (r && parts.some((p) => over(r, p))) hits.push(label); };
     against(bubble, 'bubble/stage');
@@ -810,16 +610,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     if (over(bubble, hud)) hits.push('bubble/hud');
     return hits.length ? { screen: window.Game.screen, id: (window.Screens.list[window.Game.screen] || {}).id, hits: hits } : null;
   }), null);
-  // WHICH SCREEN. 'swiftee/stage' on its own says something overlaps
-  // somewhere in a thirty-four screen lesson, which is a search, not a
-  // report.
   t('no overlay covers the lesson, the character or another overlay',
     !overlap, overlap ? 'screen ' + (overlap.screen + 1) + ' ' + overlap.id + ': ' + overlap.hits.join(', ') : '');
 
   const bg = await safe(() => page.evaluate(() => {
-    // The painting is one full-window layer now (#backdrop), not an image
-    // fitted inside the board — two copies at two scales met along a visible
-    // seam. The weather is still drawn in board coordinates.
     const back = document.getElementById('backdrop');
     const css = back ? getComputedStyle(back).backgroundImage : '';
     return { src: /ice-vista/.test(css) ? css : null,
@@ -828,8 +622,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
              dots: document.querySelectorAll('.weather circle:not([fill^="url"])').length,
              clouds: document.querySelectorAll('.weather .cloud').length };
   }), { src: null, flakes: 0, clouds: 0 });
-  // Crystals, not dots — a filled circle is what the snow used to be, and a
-  // regression to it is invisible in a screenshot but obvious to a child.
   t('the painted vista is present with its weather',
     !!bg.src && bg.flakes > 10 && bg.gust > 0 && bg.dots === 0, JSON.stringify(bg));
   t('no vector clouds are drawn over the painted sky', bg.clouds === 0, String(bg.clouds));
@@ -847,14 +639,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
              asksToTurn: !!(ts && ts.display !== 'none' && tb.width >= innerWidth - 1 && tb.height >= innerHeight - 1) };
   }), { overflow: 0, cropped: false, asksToTurn: false });
   t('no horizontal overflow at phone width', portrait.overflow <= 0, JSON.stringify(portrait));
-  /* A PORTRAIT PHONE IS ASKED TO TURN, and that is the whole check now.
-     This used to assert that Swiftee was not cropped in a portrait window.
-     He is not cropped there because the lesson does not run there: a 16:9
-     board in a tall window is a letterbox strip with two thirds of the screen
-     empty and a shape a third of the size a finger needs. The game asks for
-     the device to be turned instead (#rotate, index.html), so what matters is
-     that the ask covers the screen — measuring the board behind it is
-     measuring something no child ever sees. */
   t('a portrait phone is asked to turn', portrait.asksToTurn, JSON.stringify(portrait));
 
   if (!CHECKS_ONLY) {
@@ -862,9 +646,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     t('all ' + N + ' screens were visited', seen === N, seen + '/' + N);
     const buddy = await safe(() => page.evaluate(() => window.__buddy), []);
     t('Swiftee is on screen only where he has a purpose', buddy.length === 0, buddy.join(' '));
-    // 10: the storyboard no longer drags a side's loose end (drag-endpoint),
-    // and the builder's stepper went with the builder
-  // (11: the summary's review — Next, and a tap on a card to hear it again)
     t('all 11 interaction types were exercised', new Set(asked).size === 11, [...new Set(asked)].join(','));
     t('correct cues fired', cues.correct > 0, JSON.stringify(cues));
     t('never stalled on a screen', stalls === 0, stalled ? JSON.stringify(stalled) : '');
@@ -880,8 +661,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         t('voiced: no input open while he is speaking', V.openWhileSpeaking.length === 0, JSON.stringify(V.openWhileSpeaking.slice(0, 6)));
         t('voiced: no hint over his voice', V.hintOverVoice.length === 0, JSON.stringify(V.hintOverVoice.slice(0, 6)));
         t('voiced: nothing on the page twice', V.dupes.length === 0, JSON.stringify(V.dupes.slice(0, 6)));
-        // (the first word of a line waits for its bubble to arrive, PANEL_LEAD,
-        // so it is allowed its own lateness; every other word follows the voice)
         const lag = V.words.map((w) => ({ ...w, e: w.at - w.cue }));
         const early = lag.filter((w) => w.e < -60), late = lag.filter((w) => w.e > (w.k === 0 ? 260 : 180));
         const es = lag.map((w) => w.e).sort((a, b) => a - b);
@@ -891,27 +670,14 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       }
     }
   }
-  // Nothing may accumulate over a whole lesson. Every effect in the game is
-  // short-lived — confetti, the transition's crystals, the title screen's
-  // weather — and every one of them removes its own elements and cancels its
-  // own animations when it is done. A run that ends with hundreds more nodes
-  // or animations than it started with is one of them failing to, and that is
-  // invisible on any single screen: it shows up as a lesson that is smooth at
-  // the start and stuttering by the end.
   if (!CHECKS_ONLY) {
     const settled = await safe(() => page.evaluate(async () => {
       await new Promise((r) => setTimeout(r, 1500));
-      // the scene on screen is not a leak — the end-game summary's eight
-      // collected cards are the point of it — and a reset empties those
-      // layers, so nothing can pile up in them from scene to scene. Everything
-      // else still counts: the effects layer, confetti, the transition, the bubble.
       return { nodes: document.getElementsByTagName('*').length -
                       document.querySelectorAll('.layer-panel *, .layer-poly *, .layer-ui *').length,
                anims: document.getAnimations().length };
     }), { nodes: 1e9, anims: 1e9 });
     const grew = { nodes: settled.nodes - baseline.nodes, anims: settled.anims - baseline.anims };
-    // The end screen legitimately adds a little furniture, hence a budget
-    // rather than zero. Anything leaking is out by far more than this.
     t('nothing leaks across a full lesson', grew.nodes < 120 && grew.anims < 60,
       JSON.stringify({ baseline, settled, grew }));
   }
@@ -923,43 +689,15 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     console.log('  note  lines measured: ' + Object.keys(rows).length +
       ', on one row: ' + (Object.keys(rows).length - wrapped.length) +
       (wrapped.length ? ', wrapping: ' + wrapped.map((k) => (Number(k) + 1) + '(' + rows[k] + ')').join(' ') : ''));
-    // THREE IS THE CEILING, and two is what almost every line gets.
-    //
-    // This asserted two until the bubble was moved to Swiftee's head. Beside
-    // him the line has whatever width the lesson leaves, and on the last
-    // screen the lesson runs from 430 to 1267 of a 1280 stage — a 352px
-    // column, in which the closing sentence is three rows and nothing can
-    // make it two. Attached to the speaker at three rows beats detached at
-    // two, which is the trade this ceiling records. Four rows is still a
-    // fit that has stopped working; the note above shows the distribution so
-    // a slide from two to three does not pass unnoticed.
     t('no line runs past three rows', bad.length === 0,
       bad.map((k) => 'screen ' + (Number(k) + 1) + ' = ' + rows[k] + ' rows').join(', '));
   }
 
-  // NOTHING FROM A FINISHED SCREEN RUNS ON THE NEXT ONE.
-  //
-  // stage.js schedules a lot of delayed work — staggered entrances, a
-  // checklist ticking its rows in, the touch affordance switching on a beat
-  // after an interaction opens — and reset() used to cancel none of it. A
-  // callback from one screen would then run against the next: a tick sound on
-  // a screen with nothing to tick, a highlight on something nobody asked
-  // about. It never threw, so nothing caught it.
-  //
-  // Every one of them belongs to a scene now. This asserts both halves: that
-  // nothing is left pending at the end, and that the mechanism actually
-  // refused work during the run — a suppressor that has never suppressed
-  // anything is indistinguishable from one that was never wired up.
   if (!CHECKS_ONLY) {
     const scene = await safe(() => page.evaluate(() => ({
       suppressed: window.Stage.staleSuppressed,
       pending: window.Stage.pendingTimers
     })), { suppressed: -1, pending: -1 });
-    // At a normal reading pace nothing goes stale — a screen is on long
-    // enough for its own timers to finish. The invariant that matters here is
-    // that none are left running when the lesson ends. That the refusal works
-    // is proved directly in the QA suite, which changes scenes faster than
-    // their timers can land.
     t('no scene leaves timers running behind it', scene.pending === 0, JSON.stringify(scene));
   }
 

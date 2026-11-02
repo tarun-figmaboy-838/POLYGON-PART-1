@@ -1,26 +1,5 @@
 #!/usr/bin/env node
-/*!
- * build-locales.js — the game's words in every language, where both halves can read them.
- *
- *   node tools/build-locales.js           writes the four files below
- *   node tools/build-locales.js --check   fails if any of them is out of date
- *
- * THE SOURCE IS ONE FILE: polygon-locales.json at the repository's root (English, Hindi,
- * Marathi, Telugu, Gujarati, Odia — the same keys in each). A page cannot fetch a JSON file
- * when it is opened straight off the disk, and the words have to be in hand before the first
- * line is drawn, so the file is copied into a classic script that sets window.POLYGON_LOCALES:
- *
- *   part1-swiftee-lesson/src/core/locales.js      the lesson's copy
- *   part2-frozen-rush/game/js/locales.js          Frozen Rush's copy
- *
- * and the code that reads it (src/core/i18n.js, the lesson's) is copied beside Frozen Rush's,
- * so the two halves choose the language — ?lan= — by the same rules:
- *
- *   part2-frozen-rush/game/js/i18n.js
- *
- * Edit the JSON or the lesson's i18n.js, then run this. tests/i18n.test.js fails while any
- * copy disagrees with its source.
- */
+// build-locales.js — the game's words in every language, where both halves can read them.
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');

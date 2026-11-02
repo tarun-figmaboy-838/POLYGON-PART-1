@@ -1,94 +1,12 @@
-/*!
- * director.js — runs each screen as a paced sequence of awaitable beats.
- *
- * The brief's section 3:
- *   enter -> settle -> Swiftee reacts -> instruction -> VO -> object animates
- *   -> learner gets control -> interacts -> feedback -> Swiftee reacts -> next
- *
- * and section 4: nothing starts before the previous thing has been
- * understood. This module makes both structural instead of aspirational.
- * Every beat is awaited; the next one cannot start early.
- *
- * Three properties matter more than the beat vocabulary:
- *
- *   CANCELLABLE  Changing screen aborts the running sequence and every
- *                timer, VO and pending input inside it. Nothing from screen
- *                6 can fire during screen 7. This is the "stale coroutine
- *                across scenes" bug from earlier conversions, closed at the
- *                architecture level.
- *
- *   NEVER STUCK  A VO that fails to load, an animation whose `finished`
- *                never resolves, a handler that throws — none of them hang
- *                the game. Every wait has a ceiling and every failure falls
- *                through to the next beat. Section 14.
- *
- *   SKIP-SAFE    A tap during narration fast-forwards the *text*. It never
- *                skips an input beat, and it never skips feedback. Children
- *                tap constantly; the game must survive it without losing
- *                the lesson.
- *
- * ONE STATE AT A TIME. The director is also the lesson's state machine: at any
- * moment exactly one of
- *
- *   IDLE  ENTERING  DIALOGUE_REVEAL  DIALOGUE_READING  WAITING_FOR_USER
- *   USER_INTERACTING  CHECKING  FEEDBACK  EXITING  NEXT_STEP
- *
- * holds the screen, and every change is announced as a 'state' event. The
- * beats move it along; game.js reports the two things only it can see — the
- * finger coming down (USER_INTERACTING) and the screen being left (EXITING).
- *
- * AND ONE EVENT STREAM. The lesson's own events — dialogue:start,
- * dialogue:word, dialogue:complete, interaction:enabled, interaction:start,
- * interaction:complete, answer:correct, feedback:start, step:complete and the
- * rest — go through the same emitter, so the dialogue can react to what the
- * child did instead of guessing with a timer, and a test can listen to
- * exactly what happened, in order.
- *
- * The director owns timing only. It knows nothing about the DOM. You give
- * it handlers for the things it sequences:
- *
- *   var director = Director.create({
- *     swiftee:     function (state, opts, ctx) { ... return promise; },
- *     say:         function (text, opts, ctx)  { ... return promise; },   // shows text, plays VO
- *     instruction: function (text, opts, ctx)  { ... },
- *     focus:       function (target, opts, ctx){ ... },
- *     input:       function (spec, ctx)        { ... return promise<result>; },
- *     sfx:         function (name, opts)       { ... },
- *     juice:       function (name, target, opts) { ... },
- *     stage:       function (spec, ctx)        { ... }                    // set up the scene
- *   });
- *
- *   await director.run([
- *     { swiftee: 'enter', from: 'left' },
- *     { wait: 400 },
- *     { say: 'Hi! I am Swiftee.', vo: 'intro_01' },
- *     { swiftee: 'wave' },
- *     { instruction: 'Pick any vertex.' },
- *     { focus: 'polygon' },
- *     { input: { type: 'vertex-pick' } },
- *     { sfx: 'select' }
- *   ]);
- *
- * Every handler receives `ctx` with `ctx.signal.cancelled`, `ctx.onCancel(fn)`
- * and `ctx.phase(name)`, so it can stop a VO or an animation when the screen
- * changes and report where a line has got to. Handlers that ignore ctx still
- * work; they just cannot be interrupted mid-effect.
- */
+// director.js — runs each screen as a paced sequence of awaitable beats.
 (function (global) {
   'use strict';
 
   var DEFAULTS = {
-    // Reading-time fallback for `say` when there is no handler to pace it:
-    // roughly the pace a child needs to read along, plus a settle.
     msPerWord: 280,
     sayMinMs: 900,
-    // the breath between the last word of a line and the moment the child
-    // may touch anything, for a handler that does not pace its own lines;
-    // a harness turns it down so a full run is not paced for reading
     readablePauseMs: 400,
     sayMaxMs: 9000,
-    // Absolute ceiling on any single non-input beat. If an animation's
-    // promise never resolves, this is what saves the game.
     beatCeilingMs: 12000,
     // A brief hold after feedback so it registers before anything moves.
     feedbackSettleMs: 500
@@ -101,10 +19,6 @@
     WAITING_FOR_USER: 'WAITING_FOR_USER', USER_INTERACTING: 'USER_INTERACTING',
     CHECKING: 'CHECKING', FEEDBACK: 'FEEDBACK', EXITING: 'EXITING', NEXT_STEP: 'NEXT_STEP'
   };
-
-  /* ------------------------------------------------------------------ *
-   * Cancellation token
-   * ------------------------------------------------------------------ */
 
   function Token() {
     this.cancelled = false;
@@ -132,11 +46,6 @@
     });
   }
 
-  /**
-   * Wrap any promise so it (a) resolves as cancelled when the token fires,
-   * (b) resolves after `ceiling` ms regardless, (c) never rejects. A handler
-   * that throws or hangs cannot take the sequence down with it.
-   */
   function guard(promiseLike, token, ceiling) {
     return new Promise(function (resolve) {
       var done = false;
@@ -152,20 +61,12 @@
 
   function words(s) { return String(s || '').trim().split(/\s+/).filter(Boolean).length; }
 
-  /* WHAT KIND OF LINE THIS IS — narration, an instruction to act, a question.
-     dialogue-timing.js reads it off the beats that follow; without it every
-     line is narration, which is the old behaviour exactly. */
   function lineTypeAt(beats, i) {
     var T = global.Timing;
     if (T && T.lineType) { try { return T.lineType(beats, i); } catch (e) {} }
     return 'narration';
   }
 
-  /* THE INSTRUCTION THAT ONLY REPEATS THIS LINE, if the next line on the
-     screen is one ("…Draw all the diagonals from this vertex." and then the
-     card's "Draw all the diagonals from this vertex."). The line is shown so
-     that its last bubble already IS that instruction, and the instruction
-     then has nothing left to show: the words appear once. */
   function settledByAt(beats, i) {
     var T = global.Timing, own = beats[i] && beats[i].say;
     if (!T || !T.repeats || typeof own !== 'string') return null;
@@ -178,10 +79,6 @@
     }
     return null;
   }
-
-  /* ------------------------------------------------------------------ *
-   * Director
-   * ------------------------------------------------------------------ */
 
   function create(handlers, options) {
     handlers = handlers || {};
@@ -211,9 +108,6 @@
         signal: token,
         onCancel: function (fn) { token.onCancel(fn); },
         cfg: cfg,
-        // Where a line has got to. A handler that reveals its words over time
-        // says 'reading' once they are all in, and the screen is then in its
-        // reading pause rather than still being told something.
         phase: function (name) {
           if (token !== current || token.cancelled) return;
           if (name === 'reading') setState(STATES.DIALOGUE_READING);
@@ -235,22 +129,6 @@
       return sleep(beat.wait, token);
     }
 
-    /**
-     * Narration. Shows text, plays VO if present, and holds for as long as
-     * the line takes. Skippable: a skip() finishes the hold but leaves the
-     * text on screen. Never shorter than sayMinMs, so a hyper-tapping child
-     * cannot blow through the lesson.
-     *
-     * THE HANDLER PACES A LINE IT KNOWS HOW TO PACE. The say handler knows
-     * when each word lands, how long the panel takes to come in, which kind
-     * of line this is and so how long it must stay — and it resolves when the
-     * line is done. A word count here, laid over the top of that as a second
-     * floor, could only ever make a line wait longer than the line itself
-     * says it needs: that is how "Pick any vertex." kept the child's hands off
-     * the polygon for well over a second after the last word. So with a
-     * handler, the only floor is the minimum; the word count is the fallback
-     * for a build with no handler, or one whose handler failed.
-     */
     function beatSay(beat, token, info) {
       var text = beat.say;
       var type = (info && info.type) || 'narration';
@@ -264,14 +142,10 @@
       lastWasSpeech = true;
       var voDone = guard(call('say', [text, { vo: beat.vo, reading: reading, parts: beat.parts, type: type, settledBy: info && info.settledBy, faces: beat.faces, endsAt: beat.endsAt }, ctx]), token, cfg.beatCeilingMs)
         .then(function (r) {
-          // A handler that failed or hung paced nothing: fall back to the
-          // reading time, so a broken voice never turns into a flash of text.
           if (r && (r.failed || r.timedOut)) return sleep(Math.max(0, reading - (Date.now() - started)), token);
           return r;
         });
 
-      // The minimum runs in parallel; a skip short-circuits the remainder
-      // past it.
       var floor = sleep(hasHandler ? cfg.sayMinMs : reading, token);
       var skip = new Promise(function (resolve) { skipRequested = resolve; });
 
@@ -293,8 +167,6 @@
       if (beat.instruction) setState(STATES.DIALOGUE_REVEAL, { text: beat.instruction, type: type });
       emit('instruction', { text: beat.instruction, type: type });
       if (beat.instruction) lastWasSpeech = true;
-      // The beat itself, with what kind of line it is: the handler may speak
-      // it, and a spoken line is paced by its kind.
       var opts = {};
       for (var key in beat) opts[key] = beat[key];
       opts.type = type;
@@ -304,14 +176,6 @@
     function beatSwiftee(beat, token) {
       emit('swiftee', { state: beat.swiftee, opts: beat });
       var p = call('swiftee', [beat.swiftee, beat, ctxFor(token)]);
-      // Some states are fire-and-forget (idle, look-at); only await if the
-      // beat asks for it or the state is inherently transitional.
-      // A CELEBRATION IS NOT A WAIT. It was awaited, and the clip runs 3.4s,
-      // so "Yay! You made a diagonal." sat unsaid for three and a half
-      // seconds after the diagonal was made, and every right answer held the
-      // lesson that long. He celebrates while the lesson goes on — into the
-      // next line, which he then says glad (swiftee.js moods).
-      // (a flight onto his perch is travel too: the lesson waits for him to land)
       var transitional = /^(enter|exit|move|hop|perch)$/.test(beat.swiftee);
       if (beat.await === false || (!transitional && beat.await !== true)) return Promise.resolve();
       return guard(p, token, cfg.beatCeilingMs);
@@ -337,28 +201,9 @@
       return Promise.resolve();
     }
 
-    /**
-     * Hand control to the learner. Not skippable, no ceiling — the game
-     * waits as long as the child does. Cancellation (screen change) is the
-     * only way out other than the learner acting.
-     */
-    /* A BREATH BEFORE THE CHILD MAY TOUCH ANYTHING.
-     *
-     * The sentence finishes and the input arms in the same tick, so a child
-     * who is still reading the last word is already being judged — and a
-     * finger already moving lands on a target that was not there a moment
-     * ago. A handler that paces its own lines has already left that breath,
-     * sized to the kind of line it was (dialogue-timing.js); for one that
-     * does not, readablePauseMs is it. Only after speech: an input that
-     * follows an animation or another input arms at once, as it always did.
-     * Cancellable like every other wait.
-     */
     var lastWasSpeech = false;
 
     function beatInput(beat, token) {
-      // The event fires when the input is LIVE, not when its beat begins:
-      // anything listening for it (the harness, an idle hint) would otherwise
-      // act on a target that is still four hundred milliseconds away.
       var settle = lastWasSpeech ? sleep(cfg.readablePauseMs, token) : Promise.resolve();
       lastWasSpeech = false;
       return settle.then(function (r) {
@@ -387,19 +232,6 @@
       });
     }
 
-    /**
-     * Branch on the last input result. `beat.on` maps result keys to beat
-     * lists; `otherwise` is the fallback. The chosen list runs inline, so
-     * feedback is part of the sequence rather than a side effect.
-     */
-    /* A BRANCH CAN WAIT FOR THE RIGHT ANSWER. `until: 'correct'` runs the
-       branch again on whatever the arm it took asked for last: a wrong answer
-       runs `otherwise` — the nudge, then the question again — and the answer
-       to THAT is branched on in turn. Without it the retry's result fell off
-       the end of the list: a right second try got no praise and skipped what
-       the right arm shows ("All diagonals are still inside."), and a wrong
-       second try moved the lesson on. It only goes round when the arm asked
-       again (a new input result); an arm with no input cannot loop. */
     function beatBranch(beat, token, state) {
       var key = state.last && state.last.result != null ? String(state.last.result) : 'otherwise';
       var list = beat.on && beat.on[key] || beat.otherwise || [];
@@ -411,9 +243,6 @@
       });
     }
 
-    /* FEEDBACK IS A STATE, with a beginning and an end the rest of the game
-       can hear: a line a wrong answer interrupted comes back on
-       feedback:complete, not on a guessed timer. */
     function inFeedback(list, token, st, key, body) {
       setState(STATES.FEEDBACK, { result: key });
       emit('feedback:start', { result: key });
@@ -433,10 +262,6 @@
       }
       if (beat.stage != null)       return beatStage(beat, token);
       if (beat.wait != null)        return beatWait(beat, token);
-      /* A LINE CHOSEN BY WHAT IS ON SCREEN (`alt: { if, say, parts, vo }`). The words must match
-         the picture: "One of the diagonals went outside." over a shape with two outside was
-         wrong (the final pass). The handlers' test(name) is asked when the line starts — the
-         shape is what the child made — and the alternative replaces the line when it holds. */
       if (beat.say != null && beat.alt && beat.alt.if && typeof handlers.test === 'function') {
         var useAlt = false;
         try { useAlt = !!handlers.test(beat.alt.if); } catch (e) { useAlt = false; }
@@ -489,10 +314,6 @@
     }
 
     var api = {
-      /**
-       * Run a beat list. Starting a new run cancels the previous one first,
-       * so two screens can never be live at once.
-       */
       run: function (beats) {
         api.abort();
         var token = current = new Token();
@@ -516,18 +337,11 @@
         setState(STATES.IDLE);
       },
 
-      /**
-       * Fast-forward the current narration. Does nothing during an input
-       * beat or feedback — those cannot be skipped.
-       */
       skip: function () {
         if (skipRequested) { var r = skipRequested; skipRequested = null; r(); return true; }
         return false;
       },
 
-      /* The two states only the game can see: a finger on the stage while an
-         input is live, and the screen being left. Anything else is the
-         beats' to say, so nothing else is accepted here. */
       mark: function (name) {
         if (name === STATES.USER_INTERACTING && (state === STATES.WAITING_FOR_USER)) setState(name);
         else if (name === STATES.WAITING_FOR_USER && state === STATES.USER_INTERACTING) setState(name);

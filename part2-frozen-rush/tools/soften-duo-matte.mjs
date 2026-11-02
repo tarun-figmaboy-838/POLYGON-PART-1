@@ -1,33 +1,4 @@
-/* Give the dance sheet a real anti-aliased edge.
- *
- * WHY THIS EXISTS. The ending now pushes the camera in on Momo and his friend dancing
- * (CFG.ending.zoomK), and at that size both of them grew a dotted black outline. It is not
- * a bug in the zoom: the sheet is cut from art-source/gif/celebrate-duo.webp (the delivered GIF, kept lossless), and a GIF has
- * no alpha channel at all — only one palette index marked transparent. So every pixel is
- * either fully opaque or fully gone, the silhouette is a 1-bit stencil, and it was measured
- * that way: 3,347,789 opaque, 6,357,523 clear, and not one semi-transparent pixel in
- * 4302 x 2256. Drawn at 1.22 that reads as a slightly crunchy edge and nobody minded. Drawn
- * at 1.73 the browser resamples a hard stencil sitting on BLACK — the RGB under a
- * transparent pixel is black in the decoded GIF — and every step in the stencil blends a
- * dark speck into the outline.
- *
- * TWO FIXES, IN THIS ORDER, AND THE ORDER MATTERS.
- *
- *   1. Bleed the subject's colour outward into the transparent pixels around it. The pixels
- *      stay fully transparent; what changes is the colour hiding under them, so when the
- *      browser interpolates across the boundary it mixes fur with fur instead of fur with
- *      black. This alone removes the dark specks.
- *   2. Then feather the alpha by a sub-pixel blur, which is the anti-aliasing the GIF could
- *      never carry. Done after the bleed, so the newly-visible fringe is subject colour.
- *
- * WHAT IT DOES NOT DO: change the size of anything. The sheet keeps its exact dimensions and
- * every cell keeps its exact position, because engine.js measures the art — DUO.cw 717,
- * DUO.ch 376, mammothCx 148, bearCx 574, feet 373 — and a sheet that moved by a pixel would
- * move the dancers and the puffs under their feet. Run it, and those numbers still hold.
- *
- * Idempotent-ish but not meant to be run twice: a second pass feathers an already-feathered
- * edge. The original is kept beside it as duo-celebrate.orig.webp the first time through.
- */
+// Give the dance sheet a real anti-aliased edge.
 import sharp from 'sharp';
 import fs from 'fs';
 
@@ -47,18 +18,6 @@ const filled = new Uint8Array(W * H);
 let opaque = 0;
 for (let i = 0; i < W * H; i++) { if (px[i * 4 + 3] > 0) { filled[i] = 1; opaque++; } }
 
-/* STEP 0: DE-MATTE THE OUTERMOST OPAQUE RING, before anything else touches it.
- *
- * Bleeding colour outward and feathering the alpha both assume the pixels at the edge of
- * the subject are the subject. On this sheet they are not. It was keyed out of a dark
- * background, and the ring that survived carries that background mixed in: measured over
- * 86,703 edge pixels, mean luminance 112.7 against 131.9 one pixel further in — the rim of
- * both characters is 14.6% darker than the fur behind it. That dark rim IS the outline that
- * appears when the ending zooms, and it is baked into the opaque pixels, so no amount of
- * work on the transparent side removes it.
- *
- * Each edge pixel takes the average of the opaque pixels behind it instead. Sub-pixel work:
- * the silhouette does not move, one ring of colour is corrected. */
 {
   const edge = new Uint8Array(W * H);
   const o = i => px[i * 4 + 3] > 0;
@@ -123,10 +82,6 @@ const alpha = await sharp(px, raw).extractChannel(3).blur(FEATHER).toBuffer();
 const rgb = await sharp(px, raw).removeAlpha().raw().toBuffer();
 const out = await sharp(rgb, { raw: { width: W, height: H, channels: 3 } })
   .joinChannel(alpha, { raw: { width: W, height: H, channels: 1 } })
-    /* 82, not the 90 this started at. The feathered edge is 241k newly-detailed pixels and at
-     90 the sheet went 484kB -> 805kB; at 82 it is 630kB, which is +146kB on a 12MB base-art
-     budget for a sheet that is now the most magnified thing in the game. Below about 75 the
-     fur starts to mush at the zoom this is drawn at. */
   .webp({ quality: 82, alphaQuality: 100, effort: 6 })
   .toBuffer();
 

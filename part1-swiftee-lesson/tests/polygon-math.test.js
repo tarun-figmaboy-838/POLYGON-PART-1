@@ -1,15 +1,4 @@
-/*!
- * test-polygon-math.js — every judgement the game makes about a shape.
- *
- *   node tests/polygon-math.test.js
- *
- * This file decides whether a child is right. If it is wrong the game
- * teaches the wrong thing with total confidence, so the cases below are the
- * exact shapes in the storyboard, including the two traps page 21 sets on
- * purpose: a rhombus (equal sides, unequal angles) and a rectangle (equal
- * angles, unequal sides). Both are irregular. A build that calls either of
- * them regular fails here rather than in front of a class.
- */
+// test-polygon-math.js — every judgement the game makes about a shape.
 'use strict';
 
 global.window = global;
@@ -21,10 +10,6 @@ function t(label, cond, extra) {
   else { fail++; console.log('  FAIL ' + label + (extra !== undefined ? '  ' + JSON.stringify(extra) : '')); }
 }
 
-/* ---------------------------------------------------------------- *
- * Fixtures — the shapes the deck actually draws
- * ---------------------------------------------------------------- */
-
 const pent = Poly.regular(5, 100, 500, 300);
 const hexa = Poly.regular(6, 100, 500, 300);
 const tri = Poly.regular(3, 100, 500, 300);
@@ -34,9 +19,6 @@ const octa = Poly.regular(8, 100, 500, 300);
 // page 19: one vertex dragged inside
 const dented = Poly.pullInward(pent, 0, 0.72);
 
-// page 21 traps. The rhombus is stage.js's own `shapeVerts('rhombus')` with
-// r = 100 — deliberately not a rotated square, which is what you get if the
-// half-diagonals are equal, and which would be regular.
 const rhombus = [{ x: 500, y: 240 }, { x: 600, y: 300 }, { x: 500, y: 360 }, { x: 400, y: 300 }];
 const rect = [{ x: 400, y: 250 }, { x: 620, y: 250 }, { x: 620, y: 360 }, { x: 400, y: 360 }];
 
@@ -51,10 +33,6 @@ const star = (() => {
   }
   return o;
 })();
-
-/* ---------------------------------------------------------------- *
- * Structure
- * ---------------------------------------------------------------- */
 
 t('regular pentagon is simple', Poly.isSimple(pent));
 t('regular hexagon is simple', Poly.isSimple(hexa));
@@ -77,10 +55,6 @@ t('convex polygon has no reflex vertices', Poly.reflexVertices(pent).length === 
 t('dented pentagon has exactly one reflex vertex', Poly.reflexVertices(dented).length === 1, Poly.reflexVertices(dented));
 t('the reflex vertex is the one that was dragged', Poly.reflexVertices(dented)[0] === 0);
 t('star has five reflex vertices', Poly.reflexVertices(star).length === 5);
-
-/* ---------------------------------------------------------------- *
- * Diagonals — the whole first unit of the lesson
- * ---------------------------------------------------------------- */
 
 t('vertex 0 and 1 are adjacent in a pentagon', Poly.isAdjacent(0, 1, 5));
 t('vertex 0 and 4 are adjacent in a pentagon (wrap)', Poly.isAdjacent(0, 4, 5));
@@ -107,10 +81,6 @@ t('the dented pentagon has at least one outside diagonal', Poly.outsideDiagonals
 t('the outside diagonal spans the dent',
   Poly.outsideDiagonals(dented).every((d) => d.indexOf(0) < 0), Poly.outsideDiagonals(dented));
 t('a star has many outside diagonals', Poly.outsideDiagonals(star).length > 0);
-
-/* ---------------------------------------------------------------- *
- * Measurement — pages 28 to 33
- * ---------------------------------------------------------------- */
 
 const L = Poly.sideLengths(pent);
 t('a pentagon has five sides', L.length === 5);
@@ -143,10 +113,6 @@ t('TRAP: a rectangle is NOT regular', !Poly.isRegular(rect));
 
 t('a concave equilateral shape is not regular', !Poly.isRegular(star));
 
-/* ---------------------------------------------------------------- *
- * classify() — what every stage judgement actually calls
- * ---------------------------------------------------------------- */
-
 const cp = Poly.classify(pent);
 t('classify: pentagon sides', cp.sides === 5);
 t('classify: pentagon convex', cp.convex && !cp.concave);
@@ -165,10 +131,6 @@ t('classify: a non-simple shape is not regular', !cb.regular);
 
 t('classify: rhombus is convex but irregular',
   Poly.classify(rhombus).convex && Poly.classify(rhombus).irregular);
-
-/* ---------------------------------------------------------------- *
- * The drag clamp — what stops a drag becoming a bowtie mid-gesture
- * ---------------------------------------------------------------- */
 
 t('clampSimple leaves a legal move alone', (() => {
   const p = { x: pent[0].x + 4, y: pent[0].y + 4 };
@@ -199,10 +161,6 @@ t('a drag toward the centroid can reach concave without breaking simplicity', ((
   }
   return Poly.classify(v).concave;
 })());
-
-/* ---------------------------------------------------------------- *
- * Generators
- * ---------------------------------------------------------------- */
 
 t('regular() puts one vertex straight up', Math.abs(Poly.regular(5, 100, 0, 0)[0].x) < 1e-9 &&
   Poly.regular(5, 100, 0, 0)[0].y < 0);

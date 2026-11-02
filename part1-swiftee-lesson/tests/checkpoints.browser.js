@@ -1,22 +1,5 @@
 #!/usr/bin/env node
-/*!
- * checkpoints.browser.js — the final QA pass, checkpoint by checkpoint, in a real browser.
- *
- *   node tests/checkpoints.browser.js            every checkpoint, a PASS/FAIL table at the end
- *   node tests/checkpoints.browser.js --shots    and the sixteen review screenshots to artifacts/qa/
- *   node tests/checkpoints.browser.js --headed   watch it
- *
- * The user's "PLAYWRIGHT — EXACT TEST CHECKPOINTS" spec, one numbered checkpoint per section
- * of it (CP1 … CP66). Where playthrough.browser.js plays the lesson end to end, this goes to
- * each screen through the review tool's jump list (?dev=1) and asks the specific questions:
- * order and timing (state/DOM timestamps), locking, geometry (the polygon's own vertices
- * against what is drawn), first/second-miss logic, layout (bounding boxes), and that nothing
- * moves that should not. Screenshots are for review, never evidence on their own.
- *
- * The playthroughs the spec asks for (happy path, wrong-first, two-wrong auto-correct, messy
- * input) are the existing suites: tests/playthrough.browser.js, tests/playthrough.jsdom.js
- * and tests/qa.browser.js; run `npm run test:all` alongside this.
- */
+// checkpoints.browser.js — the final QA pass, checkpoint by checkpoint, in a real browser.
 'use strict';
 
 const { chromium } = require('playwright');
@@ -27,8 +10,6 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const HEADED = process.argv.includes('--headed');
 const SHOTS = process.argv.includes('--shots') ? path.join(ROOT, 'artifacts', 'qa') : null;
-// --only=10-16: boot (CP1) and then only the steps numbered in that range — for a quick look at one
-// stretch; a range must start where a step jumps to its own screen (CP10 jumps to the vertex pick)
 const ONLY = ((process.argv.find((a) => a.startsWith('--only=')) || '').slice(7).split('-').filter(Boolean).map(Number));
 const wanted = (n) => !ONLY.length || n === 1 || (n >= ONLY[0] && n <= (ONLY[1] == null ? ONLY[0] : ONLY[1]));
 if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
@@ -91,8 +72,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     window.SFX.play = (n, o) => { if (n === 'correct') window.__cues.correct++; if (n === 'wrong') window.__cues.wrong++; return play(n, o); };
     window.__fx = { confetti: 0 };
     if (window.Juice && window.Juice.confetti) { const c = window.Juice.confetti; window.Juice.confetti = function () { window.__fx.confetti++; return c.apply(this, arguments); }; }
-    // every distinct thing said, in order, with the time it first showed — his bubble, or the
-    // plank card a line goes on when he is not on the screen (make-concave's explanations)
     window.__said = [];
     ['bubble', 'instruction'].forEach((id) => {
       const b = document.getElementById(id); if (!b) return;
@@ -111,7 +90,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const rects = (sel) => ev((sel) => [...document.querySelectorAll(sel)].map((e) => { const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height, r: r.right, b: r.bottom }; }), sel);
   const overlap = (a, b) => { if (!a || !b) return 0; const w = Math.max(0, Math.min(a.r, b.r) - Math.max(a.x, b.x)), h = Math.max(0, Math.min(a.b, b.b) - Math.max(a.y, b.y)); return (w * h) / Math.max(1, Math.min(a.w * a.h, b.w * b.h)); };
   const swiftee = () => ev(() => { const b = window.Swiftee.bounds(); const el = window.Swiftee.el; return { x: b.left, y: b.top, w: b.width, h: b.height, r: b.right, b: b.bottom, cx: (b.left + b.right) / 2, cy: (b.top + b.bottom) / 2, on: parseFloat(getComputedStyle(el).opacity) > 0.5, pos: window.Swiftee.pos, state: window.Swiftee.state }; });
-  /* stage coordinates → client pixels (the polygon layer sits `seatY` down the board) */
   const toClient = (p, seated) => ev(({ p, seated }) => { const m = window.Stage.svg.getScreenCTM(); return { x: m.a * p.x + m.e, y: m.d * (p.y + (seated ? (window.Stage.seatY || 0) : 0)) + m.f }; }, { p, seated: seated !== false });
   const knobClient = (i) => ev((i) => { const k = window.Stage.state.knobEls && window.Stage.state.knobEls[i]; if (!k) return null; const r = k.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, i);
   const dragPath = async (from, to, steps, holdMs) => {
@@ -125,9 +103,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const choiceLabels = () => ev(() => [...document.querySelectorAll('#stage .choice')].map((c) => c.getAttribute('data-label')));
   const angles = (v) => v.map((p, i) => { const a = v[(i + v.length - 1) % v.length], b = v[(i + 1) % v.length]; const d1 = Math.atan2(a.y - p.y, a.x - p.x), d2 = Math.atan2(b.y - p.y, b.x - p.x); let d = Math.abs(d1 - d2) * 180 / Math.PI; if (d > 180) d = 360 - d; return d; });
 
-  /* ================================================================ *
-   * A. THE NATURAL START — boot, intro, the perch, Level 1
-   * ================================================================ */
   await page.goto(`http://127.0.0.1:${port}/index.html?story=0`, { waitUntil: 'domcontentloaded' });
   await step(1, 'boot: loads, no error, no missing asset, no horizontal overflow, Start visible', async () => {
     await waitFn(() => document.getElementById('loading') && document.getElementById('loading').classList.contains('ready'), null, 120000);
@@ -143,7 +118,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await sleep(900);
   let closeShot = null;
   await step(2, 'intro: he is large and sharp on a close shot, the log is there (blurred), nothing else to press', async () => {
-    // he arrives by sleigh (his own element hidden until he has landed): sampled once he is there
     await waitFn(() => window.Swiftee.state !== 'enter' && parseFloat(getComputedStyle(window.Swiftee.el).opacity) > 0.5, null, 20000).catch(() => {});
     const s = await ev(() => ({
       sw: window.Swiftee.bounds().height, on: parseFloat(getComputedStyle(window.Swiftee.el).opacity) > 0.5,
@@ -157,7 +131,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const after = await ev(() => ({ screen: window.Game.screen, state: window.Game.director.state }));
     return { ok: s.on && s.blur > 0 && s.logOn && s.cards === 0 && s.mode !== 'polygon' && after.screen === 0, extra: { ...s, after } };
   });
-  // CP3 + CP4: watch the whole intro through to Level 1 — lines, the flight, the landing
   const intro = await ev(() => new Promise((res) => {
     const T0 = performance.now(), log = [], lines = [];
     let lastText = '', lastWords = -1, maxJump = 0, prev = null;
@@ -180,7 +153,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   }));
   await step(3, 'intro lines: three, one at a time, in order; the flight never before the third is told', async () => {
     const L = intro.lines.filter((l) => l.screen <= 2);
-    // the third line fully revealed: the last sample on screen 2 whose word count stopped growing
     const onTwo = intro.log.filter((e) => e.screen === 2);
     const told = onTwo.length ? Math.max(...onTwo.map((e) => e.words)) : 0;
     const toldAt = (onTwo.find((e) => e.words === told) || {}).at;
@@ -200,7 +172,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     return { ok: order && blurGone && intro.maxJump < 90, extra: { blurStart, zoomStart, flightAt, landedAt, level1At, blurGone, maxJump: Math.round(intro.maxJump) } };
   });
   await step(5, 'on the stone: his feet on the perch point, in front of it, and still for 500 ms', async () => {
-    // once his landing has settled (the squash on touching down): two readings 500 ms apart
     let a = null, b = null;
     for (let k = 0; k < 8; k++) {
       a = await ev(() => { const p = window.Stage.perchAt(), r = window.Stage.svg.getBoundingClientRect(), b = window.Swiftee.bounds(); return { feetX: r.left + p.x * r.width, feetY: r.top + p.y * r.height, cx: (b.left + b.right) / 2, bottom: b.bottom, log: getComputedStyle(document.querySelector('.perch-log')).opacity }; });
@@ -260,9 +231,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     return { ok: great.length === 1 && great[0].t === 'Great job!' && startNext > great[0].at && bad.length === 0, extra: { great: great.map((g) => g.t), startNext: Math.round(startNext || 0), greatAt: great[0] && Math.round(great[0].at), bad } };
   });
 
-  /* ================================================================ *
-   * B. SCREEN BY SCREEN, through the review tool's jump list
-   * ================================================================ */
   await page.goto(`http://127.0.0.1:${port}/index.html?dev=1&story=0`, { waitUntil: 'domcontentloaded' });
   await waitFn(() => document.getElementById('loading').classList.contains('ready'), null, 120000);
   await instrument();
@@ -338,7 +306,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       const from = await knobClient(await ev(() => window.Stage.state.from || 0));
       await dragPath(from, target, 10, 60); await sleep(900);
       const s = await ev(() => ({ diags: (window.Stage.state.diagonals || []).length, screen: window.Game.screen, seg: !!window.Stage.state.segment }));
-      // a side is a designed stop ("This is a side"): the lesson names it, then asks again
       await waitFn(() => window.Input.mode() !== 'locked' && window.Game.director.state === 'WAITING_FOR_USER', null, 30000).catch(() => {});
       const s2 = await ev(() => ({ diags: (window.Stage.state.diagonals || []).length, screen: window.Game.screen, mode: window.Input.mode() }));
       out.push({ name, ...s, then: s2 });
@@ -368,9 +335,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const clamped = s.every((b) => b.right <= panel.r + 10 && b.top >= panel.y - 10 && b.left >= panel.x - 10 && b.bottom <= panel.b + 10);
     return { ok: s.length > 0 && clamped && left === 0, extra: { lines: s.length, clamped, left } };
   });
-  // THE SCREEN 7 VERTEX BRIEF (its regression list — the first ghost being a side is CP13): a
-  // side, then the other side, each the polygon's own edge the moment it lands and its end
-  // disabled; the anchor kept; the far corners only for the diagonal step; the diagonal locked
   await step(16, 'Level 2: side, other side — each a normal edge, its end disabled, the anchor kept — then the diagonal, kept, one cue, named "Diagonal" with an arrow', async () => {
     const i = await idx('connect'); await waiting(i);
     const c0 = await cues(), panel0 = await rect('#stage .panel');
@@ -386,8 +350,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         end: { state: kn.getAttribute('data-state'), dim: getComputedStyle(kn).fill === 'rgb(255, 255, 255)' && +kn.getAttribute('opacity') < 0.6, pe: getComputedStyle(disc).pointerEvents, breathe: kn.classList.contains('breathe') },
         preview: [...document.querySelectorAll('#stage .layer-fx line')].filter((l) => +l.getAttribute('opacity') > 0 && !l.closest('.gesture-ghost')).length };
     }, q);
-    // THE SIDE AS IT LOOKS: the darkest pixel on the middle of the side made, against the same on
-    // a side nobody drew — the same dark blue (an ice-lit side is far lighter)
     const darkest = async (p, q) => {
       const s0 = await ev(({ p, q }) => { const v = window.Stage.state.verts; return { x: (v[p].x + v[q].x) / 2, y: (v[p].y + v[q].y) / 2 }; }, { p, q });
       const c = await toClient(s0);
@@ -438,7 +400,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const st = (m) => { const o = []; for (let q = 0; q < n; q++) o.push(m[q]); return o.join(','); };
     const flow = {
       side1: sideOk(a) && a.connect === 'SIDE_COMPLETE', dragDuringLine: during.connect === 'SIDE_COMPLETE' && during.diags === 0,
-      // (the far corners open from the start — the user: "why diagonal vertex disable? … revert it")
       ready2: restOk(a2) && a2.states === st({ [f]: 'anchor', [R]: 'side-used-disabled', [L]: 'adjacent-available', [to]: 'diagonal-available', [(f + 3) % n]: 'diagonal-available' }),
       side2: sideOk(b) && b.connect === 'SECOND_SIDE_COMPLETE',
       ready3: restOk(b2) && b2.states === st({ [f]: 'anchor', [R]: 'side-used-disabled', [L]: 'side-used-disabled', [to]: 'diagonal-available', [(f + 3) % n]: 'diagonal-available' }),
@@ -479,7 +440,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const now = performance.now() - T0;
         if (marks == null && document.querySelector('#stage .compare-mark, #stage .word-sides')) marks = now;
         if (labels == null && [...document.querySelectorAll('#stage .compare-mark, #stage .badge, #stage .label')].some((e) => /Inside|Outside/.test(e.textContent))) labels = now;
-        // (a choice counts once it can be SEEN: the row is laid out with the screen, held hidden)
         if (choices == null && [...document.querySelectorAll('#stage .choice')].some((c) => +getComputedStyle(c).opacity > 0.05)) choices = now;
         if (open == null && choices != null && window.Input.mode() === 'polygon' && window.Game.director.state === 'WAITING_FOR_USER') open = now;
         if (open != null || now > 40000) { res({ marks, labels, choices, open, bubble: document.getElementById('bubble').textContent.trim().slice(0, 60) }); return; }
@@ -496,7 +456,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const labels = await choiceLabels();
     const correct = await ev(() => { const s = window.Screens.list[window.Game.screen]; const b = (s.beats || []).find((b) => b.input && b.input.type === 'choice'); return b && b.input.correct; });
     const wrong = labels.find((l) => l !== correct);
-    // the right button's paint now: revealed = its fills change later (retinted to the success tone)
     const face = () => ev((c) => { const b = document.querySelector(`#stage .choice[data-label="${c}"]`); return b ? [...b.querySelectorAll('[fill], [stroke]')].map((e) => (e.getAttribute('fill') || '') + '/' + (e.getAttribute('stroke') || '')).join(',') : ''; }, correct);
     const face0 = await face();
     const before = (await said()).length, c0 = await cues();
@@ -508,8 +467,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     cp(n, id + ' first wrong: "Try again", nothing revealed, another go', first.tryAgain && !first.revealed && first.again && first.screen === i, { first, lines: lines1 });
     const before2 = (await said()).length;
     await tapChoice(wrong); await sleep(400);
-    // (locked: nothing can be pressed — the question is over (its input resolved, the
-    // explanation beats run) or he is answering)
     const s2 = await ev(() => ({ locked: window.Input.mode() !== 'polygon' || window.Game.director.state !== 'WAITING_FOR_USER' }));
     let revealed = false;
     for (let k = 0; k < 60; k++) { if ((await face()) !== face0) { revealed = true; break; } if (await ev((i) => window.Game.screen > i, i)) break; await sleep(250); }
@@ -519,10 +476,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const advanced = await ev((i) => window.Game.screen > i, i);
     cp(n + 1, id + ' second wrong: locked, explained, the answer shown, then on — no third try', s2.locked && lines2.length >= 1 && revealed && advanced, { locked: s2.locked, lines: lines2, revealed, ...lit, advanced });
   };
-  // THE INSIDE / OUTSIDE QUESTION, TWO TRIES (the user's 2-wrong brief): the first miss is "Try
-  // again!" with both answers kept; the second is taught — the diagonals lit, "The diagonals are
-  // inside.", and ON "inside" the two answers become ONE centred green "Inside" (Outside gone),
-  // and the lesson goes on by itself — no tap, no third attempt, no verdict for it (the user, screen 12)
   await step(19, 'inside-or-outside first wrong: "Try again", both answers kept, nothing revealed, another go', async () => {
     const i = await jump('inside-or-outside'); await waiting(i); await sleep(300);
     const before = (await said()).length;
@@ -560,8 +513,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const io = await ev(() => window.__io);
     const lines = (await said()).slice(before), c1 = await cues();
     const advanced = await ev((i) => window.Game.screen > i, i);
-    // (the diagonals light ON "diagonals", within 300 ms; the one Inside is up ON "inside" — its pill
-    // fades in over the merge, so within 700 ms of the word, and never before it)
     const ok = io.lockedAt != null && io.litAt != null && io.voAt != null && io.wordAt != null && io.litAt >= io.voAt && Math.abs(io.litAt - io.wordAt) <= 300 &&
       io.insideAt != null && io.oneAt != null && io.oneAt >= io.insideAt - 50 && io.oneAt - io.insideAt < 700 && io.liveAt == null &&
       mid != null && Math.abs(mid) <= 3 && lines.some((t) => /The diagonals are inside/.test(t)) && !lines.some((t) => /^Try again/.test(t)) &&
@@ -572,15 +523,12 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const out = [];
     for (const [id, word] of [['all-inside', 'inside'], ['one-outside', 'outside']]) {
       await jump(id);
-      // this screen's own mark (data-mark) and a word lit on this screen (not one still up
-      // from the screen before)
       const r = await ev((word) => new Promise((res) => {
         const T0 = performance.now(); let wordAt = null, markAt = null;
         const old = new Set([...document.querySelectorAll('#bubble .in')]);
         const tick = () => {
           const now = performance.now() - T0;
           if (wordAt == null && [...document.querySelectorAll('#bubble .in')].some((w) => !old.has(w) && w.textContent.toLowerCase().indexOf(word) === 0)) wordAt = now;
-          // (seen, not merely built: a jump puts the screen's marks up hidden, and the word shows them)
           const mk = document.querySelector('#stage .compare-mark[data-mark="' + word + '"]');
           if (markAt == null && mk && parseFloat(getComputedStyle(mk).opacity) > 0.5) markAt = now;
           if ((wordAt != null && markAt != null) || now > 30000) { res({ wordAt, markAt }); return; }
@@ -594,11 +542,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   });
   await step(7.1, 'Inside / Outside explanation screenshot', async () => { const i = await jump('inside-or-outside'); await waiting(i); await sleep(300); await shot('07-inside-outside-explanation'); return true; });
 
-  // ---- the dent (screen 14) ---------------------------------------------------
-  // THE DRAG-INWARD FIX: a pull short of the dent is progress, not a miss — the corner stays where
-  // it was let go, the next pull starts there (no jump), he says "Pull it in more!" softly (no
-  // wrong sound — the user asked for the line back), and small pulls add up until the classifier
-  // calls the shape concave, which completes it once
   await step(22, 'drag inward: small pulls stay where they are let go and add up — no spring back, no jump, a soft "Pull it in more!" — and the real dent completes once', async () => {
     const i = await jump('drag-inward'); await waiting(i); await sleep(300);
     const v0 = await ev(() => window.Stage.state.verts.map((p) => ({ x: p.x, y: p.y })));
@@ -606,9 +549,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const c0 = await cues(), said0 = (await said()).length;
     const corner = () => ev(() => ({ x: window.Stage.state.verts[0].x, y: window.Stage.state.verts[0].y }));
     const info = () => ev(() => ({ concave: window.Poly.classify(window.Stage.state.verts).concave, n: window.Stage.state.verts.length, state: window.Game.director.state, screen: window.Game.screen }));
-    // one pull: grabbed a few pixels off the knob's centre, as a finger does, a tenth of the way in
     const pull = async (frac) => {
-      // (he answers a short pull, and the corner takes no press while he says it: wait for it back)
       await waitFn((i) => window.Game.screen !== i || (window.Game.director.state === 'WAITING_FOR_USER' && window.Input.mode() === 'polygon' && !window.Input.guarded), i, 20000).catch(() => {});
       const cur = await corner(), a = await toClient(cur);
       const b = await toClient({ x: cur.x + (c.x - v0[0].x) * frac, y: cur.y + (c.y - v0[0].y) * frac });
@@ -652,7 +593,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
                                 rings: [...document.querySelectorAll('#stage .layer-fx circle, #stage .layer-poly circle')].filter((c) => +c.getAttribute('r') > 14 && (c.getAttribute('fill') || 'none') === 'none').length, knobs: window.Stage.state.knobEls.length }));
     return { ok: s.n === 4 && s.pulsing <= 1 && s.rings === 0 && s.knobs >= 1, extra: s };
   });
-  // the corner to drag: the one dot that keeps breathing (else the screen's highlighted vertex, else 0)
   const activeKnob = () => ev(() => { const ks = window.Stage.state.knobEls || []; const j = ks.findIndex((k) => k.getAnimations && k.getAnimations().some((a) => a.playState === 'running' && a.effect && a.effect.getTiming && a.effect.getTiming().iterations === Infinity)); if (j >= 0) return j; const s = window.Screens.list[window.Game.screen]; const b = (s.beats || []).find((b) => b.input && b.input.type === 'drag-vertex'); if (b && b.input.vertex != null) return b.input.vertex; return (s.stage && s.stage.highlight && s.stage.highlight.vertex) || 0; });
   await step(25, 'make-concave first wrong: the diagonals shown and named still inside, the shape springs back, another go', async () => {
     const i = await idx('make-concave'); await waiting(i);
@@ -676,8 +616,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const before = (await said()).length;
     await dragPath(k, { x: k.x + (c.x - k.x) * 0.3, y: k.y + (c.y - k.y) * 0.3 }, 8, 80);
     await waitFn(() => window.Poly.classify(window.Stage.state.verts).concave, null, 15000).catch(() => {});
-    // (the outside diagonal lights once the shape has SETTLED, a breath after the dent — the final
-    // pass's demonstration order — so it is waited for, and how long after is kept)
     const tDent = Date.now();
     await waitFn(() => [...document.querySelectorAll('#stage line')].some((l) => /7a4cff|b98cff|8a5cff/i.test(l.getAttribute('stroke') || '')), null, 5000).catch(() => {});
     const litAfter = Date.now() - tDent;
@@ -709,7 +647,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const wrong = bins.find((b) => b.id !== it.right);
     await dragPath({ x: it.x, y: it.y }, { x: wrong.rect.x + wrong.rect.width / 2, y: wrong.rect.y + wrong.rect.height / 2 }, 10, 60);
     await waitFn(() => !!document.querySelector('#stage .teach-sheet.on'), null, 15000);
-    // the lines are drawn on his words: wait for the first, then read what the sheet shows
     await waitFn(() => { const fx = document.querySelector('#stage .teach-fx'); return !!(fx && fx.querySelector('line')); }, null, 15000).catch(() => {});
     await sleep(400);
     const s = await ev(() => { const fx = document.querySelector('#stage .teach-fx'); const lines = fx ? fx.querySelectorAll('line').length : 0; const fills = fx ? [...fx.querySelectorAll('path, polygon')].filter((p) => (p.getAttribute('fill') || 'none') !== 'none' && (+p.getAttribute('fill-opacity') || 1) > 0.5 && p.getBBox().width > 20).length : 0; const rings = fx ? [...fx.querySelectorAll('circle')].filter((c) => +c.getAttribute('r') > 6).length : 0; return { lines, fills, rings, locked: window.Input.mode() === 'locked' }; });
@@ -766,10 +703,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         tools = Math.max(tools, document.querySelectorAll('#stage .angle-protractor').length);
         const tool = g.querySelector('.angle-protractor');
         const tt = num(tool.getAttribute('transform'), /translate\(([-\d.]+),([-\d.]+)\)/), rot = num(tool.getAttribute('transform'), /rotate\(([-\d.]+)\)/);
-        // WHERE HE IS: the rig draws one complete pose at a time (stage.js angleMeasurer, the v4
-        // "intact" sheet) — each pose has its own body offset from the protractor's centre, turned
-        // by the drawing's rotation less the pose's own angle — and a change of pose re-registers
-        // the drawing at the torso, so his body never moves when the drawing does. No mirror.
         const F = window.AngleMeasuringFrames, rr = ((rot && rot[0]) || 0) * Math.PI / 180;
         const fr = +tool.getAttribute('data-frame'), P = F.poses ? F.poses[fr] : null;
         const at = () => {
@@ -798,9 +731,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     tick();
   }));
   await step(33, 'one protractor, attached to his wing while carried (a constant gap), never a second one', async () => {
-    // (the gap is body-centre to tool-centre. Each complete pose holds the tool in its own way, so
-    // the gap is constant WITHIN a pose — the tool never slides in his wing — and only changes when
-    // a new pose is drawn for the next corner)
     const carriedS = rig.samples.filter((s) => /MOVE_TO|RETURN/.test(s.st) && s.gap != null), carried = carriedS.map((s) => s.gap);
     const byPose = {}; carriedS.forEach((s) => { (byPose[s.fr] = byPose[s.fr] || []).push(s.gap); });
     const spreads = Object.keys(byPose).map((f) => Math.max(...byPose[f]) - Math.min(...byPose[f]));
@@ -819,17 +749,12 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       const far = Math.hypot(h.bird[0] - p[0], h.bird[1] - p[1]);
       out.push({ k: +k, centre: +dc.toFixed(1), along: +along.toFixed(1), outside: !h.inside, far: Math.round(far) });
     });
-    // (beside it: his body's centre clear of the corner. The complete v4 poses hold the tool closer
-    // than the old cut-out sheet did — 36 to 55 units from the protractor's centre — so the floor
-    // is 30, his body never over the vertex, and the ceiling still keeps him with his tool)
     const ok = out.length >= 5 && out.every((o) => o.centre <= 5 && o.along <= 1.5 && o.outside && o.far > 30 && o.far < 120);
     return { ok, extra: out };
   });
   await step(35, 'corner to corner: a different stand each time, continuous motion, no jump', async () => {
     const stands = Object.values(rig.stands).map((s) => s.join(','));
     const distinct = new Set(stands).size;
-    // (≤ 90 units between 60 ms samples: his body is measured now, some 53 units out from the
-    // turning point, so a flight's travel and its turn add up; a real jump is hundreds)
     return { ok: distinct === stands.length && stands.length >= 5 && rig.maxJump <= 90, extra: { stands: stands.length, distinct, maxStep: rig.maxJump } };
   });
   await step(36, 'the reading is the geometry: each printed degree equals the interior angle from the vertices (±1°)', async () => {
@@ -849,10 +774,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   });
   await step(11.1, 'angle measurement screenshot', async () => { await jump('measure-angles'); await waitFn(() => document.querySelector('#stage .swiftee-angle-measuring[data-state="HOLD"]'), null, 40000); await shot('11-angle-measurement-protractor'); return true; });
 
-  // ---- the stretch (screen 27) -------------------------------------------------
-  // (the user: "when Swiftee measures … the side will change when distort": the same pentagon
-  // must read the same centimetres on the stretching card as it was measured, and a side the
-  // stretch did not touch must keep its reading)
   await step(38.5, 'stretching: the pentagon reads as measured (6 cm) before the stretch; untouched sides keep "6 cm" after it', async () => {
     const i = await jump('distort'); await waiting(i); await sleep(400);
     const cms = () => ev(() => [...document.querySelectorAll('#stage .meas text')].map((t) => t.textContent.trim()).filter((t) => /cm$/.test(t)));
@@ -904,10 +825,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await shot('13-regular-irregular-comparison');
     return { ok: tags.some((t) => /^Regular/.test(t)) && tags.some((t) => /^Irregular/.test(t)) && !tags.every((t) => /^Pentagon$/.test(t)), extra: tags };
   });
-  // (the user's sync brief: the evidence itself on its words — the side lengths on "sides", the
-  // angles on "angles" (the measured cards of screen 29 — cm and degrees, as the swipe card has
-  // them) — one card at a time, the second card's marks only once the focus has turned to it,
-  // and nothing else lighting: no generic traces over the evidence, no dots, no diagonals)
   await step(44, 'regular vs irregular sync: lengths on "sides", angles on "angles" (≤ 500 ms), one card at a time, nothing else lit', async () => {
     await jump('regular-vs-irregular');
     const r = await ev(() => new Promise((res) => {
@@ -991,8 +908,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       tick();
     }), { was, right });
     const lines = (await said()).slice(before);
-    // (the sheet lifts as the copy flies home: sampled as 'off' or, if that half second was
-    // missed, as gone — either is the sheet lifted before the card goes to its pile)
     if (seq.sheetOff == null && seq.sheetGone != null) seq.sheetOff = seq.sheetGone;
     const order = ['locked', 'sheetOn', 'copy', 'explained', 'geometry', 'sheetOff', 'inPile', 'nextCard'].map((k) => seq[k]);
     const inOrder = order.every((v, j) => v != null && (j === 0 || v >= order[j - 1] - 50));
@@ -1049,9 +964,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     return { ok: s.n >= 2 && s.minW >= 120 && s.overlaps === 0 && s.clipped === 0, extra: s };
   });
 
-  /* ================================================================ *
-   * C. GLOBAL CHECKS
-   * ================================================================ */
   await step(53, 'no premature UI: every input opened only after the learner had been told (bubble or instruction up)', async () => {
     const opened = await ev(() => window.__opened);
     const bad = opened.filter((o) => !o.told);
@@ -1080,8 +992,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const check = async (label) => {
       for (const v of [[1920, 1080], [1440, 900], [1366, 768], [1024, 768]]) {
         await page.setViewportSize({ width: v[0], height: v[1] }); await sleep(500);
-        // (him: on screen — or away by design: behind the swipe card, gone below, or out
-        // measuring as the rig)
         const s = await ev(() => { const st = document.getElementById('stage').getBoundingClientRect(); const sw = window.Swiftee.bounds(); const card = document.querySelector('#stage .swipe-card, #stage .panel, #stage .card'); const c = card ? card.getBoundingClientRect() : null; const inView = (r) => r && r.left >= -2 && r.right <= window.innerWidth + 2 && r.top >= -2 && r.bottom <= window.innerHeight + 2; const away = window.Swiftee.pos === 'peek' || window.Swiftee.state === 'exit' || !window.Game.buddy || !window.Game.buddy.present || !!document.querySelector('#stage .swiftee-angle-measuring'); return { screen: window.Game.screen, overflow: document.documentElement.scrollWidth > window.innerWidth + 1, him: away || (inView(sw) && parseFloat(getComputedStyle(window.Swiftee.el).opacity) > 0), card: !c || inView(c), stageW: Math.round(st.width) }; });
         out.push({ label, v: v.join('x'), ...s });
       }

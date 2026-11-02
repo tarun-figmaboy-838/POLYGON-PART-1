@@ -1,26 +1,4 @@
-/*!
- * music.js — the tune under the lesson.
- *
- * SYNTHESISED, NOT A FILE. Everything this game makes a noise with is built
- * from oscillators (sfx.js), and the music is too: a few hundred bytes of
- * code rather than a megabyte of loop that would have to be licensed, cached
- * and downloaded before a child could play. It also means the tune can bend
- * to the lesson — brighter on a win, out of the way while Swiftee talks —
- * which a recording cannot do.
- *
- * WHAT IT SOUNDS LIKE. A bouncing marimba figure over a soft bass pulse, in
- * F major, at a walking 96 beats a minute: the pace of a picture book being
- * read aloud, not of a chase. Two bars repeat, and every fourth time round a
- * bell sprinkles the top of the bar, so it does not become wallpaper. It is
- * quiet — a quarter the level of the effects — because it is the floor of
- * the scene and never the thing being listened to.
- *
- *   Music.start()          begin, if it is not already going
- *   Music.mood('win')      'play' (default) or 'win'
- *
- * It rides the music bus (SFX.musicBus()), so muting the game mutes it and
- * SFX.voice() steps it back while Swiftee speaks.
- */
+// music.js — the tune under the lesson.
 (function (global) {
   'use strict';
 
@@ -29,8 +7,6 @@
   var BAR = BEAT * 4;
   var LOOK = 0.9;                   // how far ahead notes are scheduled
 
-  // F major, one octave and a bit. The tune is written as scale degrees so a
-  // change of key is one line, not thirty numbers.
   var ROOT = 174.61;                // F3
   var STEP = [0, 2, 4, 5, 7, 9, 11];
   function hz(deg, oct) {
@@ -38,8 +14,6 @@
     return ROOT * Math.pow(2, (STEP[d] + o * 12) / 12);
   }
 
-  // the two-bar figure: [degree, beat, length]. It steps up, hops down and
-  // lands — the shape of somebody skipping.
   var FIGURE = [
     [0, 0.0, 0.5], [2, 0.5, 0.5], [4, 1.0, 0.5], [2, 1.5, 0.5],
     [5, 2.0, 0.75], [4, 2.75, 0.25], [2, 3.0, 0.5], [0, 3.5, 0.5],
@@ -60,8 +34,6 @@
     var o = ctx.createOscillator(), g = ctx.createGain();
     o.type = kind || 'triangle';
     o.frequency.setValueAtTime(f, at);
-    // a plucked shape: straight up, then a long soft tail, which is what
-    // makes a triangle wave read as a marimba rather than as a beep
     g.gain.setValueAtTime(0.0001, at);
     g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol), at + 0.012);
     g.gain.exponentialRampToValueAtTime(0.0001, at + Math.max(0.08, len));
@@ -72,8 +44,6 @@
   function schedule() {
     if (!running || !ctx) return;
     var now = ctx.currentTime;
-    // A timer that slept (a hidden tab) while the audio clock ran on would
-    // otherwise schedule every figure it missed in the past, all at once.
     if (nextAt < now) nextAt = now + 0.05;
     while (nextAt < now + LOOK) {
       var t0 = nextAt, v = gainFor();
@@ -106,8 +76,6 @@
     schedule();
   }
 
-  /* AND IT STOPS, when the lesson hands the screen to Frozen Rush (src/opening/runner-stage.js):
-     nothing new is scheduled, and what already is (under a second) plays out under the snow. */
   function stop() { running = false; }
 
   global.Music = {

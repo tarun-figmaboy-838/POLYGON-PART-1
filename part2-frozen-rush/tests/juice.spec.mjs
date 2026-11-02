@@ -1,17 +1,4 @@
-/* THE IMPACT LAYER — hit-stop, camera punch and the impact ring.
-
-   This layer stops the simulation and scales the view, which is to say it is the one
-   piece of polish that can genuinely break the game rather than merely look wrong. So
-   what is asserted here is not "it feels punchy" — it is the three ways it could hurt:
-
-     1. a hold that never ends, or that several events can stack into a stall
-     2. a punch big enough to pull the world in from the letterboxed frame edge
-     3. any of it still running when the player has asked for reduced motion
-
-   Plus the one positive: a correct answer really does produce the beat.
-
-   See RUNNER.md §9a. Note there are no pickup tokens and no pickup sound — both were
-   removed on request, and §9a records why so they are not re-proposed. */
+// THE IMPACT LAYER — hit-stop, camera punch and the impact ring.
 import { test, expect } from '@playwright/test';
 import { boot, waitState, G, jsErrors } from './helpers.mjs';
 
@@ -38,9 +25,6 @@ test.describe('the impact layer', () => {
       const errors = await boot(page, { fast: 4 });
       await waitState(page, ['RUN_SEGMENT_1', 'JUMP_CHALLENGE_1'], 30_000);
 
-      /* Fire every hold the game has, all on the same frame, several rounds over, and
-         then one absurd request on top. The clamp is what has to hold: the longest
-         possible freeze is stopMax no matter how many callers pile on at once. */
       const r = await page.evaluate(async () => {
         const g = window.iceAgeGame;
         const J = g._juice();
@@ -84,8 +68,7 @@ test.describe('the impact layer', () => {
       return peak;
     });
     expect(peak).toBeGreaterThan(0);          // it actually ran
-    expect(peak).toBeLessThanOrEqual(0.03);   // and stayed inside the frame
-    // and it settles back to no scale at all
+    expect(peak).toBeLessThanOrEqual(0.03);
     expect((await G(page)).punchAt).toBeLessThanOrEqual(0.0005);
   });
 
@@ -118,9 +101,6 @@ test.describe('the impact layer', () => {
   });
 
   test('no pickup token is ever spawned', async ({ page }) => {
-    /* The coin was removed on request. This is the guard that keeps it removed: it
-       plays a phase through and asserts nothing of that kind ever appears, so the
-       particle kind cannot quietly come back with a later change. */
     await boot(page, { fast: 6 });
     expect(await toPhase(page)).toBe(true);
     const kinds = await page.evaluate(async () => {
@@ -156,7 +136,6 @@ test.describe('the impact layer', () => {
       const S = g.debug();
       return { freeze: S.freeze, punchAt: S.punchAt, punchLen: S.punchLen };
     });
-    // no hold and no scale: a player who asked for less motion gets none of it
     expect(r.freeze).toBeLessThanOrEqual(0);
     expect(r.punchAt).toBe(0);
     expect(r.punchLen).toBe(0);

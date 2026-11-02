@@ -1,10 +1,5 @@
 import { test, expect } from '@playwright/test';
-/* Runs against the real deployment, not a simulator. Kept out of the default run by
-   requiring LIVE_URL; with it set this is the only check that proves production. */
 const LIVE = process.env.LIVE_URL;
-/* HOW LONG BOOT IS ALLOWED. The whole art set is fetched before the title appears, so on a
-   slow link a healthy deployment and a broken one both look like a hung page. Tunable so a
-   thin connection reports the truth instead of a false failure: LIVE_BOOT_MS=420000. */
 const BOOT_MS = Number(process.env.LIVE_BOOT_MS) || 120_000;
 test.skip(!LIVE, 'set LIVE_URL to run against the deployment');
 

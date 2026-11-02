@@ -1,68 +1,5 @@
 #!/usr/bin/env node
-/*!
- * split-vo.js — cut the recorded take into the per-line clips the game plays.
- *
- *   node tools/split-vo.js [assets/source/gamevo.mp3] [--keep-others]
- *       reads docs/vo-timeline.json (tools/align-vo.js), writes
- *       assets/vo/<id>.ogg for every line in it, their word starts into
- *       assets/vo/word-timings.json, and rebuilds assets/vo/index.json.
- *   node tools/split-vo.js --master <name>
- *       the same for one master take (tools/vo-masters.js): reads
- *       docs/vo-masters/<name>.json, cuts its lines at the take's own tempo, never
- *       removes another clip, and skips a second reading (`<id>~2`).
- *
- * ONE VOICE. A lesson clip (p…) in assets/vo that the take does not voice is
- * removed (--keep-others keeps it): it is the earlier generated voice, and
- * beside the recording it was heard at once ("the feedback sounds look
- * different?"). The feedback lines the take does not have are left alone:
- * tools/make-vo.js voices those in the voice matched to the take, at the
- * take's level, until they are recorded. Where the take DOES say a feedback
- * line inside another one, that is used (DERIVED): "Yay!" is the first word
- * of p12.
- *
- * WHERE A CLIP BEGINS AND ENDS. Only between lines, never inside one: the
- * pauses inside a line ("Hmm… The sides look…", "Look! This corner…") are the
- * performance and stay in its clip. Both edges are found in the take's own
- * sound, not guessed from the word times:
- *   - it ENDS once the take has stayed quiet for HUSH after the last word,
- *     plus POST of room. Not at the first dip below the threshold: a final
- *     "k" or "t" has a closure and then a release ("Let's check!"), and a cut
- *     in the closure took the release off the word.
- *   - it STARTS in the last quiet stretch before the first word, a little
- *     room before it. Several lines open on a breath, then a beat of quiet,
- *     then the word; a fixed lead-in cut those breaths in half.
- * A 15 ms fade in and 60 ms fade out, both in quiet, keep the edges click-free.
- *
- * THE LEVEL. Every clip is brought to about TARGET (-20.5 LUFS, where the
- * game was mixed and the music's dip under the voice was tuned), so no line is
- * louder or softer than the one before it: read as a performance the take
- * runs from -25 LUFS ("The angles match too!", said softly) to -19.7
- * ("Honk-tastic!"), 5.5 dB, and that is a jump a child hears between screens.
- * Each clip goes MATCH of the way there, never more than MAX_DB, so a soft
- * line is still a little softer than a shout — the reading keeps its shape —
- * and never so far that its peak goes over PEAK_DB.
- *
- * THE PACE. The take is read at about 154 words a minute; the lesson was
- * tuned, and approved, at an unhurried 130-135 ("make sure vo not look very
- * fast", and of this take: "look fast"). TEMPO slows it to that with
- * Rubber Band — pitch and formants kept, so it is the same voice, only
- * unhurried — and the pauses inside a line stretch with it. Measured on the
- * stretched audio, every onset lands where the original's divided by TEMPO
- * says, so the word times are scaled by the same factor.
- *
- * THE WORDS. Each clip's word starts, in ms from the clip's own start, one per
- * word on screen. The model marks a word on the frame its first letter is
- * scored, which is a few frames into the sound — 60 ms on the median, and on a
- * soft or nasal start after a pause as much as 180 ("Look! … No corner"). So:
- *   - a word that follows a pause is SNAPPED to where its sound begins in the
- *     take (the rise out of the quiet just before it), which is exact;
- *   - a word inside running speech has no such edge, and is shown LEAD early.
- * A word shown with its sound reads as said; a tenth of a second after, as
- * lagging behind the voice.
- *
- * Encoded as every clip in assets/vo is, straight from the take: mono, 64k mp3 for
- * Safari, Opus at 40k for everyone else.
- */
+// split-vo.js — cut the recorded take into the per-line clips the game plays.
 'use strict';
 const fs = require('node:fs');
 const os = require('node:os');
@@ -86,15 +23,10 @@ const rel = (p) => path.relative(ROOT, p).replace(/\\/g, '/');
 const ff = (args) => execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', ...args]);
 
 const tl = JSON.parse(fs.readFileSync(TIMELINE, 'utf8'));
-// (a line the take reads twice is cut from its first reading; the second, `<id>~2`, only keeps
-// the lines either side of it honest about where the sound is)
 const lines = tl.lines;
 const cutIt = (l) => !/~/.test(l.id);
-// feedback the take says inside a lesson line (align-vo.js DERIVED): [id, line, first word, last word]
 const DERIVED = (tl.derived || []).map((d) => [d.id, d.from, d.words[0], d.words[1]]);
 
-// the take decoded once, so every cut is sample-exact on the timeline the
-// alignment was measured on
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'vo-cut-'));
 const wav = path.join(tmp, 'take.wav');
 ff(['-i', SRC, '-ac', '1', '-ar', '44100', '-c:a', 'pcm_s16le', wav]);
@@ -106,12 +38,6 @@ const peak = new Float32Array(steps);
 for (let k = 0; k < steps; k++) { let m = 0; for (let j = k * per; j < (k + 1) * per; j++) { const v = Math.abs(pcm[j]); if (v > m) m = v; } peak[k] = 20 * Math.log10(m / 32768 + 1e-9); }
 const quiet = (t, len) => { for (let k = Math.floor(t / STEP); k < Math.ceil((t + len) / STEP); k++) if (k >= steps || peak[k] > QUIET_DB) return false; return true; };
 
-/* where a word's sound really begins, if it follows a pause: the latest rise
-   out of 30 ms of quiet (through at most one soft step) into sound that
-   holds, no more than 300 ms before the model's mark and no earlier than
-   `floor` — the word before, or for a line's first word the clip's own
-   start, which is after any breath (a breath is not the word). null in
-   running speech. */
 function onsetOf(w, floor) {
   const hi = Math.min(steps - 6, Math.floor((w.start + 0.02) / STEP));
   const lo = Math.max(5, Math.ceil(Math.max(w.start - 0.3, floor) / STEP));
@@ -129,9 +55,6 @@ const snapped = (words, clipStart) => words.map((w, k) => {
   return at == null ? { start: w.start, lead: LEAD } : { start: at, lead: 0 };
 });
 
-/* what is cut: every line of the take, and the feedback said inside them.
-   Each knows the sound either side of it — where the one before ends and the
-   one after begins — which its edges may not cross. */
 const segs = lines.map((l, i) => ({ id: l.id, start: l.start, end: l.end, words: l.words,
                                     before: i ? lines[i - 1].end : 0, after: lines[i + 1] ? lines[i + 1].start : null }));
 DERIVED.forEach(([id, from, a, b]) => {
@@ -144,8 +67,6 @@ DERIVED.forEach(([id, from, a, b]) => {
 const cuts = segs.filter(cutIt).map((l) => {
   // the start: the latest quiet stretch (30 ms) that ends before the first word
   let start = null;
-  // (and up to ROOM more before it, only as far as the quiet goes: a breath
-  // just before that gap is left out whole, never sliced)
   for (let t = l.start - 0.08; t >= l.start - 0.6 && t >= 0; t -= STEP) {
     if (!quiet(t, 0.03)) continue;
     start = t;
@@ -165,8 +86,6 @@ const cuts = segs.filter(cutIt).map((l) => {
     for (let u = t + HUSH; u < t + POST; u += STEP) if (!quiet(u, STEP)) { end = u - 0.03; break; }
     break;
   }
-  // no long quiet before the next sound ("Yay!", then a breath, then "You
-  // made…"): stop in the first short one, and let silence make up the rest
   if (end == null) for (let t = l.end; t < limit; t += STEP) {
     if (!quiet(t, 0.05)) continue;
     let u = t; while (u < t + POST && quiet(u, STEP)) u += STEP;
@@ -191,9 +110,6 @@ function levelOf(a, b) {
   const I = /I:\s+(-?[\d.]+) LUFS\s*\n\s*Threshold/.exec(log), P = /Peak:\s+(-?[\d.]+) dBFS/.exec(log.slice(log.lastIndexOf('Summary')));
   return { lufs: I ? parseFloat(I[1]) : null, peak: P ? parseFloat(P[1]) : null };
 }
-/* A MASTER'S OWN LEVEL. The old take sat 2 dB over TARGET, and its limits are centred there; a
-   master is measured whole, and its lines go to TARGET keeping a fifth of how far each was from
-   the take's own mean — the same shape, around its own centre. */
 const takeLevel = master ? levelOf(0, pcm.length / 44100) : null;
 const centre = takeLevel && takeLevel.lufs != null ? TARGET - takeLevel.lufs : -2;
 cuts.forEach((c) => {

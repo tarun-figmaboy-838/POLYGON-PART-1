@@ -1,9 +1,4 @@
-/* THE DEVICE MATRIX. Boots the game at every shape and pixel density that matters, plays a
-   little, and measures: the stage and backbuffer geometry, the art set chosen, JS heap, frame
-   cost, console errors, whether anything is clipped or off-stage, and what the portrait path
-   does. Prints one row per device plus a verdict, and writes a screenshot for each.
-
-   node device-matrix.mjs [--live] */
+// THE DEVICE MATRIX.
 import { chromium, devices } from '@playwright/test';
 
 const LIVE = process.argv.includes('--live');
@@ -97,8 +92,6 @@ for (const [name, viewport, dpr, touch] of MATRIX) {
     Object.assign(row, await page.evaluate(() => {
       const st = document.getElementById('stage').getBoundingClientRect();
       const bad = [];
-      /* No control to measure any more: the JUMP button is gone and the stage itself is
-         the jump. What this pass still catches is anything DRAWN outside the stage. */
       for (const el of document.querySelectorAll('#hud *, .overlay:not([hidden]) *')) {
         if (el.hidden || !el.getClientRects().length) continue;
         const r = el.getBoundingClientRect();

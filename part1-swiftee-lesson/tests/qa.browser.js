@@ -1,33 +1,5 @@
 #!/usr/bin/env node
-/*!
- * qa.browser.js — the game played badly, on purpose.
- *
- *   node tests/qa.browser.js
- *
- * playthrough.browser.js plays the lesson correctly: it answers what it is
- * asked, once, in order. A child does not. They tap the scenery, they tap the
- * same button five times because nothing happened yet, they start a drag and
- * change their mind, they turn the tablet sideways in the middle of a
- * sentence, and they lean on the keyboard.
- *
- * None of that should be able to break a lesson, and none of it is covered by
- * a suite that behaves. So this one misbehaves, and then measures the things
- * that decide whether a seven-year-old can actually use the thing:
- *
- *   CAN THEY READ IT      type sizes against a floor, and the contrast of the
- *                         text that carries the teaching
- *   CAN THEY HIT IT       every touchable thing measured against a 44px
- *                         target, which is the smallest a small finger
- *                         reliably lands on
- *   CAN THEY TELL         whether anything on screen says what to do — an
- *                         instruction, a haloed target, or a moving one
- *   DOES IT HOLD          fast taps, taps on nothing, abandoned drags, resize
- *                         mid-screen, and the arrow keys, none of which may
- *                         stall it, double-fire it, or throw
- *
- * It is deliberately separate from the playthrough: that suite proves the
- * lesson can be completed, this one proves it survives being used.
- */
+// qa.browser.js — the game played badly, on purpose.
 'use strict';
 
 const http = require('http');
@@ -72,7 +44,6 @@ const LUM = `(function (c) {
 (async () => {
   const srv = await serve();
   const port = srv.address().port;
-  // (CHROME=/path/to/a/chromium plays it in that browser instead of the installed Google Chrome)
   const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : { channel: 'chrome' });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 
@@ -88,7 +59,6 @@ const LUM = `(function (c) {
 
   console.log('\n  QA — the game played badly, on purpose\n');
 
-  // ?story=0: the lesson, played badly; the story before it is tests/playthrough.jsdom.js's
   await page.goto(`http://127.0.0.1:${port}/index.html?story=0`);
   await page.waitForSelector('#loading.ready #start', { timeout: 30000 });
 
@@ -111,9 +81,6 @@ const LUM = `(function (c) {
   /* ---- 2. tapping the scenery ------------------------------------ */
   await page.waitForFunction(() => window.Swiftee && window.Swiftee.el, { timeout: 30000 });
 
-  // Which screens actually ask the child for something. A screen that asks
-  // nothing — page 8 draws its own side while they watch — needs no cue, and
-  // demanding one of it is demanding a prompt for a question nobody asked.
   await page.evaluate(() => {
     window.__asks = {};
     window.Game.director.on('input', function () { window.__asks[window.Game.screen] = true; });
@@ -183,17 +150,6 @@ const LUM = `(function (c) {
       if (Math.min(r.w, r.h) < 30) smallTargets.push('screen ' + (s.screen + 1) + ': ' + r.w + 'x' + r.h);
     });
 
-    // And something should be saying what to do — but only once the screen
-    // has settled. Sampled the instant it opens, nothing is saying anything
-    // yet: the line is still arriving a word at a time and Next has not been
-    // offered. A child who has been looking at a screen for two seconds and
-    // still has no cue is the real fault; one who has been looking for two
-    // hundred milliseconds is just early.
-    // Whether a screen EVER offered a cue, not whether it had one at the
-    // moment it was sampled. A screen is uncued for its first second by
-    // design — the line is still arriving a word at a time and Next has not
-    // been offered yet — so sampling is only evidence of a fault when the
-    // screen is left behind having never said anything at all.
     seen[s.screen] = true;
     if (s.next || s.hasCard || s.bubble || s.haloed > 0 || s.targets.length) cued[s.screen] = true;
 
@@ -210,18 +166,12 @@ const LUM = `(function (c) {
     if (s.next) {
       // impatient: three taps on Next in 150ms must move exactly one screen
       const before = s.screen;
-      // #next can be taken away between reading the state and reaching for
-      // the button: a screen that advances itself does exactly that, and
-      // boundingBox() then returns null and takes the whole run down with a
-      // TypeError. There is nothing to lean on this step, so move on.
       const nextEl = await page.$('#next');
       const nb = nextEl && await nextEl.boundingBox();
       if (!nb) continue;
       for (let i = 0; i < 3; i++) { await page.mouse.click(nb.x + nb.width / 2, nb.y + nb.height / 2); await sleep(50); }
       await sleep(700);
       const after = await page.evaluate(() => window.Game.screen);
-      // A screen with no input advances by itself, so passing through one is
-      // not a skip: the fault is a tap landing on a screen that was waiting.
       const skippable = await page.evaluate(({ a, b }) => {
         for (let k = a + 1; k < b; k++) {
           if ((window.Screens.list[k].beats || []).some((x) => x.input)) return true;
@@ -253,8 +203,6 @@ const LUM = `(function (c) {
         });
         return 'cards';
       }
-      // a vertex that wants dragging: take it somewhere, clumsily, the way a
-      // child would — start, wander, and let go well past the target
       var vs = [].slice.call(document.querySelectorAll('.vertex'));
       if (vs.length && st.verts) {
         var i = 0, v = st.verts[i], c2 = window.Poly.centroid(st.verts);
@@ -302,16 +250,6 @@ const LUM = `(function (c) {
   }));
   if (!end.finished) note('did not reach the end under this treatment', 'stopped at screen ' + (end.screen + 1));
   t('the page is still healthy at the end', end.nodes < 1200 && end.anims < 400, JSON.stringify(end));
-  // A SCENE'S DELAYED WORK MUST NOT RUN ON THE NEXT SCENE.
-  //
-  // stage.js stages its entrances — a sorting tray fades its items in one
-  // after another over most of a second, a checklist ticks its rows in — and
-  // a child who moves on before that finishes used to get the leftovers on
-  // the following screen: a tick with nothing to tick, a highlight on
-  // something nobody asked about. It never threw.
-  //
-  // Built and torn down immediately here, which is the case that used to
-  // leak, and the refusal is counted rather than assumed.
   const leak = await page.evaluate(async () => {
     const suppressedBefore = window.Stage.staleSuppressed;
     window.Stage.apply({ kind: 'sort',
@@ -329,10 +267,6 @@ const LUM = `(function (c) {
       pendingEnd: window.Stage.pendingTimers
     };
   }).catch(function () { return { pendingMid: 0, pendingAfter: -1, slippedThrough: -1, pendingEnd: -1 }; });
-  // There were entrances owed; after the teardown there are none, none fired
-  // late, and none are still pending a second later.
-  // (the tray's cards no longer arrive on timers — each fades and its shape springs on a Web
-  // Animation — so nothing need be owed mid-stagger; what matters is that nothing is left)
   t('a scene torn down mid-entrance leaves nothing running',
     leak.pendingMid >= 0 && leak.pendingAfter === 0 &&
     leak.slippedThrough === 0 && leak.pendingEnd === 0, JSON.stringify(leak));

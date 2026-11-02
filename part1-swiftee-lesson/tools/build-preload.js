@@ -1,26 +1,5 @@
 #!/usr/bin/env node
-/*!
- * build-preload.js — what the loading bar fetches before Start, and how heavy each file is.
- *
- *   node tools/build-preload.js           writes src/core/preload-list.js
- *   node tools/build-preload.js --check   fails if that file is out of date, or names a missing file
- *
- * THE LIST IS READ FROM THE CODE. Every asset the page and the scripts name as a literal —
- * "assets/ui/card.webp?v=bcc5169a" in a frame table, url("assets/bg/ice-vista.webp") in the
- * stylesheet, the story's paintings, the sleigh and measuring sheets — exactly as written,
- * ?v= and all, because the bar only helps if it fetches the very URL the game will ask for
- * (a different query string is a different cache entry, and the warm-up silently misses).
- * Three sets are not literals and are added when the page runs (src/game/game.js
- * startLoading): Swiftee's sheets at the resolution this screen draws him, the voice clips
- * in the format this browser plays, and the fonts.
- *
- * THE SIZES ARE THE FILES' OWN, on disk, so the bar weighs a 900 KB sheet as nine times a
- * 100 KB one from its first frame; a Content-Length that says otherwise corrects it.
- *
- * AND THE AVIF TWINS (tools/build-avif.js): every .webp with an .avif beside it, mapped to
- * the twin's address with its own ?v= (a hash of its bytes, like the frame tables' hashes),
- * which is what Preload.pick() asks for where the browser shows AVIF.
- */
+// build-preload.js — what the loading bar fetches before Start, and how heavy each file is.
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
@@ -40,15 +19,10 @@ function walk(dir) {
 }
 const rel = (p) => path.relative(ROOT, p).split(path.sep).join('/');
 
-// every file the site serves under assets/ (assets/source is the masters, never deployed — nor are
-// the Hindi recordings, assets/vo-part-1-hindi/*.opus, which tools/build-vo-hindi.js cuts into assets/vo/hi)
 const sizes = {};
 walk(path.join(ROOT, 'assets')).map(rel).filter((f) => !/^assets\/source\//.test(f) && !/\.(wav|opus)$/i.test(f) && !/(^|\/)\.[^/]+$/.test(f)).sort()
   .forEach((f) => { sizes[f] = fs.statSync(path.join(ROOT, f)).size; });
 
-// every literal asset URL in the scripts and the page, quoted or inside url(...)
-// (the sources, never the bundle made from them — src/lesson.min.js, tools/build-bundle.js — so the
-// list cannot depend on whether the bundle has been built)
 const sources = [path.join(ROOT, 'index.html')].concat(walk(path.join(ROOT, 'src')).filter((f) => /\.js$/.test(f) && f !== OUT && !/lesson\.min\.js$/.test(f)));
 const RE = /["'(](assets\/[A-Za-z0-9_\-./@]+\.(?:webp|png|jpg|svg))(\?v=[0-9a-f]+)?(?=["')])/g;
 const urls = new Set(), missing = [];

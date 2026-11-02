@@ -1,22 +1,10 @@
-/* PLAY THE WHOLE GAME LIKE A PLAYER, and keep the evidence.
- *
- *     node tools/playthrough-qa.mjs
- *
- * Cover -> PLAY -> the tutorial (acting only when its hand asks) -> seven phases with one
- * deliberate wrong answer -> the knockout -> the run home -> the ending. A screenshot of
- * every beat lands in qa-report/play/, and the run fails loudly on any page error, failed
- * request or state that sits still for 45s. This is the QA pass the test suite cannot do:
- * it looks at the game the way a person does, end to end. */
-/* A real playthrough, driven like a player: cover -> PLAY -> tutorial -> seven phases -> the end.
-   Screenshots at every beat, every error caught, stalls and frame rate measured. */
+// PLAY THE WHOLE GAME LIKE A PLAYER, and keep the evidence.
 import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
 import sharp from 'sharp';
 import { mkdirSync } from 'node:fs';
 
 mkdirSync('qa-report/play', { recursive: true });
-/* Against the DEPLOYMENT when LIVE_URL is set (e.g. https://running-mammoth.vercel.app/game/),
-   otherwise against a local server: the same walk, so the two can be compared. */
 const LIVE = process.env.LIVE_URL ? (process.env.LIVE_URL.endsWith('/') ? process.env.LIVE_URL : process.env.LIVE_URL + '/') : '';
 const PORT = 8491;
 const srv = LIVE ? null : spawn('node', ['tools/serve.mjs', String(PORT)], { stdio: 'ignore' });
@@ -30,8 +18,6 @@ page.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.te
 page.on('requestfailed', r => failed.push(r.url().split('/').pop()));
 page.on('response', r => { if (r.status() >= 400) failed.push(r.status() + ' ' + r.url().split('/').pop()); });
 
-// 1. the cover, as a player sees it (no skip), with the tutorial on
-// domcontentloaded: on the deployment the load event can wait on a slow edge fetch, and READY below is the real gate
 await page.goto(`${BASE}index.html?sound=0`, { waitUntil: 'domcontentloaded', timeout: 90000 });
 await page.waitForFunction('window.iceAgeGame && window.iceAgeGame.state() !== "BOOT"', null, { timeout: 60000 });
 await page.waitForTimeout(600);
@@ -41,7 +27,6 @@ console.log('cover: ' + JSON.stringify(cover));
 await page.locator('#btn-play').click();
 await page.waitForTimeout(500);
 
-// 2. play like a player, with the tutorial guiding: act only when the hand asks, or a rock is in the window
 const beats = new Set(); let last = ''; let lastChange = Date.now(); const stalls = []; let frames = 0;
 await page.evaluate(() => { window.__f = 0; const tick = () => { window.__f++; requestAnimationFrame(tick); }; requestAnimationFrame(tick); });
 await page.evaluate(() => window.iceAgeGame.setOptions({ fast: 3 }));

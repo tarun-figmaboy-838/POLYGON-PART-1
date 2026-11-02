@@ -1,21 +1,5 @@
 #!/usr/bin/env node
-/*!
- * vo-script.js — the voice-over script, written from the storyboard.
- *
- *   node tools/vo-script.js        writes docs/VO.md and docs/vo-lines.csv
- *
- * Every line the game can say, IN THE ORDER A CHILD MEETS IT, with the file
- * the game looks for, how the bubble splits it, when it is heard, and how it
- * should sound. It is generated, not typed, because the typed one drifted: it
- * still had "What if we connect it to a different vertex." with a full stop,
- * "vertices" where the deck says "sides", and "Your turn!" as a line of its
- * own. The storyboard is the script; this only prints it.
- *
- * To voice the game: record (or generate) each line, save it as
- * assets/vo/<id>.ogg, and run `npm run build:vo`. The game then plays each
- * clip as its words appear and paces the bubbles by the recording; a clip
- * that is not there yet is simply silent.
- */
+// vo-script.js — the voice-over script, written from the storyboard.
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
@@ -96,8 +80,6 @@ md += '**Breaths:** record every line as ONE clip, read naturally, with a short 
 const story = rows.filter((r) => r.kind === 'story');
 const lesson = rows.filter((r) => r.kind !== 'feedback' && r.kind !== 'story');
 const fb = rows.filter((r) => r.kind === 'feedback');
-/* THE STORY FIRST: it is heard before Swiftee arrives, and in three voices that are not his
-   (src/story/story-data.js; tools/make-vo.js STORY voices them until they are recorded) */
 const STORY_VOICE = {
   narrator: 'the storyteller: warm, clear and unhurried, a grown-up reading a picture book aloud',
   momo: 'Momo the mammoth: a cute cartoon kid, big-hearted and eager',

@@ -1,12 +1,4 @@
-/* Look at a voice-over take and find where the lines are.
- *
- *     node tools/vo-analyse.mjs "game/assets/audio/<take>.mp3"
- *
- * Decodes to mono 16k PCM with ffmpeg, builds an energy envelope, and reports every run of
- * speech separated by a gap of silence. Reports only — it writes nothing. Use it to check a
- * new take has the lines the script expects, in the order the script expects, before
- * anything is baked from it.
- */
+// Look at a voice-over take and find where the lines are.
 import { spawnSync } from 'node:child_process';
 
 const SRC = process.argv[2];
@@ -23,8 +15,6 @@ const x = new Float32Array(n);
 for (let i = 0; i < n; i++) x[i] = buf.readInt16LE(i * 2) / 32768;
 console.log('duration ' + (n / SR).toFixed(2) + 's');
 
-/* RMS in 10ms hops. Short enough to see the gap between two words, long enough not to
-   chatter inside one. */
 const HOP = Math.round(SR * 0.01);
 const frames = Math.floor(n / HOP);
 const env = new Float32Array(frames);

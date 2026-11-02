@@ -1,11 +1,4 @@
-/* CAPTURE THE EVIDENCE for the QA report.
- *
- * Every "after" frame is the game as it stands. Every "before" frame is produced by
- * reverting exactly one thing at runtime — a single constant or class — so the pair is a
- * genuine comparison and not a redrawing of a claim.
- *
- *     node tools/qa-evidence.mjs
- */
+// CAPTURE THE EVIDENCE for the QA report.
 import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
@@ -76,8 +69,6 @@ async function shot(page, name, clip) {
 /* ── 1. THE PLUG: grown-and-clipped vs whole ─────────────────────────────── */
 console.log('\n1. the seated answer');
 {
-  // BEFORE: revert the two things that broke it — grow the plug to fill the slot width,
-  // and clip it at the water line, exactly as the shipped build did.
   const page = await fresh();
   await page.evaluate(() => {
     const g = window.iceAgeGame;

@@ -1,24 +1,4 @@
-/*!
- * i18n.test.js — the game in every language it ships in (?lan=hi, mr, te, gu, od).
- *
- *   node tests/i18n.test.js
- *
- *   COPIES       polygon-locales.json is copied into the scripts both halves load, and the
- *                lesson's src/core/i18n.js into Frozen Rush (tools/build-locales.js): every
- *                copy matches its source, so a translation edited and not rebuilt is a red test.
- *
- *   EVERY WORD   Every line, instruction, part, label, answer and badge the lesson's screens
- *                can show, the lines game.js and runner-stage.js write themselves, Frozen Rush's
- *                questions, hints and tutorial — each one has a translation in every language,
- *                and a translated line keeps its line's bubble breaks and its key word.
- *
- *   THE WORDS THE SCENES WAIT FOR   A name tag, an answer, a bin arrives on its word
- *                (stage.js holdForWord, in English). In every language the line that names it
- *                says a word that stands for that English word (I18N.cues), or the thing would
- *                wait for the end of the line instead of arriving with its word.
- *
- *   ENGLISH      With no ?lan= nothing is touched: tr() hands back what it was given.
- */
+// i18n.test.js — the game in every language it ships in (?lan=hi, mr, te, gu, od).
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -101,7 +81,6 @@ for (const lang of LANGS) {
     const tp = I.trParts(say, parts);
     t(lang + ': the bubble breaks of "' + say + '"', tp && tp.length === parts.length && tp.join(' ') === I.tr(say), tp);
   });
-  // each `show` on a word finds that word in the translation (the same key word, not a guess)
   NUMBERED.forEach(([say, shows]) => {
     const en = say.split(/\s+/), tw = I.tr(say).split(/\s+/);
     shows.forEach((sh) => {
@@ -111,7 +90,6 @@ for (const lang of LANGS) {
       t(lang + ': "' + want + '" of "' + say + '" is found again', I.cues(tw[i]).some((c) => c.toLowerCase() === want || c.toLowerCase() + 's' === want || c.toLowerCase() === want + 's'), tw[i]);
     });
   });
-  // Frozen Rush: every question and nudge, the key word marked wherever the English one is
   QUESTIONS.concat(NUDGES).concat(TUTORIAL).forEach((s) => t(lang + ': Frozen Rush "' + s + '"', I.tr(s) !== s, I.tr(s)));
   QUESTIONS.forEach((s) => {
     const keyed = /\bthe\s/i.test(s);
@@ -127,8 +105,6 @@ for (const lang of LANGS) {
   t(lang + ': numbers and degrees are left alone', I.tr('108°') === '108°' && I.tr('5') === '5');
 }
 
-/* ---- THE WORDS THE SCENES WAIT FOR ----
-   (the line, and the English word its scene waits for — stage.js holdForWord / onWord) */
 const WAITS = [
   ['This is a side of the polygon.', 'side'],
   ['Yay! You made a diagonal!', 'diagonal'],

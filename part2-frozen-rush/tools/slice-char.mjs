@@ -3,7 +3,7 @@
  * The generator delivers each animation as a GRID of frames at whatever size and
  * layout it felt like: run is 5x4 in 1536x1024, jump is 7x2 in 2172x724, and the
  * frames float at different heights inside their cells. The engine wants something
- * much stricter (see docs/ANIMATION.md): one horizontal strip, N cells of exactly
+ * much stricter: one horizontal strip, N cells of exactly
  * 420x320, the character centred in its cell with its lowest pixel a shared 6px
  * above the cell bottom, and the SAME character size across every animation.
  *
@@ -163,7 +163,7 @@ const SHEETS = [
      This delivery is a whole performance: it runs, hits, tumbles through the air and
      ends sat down dazed with stars circling. The stars and the spiral eyes are DRAWN
      IN, so CFG.characters.koStars stays false — the engine adding its own ring on top
-     would be the exact double-up docs/ANIMATION.md warns about. */
+     would be the exact double-up to avoid. */
   { src: 'ko-new-gif.png',    slot: 'hurt',  bob: false, near: 200 },
   /* STANDING STILL, delivered — and this is the longest-lived pose in the game.
 

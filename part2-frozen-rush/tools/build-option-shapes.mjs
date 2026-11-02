@@ -1,47 +1,15 @@
-/* THE OPTION SHAPES: art in, geometry and a game-sized texture out.
- *
- * The hanging options are now the supplied ice blocks rather than shapes drawn in
- * canvas. That only works if the ENGINE'S GEOMETRY AND THE PICTURE ARE THE SAME THING,
- * because the geometry is what the game does everything with: it seats the block so its
- * flat side is up, swells it until that edge spans the crevasse, clips it to the hole,
- * hangs the rope from the middle of its top edge, and — the whole point of the game —
- * it is what the learner counts the sides of. A vertex list that disagreed with the
- * drawing by even a little would show up as a rope attached to thin air and a plug that
- * did not fit.
- *
- * So the ring is not written by hand. It is TRACED OFF EACH IMAGE: contour the alpha,
- * simplify until only real corners remain, drop any corner that barely turns, and
- * normalise to the trimmed box. Then it is checked against what the curriculum calls
- * that shape — 6 sides for a hexagon, concave really concave — and the build fails
- * rather than shipping a picture that teaches the wrong number.
- *
- * The texture is trimmed to its opaque bounds and written as WebP, which is what lets
- * the engine draw it with one drawImage over the ring's own bounding box.
- *
- *     node tools/build-option-shapes.mjs
- *     node tools/build-option-shapes.mjs --check    verify only, write nothing
- */
+// THE OPTION SHAPES: art in, geometry and a game-sized texture out.
 import sharp from 'sharp';
 import { writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname, '..');
-/* IN AND OUT ARE DIFFERENT FOLDERS NOW. The delivered PNGs are source art and lived
-   inside game/, which is the folder that gets deployed — 43MB of inputs no URL in the
-   game ever requests, kept out of the upload only by a pair of .vercelignore files
-   that had to list them by glob. Source art now lives in art-source/ with the rest of
-   it, so the served folder holds only what the game actually loads and the ignore
-   files no longer have to know about any of it. */
 const SRC_DIR = join(ROOT, 'art-source', 'option-shape');
 const DIR = join(ROOT, 'game', 'assets', 'option-shape');
 const CHECK = process.argv.includes('--check');
 const ALPHA = 80;
 const OUT_MAX = 560;              // a chunk never renders wider than ~280px
 
-/* curriculum id -> the delivered file that IS that shape. Measured, not assumed:
-   tools/name-option-shapes.mjs traced every delivered block and renamed it for its own
-   side count, so these names are the measurement. The three built by
-   tools/make-option-shapes.mjs fill the gaps the delivered set left. */
 const MAP = {
   regularTriangle:         'regularTriangle.avif',
   regularQuadrilateral:    'regularQuadrilateral.avif',
@@ -57,14 +25,7 @@ const MAP = {
   concavePentagon:         'concavePentagon.avif',       // built
   concaveHexagon:          'concaveHexagon.avif',        // built
   concaveHeptagon:         'concaveHeptagon.avif',
-  /* A SECOND CONCAVE PENTAGON (built). "Cut the concave pentagon" wants two answers,
-     and the delivered set has one — so this fills the gap the same way the three above
-     do, from the verified ring and a donor's own material. */
   concavePentagon2:        'concavePentagon2.avif',
-  /* PART 2's DRAWING SLAB, delivered as 1.png and renamed for what it measures as —
-     the way every other name in this table was arrived at (see the note above). Four
-     sides, irregular, convex, and therefore exactly two diagonals, which is the whole
-     subject of the level it belongs to. */
   iceQuadrilateral:        'iceQuadrilateral.avif'
 };
 
@@ -137,19 +98,6 @@ function simplify(pts, eps) {
     if (d > 0.20) keep.push(p1);
   }
 
-  /* MERGE CORNERS THAT ARE REALLY ONE CORNER.
-
-     The painted blocks have slightly rounded, mitred corners, so there is no single
-     tolerance that works: loose enough to read one corner per corner and it drifts
-     20px off the paint (a rim floating beside the picture in game); tight enough to
-     stay on the paint and it splits each rounded corner into two or three, and a
-     quadrilateral traces as a hexagon with 1%-long sides.
-
-     So the tolerance stays tight and the fragments are collapsed afterwards: while the
-     shortest side is a small fraction of the longest, replace its two ends with their
-     midpoint. That converges on the real corner count from either direction, and it is
-     the same rule polygons.js verify() applies when it rejects a side under 16% of the
-     longest as "too short to count". */
   let ring2 = keep;
   for (let guard = 0; guard < 40 && ring2.length > 3; guard++) {
     const lens = ring2.map((p, i) => {
@@ -185,17 +133,9 @@ for (const [id, file] of Object.entries(MAP)) {
     if (y < y0) y0 = y; if (y > y1) y1 = y;
   }
   const bw = x1 - x0 + 1, bh = y1 - y0 + 1;
-  /* A TIGHT tolerance. At 2% of the shape a traced corner could land 20-odd
-     source pixels outside the painted edge, and because the engine CLIPS the texture
-     to the ring that showed up in game as a rim floating just off the picture with a
-     sliver of nothing between them. 0.6% keeps the corner on the paint and still
-     removes every point that is not a corner. */
   const ring = simplify(contour(mask, W, H), Math.max(2, Math.max(bw, bh) * 0.006));
   const n = ring.length;
 
-  /* Normalised to the TRIMMED box, from -1..1 on its longer side, so the ring and the
-     trimmed texture describe the same rectangle and the engine can draw one over the
-     other with a single drawImage. */
   const k = 2 / Math.max(bw, bh);
   const pts = ring.map(([px, py]) => ({
     x: +(((px - x0) - bw / 2) * k).toFixed(5),
@@ -216,34 +156,11 @@ for (const [id, file] of Object.entries(MAP)) {
   const convex = !(turns.some(t => t > 0) && turns.some(t => t < 0));
   const regular = spread <= 0.12;
 
-  /* SIDES AND CONVEXITY ARE ASSERTED; REGULARITY IS ONLY REPORTED.
-
-     Side count and convexity survive tracing: one is an integer, the other is the sign
-     of a turn, and neither moves if a corner lands a few pixels out. Regularity is a
-     continuous measure and the trace is not precise enough to carry it — the
-     simplifier's tolerance is 2% of the shape, which measured puts a genuinely regular
-     octagon at 10% side spread while a genuinely irregular concave hexagon comes in at
-     8%. An assertion on that would fail correct art and pass wrong art with equal
-     enthusiasm.
-
-     It costs nothing, because regularity is not what the learner is asked to judge —
-     the number of sides is — and it is already verified to 2% on the exact coordinates
-     in polygons.js. So the declared value is carried through and the traced one is
-     printed to eyeball. */
   if (n !== wantN) problems.push(`${id}: traced ${n} sides from ${file}, curriculum says ${wantN}`);
   if (convex !== wantConvex) problems.push(`${id}: traced ${convex ? 'convex' : 'concave'}, curriculum says ${wantConvex ? 'convex' : 'concave'}`);
   const shortest = Math.min(...lens) / Math.max(...lens);
   if (shortest < 0.10) problems.push(`${id}: shortest side is ${(shortest * 100) | 0}% of the longest — it will not read as a side`);
 
-  /* NO NEARLY-FLAT CORNER. A corner that barely turns is not a corner: the two sides
-     either side of it read as one straight side, so a hexagon looks like a pentagon —
-     which is the exact mistake this game asks the learner not to make.
-
-     It is also what made a test fail rather than a picture look odd: at 45 degrees of
-     rotation, float error was enough to flip the sign of a near-zero turn, so a shape
-     verified convex measured concave. Same underlying fault, and polygons.js rejects
-     it on the same grounds. Measured as the turn ANGLE, which unlike the cross product
-     does not scale with the length of the sides. */
   const angles = pts.map((_, i) => {
     const a = pts[(i - 1 + n) % n], b = pts[i], c = pts[(i + 1) % n];
     const a1 = Math.atan2(b.y - a.y, b.x - a.x);
@@ -262,22 +179,6 @@ for (const [id, file] of Object.entries(MAP)) {
   const scale = Math.min(1, OUT_MAX / Math.max(bw, bh));
   const outName = id + '.webp';
   if (!CHECK) {
-    /* LOSSY, NOT NEAR-LOSSLESS — the same lesson tools/slice-char.mjs already learned for
-       the character sheets, which this tool never got. Near-lossless was costing 122-283kB
-       PER BLOCK and 2.9MB for the set; all fourteen are fetched on every load (the engine
-       preloads the whole of optionShapes), so it was the single largest blocking download
-       in the game, three times the size of the entire character set a phone pulls.
-
-       It buys nothing here, and the reason is specific rather than a judgement call: the
-       SILHOUETTE — the thing the learner counts the sides of — is not carried by this file
-       at all. paintGlacierChunk traces the ring from option-shapes.js and CLIPS to it, so
-       the countable outline is vector geometry and cannot be touched by an encoder. What
-       this file carries is the ice texture INSIDE that outline, and it is only ever drawn
-       downscaled: a 560px block renders at ~273 stage px at most (three options, the widest
-       case), which is a 2x reduction before a pixel reaches the screen even at renderScale 1.
-
-       q86 measured across the set: 2.9MB -> ~1.0MB, with alphaQuality kept at 100 because
-       the 2% over-draw in paintGlacierChunk reads the alpha edge. */
     await sharp(src)
       .extract({ left: x0, top: y0, width: bw, height: bh })
       .resize(Math.round(bw * scale), Math.round(bh * scale), { kernel: 'lanczos3' })

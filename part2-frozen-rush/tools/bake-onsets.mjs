@@ -1,21 +1,4 @@
-/* BAKE THE SFX ONSET TIMES INTO THE CONFIG.
- *
- * Every recorded cue is a file longer than the event it is for — 5.2s of footsteps for
- * one footfall — so a cue takes a short bite out of it, starting at a hit. Those hit
- * times are found from the waveform's own energy by AudioManager._onsets(), which needs
- * the file DECODED, which needs fetch + decodeAudioData.
- *
- * Neither exists on a file:// page. So opening index.html off the disk — the supported
- * way to run this game — loses all six delivered recordings and falls back to the
- * synthesised palette, silently.
- *
- * The analysis only has to happen once, though: the files do not change. This runs the
- * game's OWN _onsets over http, reads the hit times back, and writes them into CFG.sfx
- * as a `hits` array. With them baked in, the file:// build can play the same bites
- * through plain <audio> elements, which need no decoding at all.
- *
- *     node tools/bake-onsets.mjs
- */
+// BAKE THE SFX ONSET TIMES INTO THE CONFIG.
 import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -36,9 +19,6 @@ const hits = await page.evaluate(async () => {
   const m = await import('/js/engine.js');
   const expected = Object.keys(m.CFG.sfx || {});
   const t0 = Date.now();
-  /* Wait for EVERY cue, not merely for the table to be non-empty. The loader decodes
-     them concurrently and a 5.5MB set does not finish together, so reading on the first
-     key that appears returned two cues out of six and quietly baked hits for those. */
   while (Date.now() - t0 < 90000) {
     const s = g._sfxTable && g._sfxTable();
     if (s && expected.every(k => s[k] && s[k].buf)) {
@@ -73,16 +53,6 @@ for (const [k, v] of Object.entries(hits)) {
     v.hits.slice(0, 6).join(', ') + (v.hits.length > 6 ? ' …' : ''));
 }
 
-/* WRITTEN BETWEEN MARKERS, not by matching nested braces.
- *
- * The first version of this generated a `hits: [...]` line inside each cue's object
- * literal with a regex. It does not work: a lazy match from `ui: {` to the first
- * `\n  }` runs past the cue and stops on the closing brace of `sfx` itself, so the
- * numbers landed as a sibling of the six cues rather than inside one — a `hits` key
- * on CFG.sfx that then showed up as a seventh cue with no file.
- *
- * Writing between two markers cannot go wrong that way, and the generated block says
- * plainly that it is generated, which the buried line did not. */
 const F = 'game/js/engine.js';
 let s = readFileSync(F, 'utf8');
 const NL = s.includes('\r\n') ? '\r\n' : '\n';

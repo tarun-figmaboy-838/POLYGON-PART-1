@@ -1,19 +1,4 @@
-/*!
- * test-director.js — the three properties the director promises.
- *
- *   node tests/director.test.js
- *
- * CANCELLABLE  changing screen aborts the running sequence and everything
- *              inside it. Nothing from screen 6 fires during screen 7.
- * NEVER STUCK  a handler that hangs, throws, or never resolves falls
- *              through to the next beat under a ceiling.
- * SKIP-SAFE    a tap fast-forwards narration; it never skips an input or
- *              feedback, and a reading-time floor survives rapid tapping.
- *
- * These are asserted, not described, because each one is a bug this codebase
- * has actually shipped before: the stale coroutine across scenes, the VO that
- * never loads, and the child who taps through the lesson.
- */
+// test-director.js — the three properties the director promises.
 'use strict';
 
 global.window = global;
@@ -43,10 +28,6 @@ function rig(overrides) {
 }
 
 (async () => {
-
-  /* -------------------------------------------------------------- *
-   * Ordering — every beat awaited, nothing starts early
-   * -------------------------------------------------------------- */
 
   {
     const { log, handlers } = rig({
@@ -88,10 +69,6 @@ function rig(overrides) {
     t('await:true makes any state blocking',
       log.indexOf('swiftee:wave:end') < log.indexOf('say:hi'), log);
   }
-
-  /* -------------------------------------------------------------- *
-   * Cancellation — the stale-coroutine bug, closed structurally
-   * -------------------------------------------------------------- */
 
   {
     const { log, handlers } = rig();
@@ -141,10 +118,6 @@ function rig(overrides) {
     t('aborting during an input resolves the run', r !== 'HUNG', r);
   }
 
-  /* -------------------------------------------------------------- *
-   * Never stuck — section 14
-   * -------------------------------------------------------------- */
-
   {
     const { log, handlers } = rig({ swiftee: () => new Promise(() => {}) });   // never resolves
     const d = Director.create(handlers, { sayMinMs: 10, msPerWord: 1, beatCeilingMs: 250 });
@@ -181,10 +154,6 @@ function rig(overrides) {
     const r = await d.run([{ say: 'nobody is listening' }, { input: { type: 'tap-anywhere' } }]);
     t('a director with no handlers at all still completes', r !== Director.CANCELLED);
   }
-
-  /* -------------------------------------------------------------- *
-   * Skip safety — children tap constantly
-   * -------------------------------------------------------------- */
 
   {
     const { log, handlers } = rig({ say: () => sleep(3000) });
@@ -234,10 +203,6 @@ function rig(overrides) {
     t('feedback cannot be skipped', log.indexOf('sfx:wrong') >= 0, log);
   }
 
-  /* -------------------------------------------------------------- *
-   * Branching and composition
-   * -------------------------------------------------------------- */
-
   {
     const { log, handlers } = rig({ input: () => Promise.resolve({ result: 'wrong' }) });
     const d = Director.create(handlers, { sayMinMs: 10, feedbackSettleMs: 10 });
@@ -270,9 +235,6 @@ function rig(overrides) {
     t('an unmatched result takes the otherwise path', log.indexOf('sfx:fallback') >= 0, log);
   }
 
-  /* A RETRY IS BRANCHED ON TOO. `until: 'correct'`: wrong, wrong, right —
-     the nudge plays twice, the right arm plays once, after the last try, and
-     nothing after the branch runs until then. */
   {
     const answers = ['wrong', 'wrong', 'correct'];
     const { log, handlers } = rig({ input: () => { log.push('input'); return Promise.resolve({ result: answers.shift() || 'correct' }); } });
@@ -334,10 +296,6 @@ function rig(overrides) {
     t('a bare number is a wait', Date.now() - t0 >= 200, Date.now() - t0);
     void log;
   }
-
-  /* -------------------------------------------------------------- *
-   * Events
-   * -------------------------------------------------------------- */
 
   {
     const { handlers } = rig();

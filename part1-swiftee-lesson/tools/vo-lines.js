@@ -1,28 +1,5 @@
 #!/usr/bin/env node
-/*!
- * vo-lines.js — every voice clip the game can ask for, with its words and
- * where it is said. The one list; everything else reads it.
- *
- *   node tools/vo-lines.js            print the list
- *   require('./vo-lines')()           [{ id, text, kind, where }]
- *
- * WHY IT IS SCRAPED AND NOT TYPED. docs/VO.md is the script a person reads
- * and it drifts: it lists sixty lines, the deck asks for sixty-one, and the
- * five feedback ids the stage added last were in the doc and in no list the
- * tools could see. The ids the GAME asks for are the only ones that matter,
- * and they are in the source — the storyboard's beats, and the two reaction
- * tables and the stage's reasons-for-a-wrong-answer. Reading them from there
- * cannot drift, because a line the game cannot reach is not in the list and a
- * line it can reach always is.
- *
- * Four places carry a clip id:
- *   src/story/story-data.js  the story before the lesson: narrator, Momo, Popo
- *   src/game/screens.js   every beat with `vo:` — the narration and the
- *                         instructions, nested inside on/otherwise/feedback
- *   src/game/game.js      PRAISE and NUDGE, the answers to right and wrong
- *   src/game/stage.js     the reasons a particular try fell short
- *   src/opening/runner-stage.js  Swiftee's lines over Frozen Rush, at the broken path and the ditch
- */
+// vo-lines.js — every voice clip the game can ask for, with its words and
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
@@ -66,9 +43,6 @@ function fromDeck() {
   return out;
 }
 
-/* PRAISE, NUDGE and the stage's reasons are `{ t: '...', vo: '...' }` pairs
-   written inline. Read as text: running game.js needs a document, and the
-   pairs are a table, not logic. */
 function fromPairs(file, where) {
   const src = fs.readFileSync(path.join(ROOT, 'src', 'game', file), 'utf8');
   const out = [];
@@ -82,13 +56,8 @@ function fromPairs(file, where) {
   return out;
 }
 
-/* THE STORY BEFORE THE LESSON (src/story/story-data.js): its lines, each with who says
-   it — the narrator, Momo or Popo, who are not Swiftee and do not speak in his voice
-   (tools/make-vo.js STORY). Run the same way as the deck: a plain script over window. */
 function fromStory() {
   const g = {};
-  // (the story is kept outside the repository, in POLYGON-1/story-draft (its README says how to bring it back) — the user: "remove the story part and add on draft" —
-  // and while it is, the game says none of its lines)
   const file = path.join(ROOT, 'src', 'story', 'story-data.js');
   if (!fs.existsSync(file)) return [];
   const src = fs.readFileSync(file, 'utf8');

@@ -1,21 +1,4 @@
-/* WHAT EACH DRAWING CROSSING WILL AND WILL NOT ACCEPT.
- *
- * The three Part 2 crossings each teach one rule, and each rule is only taught if the
- * game actually refuses the thing it is about. A crossing that accepts the wrong answer
- * teaches the wrong answer — and it does it in the most convincing way available,
- * because the reward animation plays over it.
- *
- * This exists because crossing 3 did exactly that. The same-vertex test keyed off
- * `L.origin`, which is deliberately still null after the first line (which of its two
- * ends is the origin is not knowable until the second arrives), so the "first line"
- * branch ran again on the second line and the test below it was unreachable. Two
- * diagonals from opposite corners of the pentagon fanned the slab as a correct answer.
- * Reported as "in level 3 if i cut wrong using point why u show correct cut".
- *
- * These drive _l2Cut(i, j) rather than the pointer: the rule is about which corners
- * were joined, and a mouse drag tests the snap radius as well, which is a different
- * question and is covered in part2-responsive.
- */
+// WHAT EACH DRAWING CROSSING WILL AND WILL NOT ACCEPT.
 import { test, expect } from '@playwright/test';
 import { boot, waitState, jsErrors } from './helpers.mjs';
 
@@ -30,15 +13,6 @@ async function enterCrossing(page, n) {
   await waitState(page, ['LEVEL_2_ACTIVE'], 60_000);
 }
 
-/** Join corners i and j in turn, then report where the level stands.
- *
- *  The pairs go over as JSON: page.evaluate takes ONE argument, and an array of arrays
- *  read back inside the page as undefined when this was first written — a string cannot
- *  be got wrong that way.
- *
- *  `_l2()` is a curated snapshot, not the live level: badLine comes back already
- *  reduced to its kind string, and mechanic/solved/drawn/origin are exposed there
- *  precisely so these rules can be asserted from outside. */
 const cut = (page, pairs) => page.evaluate(js => {
   const g = window.iceAgeGame;
   for (const [i, j] of JSON.parse(js)) g._l2Cut(i, j);
@@ -57,9 +31,6 @@ const cut = (page, pairs) => page.evaluate(js => {
 test.describe('crossing 3 — two diagonals from the SAME vertex', () => {
   test.setTimeout(180_000);
 
-  /* THE FAULT ITSELF. A regular pentagon's diagonals are 0-2, 0-3, 1-3, 1-4 and 2-4.
-     0-2 and 1-3 are both real diagonals and share no corner, which is precisely the
-     mistake this crossing is for. */
   test('refuses two diagonals that share no corner', async ({ page }) => {
     const errors = await boot(page, { speed: 900, fast: 4 });
     await enterCrossing(page, 3);
@@ -73,8 +44,6 @@ test.describe('crossing 3 — two diagonals from the SAME vertex', () => {
     expect(jsErrors(errors), 'the game threw').toEqual([]);
   });
 
-  /* AND THE OTHER PAIRING OF THE SAME MISTAKE, because the first line's two ends are
-     held as candidates and a bug could easily accept one of them and not the other. */
   test('refuses it the other way round too', async ({ page }) => {
     const errors = await boot(page, { speed: 900, fast: 4 });
     await enterCrossing(page, 3);
@@ -84,9 +53,6 @@ test.describe('crossing 3 — two diagonals from the SAME vertex', () => {
     expect(jsErrors(errors)).toEqual([]);
   });
 
-  /* THE RIGHT ANSWER STILL WORKS, from either end of the first line — that is the whole
-     reason the origin is left undecided until the second cut, and it is the thing a
-     naive fix to the above would break. */
   for (const [name, pairs, origin] of [
     ['from the first line\'s low end', [[0, 2], [0, 3]], 0],
     ['from the first line\'s high end', [[0, 2], [2, 4]], 2]
@@ -102,8 +68,6 @@ test.describe('crossing 3 — two diagonals from the SAME vertex', () => {
     });
   }
 
-  /* A REPEAT IS NOT THE SAME MISTAKE and must not be reported as one: the learner has
-     drawn a real diagonal and simply drawn it already. */
   test('a repeated line is refused as a repeat, not as a wrong corner', async ({ page }) => {
     await boot(page, { speed: 900, fast: 4 });
     await enterCrossing(page, 3);
@@ -113,14 +77,9 @@ test.describe('crossing 3 — two diagonals from the SAME vertex', () => {
   });
 });
 
-/* THE OTHER TWO CROSSINGS, so the fix above cannot have been made by loosening
-   something they share. */
 test.describe('crossings 1 and 2 still hold their own rules', () => {
   test.setTimeout(180_000);
 
-  /* Asserted on the STATE, not on `solved`: cut-diagonal is the one mechanic that has
-     no multi-line rule to satisfy, so it goes straight to LEVEL_2_SUCCESS and never
-     sets the flag the other two need. */
   test('crossing 1 refuses a side and takes a main diagonal', async ({ page }) => {
     await boot(page, { speed: 900, fast: 4 });
     await enterCrossing(page, 1);

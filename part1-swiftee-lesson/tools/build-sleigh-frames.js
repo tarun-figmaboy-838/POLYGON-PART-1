@@ -1,27 +1,5 @@
 #!/usr/bin/env node
-/*!
- * build-sleigh-frames.js — measure the three intro sheets, emit the frame table.
- *
- *   node tools/build-sleigh-frames.js
- *
- * The intro is three separately drawn sprite sheets, and they agree about
- * almost nothing: the ride sheet is a tidy 4x2 grid, the dismount sheet is
- * not a grid at all, and the three are drawn at three different scales — the
- * same reindeer measures 314px on the ride sheet, 263 on the dismount and 195
- * on the departure. Nothing about that is visible from the filenames, and all
- * of it would show up as the character changing size mid-animation.
- *
- * So nothing here is assumed. Rows come from empty scanlines, figures within a
- * row from empty columns, and every frame's source rectangle, ground line and
- * separate islands are measured from the alpha channel. The generated table is
- * the only thing the renderer reads, and re-running this after redrawing a
- * sheet updates it.
- *
- * Writes src/character/sleigh-frames.js.
- *
- * Needs a browser for its canvas, which the project already has for the test
- * suites; it is a build tool, not something the game loads.
- */
+// build-sleigh-frames.js — measure the three intro sheets, emit the frame table.
 'use strict';
 
 const http = require('http');
@@ -32,10 +10,6 @@ const { chromium } = require('playwright');
 const ROOT = path.join(__dirname, '..');
 const OUT = path.join(ROOT, 'src/character/sleigh-frames.js');
 
-/* The cell counts are the only hint given, and they are used ONLY to split the
-   sheet into search regions — every box inside them is measured. */
-/* `file` is the PNG master that is measured; `serve` is the WebP the game loads, made from
-   it by tools/encode-sprites.js (near-lossless, so every measurement here holds for it). */
 const SHEETS = [
   { key: 'ride',      file: 'assets/source/intro/sheet1.avif', serve: 'assets/swiftee/intro/sheet1.webp', cols: 4, rows: 2 },
   { key: 'dismount',  file: 'assets/source/intro/sheet2.avif', serve: 'assets/swiftee/intro/sheet2.webp', cols: 5, rows: 2 },
@@ -85,10 +59,6 @@ const MEASURE = function (opts) {
           }
           if (maxX < 0) { out.push(null); continue; }
 
-          // Islands: the bird becomes its own shape once it leaves the sled,
-          // and the departure sheet draws it standing beside a reindeer that
-          // is walking away. Which island owns the bird decides where the
-          // frame is anchored, so they are measured separately.
           const colHas = [];
           for (let px = minX; px <= maxX; px++) {
             let any = false;
@@ -152,8 +122,6 @@ const MEASURE = function (opts) {
   await browser.close();
   srv.close();
 
-  /* Each sheet is drawn at its own scale. Normalise on the reindeer, which is
-     in all three: the tallest solid island of the first frame that has one. */
   const deerHeight = (sheet) => {
     for (const f of sheet.frames) {
       if (!f) continue;

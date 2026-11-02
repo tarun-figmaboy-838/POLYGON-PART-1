@@ -1,26 +1,4 @@
-/*!
- * test-swiftee.js — the sprite-sheet contract.
- *
- *   node tests/swiftee.test.js
- *
- * The Swiftee assets ship with one promise: any frame of any animation is
- * interchangeable with any other, because every frame is one cell of a
- * uniform grid with the pivot at the exact cell centre. Everything the game
- * does with the character rests on that, and on `swiftee-frames.js` being a
- * faithful, current derivation of `atlas/swiftee.manifest.json`.
- *
- * So this suite checks the things that would silently rot:
- *
- *   - the generated frame table still matches the manifest it came from
- *   - every grid can actually address every frame it claims
- *   - every sheet the table names exists on disk
- *   - every rig state the game asks for resolves to a real start/loop/stop
- *   - the game's sixteen semantic states all map to something that exists
- *   - no reaction is long enough to hit the director's beat ceiling
- *
- * A failure here means `node tools/build-swiftee-frames.js` needs re-running, or
- * the assets and the code have genuinely diverged.
- */
+// test-swiftee.js — the sprite-sheet contract.
 'use strict';
 
 global.window = global;
@@ -37,10 +15,6 @@ const t = (label, cond, extra) => {
   if (cond) pass++;
   else { fail++; console.log('  FAIL ' + label + (extra !== undefined ? '  ' + JSON.stringify(extra) : '')); }
 };
-
-/* ------------------------------------------------------------------ *
- * The generated table is the manifest
- * ------------------------------------------------------------------ */
 
 t('the frame table carries the manifest fps', F.fps === MANIFEST.fps, [F.fps, MANIFEST.fps]);
 t('the frame table carries both cell sizes',
@@ -66,10 +40,6 @@ t('pingpong flags match the manifest',
 t('all 26 states are carried over', Object.keys(F.states).length === Object.keys(MANIFEST.states).length);
 t('all 6 standalone clips are carried over', F.standalone.length === MANIFEST.standalone.length);
 
-/* ------------------------------------------------------------------ *
- * Every grid can address every frame it claims
- * ------------------------------------------------------------------ */
-
 {
   const bad = [];
   Object.keys(F.clips).forEach((name) => {
@@ -93,9 +63,6 @@ t('all 6 standalone clips are carried over', F.standalone.length === MANIFEST.st
 }
 
 {
-  // The actual slicing the renderer does, for the first and last frame of
-  // every clip at both scales. This is the arithmetic that puts a head where
-  // a foot should be if a grid is ever wrong.
   const bad = [];
   Object.keys(F.clips).forEach((name) => {
     const c = F.clips[name];
@@ -114,23 +81,17 @@ t('all 6 standalone clips are carried over', F.standalone.length === MANIFEST.st
   t('the first and last frame of every clip land inside their grid', bad.length === 0, bad.slice(0, 5));
 }
 
-/* ------------------------------------------------------------------ *
- * Every sheet exists on disk
- * ------------------------------------------------------------------ */
-
 {
   const missing = [];
   Object.keys(F.clips).forEach((name) => {
     const c = F.clips[name];
     ['1x', '2x'].forEach((scale) => {
       (c.sheets[scale] || []).forEach((p) => {
-        // (the path carries its content hash, ?v=, for the cache — build-swiftee-frames.js)
         if (!fs.existsSync(path.join(ROOT, F.base, p.image.split('?')[0]))) missing.push(p.image);
       });
     });
   });
   t('every sheet the table names is on disk', missing.length === 0, missing.slice(0, 5));
-  // and the hash is the file's own: a sheet redrawn under the same name gets a new URL
   const crypto = require('crypto');
   const stale = [];
   Object.keys(F.clips).forEach((name) => ['1x', '2x'].forEach((scale) => (F.clips[name].sheets[scale] || []).forEach((p) => {
@@ -144,10 +105,6 @@ t('all 6 standalone clips are carried over', F.standalone.length === MANIFEST.st
 t('the asset base path is where index.html expects it',
   fs.existsSync(path.join(ROOT, F.base)), F.base);
 
-/* ------------------------------------------------------------------ *
- * Every state resolves
- * ------------------------------------------------------------------ */
-
 {
   const bad = [];
   Object.keys(F.states).forEach((state) => {
@@ -160,7 +117,6 @@ t('the asset base path is where index.html expects it',
   t('every start/loop/stop in every state resolves to a real clip', bad.length === 0, bad);
 }
 
-// (sleeping went with the never-played clips: the lesson's idle is a look around, not a doze)
 t('the state without a stop clip is the one documented one (driving leaves by its own art)',
   Object.keys(F.states).filter((k) => !F.states[k].stop).sort().join(',') === 'driving',
   Object.keys(F.states).filter((k) => !F.states[k].stop));
@@ -170,17 +126,9 @@ t('the clips that leave the cell are flagged, not silently cropped',
 
 t('every standalone clip exists', F.standalone.every((n) => !!F.clips[n]),
   F.standalone.filter((n) => !F.clips[n]));
-// (the escape clips — wake, drive_away, reset — were never played: the sleigh intro draws its own
-// sheets, and nothing sleeps. They are gone from the manifest and from disk, not merely unused.)
 t('no never-played escape clip is still carried',
   !F.clips.wake && !F.clips.drive_away && !F.clips.reset && !F.clips.sleeping && !F.clips.calling && !F.clips.laptop);
 
-/* ------------------------------------------------------------------ *
- * The game's own mapping
- * ------------------------------------------------------------------ */
-
-// swiftee.js needs a DOM to mount, but its state table is readable without
-// one: load it with a stub global and inspect what it exposes.
 global.SwifteeFrames = F;
 global.document = undefined;
 const Swiftee = require('../src/character/swiftee.js');
@@ -208,8 +156,6 @@ t('the game exposes its semantic state table', RIG && Object.keys(RIG).length >=
 }
 
 {
-  // Every state screens.js can ask for must be in the mapping. This is the
-  // check that catches a storyboard edit adding a reaction the art cannot do.
   require('../src/core/polygon-math.js');
   const Screens = require('../src/game/screens.js');
   const asked = new Set();
@@ -231,8 +177,6 @@ t('the game exposes its semantic state table', RIG && Object.keys(RIG).length >=
 }
 
 {
-  // A reaction that outruns the director's 12s beat ceiling would be cut off
-  // mid-animation, and `celebrate` is awaited on every correct answer.
   const dur = (n) => {
     const c = F.clips[n];
     if (!c) return 0;
@@ -250,16 +194,12 @@ t('the game exposes its semantic state table', RIG && Object.keys(RIG).length >=
   };
   Object.keys(RIG).forEach((name) => {
     const def = RIG[name];
-    if (def.hold || def.variants) return;          // held loops never finish by design
-    // and a reaction's recovery (`then`) is part of it
+    if (def.hold || def.variants) return;
     const total = oneShot(name) + (def.then ? oneShot(def.then) : 0);
     if (total > 12000) slow.push(name + ' ' + Math.round(total) + 'ms');
   });
   t('no one-shot reaction outruns the director beat ceiling', slow.length === 0, slow);
 
-  /* THE THREE SIZES. A micro state barely moves; a response is a second or
-     two, and so short enough not to stand between a child and the next try;
-     a celebration may be longer, and is a milestone's. */
   const tooLong = [];
   Object.keys(RIG).forEach((name) => {
     const def = RIG[name];
@@ -284,42 +224,21 @@ t('the game exposes its semantic state table', RIG && Object.keys(RIG).length >=
   t('the narration loop is short enough to track speech', dur('talking') <= 600, Math.round(dur('talking')) + 'ms');
 }
 
-/* EVERY RIG A STATE NAMES MUST EXIST.
- *
- * Two of them did not. `idle` pointed at 'blinking' and `exit`/`move` at
- * 'flapping', and neither is among the twenty-six the sheets carry — so the
- * state Swiftee spends most of the lesson in had no animation at all. It
- * threw nothing and logged nothing: he simply held whichever frame was last
- * painted, which looks like a character who has stopped moving rather than
- * like a bug. A name is cheap to check and impossible to notice.
- */
 (function () {
   var src = require('fs').readFileSync(__dirname + '/../src/character/swiftee.js', 'utf8');
   var Frames = require('../src/character/swiftee-frames.js');
-  // (this pattern read `rig:s*` and so matched nothing at all — a check that
-  // could not fail. It reads the table's own `rig: 'name'` entries now, and a
-  // standalone clip such as 'blinking' or 'flapping' is a real rig too.)
   var named = (src.match(/rig:\s*'[a-z_-]+'/g) || []).map(function (x) { return x.split('\x27')[1]; });
   var uniq = named.filter(function (v, i) { return named.indexOf(v) === i; });
   var missing = uniq.filter(function (r) { return !Frames.states[r] && !Frames.clips[r]; });
   t('every rig a state names exists in the sheet set', uniq.length >= 20 && missing.length === 0, missing.join(', ') || uniq.length);
 })();
 
-/* ------------------------------------------------------------------ *
- * Character direction: intentions, variety, the generated table
- * ------------------------------------------------------------------ */
-
 {
-  // THE FRAME TABLE IS GENERATED AND NEVER EDITED BY HAND. The generator's
-  // --check rebuilds it in memory and compares; a patched coordinate fails.
   const out = require('child_process').spawnSync(process.execPath, [path.join(ROOT, 'tools/build-swiftee-frames.js'), '--check'], { encoding: 'utf8' });
   t('swiftee-frames.js is exactly what the manifest generates (no hand edits)', out.status === 0, (out.stderr || out.stdout || '').trim());
 }
 
 {
-  // EVERY INTENTION THE STORYBOARD ASKS FOR, ON EVERY SCREEN THAT ASKS FOR
-  // IT, IN EVERY CONTEXT (first try, after a miss, a second miss), becomes a
-  // state with a drawing — and the same one every time (no Math.random).
   const Screens = require('../src/game/screens.js');
   const bad = [], unstable = [];
   Screens.list.forEach((s) => {
@@ -349,7 +268,6 @@ t('the game exposes its semantic state table', RIG && Object.keys(RIG).length >=
   t('an ordinary right answer is not the same face on every screen', faces.size >= 2, [...faces]);
   t('a right answer after a miss is relief', Swiftee.resolve('happySmall', { key: 'x', after: 'miss' }) === 'phew');
   t('the second miss on one question is his thinking face', Swiftee.resolve('oops', { key: 'x', misses: 2 }) === 'rethink' && Swiftee.resolve('oops', { key: 'x', misses: 1 }) === 'oops');
-  // THE RIG, WIDER: drawings the lesson had never played are used where they belong
   const used = new Set();
   Screens.list.forEach((s) => (function walk(list) {
     (list || []).forEach((b) => {
@@ -364,15 +282,9 @@ t('the game exposes its semantic state table', RIG && Object.keys(RIG).length >=
       if (b.on) Object.keys(b.on).forEach((k) => walk(b.on[k]));
     });
   })(s.beats));
-  // ('puzzleing', the puzzle pieces, was the builder's; the lesson no longer
-  // builds a shape — it ends on the showdown — so there is nowhere it fits)
   const fresh = ['reading', 'writing', 'learning', 'love', 'relieved', 'blinking'].filter((r) => !used.has(r));
   t('the storyboard reaches the rig\'s unused drawings where they fit', fresh.length <= 1, fresh);   // blinking is reached by the game (watch), not a beat
 }
-
-/* ------------------------------------------------------------------ *
- * Behaviour, in a DOM: priority, the measuring lock, cancellation
- * ------------------------------------------------------------------ */
 
 (async () => {
   const { JSDOM } = require('jsdom');

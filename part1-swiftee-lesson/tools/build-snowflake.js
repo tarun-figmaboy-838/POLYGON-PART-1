@@ -1,14 +1,5 @@
 #!/usr/bin/env node
-/*!
- * build-snowflake.js — the transition's flake, from the supplied artwork.
- *
- *   assets/source/snowflake-src.webp  (1254×1254, transparent)  →  assets/ui/snowflake.webp (320×320)
- *
- * The transition drops sixty to a hundred of these at once, so it wants a
- * small file: the flake is cropped to its own bounds, centred, and written
- * as a 320px webp with alpha. Run once after replacing the source:
- *   node tools/build-snowflake.js
- */
+// build-snowflake.js — the transition's flake, from the supplied artwork.
 'use strict';
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
 const { chromium } = require('playwright');
@@ -21,8 +12,7 @@ function serve() { const srv = http.createServer((q, r) => { const f = path.join
   const pg = await b.newPage();
   await pg.setContent('<canvas id="c"></canvas>');
   const out = await pg.evaluate(async ({ url, size }) => {
-    const img = new Image(); img.crossOrigin = 'anonymous'; img.src = url; await img.decode();   // CORS, so the canvas can be read back
-    // the flake's own bounds (alpha > 40), then a centred square round them
+    const img = new Image(); img.crossOrigin = 'anonymous'; img.src = url; await img.decode();
     const c0 = document.createElement('canvas'); c0.width = img.width; c0.height = img.height;
     const x0 = c0.getContext('2d'); x0.drawImage(img, 0, 0);
     const d = x0.getImageData(0, 0, c0.width, c0.height).data;

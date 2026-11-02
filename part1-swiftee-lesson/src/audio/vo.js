@@ -1,27 +1,8 @@
-/*!
- * vo.js — Swiftee's voice.
- *
- * One clip per line, named by the VO id the deck gives the line:
- *
- *   assets/vo/<id>.ogg          e.g. assets/vo/p04.ogg, assets/vo/fb01.ogg
- *
- * docs/VO.md lists every id with its words and how it is delivered. The
- * game asks for a clip whenever a line with an id is spoken (game.js, the
- * say handler and the feedback in react()). A clip that is not there is
- * simply not heard — the words and the reading time carry the line — so the
- * clips can be added a few at a time. One clip plays at a time: a new line
- * stops the last. Muting the game mutes him.
- */
+// vo.js — Swiftee's voice.
 (function (global) {
   'use strict';
-  /* HINDI HAS ITS OWN RECORDINGS (src/core/i18n.js, ?lan=hi): the same ids in their own folder,
-     assets/vo/hi/<id>.ogg, with an index of their own — so the clip that plays is the line on
-     the screen, and its words are timed off the Hindi voice (tools/build-vo-hindi.js). A line
-     the Hindi folder has no clip for is not heard, exactly as an English line with no clip. */
   var I = global.I18N;
   var BASE = 'assets/vo/' + (I && I.on && I.voice ? I.lang + '/' : '');
-  // Clips ship as Ogg Opus only. A browser that cannot play it gets no voice:
-  // nothing is fetched and every line is paced by its words.
   var playsOgg = (function () {
     try {
       var a = document.createElement('audio');
@@ -29,25 +10,9 @@
     } catch (e) { return false; }
   }());
   var current = null, known = {};   // known[id] = false once a clip has failed to load
-  var liveId = null;                // the id of the clip `current` is playing
-  // THE INDEX. assets/vo/index.json lists the clips that exist; only those
-  // are ever requested. Asking the server for a clip that is not there logs
-  // a 404 in the console for every line — noise a child never hears but a
-  // test gate counts as an error. tools/build-vo-index.js writes the index
-  // from the folder; until it is fetched, or if it is missing, nothing plays.
+  var liveId = null;
   var index = null, secs = {}, revs = {}, wordMs = {}, spokenMs = {};
   var indexWait = null, indexSettled = false;
-  /* OPENED STRAIGHT OFF THE DISK, THE LIST COMES AS A SCRIPT. A file:// page
-     may not fetch a sibling file — Chrome blocks it as a cross-origin read —
-     so index.json never arrived there, and with it went every word's moment:
-     the bubble fell back to a reading-time guess and the plank to a fixed
-     320 ms a word, both quicker than the voice, so the text ran ahead of him
-     ("text type fast and vo not syncing"). A <script> may load off the disk,
-     so tools/build-vo-index.js writes the same list as index.js too, and a
-     page opened that way reads that one. On a server index.json is still
-     the one read — it is revalidated on every load, index.js is not.
-     Off the disk there is still no gate: a clip not listed is asked for, and
-     if it is not there the error handler forgets it as it always did. */
   var offDisk = (function () {
     try { return (global.location && global.location.protocol) === 'file:'; } catch (e) { return false; }
   }());
@@ -58,10 +23,6 @@
     wordMs = (j && j.words) || {};
     spokenMs = (j && j.spoken) || {};
   }
-  /* NO VOICE IN A LANGUAGE NOTHING WAS RECORDED IN (src/core/i18n.js, ?lan=mr and the rest).
-     The English clips read out over Marathi words would say one thing while the screen says
-     another. No clip is known, so none is fetched, none plays, and every line is paced by its
-     own words — the path a page with no index has always taken. */
   var silent = !!(I && I.on && !I.voice) || !playsOgg;
   function loadIndex() {
     if (silent) { index = {}; indexSettled = true; return Promise.resolve(); }
@@ -85,9 +46,6 @@
       return Promise.resolve();
     }
     index = {};
-    // no-cache, not no-store: the list changes when clips are added, and a
-    // browser that read it when it was empty must not keep that answer. The
-    // clips themselves stay immutable; only this one file is revalidated.
     indexWait = fetch(BASE + 'index.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).then(useIndex)
       .catch(function () {}).then(function () { indexSettled = true; });
     return indexWait;
@@ -96,46 +54,21 @@
 
   function ready() { return indexSettled ? Promise.resolve() : (indexWait || loadIndex()); }
 
-  /* WHERE A CLIP LIVES, revision and all.
-   *
-   * The clips are served immutable for a year (vercel.json), which is right
-   * until one is re-cut — and re-cutting replaces the words inside a file
-   * that keeps its name, so a returning child would hear the old line until
-   * the cache aged out. The index carries a hash of each clip's bytes and is
-   * itself revalidated, so asking for it by revision makes a corrected clip
-   * arrive on the next load and leaves every unchanged clip in the cache. */
   /** The clip's own file, as the server has it. */
   function rawUrl(id) {
     var v = revs[id];
     // (off the disk there is no cache to outwit, and no query on a file path)
     return BASE + id + '.ogg' + (v && !offDisk ? '?v=' + v : '');
   }
-  /** What an element plays: the loading bar's copy in memory (src/core/preload.js) when it
-      has one — so a line starts at once, with nothing left to fetch — else the file. */
   function url(id) {
     var u = rawUrl(id);
     return (global.Preload && Preload.url) ? Preload.url(u) : u;
   }
 
   function muted() { return !!(global.SFX && SFX.isMuted && SFX.isMuted()); }
-  /* THE MUSIC STEPS BACK WHILE HE SPEAKS (sfx.js voice: a smooth dip, and a
-     smooth return a breath after the line). Every line goes through play(),
-     so this is the one place that knows a voice is on air. */
-  // when the last clip went off air: game.js counts the hold after a line from it (autoAdvance)
   var quietAt = 0;
   function voiceBus(on) { if (!on) quietAt = Date.now(); try { if (global.SFX && SFX.voice) SFX.voice(on); } catch (e) {} }
 
-  /* WAITING FOR THE VOICE.
-   *
-   * The lesson used to wait a computed number of milliseconds and hope the
-   * clip fitted inside it. It usually did; when it did not — a slow decode, a
-   * throttled tab, a clip a little longer than the estimate — the next thing
-   * began over the end of the sentence. finished() is the real answer: it
-   * settles when the clip ends, when it fails, or when something stops it,
-   * and settles immediately when there is nothing playing. It can never be
-   * the thing that hangs the game: the director's beat ceiling is above it,
-   * and every path here resolves.
-   */
   var settle = null;                 // resolves the promise finished() handed out
   var waiting = null;
   var guard = null;
@@ -146,18 +79,6 @@
     if (f) { try { f(); } catch (e) {} }
   }
 
-  /* HOW MUCH OF THE CLIP IS STILL TO COME, in milliseconds.
-   *
-   * `duration` is NaN until the browser has read the file's metadata, and it
-   * has not read it in the tick play() was called in. Anything that asks the
-   * ELEMENT how long a clip is, in the moment that clip starts, is asking a
-   * question the element cannot answer yet.
-   *
-   * The index has the answer instead: tools/build-vo-index.js measures every
-   * clip at build time and writes its length into assets/vo/index.json, so
-   * the length is known before the file is even requested. The element's own
-   * figure is preferred once it arrives, because that one is certainly right.
-   */
   function leftMs(a, id) {
     var len = (a && isFinite(a.duration) && a.duration > 0) ? a.duration * 1000
             : (secs[id] ? secs[id] * 1000 : 0);
@@ -167,33 +88,11 @@
   }
 
   function finished() {
-    // NOTHING PLAYING, NOTHING TO WAIT FOR. A clip that never started — no
-    // Audio in this environment, a play() the browser refused, a file that is
-    // not there — has already cleared `current` through its own error path,
-    // so this settles at once rather than holding the lesson up for the
-    // length of a clip nobody is hearing.
-    //
-    // WHAT IT MUST NOT DO IS ASK `duration`.
-    //
-    // It used to: `!(current.duration > 0)` was read as "nothing is running".
-    // duration is NaN for the first few hundred milliseconds of every clip's
-    // life, so that test was true for EVERY line, every time, and the wait
-    // resolved immediately in all of them. The beat then ended on the
-    // director's word count — 3.2s for a sentence the voice takes 9.6s to
-    // read — and the next line's clip called stop() on this one mid-word.
-    // Twenty-five of the thirty-six recorded lines were cut off that way,
-    // some by eight seconds. That is the whole of "the voice is not in step
-    // and plays at random": not a wrong clip, the right clip truncated.
     if (!current) return Promise.resolve();
     if (settle) return waiting;
     var hold = current, id = liveId;
     waiting = new Promise(function (resolve) { settle = resolve; });
-    // `ended` is the normal way out of this wait. The guard is the promise
-    // that it ends even if no event ever arrives, and it can only ever be
-    // late, never early.
     guard = setTimeout(done, leftMs(hold, id) + 1500);
-    // A clip the index never measured is held by the ceiling above; the
-    // moment the browser knows the real length, re-time the guard to it.
     if (!(hold.duration > 0) && hold.addEventListener) {
       var retimed = false;
       hold.addEventListener('loadedmetadata', function () {
@@ -206,10 +105,6 @@
     return waiting;
   }
 
-  /** Where the voice has got to in the clip, in ms, or null if none is playing.
-      The bubbles and the words are stepped against this rather than against a
-      timer of their own, so a slow decode carries the text with the voice
-      instead of leaving it behind. */
   function at() {
     if (!current) return null;
     var t = current.currentTime;
@@ -231,13 +126,6 @@
     if (!offDisk && (!index || !index[id])) return null;
     stop();
     var a;
-    // THE ONE THAT WAS WARMED, if a screen asked for it ahead of time. Its
-    // bytes are already here, so it starts in this frame instead of a
-    // network round trip later. Taken out of `warm` because it is no longer
-    // waiting to be used — and if it is asked for again the browser's cache
-    // answers, which is the whole point of giving the file a revision.
-    // (only if it is the same copy: one warmed before the loading bar had the clip in memory
-    // points at the file, and the copy in memory is the one to play now)
     if (warm[id] && warm[id].src !== url(id)) { delete warm[id]; var wo = warmOrder.indexOf(id); if (wo >= 0) warmOrder.splice(wo, 1); }
     if (warm[id]) {
       a = warm[id];
@@ -250,9 +138,6 @@
     return start(a, id);
   }
 
-  /** Put one element on air for a line: its end, its failure, and the play itself.
-      A copy in memory that will not play is retried as the file itself; an Opus file this
-      browser cannot play, as its mp3 (and every clip after it too). */
   function start(a, id) {
     a.preload = 'auto';
     a.volume = 0.95;
@@ -274,13 +159,6 @@
     current = a;
     liveId = id;
     voiceBus(true);
-    /* A CLOCK THAT DOES NOT MOVE IS NOT A VOICE. A browser with no working audio sink (a
-       headless run, a tablet with sound blocked, a device that lost its output) can report an
-       element as playing while its currentTime never advances: it never ends, so `at()` kept
-       answering, and everything stepped against the voice's clock — the words, the cues, the
-       hint gate — waited on it for the rest of the screen. Two seconds without a tick while
-       "playing" and the clip is taken off air; the lesson goes on by its text clock, as it
-       does for a clip that failed to load. */
     var lastT = -1, lastTick = Date.now();
     var watch = setInterval(function () {
       if (current !== a) { clearInterval(watch); return; }
@@ -302,24 +180,6 @@
     return a;
   }
 
-  /* WARM THE CLIPS A SCREEN IS ABOUT TO NEED.
-   *
-   * Nothing called this, so every clip was fetched at the instant it was
-   * wanted. Over a real connection that is most of a second between the
-   * bubble appearing and a sound coming out of it — and now that the words
-   * are stepped against the voice's own clock, the line does not race ahead
-   * to fill the gap: it shows its first word and stops dead until the audio
-   * arrives. Measured at 700ms of added latency, every one of the thirty-odd
-   * spoken screens sat on one word for three quarters of a second.
-   *
-   * THE ELEMENT HAS TO BE KEPT. This built an Audio, set preload and dropped
-   * it on the floor; an element nothing references can be collected before
-   * the fetch finishes, which makes the warming a coin toss. They are held
-   * until played — at which point the fetch is done and the browser's own
-   * cache has it, so the reference is no longer what is keeping it warm.
-   * `warm` is small by construction: a screen asks for its own clips and the
-   * next screen's, so it holds a handful at a time.
-   */
   var warm = {}, warmOrder = [];
   var WARM_MAX = 48;   // clips are 10-17 KB; the replies alone are ~27 (game.js warmVoice)
   function preload(ids) {
@@ -342,13 +202,6 @@
     });
   }
 
-  /* A HIDDEN TAB IS SILENT FOR HIM TOO. sfx.js suspends the music and the
-     cues when the page is hidden, and his line went on talking to nobody.
-     It is SILENCED, not paused: the lesson's own clock goes on while the tab
-     is away (the director, the reply ceilings), and a paused clip fell out of
-     step with it — the next line then played aloud in the background. Muted,
-     nothing is heard and nothing is out of step; a clip started while the
-     tab is hidden starts muted too. */
   function hiddenNow() { try { return !!(global.document && global.document.hidden); } catch (e) { return false; } }
   if (global.document && global.document.addEventListener) {
     global.document.addEventListener('visibilitychange', function () {
@@ -357,16 +210,11 @@
     });
   }
 
-  /** How long a clip runs, in seconds, or 0 if it is not known yet.
-      The game paces a line's bubbles by this so the words keep step with the
-      voice instead of with a count of their own letters. */
   function seconds(id) { return (id && secs[id]) || 0; }
 
   /** Start of each spoken word, in milliseconds from the clip start. */
   function words(id) { return (id && wordMs[id]) || null; }
 
-  /** When the last word has been SAID, in milliseconds from the clip start —
-      before the silence every recording runs on with — or 0 if not known. */
   function spoken(id) { return (id && spokenMs[id]) || 0; }
 
   /** Every clip's file, in the format this browser plays — the loading bar's list. */
@@ -378,9 +226,6 @@
                 get isReady() { return indexSettled; },
                 get quietAt() { return quietAt; },
                 get playing() { return current; },
-                /* Which clip is on air. The bubbles check this before they
-                   trust at(): a line must never be paced by another line's
-                   voice. */
                 get id() { return liveId; } };
   if (typeof module !== 'undefined' && module.exports) module.exports = global.VO;
 })(typeof window !== 'undefined' ? window : this);

@@ -1,6 +1,4 @@
-# Only game/ is the site. This matters when Vercel's Root Directory is left as the
-# repo root; with Root Directory set to `game` (see docs/DEPLOY.md) game/.vercelignore
-# is the file that applies instead.
+# Only game/ is the site (used when this part is deployed on its own from its folder).
 #
 # Source art is no longer listed here per-glob: it all lives in art-source/, which is
 # excluded wholesale below. game/ now contains only what the game loads.

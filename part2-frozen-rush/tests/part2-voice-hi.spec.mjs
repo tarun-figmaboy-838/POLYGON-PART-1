@@ -1,9 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { boot } from './helpers.mjs';
 
-/* THE GAME IN HINDI SPEAKS HINDI (?lan=hi): its own take (game/js/vo-hi.js, assembled from the
-   user's Hindi recordings by part1-swiftee-lesson/tools/build-vo-hindi.js), every word timed off
-   the Hindi voice. The English take is never fetched in Hindi, and its windows are not played. */
 test.describe('Part 2 voice in Hindi', () => {
   test.setTimeout(120_000);
 

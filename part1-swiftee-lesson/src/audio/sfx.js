@@ -1,23 +1,4 @@
-/*!
- * sfx.js — every sound the game makes, synthesised.
- *
- * No audio files. Fourteen cues built from oscillators and shaped noise, so
- * the whole sound design ships in this file and stays loudness-matched by
- * construction: every cue is written against one peak target and routed
- * through the same bus, not mixed by ear per clip.
- *
- * Two buses under one master:
- *
- *   sfx    every cue below
- *   music  a loop, if one is ever wired
- *
- * duck() pulls both down and returns the release, so anything that needs the
- * foreground for a moment can take it without fighting a tick or a pop.
- *
- * Pitched cues are quantised to a key (SFX.key('C pentatonic')). Anything
- * that plays a note picks from that scale, so two cues landing together are
- * consonant instead of accidental.
- */
+// sfx.js — every sound the game makes, synthesised.
 (function (global) {
   'use strict';
 
@@ -29,21 +10,10 @@
   var scale = SCALES['C pentatonic'];
   var muted = false, volume = 0.85;
   var noiseBuf = null;
-  /* A CALL'S OWN LEVEL. play(name, { level }) asks for a cue quieter than it
-     is written — the chime on a word he is saying, at half — as a scale on
-     everything that cue plays, for that one call. (`gain` is not it: the
-     sleigh's and the snow's cues pass `gain` as a level of their own.) */
   var callScale = 1;
-  /* THE MUSIC UNDER HIS VOICE (vo.js calls voice(true/false)): a little
-     lower while he speaks, back up smoothly a breath after — not in the gap
-     between two lines, which read as a pump. */
   var voiceOn = false, voiceTimer = null, VOICE_MUSIC = 0.6;
   function musicBase() { return 0.45 * (voiceOn ? VOICE_MUSIC : 1); }
   var unlocked = false;
-
-  /* ------------------------------------------------------------------ *
-   * Graph — built lazily so nothing is constructed before a gesture.
-   * ------------------------------------------------------------------ */
 
   function AC() { return global.AudioContext || global.webkitAudioContext; }
 
@@ -54,8 +24,6 @@
     master = ctx.createGain();
     master.gain.value = muted ? 0 : volume;
 
-    // A gentle limiter keeps a celebration stack from clipping a tablet
-    // speaker. Optional: some engines in test harnesses have no compressor.
     if (ctx.createDynamicsCompressor) {
       try {
         comp = ctx.createDynamicsCompressor();
@@ -85,10 +53,6 @@
   }
 
   function now() { return ctx ? ctx.currentTime : 0; }
-
-  /* ------------------------------------------------------------------ *
-   * Voices
-   * ------------------------------------------------------------------ */
 
   /** A shaped sine/triangle/square note. Returns the time it ends. */
   function tone(o) {
@@ -147,11 +111,6 @@
     return scale[wrapped] * Math.pow(2, (oct || 0) + extra);
   }
 
-  /* ------------------------------------------------------------------ *
-   * The cues. Every one is written to the same peak target so nothing in
-   * screens.js needs a per-call volume.
-   * ------------------------------------------------------------------ */
-
   var CUES = {
 
     /** A single soft blip. The smallest confirmation in the game. */
@@ -178,11 +137,6 @@
       tone({ f: note(4, 1), dur: 0.26, type: 'sine', gain: 0.17, delay: 0.18 });
     },
 
-    /**
-     * Wrong answer. Deliberately not a buzzer: the brief wants retry, not
-     * punishment. Two soft descending notes and a little air — reads as
-     * "not that one" rather than "you failed".
-     */
     wrong: function () {
       tone({ f: note(2, 0), dur: 0.12, type: 'triangle', gain: 0.15 });
       tone({ f: note(0, 0), dur: 0.22, type: 'triangle', gain: 0.15, delay: 0.10 });
@@ -219,14 +173,6 @@
       }
     },
 
-    /**
-     * Sleigh bells. A handful of small bells struck at slightly different
-     * moments, which is what a shake is — hitting them together makes a
-     * chord, and a chord is a bell, not a harness.
-     *
-     * `n` and `spread` let the arrival ring it harder as the sleigh gets
-     * closer without it becoming a different sound.
-     */
     sleighBells: function (o) {
       var n = o.n || 7, spread = o.spread == null ? 0.05 : o.spread;
       var gain = o.gain == null ? 0.07 : o.gain;
@@ -238,11 +184,6 @@
       }
     },
 
-    /**
-     * One hoof on packed snow: a low thud with the crunch on top. Called
-     * repeatedly by the arrival rather than looped, so the gait can slow as
-     * the sleigh pulls up.
-     */
     hoofbeat: function (o) {
       var g = o.gain == null ? 0.09 : o.gain, d = o.delay || 0;
       tone({ f: 92, to: 54, dur: 0.11, type: 'sine', gain: g, delay: d });
@@ -279,9 +220,6 @@
       }
     },
 
-    /* THE STORY'S OWN (src/story/story.js). Small and soft on purpose: the story is told
-       by the pictures and the words, and these are only the world they happen in. */
-
     /** Wood or rope taking weight: a short, low, bowed groan. */
     creak: function (o) {
       var f = (o && o.f) || 150;
@@ -295,15 +233,10 @@
       tone({ f: note(1, 3), dur: 0.8, type: 'sine', gain: 0.045, delay: 0.06 });
     },
 
-    /** Cold air in a cave: one slow, low swell of breath, gone in under three seconds. */
     air: function () {
       noise({ f: 520, to: 240, dur: 2.6, q: 0.7, filter: 'lowpass', gain: 0.045, attack: 0.9 });
     }
   };
-
-  /* ------------------------------------------------------------------ *
-   * Public surface
-   * ------------------------------------------------------------------ */
 
   function play(name, opts) {
     if (muted || !name) return false;
@@ -317,10 +250,6 @@
     return true;
   }
 
-  /**
-   * Play cues in order. Numbers in the list are gaps in seconds:
-   *   SFX.sequence(['drumroll', 1.2, 'levelUp', 0.3, 'sparkle'])
-   */
   var seqTimers = [];
   function sequence(list) {
     var delay = 0;
@@ -330,20 +259,13 @@
     });
     return delay;
   }
-  /* Called off: Replay pressed during the finale's fanfare must not hear the
-     rest of it over the opening. */
   function cancelSequences() { seqTimers.splice(0).forEach(clearTimeout); }
 
-  /* 'interrupted' is iOS's word for a context a phone call or Siri took away;
-     only 'running' means there is sound. */
   function resume() {
     if (hiddenNow()) return;
     if (ctx && ctx.state !== 'running' && ctx.state !== 'closed' && ctx.resume) { try { ctx.resume(); } catch (e) {} }
   }
 
-  /* A HIDDEN TAB IS SILENT. The tune and any cue stop when the page is
-     hidden and come back when it is shown, so a lesson left in a background
-     tab is not playing a marimba to nobody. */
   function hiddenNow() { try { return !!(global.document && global.document.hidden); } catch (e) { return false; } }
   if (global.document && global.document.addEventListener) {
     global.document.addEventListener('visibilitychange', function () {

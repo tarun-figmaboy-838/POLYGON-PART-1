@@ -1,30 +1,5 @@
 #!/usr/bin/env node
-/*!
- * vo-check.js — is every line the game can say, sayable?
- *
- *   npm run vo:check            report
- *   npm run vo:check -- --strict  exit 1 if anything is missing (for a gate)
- *
- * Four ways a line goes quiet, and a person notices none of them by reading:
- *
- *   NO CLIP        the deck asks for an id nothing recorded. The line is
- *                  shown and not spoken, which on an instruction screen is
- *                  the only thing telling a child what to do.
- *   NOT LISTED     a clip on disk that assets/vo/index.json does not name.
- *                  src/audio/vo.js only ever asks for what the index names,
- *                  so the file is there and never played. Run npm run build:vo.
- *   NO OGG         listed, and only as .mp3. vo.js asks for <id>.ogg wherever
- *                  Vorbis plays — Chrome, Firefox, every Android — so the
- *                  clip 404s for everyone but Safari. Re-run the tool that made
- *                  it (tools/split-vo.js or tools/make-vo.js): both write both.
- *   ORPHAN         a clip nothing in the game asks for: dead weight in the
- *                  deploy, and usually a typo in a mapping row.
- *
- * It also flags a clip whose LENGTH does not suit its line. A clip is filed
- * against a line by a person hearing it, and people make slips; a nine-word
- * question in an eleven-second file is two utterances in one clip, not a slow
- * reading, and that is the "the voice says the next screen's line" report.
- */
+// vo-check.js — is every line the game can say, sayable?
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');

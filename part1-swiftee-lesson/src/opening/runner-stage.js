@@ -1,44 +1,7 @@
-/*!
- * runner-stage.js — Frozen Rush around the lesson (the user's game-lesson kit).
- *
- * BEFORE THE LESSON the game opens the experience. This page starts with the game in a frame over
- * everything: its cover and Play, its avalanche, its tutorial up to the broken path, where it holds
- * still and says where Momo and the hole are ('lesson'). Swiftee flies in over it and says why the
- * lesson comes first; snow blows across, he flies off, the game's music fades, and the game fades
- * away onto the lesson's first screen, already starting underneath. No title, no Play, no blank or
- * white screen between the broken path and the lesson.
- *
- * AFTER THE LESSON the game comes back by itself. A second frame is loaded, unseen, a screen
- * before the end. After the lesson's last line snow blows across, and the game appears under it
- * and starts on its own — no cover, no Play — with the avalanche and the run, and nothing said
- * until the first ditch, where it holds still ('swiftee'). Swiftee flies in, says "Now let's help
- * Momo.", flies off, and the game goes on to its plank, its question and its praise ('said').
- *
- * The game always runs in a frame so its styles, its audio and its URL flags never mix with the
- * lesson's, and it talks to this page only by postMessage (off the disk too):
- *
- *   game -> page   { iceAge: 'ready' }            its art is in
- *                  { iceAge: 'play' }             the learner pressed Play (the opening)
- *                  { iceAge: 'running' }          the hosted run has begun (the return)
- *                  { iceAge: 'lesson', where }    the opening's tutorial is over; held at the break
- *                  { iceAge: 'swiftee', id, where }  the return is held at the ditch for Swiftee
- *   page -> game   { iceAge: 'begin' }  'said'  'quiet'
- *
- * SOUND. A tap in a frame is not a tap on this page in Safari, so the game's Play calls
- * window.__lessonUnlock in the same gesture (same origin), which opens this page's sound. And the
- * other way round: the return frame is never tapped, so every tap on the lesson opens ITS sound
- * (iceAgeUnlock), until it says it is open. Measured in WebKit and Chromium both.
- *
- * Off for automated browsers (the lesson's own suites drive the lesson alone) unless ?intro=1, and
- * for ?intro=0. Without it the lesson is exactly as it was: its title, Play, and Part 2's button.
- */
 (function (global) {
   'use strict';
 
   var GAME_URL = '../part2-frozen-rush/game/index.html';
-  /* SWIFTEE'S LINES over the game. Every one is his own recording — the user's take of the three,
-     assets/source/vo-masters/swiftee-visit.mp3, cut by tools/split-vo.js --master swiftee-visit
-     (tools/vo-lines.js reads these pairs for the texts). */
   var OPENING_LINES = [
     { t: 'Momo needs your help.', vo: 'sw1' },
     { t: 'But to help Momo, you need to learn about polygons.', vo: 'sw2' }
@@ -64,7 +27,6 @@
   }
   var on = !!doc && enabled();
 
-  /* the game in the lesson's language (src/core/i18n.js: ?lan= goes wherever the lesson goes) */
   function keepLan(u) { return (global.I18N && I18N.keep) ? I18N.keep(u) : u; }
   function url(part, at) {
     var q = 'lesson=' + part + (dev ? '&dev=1' : '') + (at ? '&devat=' + at : '');
@@ -84,8 +46,6 @@
     try { if (f && f.contentWindow) f.contentWindow.postMessage({ iceAge: word }, '*'); } catch (e) { /* gone */ }
   }
 
-  /* THIS PAGE'S SOUND, opened from the game's Play press (and again on its 'play', for the browsers
-     that need nothing more). The silent sample is what Safari counts. */
   var SILENT = (function () {
     // a twentieth of a second of 8 kHz silence, built here rather than pasted in
     var n = 400, b = new Uint8Array(44 + n * 2), v = new DataView(b.buffer);
@@ -103,17 +63,13 @@
   }
   global.__lessonUnlock = unlock;
 
-  /* ---- the snow: crystals blowing across, the lesson's own (src/fx/snowflake.js) ---- */
   var flurry = (function () {
     var cv = null, ctx = null, flakes = [], raf = 0, blowing = false, t0 = 0;
     function make(W, H, fresh, dpr) {
-      // (big crystals in front, small ones far off — the kit's flurry is weather, not dust)
       var r = 12 + Math.pow(Math.random(), 1.6) * 64;
       return { x: fresh ? W + Math.random() * W * 0.6 : Math.random() * W, y: -H * 0.2 + Math.random() * H * 1.1,
                r: r, vx: -(380 + Math.random() * 520) * (0.6 + r / 60), vy: 60 + Math.random() * 160,
                a: Math.random() * 6.28, va: (Math.random() - 0.5) * 2.4, o: 0.55 + Math.random() * 0.45,
-               // the crystal at its own size (the path's numbers are rounded to hundredths), drawn
-               // the way the lesson draws its flakes: a soft frosted stroke under a fine white one
                p: global.Path2D && global.Snowflake ? new global.Path2D(Snowflake.path(r * dpr, Math.floor(Math.random() * 1e6))) : null,
                w: Math.max(1.2, r * 2.2 * 0.012) * dpr };
     }
@@ -191,13 +147,9 @@
 
   /* ======================= BEFORE THE LESSON ======================= */
   var gateOpen = false, gateResolve = null;
-  /** Resolves when the lesson may begin: at once without the opening, after the snow with it. */
   var gate = new Promise(function (r) { gateResolve = r; });
   function release() { if (gateOpen) return; gateOpen = true; gateResolve(); }
 
-  /* THE REVIEW BAR OVER THE GAME. It lives inside #game, which is position:fixed and so a layer of
-     its own: its z-index counted only among the lesson's elements, and the game's frame lay over
-     it — the bar could not be reached while the game was up. On the page itself it is over both. */
   function liftReviewBar() {
     var bar = doc.getElementById('jump');
     if (bar && bar.parentNode !== doc.body) doc.body.appendChild(bar);
@@ -208,7 +160,6 @@
     open = frame('runner-open', url('intro', devAt === 'break' ? 'break' : ''), true);
     open.addEventListener('load', function () { focusFrame(open); });
     if (global.SwifteeVisit) SwifteeVisit.load();
-    // a game that never shows its cover is not waited for: the lesson's own title comes up
     setTimeout(function () { if (!openState.ready && !openState.played) giveUp(); }, OPENING_LOAD_CAP);
   }
   var playCap = 0;
@@ -235,8 +186,6 @@
       onLeave: function () { flurry.start(); post(open, 'quiet'); } }) : Promise.resolve();
     visit.then(function () { if (g0 === gen) toLesson(true); });
   }
-  /* THE SNOW CARRIES THE GAME AWAY. The lesson starts underneath (its first screen, its Swiftee
-     already on his way to his rock), and the game fades off it under the snow. */
   function toLesson(snowing) {
     openState.handed = true;
     if (!snowing) { flurry.start(); post(open, 'quiet'); }
@@ -258,7 +207,6 @@
   }
 
   /* ======================= AFTER THE LESSON ======================= */
-  /** Load the return frame, unseen. Called a screen before the end, so a tap is still to come. */
   function preload(at) {
     if (!on || back) return;
     backState = { ready: false, running: false, unlocked: false, waiters: [] };
@@ -272,7 +220,6 @@
     try { var w = back.contentWindow; if (w && w.iceAgeUnlock && w.iceAgeUnlock()) backState.unlocked = true; } catch (e) { /* another origin: Chrome needs none */ }
   }
   var started = false;
-  /** The lesson's last line has been read: the game takes the screen, and starts by itself. */
   function start() {
     if (!on || started) return false;
     started = true;
@@ -284,7 +231,6 @@
       doc.body.appendChild(curtain);
       global.requestAnimationFrame(function () { curtain.classList.add('on'); });
       setTimeout(function () {
-        // the lesson is over: its tune and its voice stop, its Swiftee is not left under the game
         try { if (global.Music && Music.stop) Music.stop(); } catch (e) {}
         try { if (global.VO && VO.stop) VO.stop(); } catch (e) {}
         if (doc.documentElement) doc.documentElement.classList.add('runner-back');
@@ -312,10 +258,6 @@
     visit.then(function () { if (g0 === gen && f === back) post(back, 'said'); });
   }
 
-  /* REVIEW (?dev=1): A JUMP TO A LESSON SCREEN TAKES THE GAME OFF THE SCREEN. The lesson is under
-     the game's frame, so picking a screen while the game was up changed the lesson behind it and
-     showed nothing (the user: "jump not working"). The frames, the snow, the curtain and any visit
-     go, and nothing from before the jump carries on (gen). */
   function leave() {
     if (!on) return;
     gen++;
@@ -339,7 +281,6 @@
     var q = 'dev=1';
     if (what === 'start1') { loc.assign(keepLan(base + '?' + q + '&intro=1')); return; }
     if (what === 'start2') { loc.assign(keepLan(base + '?' + q + '&intro=1&devat=break')); return; }
-    // the end: straight to the game's return, from the lesson's last screen or from its ditch
     if (what === 'end1' || what === 'end2') {
       leave();
       preload(what === 'end2' ? 'break' : '');
@@ -348,11 +289,6 @@
     }
   }
 
-  /* A KEY MEANT FOR THE GAME REACHES IT. Space, the up arrow and W jump in Frozen Rush, but a key
-     goes to whichever document has the focus — and the lesson's page has it until the frame is
-     clicked, or again after anything on the page takes it. So while a game frame is on the screen,
-     those keys on the page are handed to the frame ('jump'; main.js), and the frame is given the
-     focus whenever it is shown, so the next key lands there by itself. */
   function keyToGame(e) {
     var f = open || (back && !back.classList.contains('unseen') ? back : null);
     if (!f) return;
@@ -382,7 +318,6 @@
 
   global.RunnerStage = {
     get on() { return on; },
-    /** true while the game's opening is on the screen (the lesson's title stays out of sight) */
     get opening() { return on && !gateOpen; },
     gate: gate,
     preload: preload,

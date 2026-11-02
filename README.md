@@ -83,7 +83,6 @@ part1-swiftee-lesson/   PART 1, as its own project: index.html + src/lesson.min.
 
 part2-frozen-rush/      PART 2, as its own project: game/ is the site
   README.md             the two levels and the layout
-  RUNNER.md             the gameplay contract; read before changing gameplay
   game/ art-source/ tests/ tools/ docs/
 
 .claude/skills/         the game-design skill used for both parts

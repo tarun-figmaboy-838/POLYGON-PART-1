@@ -7,8 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
-  :root {
+<style>  :root {
     --bg:      #17121f;
     --panel:   #201929;
     --edge:    #322842;
@@ -154,9 +153,6 @@
   });
 
   /* ---- voice-over stand-in ------------------------------------------ */
-  /* No real clip to ship, so this synthesises something speech-shaped on the
-     voice bus. The point is the ducking: fire cues while it runs and hear
-     them drop back. Your actual clips go through Pack.speak(). */
 
   var voiceLive = false;
 
@@ -444,10 +440,8 @@
 
 </div>
 
-<!-- the kit's one copy: the same file the game loads, not a twin kept in step by hand -->
 <script src="../../game/js/sfx.js"></script>
-<script>
-(function () {
+<script>(function () {
   'use strict';
 
   var FAMILIES = [
@@ -602,9 +596,6 @@
   });
 
   /* ---- voice-over stand-in ------------------------------------------ */
-  /* No real clip to ship, so this synthesises something speech-shaped on the
-     voice bus. The point is the ducking: fire cues while it runs and hear
-     them drop back. Your actual clips go through Pack.speak(). */
 
   var voiceLive = false;
 
@@ -625,8 +616,6 @@
     var env = ctx.createGain();
     env.gain.setValueAtTime(0.0001, t0);
 
-    // Two formants and a syllable envelope: enough to read as a voice
-    // through a phone speaker, which is all this needs to do.
     var f1 = ctx.createBiquadFilter();
     f1.type = 'bandpass'; f1.frequency.value = 620; f1.Q.value = 5;
     var f2 = ctx.createBiquadFilter();
@@ -716,8 +705,6 @@
   });
 
   /* ---- the scope --------------------------------------------------- */
-  /* Draws only while a sound is sounding: motion answers an action,
-     rather than idling for decoration. */
 
   var canvas = document.getElementById('wave');
   var g2d = canvas.getContext('2d');

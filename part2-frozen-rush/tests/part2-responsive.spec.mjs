@@ -1,18 +1,4 @@
-/* PART 2 AT EVERY SIZE IT HAS TO SURVIVE.
- *
- * The game is a fixed 1920x1080 backbuffer letterboxed into whatever the window is, so
- * nothing here should depend on the viewport at all — everything is laid out in stage
- * units and scaled once. That is the theory, and it is worth one spec because Part 2
- * broke the assumption twice while it was being built: the focused slab is sized from
- * the STAGE and the question board from CSS units, and those two are the places where
- * a viewport can leak into a layout.
- *
- * The slabs now run from y 140 to 1070 of a 1080-tall stage, which leaves 10px of air
- * at the bottom and about 20 at the top. There is no room for a rounding error, and a
- * short viewport is where one would show.
- *
- * The sizes are the three the brief named plus the phone the suite already runs at.
- */
+// PART 2 AT EVERY SIZE IT HAS TO SURVIVE.
 import { test, expect } from '@playwright/test';
 import { boot, waitState, jsErrors } from './helpers.mjs';
 
@@ -39,8 +25,6 @@ for (const s of SIZES) {
   test.describe(`Part 2 at ${s.name}`, () => {
     test.setTimeout(240_000);
 
-    /* THE STAGE ITSELF. It is letterboxed 16:9 into the window, and the whole layout
-       rests on that being exact — every stage unit is a fraction of this box. */
     test('the stage keeps 16:9 and fits the window', async ({ page }) => {
       await page.setViewportSize({ width: s.w, height: s.h });
       await boot(page);
@@ -53,10 +37,6 @@ for (const s of SIZES) {
       expect(r.h).toBeLessThanOrEqual(s.h + 1);
     });
 
-    /* THE SLAB AND ITS HANDLES. Sized in stage units, so the numbers below are the
-       SAME at every viewport — that is the property being tested. A handle reaches
-       about 20px past its corner and must stay inside the stage; the question board
-       ends at y 117, so nothing may reach above about 130. */
     for (const n of [1, 2, 3]) {
       test(`crossing ${n}: the slab and its handles stay on the stage`, async ({ page }) => {
         await page.setViewportSize({ width: s.w, height: s.h });
@@ -86,9 +66,6 @@ for (const s of SIZES) {
       });
     }
 
-    /* AND IT IS STILL PLAYABLE. A layout that fits but cannot be cut is no better than
-       one that clips — the corners have to be reachable, which on the smallest stage
-       means the drag tolerance has to scale with it too. */
     test('crossing 1 can still be cut with a real drag', async ({ page }) => {
       await page.setViewportSize({ width: s.w, height: s.h });
       const errors = await boot(page, { speed: 900 });
@@ -116,8 +93,6 @@ for (const s of SIZES) {
       expect(jsErrors(errors), 'the game threw').toEqual([]);
     });
 
-    /* THE INTERFACE SHARE. The board is the only thing on the stage that is not the
-       game, and on a short viewport CSS clamps can let it grow out of proportion. */
     test('the question board stays a small share of the stage', async ({ page }) => {
       await page.setViewportSize({ width: s.w, height: s.h });
       await boot(page, { speed: 900, fast: 4 });

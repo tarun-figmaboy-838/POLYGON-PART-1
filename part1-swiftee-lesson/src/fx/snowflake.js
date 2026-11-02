@@ -1,41 +1,10 @@
-/*!
- * snowflake.js — the shape of a snow crystal, as path data.
- *
- * One generator, two consumers that could not look more different: the
- * ambient weather in stage.js draws about forty of these small inside the
- * scene's SVG, and the transition draws nine of them enormous in an overlay
- * on top of everything. Sharing the generator is the point — the huge flake
- * that swings across the screen between two screens is recognisably the same
- * crystal that has been drifting past all lesson, which is what makes the
- * transition feel like the weather rather than like a wipe effect.
- *
- * Why a path and not a circle. A dot is not a snowflake; it is a dot. At the
- * sizes this game draws them, six arms with paired branches is the difference
- * between "it is snowing" and "there is white noise on the screen", and it
- * costs one path node either way.
- *
- * Real crystals are hexagonal — six arms, sixty degrees apart, each a stem
- * carrying paired side branches that shorten toward the tip, around a
- * hexagonal plate at the centre. Those are the only facts in here; the rest
- * is jitter, and the jitter is seeded so a flake keeps its shape instead of
- * reshuffling on every re-render.
- *
- *   Snowflake.path(r, seed)      -> SVG path `d`, centred on (0,0)
- *   Snowflake.svg(size, seed, o) -> a standalone <svg> string, for the DOM
- */
+// snowflake.js — the shape of a snow crystal, as path data.
 (function (global) {
   'use strict';
 
   var ARMS = 6;
   var TAU = Math.PI * 2;
 
-  /* Three builds of crystal. Snow does not fall as one shape, and a field of
-     identical flakes reads as a texture rather than as weather.
-
-       0  stellar dendrite — long arms, three branch pairs, the storybook one
-       1  sectored plate   — shorter arms, wide branches near the tip
-       2  simple star      — bare arms, for the small distant flakes
-  */
   var BUILDS = [
     { at: [0.30, 0.52, 0.74], len: [0.34, 0.26, 0.17], spread: 60, plate: 0.17, tip: 0.13 },
     { at: [0.38, 0.66],       len: [0.30, 0.34],       spread: 52, plate: 0.22, tip: 0.10 },
@@ -50,12 +19,6 @@
     return [x * c - y * s, x * s + y * c];
   }
 
-  /**
-   * Path data for one crystal, centred on (0,0), arms `r` long.
-   *
-   * Drawn as strokes rather than fills: a snowflake is a lattice, and a
-   * filled blob of one would just be the dot again.
-   */
   function path(r, seed) {
     var b = BUILDS[((seed | 0) % BUILDS.length + BUILDS.length) % BUILDS.length];
     var d = [], k, j, a, u, v, bx, by, e, tipA;
@@ -95,11 +58,6 @@
     return d.join('');
   }
 
-  /**
-   * A standalone crystal as SVG markup, `size` across, ready to drop into
-   * the DOM. Two strokes on the same path: a wide soft one underneath for
-   * the frosted glow and a fine bright one on top for the lattice.
-   */
   function svg(size, seed, o) {
     o = o || {};
     var r = size / 2 * 0.92;

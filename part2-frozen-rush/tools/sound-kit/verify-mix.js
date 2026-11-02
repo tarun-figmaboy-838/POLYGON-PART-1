@@ -1,17 +1,7 @@
 #!/usr/bin/env node
-/**
- * verify-mix.js — prove the mix layer does what it claims, by rendering it.
- *
- *   1. Every trimmed sound lands on its family target.
- *   2. Ducking actually attenuates effects while voice plays, and restores.
- *   3. A burst of cues stays below full scale instead of clipping.
- */
+// verify-mix.js — prove the mix layer does what it claims, by rendering it.
 'use strict';
 const path = require('path');
-/* NOT A DEPENDENCY OF THIS REPO. node-web-audio-api is a native module and the game
-   never needs it — only this script and measure-loudness.js do, to render the kit
-   offline. Left bare it died with a MODULE_NOT_FOUND stack that read like a broken
-   script rather than a missing optional tool, so say which it is. */
 let OfflineAudioContext;
 try {
   ({ OfflineAudioContext } = require('node-web-audio-api'));
@@ -22,9 +12,6 @@ try {
   process.exit(1);
 }
 
-/* The kit's one copy lives in game/js — it is the file the page actually loads, so
-   measuring anything else would be measuring a stale twin. This used to resolve
-   '../sfx.js' (tools/sfx.js), a path that has not existed since the kit moved. */
 const SR = 48000, SFX_PATH = path.resolve(__dirname, '../../game/js/sfx.js');
 const PRE = { b:[1.53512485958697,-2.69169618940638,1.19839281085285], a:[1,-1.69065929318241,0.73248077421585] };
 const RLB = { b:[1,-2,1], a:[1,-1.99004745483398,0.99007225036621] };
@@ -36,12 +23,6 @@ function lufs(s){const k=biquad(biquad(Float64Array.from(s),PRE),RLB);const w=Ma
   if(k.length<w)return -Infinity;let sum=0;for(let i=0;i<w;i++)sum+=k[i]*k[i];let best=sum;
   for(let i=w;i<k.length;i++){sum+=k[i]*k[i]-k[i-w]*k[i-w];if(sum>best)best=sum;}
   const ms=best/w;return ms>0?-0.691+10*Math.log10(ms):-Infinity;}
-/**
- * Average several renders in the power domain. Noise-based recipes read a
- * random offset into a freshly generated noise buffer, so a single render of
- * a 35 ms click can sit several dB from its own mean. Calibrating from one
- * draw bakes that error into the trim.
- */
 function meanLoudness(runs) {
   var lin = 0, n = 0;
   for (var i = 0; i < runs.length; i++) {

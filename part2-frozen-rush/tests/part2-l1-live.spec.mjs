@@ -1,11 +1,4 @@
-/* CROSSING 1, PLAYED THE WAY A CHILD PLAYS IT — tutorial and all.
- *
- * Every other spec for this level forces the state and turns the tutorial off, which is
- * right for testing the rule and wrong for testing whether the level can be PLAYED. The
- * reported fault ("user unable to cut") did not reproduce under those conditions, so
- * this reproduces the real path instead: press play, sit through the tutorial, and try
- * to cut with a real pointer.
- */
+// CROSSING 1, PLAYED THE WAY A CHILD PLAYS IT — tutorial and all.
 import { test, expect } from '@playwright/test';
 import { boot, G, waitState, jsErrors } from './helpers.mjs';
 
@@ -14,8 +7,6 @@ test.describe('crossing 1, played live', () => {
 
   test('the run reaches the diagonal crossing with the tutorial running', async ({ page }) => {
     const errors = await boot(page, { speed: 900, fast: 3, tutorial: true });
-    /* It has to get there on its own: the tutorial jump step waits for a real jump, so
-       the harness clears the rock the way a player would. */
     const trail = await page.evaluate(async () => {
       const g = window.iceAgeGame, seen = [];
       let last = '';
@@ -43,10 +34,6 @@ test.describe('crossing 1, played live', () => {
     expect(jsErrors(errors), 'the game threw').toEqual([]);
   });
 
-  /* THE REPORTED FAULT. Reaching the level is not the same as being able to play it:
-     the tutorial pauses the simulation while it explains, and a paused game drops
-     pointer input on the floor (engine onDown returns early). If a step is still
-     holding the freeze when the slab goes live, the child drags and nothing happens. */
   test('the game is not frozen when the slab goes live', async ({ page }) => {
     await boot(page, { speed: 900, fast: 3, tutorial: true });
     await page.evaluate(async () => {

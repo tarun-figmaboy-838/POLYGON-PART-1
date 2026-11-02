@@ -1,17 +1,5 @@
 #!/usr/bin/env node
-/*!
- * build-hand.js — the pointing hand the hints use, from the supplied artwork.
- *
- *   assets/source/image copy.avif  (300×360, transparent)  →  assets/ui/hand.webp
- *                                                        src/game/hand-art.js
- *
- * The hand is drawn at about a fingertip's size over the stage, so the file is
- * cropped to the glove's own bounds and written at twice its largest drawn
- * size. The FINGERTIP is measured, not guessed: it is where the hand touches
- * the thing it points at, so the hint puts that pixel — not the corner of the
- * image — on the target. Run once after replacing the source:
- *   node tools/build-hand.js
- */
+// build-hand.js — the pointing hand the hints use, from the supplied artwork.
 'use strict';
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), crypto = require('node:crypto');
 const { chromium } = require('playwright');
@@ -31,8 +19,6 @@ function serve() { const srv = http.createServer((q, r) => { const f = path.join
     const A = (x, y) => d[(y * c0.width + x) * 4 + 3];
     let minX = c0.width, maxX = 0, minY = c0.height, maxY = 0;
     for (let y = 0; y < c0.height; y++) for (let x = 0; x < c0.width; x++) if (A(x, y) > 40) { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
-    // the fingertip: the middle of the topmost few rows of glove, then a little
-    // into the pad (the point of contact is inside the outline, not on it)
     const band = Math.max(4, Math.round((maxY - minY) * 0.05));
     let sx = 0, n = 0;
     for (let y = minY; y <= minY + band; y++) for (let x = minX; x <= maxX; x++) if (A(x, y) > 40) { sx += x; n++; }

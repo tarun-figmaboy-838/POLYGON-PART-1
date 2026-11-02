@@ -1,20 +1,5 @@
 #!/usr/bin/env node
-/*!
- * build-swiftee-frames.js — turns the Swiftee manifest into the frame table.
- *
- * The manifest is the single source of truth for frame counts, grids, sheet
- * paths and state triads. Nothing in the game may hardcode any of them. The
- * game is a plain <script> page with no bundler and has to run over file://,
- * where fetching a JSON sibling is blocked — so instead of parsing the
- * manifest at runtime, we parse it here, once, and emit a constants file.
- *
- * Re-run after replacing the assets:
- *
- *   node tools/build-swiftee-frames.js
- *
- * Reads  assets/swiftee/swiftee.manifest.json
- * Writes src/character/swiftee-frames.js
- */
+// build-swiftee-frames.js — turns the Swiftee manifest into the frame table.
 'use strict';
 
 const fs = require('fs');
@@ -70,8 +55,6 @@ for (const name of names) {
     sheets: { '1x': pages(s1), '2x': s2 ? pages(s2) : null }
   };
 
-  // The manifest's per-scale frame count must agree with the animation's, or
-  // the renderer would index past the end of a grid.
   if (s1.frames !== a.frames) missing.push(name + ': 1x frames ' + s1.frames + ' != ' + a.frames);
   if (s2 && s2.frames !== a.frames) missing.push(name + ': 2x frames ' + s2.frames + ' != ' + a.frames);
 }
@@ -81,12 +64,6 @@ if (missing.length) {
   process.exit(1);
 }
 
-/* EVERY SHEET CARRIES ITS OWN CONTENT HASH (?v=), as the rest of the art does. The sheets are
-   cached for an hour (vercel.json) under names that never change, so a redrawn sheet could meet
-   a browser still holding the old one — new frame data, old drawing. The hash changes when the
-   file does, so an updated sheet is a new URL and can never be served stale; an unchanged one
-   keeps its URL and its cache. The renderer, the loading bar (Swiftee.sheetUrls) and the paint
-   all read this one string, so they always ask for the same URL. */
 const crypto = require('crypto');
 const hashOf = (rel) => crypto.createHash('md5').update(fs.readFileSync(path.join(ROOT, ASSETS, rel))).digest('hex').slice(0, 8);
 for (const name of Object.keys(clips)) {
@@ -128,11 +105,6 @@ const out =
 })(typeof window !== 'undefined' ? window : this);
 `;
 
-/* --check: WRITE NOTHING, SAY WHETHER THE FILE IS STILL WHAT THIS MAKES.
-   The frame table is generated and must never be edited by hand — a patched
-   coordinate there moves a frame the manifest knows nothing about. The test
-   suite runs this, so a hand edit (or a manifest change nobody rebuilt for)
-   fails the build instead of shipping. Line endings are not a difference. */
 if (process.argv.includes('--check')) {
   const onDisk = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8').replace(/\r\n/g, '\n') : '';
   if (onDisk !== out) {

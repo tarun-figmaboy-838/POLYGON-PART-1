@@ -1,24 +1,5 @@
 #!/usr/bin/env node
-/*!
- * export-used-sprites.js — copy out the sheets the game actually plays.
- *
- *   node tools/export-used-sprites.js
- *
- * assets/swiftee/spritesheets/ holds every animation the rig was exported
- * with, and the lesson plays about two thirds of them. Re-costuming the
- * character means finding those, and finding them in a flat folder of a
- * hundred and twenty-five files named after rig states means knowing which
- * rig state is which semantic state — which is a lookup nobody should have to
- * do by hand.
- *
- * So this writes swiftee-in-use/, one folder per state the lesson drives,
- * named for what the state MEANS rather than what the rig calls it, holding
- * the @1x and @2x sheets for that state's start, loop and stop. Redraw what
- * is in there and nothing else, and the game is fully re-costumed.
- *
- * It copies rather than moves, and writes nowhere the game reads from, so
- * running it can never break anything. Re-run it after adding a state.
- */
+// export-used-sprites.js — copy out the sheets the game actually plays.
 'use strict';
 
 const fs = require('fs');
@@ -31,8 +12,6 @@ const S = require(path.join(ROOT, 'src/character/swiftee.js'));
 
 const OUT = path.join(ROOT, 'swiftee-in-use');
 
-/* What each state is for, in the lesson's terms. The renderer knows which rig
-   animation to play; only this file knows why. */
 const WHY = {
   idle:        'resting — the pose he holds between everything else',
   explain:     'narration and definitions',
@@ -82,15 +61,6 @@ function sheetsOf(name) {
   return out;
 }
 
-/**
- * A rig state ships as start -> loop -> stop, and all three are played.
- *
- * The three are NOT named off a common stem — celebrate_start and
- * celebrate_stop bracket a loop called celebrating — so the triad has to come
- * from the frame table's own states map rather than from string arithmetic.
- * Guessing the names silently exported the loop alone and left the start and
- * stop behind, which is exactly the pair that keeps expressions from jumping.
- */
 function clipsFor(rig) {
   const s = F.states[rig];
   const names = s ? [s.start, s.loop, s.stop] : [rig];

@@ -1,10 +1,4 @@
-/* THE HI-DPI PATH.
- *
- * The canvas renders at renderScale x 1920x1080 (up to 2x) and the character sheets come in
- * two sets — the base 420x320 cell and the same cell at 1.5x — chosen once at boot from that
- * scale. These tests hold the contract: a plain screen is exactly what it always was; a
- * forced ?rs=2 doubles the backbuffer and loads the hd set at its expected geometry, with
- * the character the same size on stage; a real 2x device picks the path on its own. */
+// THE HI-DPI PATH.
 import { test, expect } from '@playwright/test';
 import { boot } from './helpers.mjs';
 
@@ -47,12 +41,6 @@ test.describe('the hi-DPI path', () => {
   });
 
   test('the character is the same size on stage from either set', async ({ page }) => {
-    /* Measured on the real backbuffer, in layout pixels, on ONE deterministic pose: the
-       game is paused, the character is put on trample frame 8 with every transient
-       (squash, lean, breath...) zeroed, and one frame is drawn. Sampling live frames was
-       tried and is not deterministic — a headless runner at 3840x2160 draws so few
-       frames that the run cycle's extremes are never reached. cellK divides the sprite
-       scale, so the two sets must agree to a few pixels. */
     const measure = async query => {
       await boot(page, { query });
       return page.evaluate(() => {
@@ -84,9 +72,6 @@ test.describe('the hi-DPI path', () => {
     const b = await measure('rs=2');
     expect(a.frame, 'the pose is the settle he waits on').toContain('tremble:');
     expect(a.frame).toBe(b.frame);
-    /* 4%, not a pixel or two: the hd silhouette is resolved twice as finely, so its
-       anti-aliased rim passes the colour test a pixel further out on each side (measured:
-       324 vs 330.5 wide). A wrong cellK would be off by 50%, which this still catches. */
     expect(a.h, 'a character was measured').toBeGreaterThan(150);
     expect(Math.abs(a.h - b.h), `height ${a.h} vs ${b.h}`).toBeLessThan(a.h * 0.04);
     expect(Math.abs(a.w - b.w), `width ${a.w} vs ${b.w}`).toBeLessThan(a.w * 0.04);
@@ -96,9 +81,6 @@ test.describe('the hi-DPI path', () => {
 });
 
 test.describe('a 3x phone', () => {
-  /* Dense enough to qualify for the hd set by scale alone — and the one place it must not
-     go: a small device that could not decode the big sheets was left with no character at
-     all. The stage is under 1000 CSS px wide, so it keeps the base set at a sharper canvas. */
   test.use({ viewport: { width: 932, height: 430 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
   test('keeps the base set on a sharper canvas', async ({ page }) => {
     const errors = await boot(page);
@@ -115,7 +97,6 @@ test.describe('a 2x device', () => {
   test('picks a bigger backbuffer and the hd set on its own', async ({ page }) => {
     const errors = await boot(page);
     const s = await page.evaluate(STATE);
-    // a 1280-wide stage at 2x is 2560 device pixels: 1.33 of the 1920 layout, rounded to 1.25
     expect(s.rs).toBeGreaterThan(1);
     expect(s.set).toBe('hd');
     expect(s.w).toBe(Math.round(1920 * s.rs));

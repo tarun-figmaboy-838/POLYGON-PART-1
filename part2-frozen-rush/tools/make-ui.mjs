@@ -1,20 +1,4 @@
-/* Generates the game's vector UI.
- *
- * Real SVG geometry only — no embedded raster, no base64, no emoji, no icon-library
- * glyphs. 48x48 viewBox with safe padding, named groups so parts can be animated.
- *
- * ICON RULE, taken from the reference sheets: a control glyph sits on a COLOURED
- * BUTTON FACE, so the glyph itself is a solid white silhouette — no gradients, no
- * outline strokes, no interior detail. Gradient-filled glyphs with navy outlines
- * turn to mush at 48px on a blue face; a flat white silhouette stays legible down to
- * 24px. The button's depth (ring, bezel, gloss) is built in CSS around it, not baked
- * into every icon file.
- *
- * The SHAPE glyphs are the exception: they are the subject being taught, not a
- * control, so they keep the ice fill and navy outline the hanging chunks use.
- *
- *   node tools/make-ui.mjs
- */
+// Generates the game's vector UI.
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
@@ -67,27 +51,15 @@ files['icons/restart.svg'] = glyph('Start over',
   `    <path d="M24 8.4a15.6 15.6 0 1 1-13.5 7.8 2.4 2.4 0 0 1 4.2 2.4A10.8 10.8 0 1 0 24 13.2z"/>
     <path d="M22.4 5.2a1.6 1.6 0 0 1 2.6-1.3l7.6 5.8a1.6 1.6 0 0 1 0 2.6L25 18a1.6 1.6 0 0 1-2.6-1.3z"/>`);
 
-/* CHOSEN. A tick means "marked correct" — it belongs on a wrong/right answer, not on
-   a character you picked, where it reads like homework. A star reads as chosen and
-   as a reward, which is what selecting your explorer should feel like. */
 files['icons/star.svg'] = glyph('Chosen',
   `    <path d="M24 3.6a2.3 2.3 0 0 1 2.1 1.35l4.5 9.9 10.7 1.35a2.3 2.3 0 0 1 1.25 4L34.6 27.2l2 10.7a2.3 2.3 0 0 1-3.4 2.4L24 35.1l-9.2 5.2a2.3 2.3 0 0 1-3.4-2.4l2-10.7-7.95-6.95a2.3 2.3 0 0 1 1.25-4l10.7-1.35 4.5-9.9A2.3 2.3 0 0 1 24 3.6z"/>`);
 
-/* SELECTED. A bare solid tick for the chosen character card. The CSS-border tick
-   it replaces was thin and sat off-centre, and a star read as a reward for doing
-   something rather than as the state of a choice. */
 files['icons/tick.svg'] = glyph('Selected',
   `    <path d="M39.4 11.6a3 3 0 0 1 4.5 3.9L23.6 38.2a3 3 0 0 1-4.5.1L5.2 24.4a3 3 0 0 1 4.2-4.3l11.5 11.2z"/>`);
 
 files['icons/hint.svg'] = glyph('Hint',
-  // a question mark drawn as geometry, not typed: the universal "help" glyph and the
-  // only one a pre-reader recognises without words
   `    <path d="M24 6.6c6.2 0 10.8 3.9 10.8 9.4 0 4.2-2.4 6.3-5.4 8.2-2 1.3-2.7 2.1-2.8 3.7l-.1 1.5h-5.2l.1-2.2c.2-3.2 1.7-4.9 4.6-6.8 2.2-1.5 3.2-2.4 3.2-4.3 0-2.3-2-3.9-5.2-3.9-3 0-5.2 1.6-5.7 4.3l-5.4-.9C13.9 10.2 18.2 6.6 24 6.6z"/>
     <circle cx="24.1" cy="37.6" r="3.6"/>`);
-
-/* ---------------- correct / incorrect marks ----------------
-   These are not controls: they are full badges that pop over the world, so they
-   carry their own disc, rim and gloss. */
 
 const disc = (id, lit, mid, deep, icon) => `  <defs>
 ${grad(id, [[0, lit], ['.55', mid], [1, deep]])}
@@ -136,12 +108,6 @@ ${grad('hsSkin', [[0, '#FFF3E2'], ['.5', '#FFD9AE'], [1, '#E8A968']])}
   <g id="highlight" opacity=".8">
     <path d="M29.8 14.2v11.2" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"/>
   </g>`, { w: 64 });
-
-/* ---------------- shape glyphs ----------------
-   The subject being taught, so these keep the ice fill and navy outline the hanging
-   chunks are drawn with — the instruction and the chunks then read as the same
-   material. Shown beside the instruction so the objective is legible to a child who
-   cannot yet read the shape's NAME; it reveals nothing the words do not already say. */
 
 const shapePts = {
   triangle:      '24,5 43,42 5,42',

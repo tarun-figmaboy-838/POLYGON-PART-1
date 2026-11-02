@@ -1,19 +1,5 @@
 #!/usr/bin/env node
-/*!
- * serve.js — run the whole game locally: Part 1, and Part 2 after it.
- *
- *   npm start            then open the URL it prints
- *   node serve.js 8000   to choose the port
- *
- * Everything also opens straight off the disk (index.html, then either part),
- * but over file:// each game loses a little: Part 1 falls back to the browser's
- * voice, Part 2 plays without its music and recorded sounds. Served, both get
- * everything.
- *
- * Each part still has its own server for its own test runs
- * (part1-swiftee-lesson/serve.js, part2-frozen-rush/tools/serve.mjs); this one
- * is for playing the two together.
- */
+// serve.js — run the whole game locally: Part 1, and Part 2 after it.
 'use strict';
 
 const http = require('http');
@@ -43,8 +29,6 @@ const TYPES = {
   '.riv': 'application/octet-stream'
 };
 
-// Code must never be served stale while it is being edited; the art is large
-// and only changes with its filename (or its ?v= hash), so it may be kept.
 const CODE = new Set(['.html', '.js', '.mjs', '.css', '.json']);
 
 http.createServer((req, res) => {
@@ -53,8 +37,6 @@ http.createServer((req, res) => {
   catch (e) { res.writeHead(400).end('bad request'); return; }
 
   let file = path.resolve(ROOT, rel);
-  // inside this folder — not a sibling whose name merely starts the same —
-  // and never the repository's history or anyone's installed packages
   if ((file !== ROOT && !file.startsWith(ROOT + path.sep)) ||
       /(^|[\\/])(\.git|node_modules)([\\/]|$)/.test(rel)) {
     res.writeHead(403).end('forbidden'); return;
@@ -62,8 +44,6 @@ http.createServer((req, res) => {
 
   fs.stat(file, (err, info) => {
     if (!err && info.isDirectory()) {
-      // A folder without its slash would resolve every relative URL in its
-      // page one level too high, so send the browser to the slashed form.
       if (rel && !rel.endsWith('/')) {
         res.writeHead(301, { Location: '/' + rel + '/' }).end(); return;
       }

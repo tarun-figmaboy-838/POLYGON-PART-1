@@ -1,7 +1,4 @@
 import { test, expect } from '@playwright/test';
-/* Points at tools/zzvercel-sim.mjs, which applies the real vercel.json the way Vercel
-   does. This is the check that would have caught the 404: the local dev server serves
-   game/ AS the root, so a repo-root deploy's relative-path breakage is invisible to it. */
 test('the game loads and plays from a simulated Vercel deploy', async ({ page }) => {
   test.setTimeout(120_000);
   const bad = [], errs = [];
@@ -20,10 +17,6 @@ test('the game loads and plays from a simulated Vercel deploy', async ({ page })
   await page.locator('#btn-play').click({ force: true });
   await page.waitForFunction(() => ['RUN_SEGMENT_1','JUMP_CHALLENGE_1'].includes(window.iceAgeGame.state()), null, { timeout: 20_000 });
 
-  /* The character is really drawing, which a missing sheet would not be. ANY sheet
-     proves that — and the wait above accepts JUMP_CHALLENGE_1, where the character is
-     legitimately mid-jump, so pinning this to the run cycle made it a race that lost
-     whenever an obstacle happened to be under way. */
   const anim = await page.evaluate('window.iceAgeGame.mammothFrame()');
   console.log('  animating: ' + anim);
   expect(anim, 'a real sheet frame').toMatch(/^(run|jump|skid|idle):\d+$/);
@@ -49,24 +42,6 @@ test('the game loads and plays from a simulated Vercel deploy', async ({ page })
   expect(errs.filter(e => e.startsWith('PAGEERROR')), 'the game threw').toEqual([]);
 });
 
-/* WHAT THE BROWSER IS TOLD TO KEEP, and for how long. Nothing asserted this before, so
-   the whole caching design — the one thing a visitor's SECOND load depends on — was
-   riding on a file nobody tested.
- 
-   The two halves are deliberately opposite and both matter:
- 
-     assets   immutable for a year. Safe ONLY because every asset URL carries a content
-              hash (?v=<md5-8>, see tools/build-bundle.mjs), so changing the art changes
-              the URL. Take the hash away and this header strands players on old art.
- 
-     css/js   must-revalidate. Neither is hashed — index.html asks for css/style.css and
-              js/main.js by plain name — so the browser has to ask every time whether it
-              still has the current one. style.css matched NO rule at all until this test
-              was written, leaving the file that carries the entire HUD to Vercel's
-              default, which is not ours to rely on.
- 
-   Run against the simulator, which applies the real vercel.json the way Vercel does, so
-   this fails on the config rather than on a deployed mistake. */
 test('the cache headers say what they should', async ({ request }) => {
   const at = async path => {
     const r = await request.get('http://127.0.0.1:8201' + path);
@@ -74,7 +49,6 @@ test('the cache headers say what they should', async ({ request }) => {
     return (r.headers()['cache-control'] || '(none)').toLowerCase();
   };
 
-  // hashed, so it may be held forever — a .webp, and an AVIF twin (tools/build-avif.mjs) likewise
   const art = await at('/game/assets/env/path.webp');
   console.log('  assets:     ' + art);
   expect(art, 'hashed art should be immutable').toContain('immutable');

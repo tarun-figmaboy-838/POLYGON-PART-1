@@ -1,13 +1,4 @@
-/* THE THINGS THAT MUST NOT BREAK.
-
-   The curriculum suite proves the seven phases teach the right thing. This one
-   guards everything around them that a content change could quietly wreck: the
-   swipe itself at the new option densities, the safety valve on the jump, the three
-   HUD controls, reduced motion, and the fact that the journey ends after phase 7 and
-   not before.
-
-   Every one of these is on the "do not break" list in RUNNER.md, and none of them is
-   covered anywhere else. They drive the real engine through its debug hooks. */
+// THE THINGS THAT MUST NOT BREAK.
 import { test, expect } from '@playwright/test';
 import { boot, waitState, cut, jsErrors } from './helpers.mjs';
 
@@ -30,10 +21,6 @@ const settle = page => page.waitForFunction(() => {
 test.describe('the cut', () => {
   test.setTimeout(180_000);
 
-  /* Driven the way a player drives it: a real drag across a rope. Everything else
-     calls _cut() directly, which skips the hit test entirely — so nothing else covers
-     the case where the drawn rope and the cuttable line disagree. On the SIX-option
-     row, because that is where the ropes are closest together. */
   test('a real swipe cuts the rope it crosses, on the densest row', async ({ page }) => {
     await boot(page, { speed: 900 });
     await enterPhase(page, 6);
@@ -45,11 +32,6 @@ test.describe('the cut', () => {
       const r = document.getElementById('game-canvas').getBoundingClientRect();
       // halfway down the rope, above the chunk
       const midY = (sh.y - 120) / 2;
-      /* AIMED WHERE THE ROPE IS DRAWN, which is what a player does. The puzzle pushes the view
-         in about (zoomVX, zoomVY) by G.zoom, so the rope's world x is not its screen x — and
-         the engine now inverts that mapping for pointer input (it used to test the raw stage
-         point, up to 96px from the rope the finger was on). This aim goes through the same
-         forward map the renderer uses, so the test asks the question the player asks. */
       const z = G.zoom || 1;
       const sx = G.zoomVX + (sh.anchorX - G.zoomVX) * z;
       const sy = G.zoomVY + (midY - G.zoomVY) * z;
@@ -107,19 +89,7 @@ test.describe('the cut', () => {
 test.describe('the character is never hit', () => {
   test.setTimeout(240_000);
 
-  /* The hanging positions are checked in curriculum.spec. This checks the FALL, which
-     is the thing that could actually land on the character — and it matters more now
-     than it did, because a correct chunk is carried sideways to its repair slot
-     instead of dropping straight down.
-
-     The character's sprite is 420 x 1.28 = 538px wide centred on x 430, so it occupies
-     x 161..699. Every chunk, at every frame of every fall, on every phase, has to stay
-     clear of that. Sampled every frame rather than reasoned about, because the fall is
-     real gravity plus a solved horizontal speed. */
   test('no chunk ever overlaps the character, hanging or falling', async ({ page }) => {
-    /* Seven phases, every one cut to exhaustion, and the assertion is purely about
-       positions — so this is the clearest case for fast-forward. At fast: 3 it was
-       spending three minutes and still timing out on a loaded machine. */
     await boot(page, { speed: 900, fast: 6 });
     const total = await page.evaluate(async () => {
       const m = await import('/js/engine.js');
@@ -136,9 +106,6 @@ test.describe('the character is never hit', () => {
           return x0;
         };
         let minLeft = 1e9, guard = 0;
-        /* Re-read the puzzle every time. It is torn down partway through the
-           celebrate, so a reference captured at the top of the loop goes stale
-           inside the same iteration. */
         const sample = () => {
           const L = g.debug().l1;
           if (!L) return;
@@ -173,8 +140,6 @@ test.describe('the character is never hit', () => {
 test.describe('accessibility', () => {
   test.setTimeout(180_000);
 
-  /* Recognition must not depend on motion. A phase that needed the swing or the
-     camera to be legible would be unplayable for the learners who most need it calm. */
   test('reduced motion still lets a three-answer phase be solved', async ({ page }) => {
     const errors = await boot(page, { speed: 900, fast: 4 });
     await page.evaluate(() => window.iceAgeGame.setOptions({ reduced: true }));
@@ -221,9 +186,6 @@ test.describe('accessibility', () => {
 test.describe('the safety valve', () => {
   test.setTimeout(180_000);
 
-  /* Progress can never dead-end. A learner who cannot time the jump used to get the
-     Try Again card for ever, because the strike counter lived on the obstacle and
-     retrying cleared it. On the third failure the rock crumbles and the run goes on. */
   test('three failed jumps crumble the rock', async ({ page }) => {
     await boot(page, { speed: 900 });
     await waitState(page, ['RUN_SEGMENT_1', 'JUMP_CHALLENGE_1'], 20_000);
@@ -267,9 +229,6 @@ test.describe('the controls', () => {
     await expect(page.locator('#instruction-text')).toHaveText(want);
   });
 
-  /* The buttons are gone, but the CAPABILITIES must not be: muting and pausing are
-     still what the URL flags and the host API do, and the music bed has to obey both
-     or a five-megabyte track keeps playing under a muted game. */
   test('sound and pause still work through the API without the buttons', async ({ page }) => {
     await boot(page, { speed: 900 });
     await enterPhase(page, 6);
@@ -293,9 +252,6 @@ test.describe('the end of the journey', () => {
   // nine crossings now, on a renderer that runs game time slower than wall clock
   test.setTimeout(720_000);
 
-  /* The run home must start after the LAST phase and not a phase earlier — with the
-     count changing from six to seven, an off-by-one here would cut a crossing out of
-     the curriculum without failing anything else. */
   test('the run home starts only once every crossing is repaired, and reaches COMPLETE', async ({ page }) => {
     const errors = await boot(page, { speed: 900, fast: 6 });
     const total = await page.evaluate(async () => {
@@ -315,8 +271,6 @@ test.describe('the end of the journey', () => {
         if (G.state === 'OBSTACLE_HIT') g.retryObstacle();
         if (G.state === 'PHASE_ACTIVE' && G.l1 && G.l1.wanted.length) g._cut(G.l1.wanted[0]);
         // Level 2 is on the way home now: cut the slab on a main diagonal
-        /* Each drawing crossing by its own rule — one main diagonal, every diagonal,
-           or two from the same corner. They come before the rope crossings now. */
         if (G.state === 'LEVEL_2_ACTIVE' && G.l2) {
           const m = G.l2.mechanic;
           if (m === 'cut-diagonal') g._l2Cut(0, 3);

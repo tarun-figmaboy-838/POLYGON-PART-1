@@ -1,36 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { boot } from './helpers.mjs';
 
-/* Asset and sprite integrity.
- *
- * Every one of these has caught a real defect in this project at least once:
- *
- *   CUTS      a frame whose opaque pixels ran to the edge of its cell had had a
- *             trunk or a tail sliced off, and bled into its neighbour.
- *   CLUTTER   neighbouring bodies touch in the raw sheets, so slicing a cell's
- *             bounding box dragged in a paw belonging to the next frame — which
- *             showed up in game as dark fragments floating around the character.
- *   SIZE      the source sheets are not all drawn at the same scale, so a character
- *             grew by a third when it stopped running.
- *   BOB       bottom-aligning every frame glues the lowest pixel to one line and
- *             deletes the vertical bob, and the run reads as sliding.
- */
-
-/* The cell geometry (cw, ch, cols) comes from sheetFor(): the base set is a 420x320 cell in
-   a six-column grid, the hd set the same cell at 1.5x. These tests run at DPR 1 and so
-   measure the base set; tests/hd.spec.mjs covers the other. */
-/* Where the FOOT LINE sits above the cell bottom. Read from the engine, not written
-   down here: tools/slice-char.mjs builds the sheets to CFG.sprite.baseGap and prints
-   the value, and a copy in the tests would just go stale. */
 const baseGapOf = page => page.evaluate(async () => {
   const m = await import('/js/engine.js');
   return m.CFG.sprite.baseGap;
 });
 
-/* The lowest row of a frame that still carries a quarter of that frame's widest row.
-   That is the character's feet — a trunk, a tail or a flailing leg is narrow, and
-   taking the lowest PIXEL instead is what used to leave a head-down pose floating
-   50px above the path. */
 function footRow(frame) {
   const wide = Math.max(...frame.rows);
   let foot = 0;
@@ -38,9 +13,6 @@ function footRow(frame) {
   return foot;
 }
 
-/** Load a sheet and measure every frame: bounds, body count, edge contact.
-    Passed to page.evaluate as a real function — as a template STRING it was
-    evaluated as an expression and the url argument never arrived. */
 const MEASURE = async ([url, cw, ch, cols, nFrames]) => {
   const img = new Image();
   img.src = url;
@@ -51,8 +23,6 @@ const MEASURE = async ([url, cw, ch, cols, nFrames]) => {
   g.drawImage(img, 0, 0);
   const W = c.width, H = c.height;
   const d = g.getImageData(0, 0, W, H).data;
-  // 40, not 16: an anti-aliased edge trails specks at 7% opacity that are invisible
-  // on screen but read as separate bodies to a flood fill
   const on = (x, y) => d[(y * W + x) * 4 + 3] > 40;
   const cells = nFrames;
   const frames = [];
@@ -61,7 +31,6 @@ const MEASURE = async ([url, cw, ch, cols, nFrames]) => {
     // the frame's own cell in the six-column grid
     const gx0 = (f % cols) * cw, gy0 = Math.floor(f / cols) * ch;
     let x0 = cw, x1 = -1, y0 = ch, y1 = -1, n = 0;
-    // opaque width per row, which is what finds the FEET as opposed to the lowest pixel
     const rows = new Array(ch).fill(0);
     for (let y = 0; y < ch; y++) {
       for (let x = 0; x < cw; x++) {
@@ -127,10 +96,6 @@ test.describe('assets', () => {
                      (await (await fetch('/js/option-shapes.js')).text());
       const css = await (await fetch('/css/screens.css')).text();
       const found = new Set();
-      /* A reference is a FILE. The obstacle loader builds its filenames
-         ('assets/env/obs-' + kind + '.webp'), so the bare prefix is a string in the
-         source but never something the game requests; matching it produced a phantom
-         404. Anything without an extension is a prefix or a directory, and is skipped. */
       for (const m of engine.matchAll(/['"](assets\/[^'"]+)['"]/g)) {
         if (/\.[a-z0-9]+$/i.test(m[1])) found.add(m[1]);
       }
@@ -139,24 +104,12 @@ test.describe('assets', () => {
     });
     expect(urls.length, 'assets are referenced').toBeGreaterThan(15);
 
-    /* Photographic and painted art must be WebP — that is where the weight is. The
-       interface is SVG on purpose: it has to stay sharp at any scale and be recoloured
-       and animated, which a raster cannot do. So the rule is per kind, not global. */
     const bad = [];
     for (const raw of urls) {
-      // the stylesheets' urls carry the file's content hash (?v=); the file itself is judged
       const u = raw.split('?')[0];
-      // an AVIF twin (tools/build-avif.mjs) is judged as the .webp it was made from, beside it
       const w = u.replace(/\.avif$/, '.webp');
       const res = await page.request.get('/' + raw);
       if (!res.ok()) { bad.push(u + ' -> ' + res.status()); continue; }
-      /* Interface art is vector so it stays sharp at any scale and can be recoloured.
-         The pointing hand is the one exception: it is a supplied raster, chosen
-         deliberately over the drawn glyph it replaced. */
-      /* The supplied picture buttons and the plank are painted art, not glyphs: they
-         carry their own rim, gloss and lettering, and their pressed state is drawn
-         rather than restyled. A vector version of one of those is not a thing that
-         exists. Everything else under assets/ui stays SVG. */
       const RASTER_OK = ['assets/ui/icons/touch.webp',
                          'assets/ui/plank-l.webp', 'assets/ui/plank-m.webp', 'assets/ui/plank-r.webp',
                          'assets/ui/btn-normal.webp', 'assets/ui/btn-pressed.webp',
@@ -178,8 +131,6 @@ test.describe('assets', () => {
     await boot(page);
     const r = await page.evaluate(async () => {
       const m = await import('/js/engine.js');
-      /* Every audio file the game names, found by walking CFG rather than by listing them:
-         a cue added later is then covered without anyone remembering to add it here. */
       const srcs = new Set(), seen = new Set();
       (function walk(o, d) {
         if (!o || typeof o !== 'object' || d > 5 || seen.has(o)) return;
@@ -215,8 +166,6 @@ test.describe('assets', () => {
       for (const m of engine.matchAll(/['"](assets\/[^'"]+)['"]/g)) urls.add(m[1]);
       let base = 0, hd = 0;
       for (const u of urls) {
-        // the budget is about ART. The music bed is streamed, not held, and counting a
-        // five-megabyte track against the picture budget would just hide the pictures.
         if (u.startsWith('assets/audio/')) continue;
         const r = await fetch('/' + u);
         const n = (await r.arrayBuffer()).byteLength;
@@ -224,10 +173,6 @@ test.describe('assets', () => {
       }
       return { base, hd };
     });
-    /* A client downloads ONE character set: the base on a phone, the hd set on a hi-DPI
-       screen (see CFG.sprite.hd). So the two are budgeted apart — the base set is what a
-       phone on a slow connection pays, and the hd sheets are 2.25x the pixels for screens
-       with the memory for them. It was 42.85MB of PNG once. */
     expect(total.base / 1048576, 'base art').toBeLessThan(12);
     expect(total.hd / 1048576, 'hd character set').toBeLessThan(10);
   });
@@ -241,10 +186,6 @@ test.describe('assets', () => {
           .filter(Boolean)
           .map(s => ({ id: c.id, src: s.src, frames: s.frames, cw: s.cw, ch: s.ch, cols: s.cols }))
       ));
-    /* Three sheets, one explorer: run, jump, skid. The shake and hurt sheets were
-       removed on request so that only the delivered GIFs are used; SHAKE, LOOK_DOWN,
-       KNOCKOUT and HURT fall back to jump poses. Put the slots back here alongside the
-       art if either is ever delivered. */
     expect(sheets.length).toBe(6);
 
     const cuts = [], clutter = [], sizes = [];
@@ -258,13 +199,8 @@ test.describe('assets', () => {
         if (f.empty) { clutter.push(`${name} f${i} is empty`); return; }
         // CUTS: content running to a cell edge means it was sliced
         if (f.touchesLeft || f.touchesRight || f.touchesTop) {
-          // measured at the 40-alpha floor, so a faint anti-aliased fringe touching
-          // the edge does not read as a slice through the body
           cuts.push(`${name} f${i} touches ${[f.touchesLeft && 'left', f.touchesRight && 'right', f.touchesTop && 'top'].filter(Boolean).join('+')}`);
         }
-        // CLUTTER: a detached lump that runs off a cell edge came from the frame next
-        // door. Detached art that stays inside its own cell is the character's own
-        // spray or motion arcs and is meant to be there.
         if (f.spillArea > f.mainArea * 0.005) {
           clutter.push(`${name} f${i} carries ${f.spillArea}px bleeding across a cell edge`);
         }
@@ -276,12 +212,6 @@ test.describe('assets', () => {
   });
 
   test('a character is the same size in every one of its animations', async ({ page }) => {
-    /* MEASURED ON AREA, not on bounding-box height. Height is what a pose changes: the
-       jump sheet is ten tucked, airborne poses, so its frames are legitimately shorter
-       than a standing run frame, and comparing heights called that a size defect
-       (1.27x) when the scale was provably identical. The square root of the opaque
-       area tracks how big the animal IS and barely moves with pose — 1.14x across
-       these five sheets. */
     await boot(page);
     const perChar = await page.evaluate(() =>
       window.iceAgeGame.roster().map(c => ({
@@ -301,16 +231,10 @@ test.describe('assets', () => {
       }
       const lo = Math.min(...medians.map(m => m.median));
       const hi = Math.max(...medians.map(m => m.median));
-      // the mammoth used to be 35% bigger in its skid and tremble sheets, so it grew
-      // by a third the moment it stopped running
       expect(hi / lo, `${c.id} size drift across ${JSON.stringify(medians)}`).toBeLessThan(1.18);
     }
   });
 
-  /* THE CHARACTER STANDS ON THE PATH. Every frame of a HELD-POSE sheet has to put its
-     feet on the one shared row the engine draws to, or the character shifts underneath
-     a pose it is holding — and it holds one for as long as a learner takes over a
-     puzzle. This is the check that would have caught the head-down pose floating. */
   test('every held pose stands on the same foot line', async ({ page }) => {
     await boot(page);
     const gap = await baseGapOf(page);
@@ -338,8 +262,6 @@ test.describe('assets', () => {
     for (const c of await page.evaluate('window.iceAgeGame.roster()')) {
       const s = await page.evaluate(id => window.iceAgeGame.sheetFor(id, 'run'), c.id);
       const m = await page.evaluate(MEASURE, [s.src, s.cw, s.ch, s.cols, s.frames]);
-      /* On the FEET, not on the lowest pixel. A run frame's lowest pixel can be a
-         trailing hoof or a swinging trunk, which is noise on top of the bob. */
       const feet = m.frames.filter(f => !f.empty).map(footRow);
       const drift = Math.max(...feet) - Math.min(...feet);
       expect(drift, `${c.id} bob across ${JSON.stringify(feet)}`).toBeGreaterThan(8);

@@ -1,17 +1,4 @@
-/* WHAT ARE THESE SHAPES, and what should they be called?
- *
- * The supplied ice-block art arrives with generator filenames. For a game whose whole
- * lesson is "count the sides", a filename is not good enough — the side count has to
- * be measured off the artwork, because a file called "pentagon" that is really a
- * hexagon would teach the wrong thing and nothing would catch it.
- *
- * So: trace the alpha silhouette, simplify the outline until only real corners are
- * left, count them, and work out whether the sides are equal (regular) and whether any
- * corner turns inward (concave). Then name each file for what it measurably IS.
- *
- *   node tools/name-option-shapes.mjs           report only
- *   node tools/name-option-shapes.mjs --rename  also rename the files
- */
+// WHAT ARE THESE SHAPES, and what should they be called?
 import sharp from 'sharp';
 import { readdir, rename } from 'node:fs/promises';
 import { join, resolve } from 'node:path';

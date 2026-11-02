@@ -1,14 +1,4 @@
-/* WHAT THE RESPONSIVE REVIEW FIXED, held by test. tests/responsive.spec.mjs checks that the game
-   FITS every device shape; this checks the behaviour behind that:
-
-     a tap during a puzzle is tested against the rope the player can SEE, not the world point it
-     would have been without the push-in (the error reached 96px against a 30px tolerance);
-     the interface is sized from the stage, not the window, so its share is the same on a 4K
-     screen as at 1920 (in viewport units it came out half-size);
-     the backbuffer stays inside what a mobile GPU allocates, and the quality guard can only
-     lower it;
-     the sky, wall-art and particle pools are bounded, so a long session cannot grow without end;
-     the voice is one recording cut into fourteen windows that do not overlap. */
+// WHAT THE RESPONSIVE REVIEW FIXED, held by test.
 import { test, expect } from '@playwright/test';
 import { boot, force, waitState } from './helpers.mjs';
 
@@ -25,11 +15,7 @@ test.describe('the pointer, the buffers and the voice', () => {
       const want = L.unfilled[0];
       const target = L.shapes.find(s => s.kind === want && s.state === 'hang');
       const z = G.zoom, fx = G.zoomVX, fy = G.zoomVY;
-      /* Held by reference: the right chunk wedges into the crevasse and leaves L.shapes, and
-         since the frame loop keeps real time on a slow renderer (sub-stepped, not capped) it
-         can be seated inside the 250ms below at fast:2. The objects outlive the list. */
       const hanging = L.shapes.filter(s => s.state === 'hang');
-      // the rope's cut stretch, mapped the way the renderer maps it — i.e. where the eye sees it
       const wx = target.anchorX, wy = (target.y - target.h / 2) - 60;
       const sx = fx + (wx - fx) * z, sy = fy + (wy - fy) * z;
       const st = document.getElementById('stage').getBoundingClientRect();
@@ -87,17 +73,9 @@ test.describe('the pointer, the buffers and the voice', () => {
       const st = document.getElementById('stage').getBoundingClientRect();
       const el = document.getElementById('instruction'); el.hidden = false; el.classList.remove('leaving');
       document.getElementById('instruction-text').textContent = 'Cut the TRIANGLE.';
-      /* LAYOUT, NOT THE PAINTED BOX. The sign drops in on its ropes and the drop rotates it
-         a couple of degrees; a rotated box's client rect is its bounding box, which is up to
-         10% taller than the panel is. Measured mid-drop at one size and settled at the other,
-         that alone read as the interface being a different share of the stage. offsetHeight
-         is the laid-out height and no transform can touch it — the same reason Tutorial.hugWords
-         measures words that way. */
       const pillEl = document.getElementById('instruction-pill');
       const pill = { height: pillEl.offsetHeight, width: pillEl.offsetWidth };
       const txt = parseFloat(getComputedStyle(document.getElementById('instruction-text')).fontSize);
-      /* No jump button to measure any more: the stage IS the control, so the sign is the
-         whole of the in-play interface and the share it takes is the whole of this check. */
       return { signH: pill.height / st.height, textH: txt / st.height, stage: st.width };
     });
     await page.setViewportSize({ width: 1920, height: 1080 });
@@ -126,39 +104,16 @@ test.describe('the pointer, the buffers and the voice', () => {
       }
       const res = await fetch('/' + V.src, { method: 'HEAD' });
       const ogg = res;
-      /* EVERY CROSSING NAMES ITS LINE — which is the thing that has to be true now, and
-         is not the same as the line being recorded yet.
-
-         This used to derive the id from the sentence with signVoId() and demand a window
-         for it. That worked while the questions were Part 1's ("Cut the TRIANGLE." ->
-         sign-triangle), and matches nothing in Part 2, where every sentence has an
-         adjective in the way — so it returned '' for all nine and the assertion had been
-         failing ever since the curriculum changed. Part 2's take has not been recorded
-         (docs/VO-PART2.md lists the nine lines); until it is, say() returns 0 for an id
-         with no window and the board reveals its words on the fallback pace, which is
-         deliberate and harmless. What must never happen is a crossing with NO id at all,
-         because that one stays silent even after the recording lands. */
       const unnamed = [...m.CFG.levelOne.phases, ...m.CFG.levelTwo.levels]
         .filter(p => !(p.voId && p.voId.trim()))
         .map(p => p.instruction);
       return { n: ord.length, bad, unnamed, status: res.status, oggStatus: ogg.status, last: ord[ord.length - 1][1][0] + ord[ord.length - 1][1][1] };
     });
-    /* 15: seven tutorial lines, seven signs, and the cheer. It was 16 — the ending's
-       'win-title' and 'win-sub' were cut with the banner that showed them, taking it to
-       14 — and then 'win-yay' was found in the take and wired up, which put it back to
-       15. This number was left at 14 and the suite has been red on it since. */
-    /* 30: seven tutorial lines, seven old signs, the cheer, nine crossing lines, the return's
-       'tut-6b-piece', and Level 2's five nudges ("Connect two vertices." …), recorded 2026-10-05. */
     expect(r.n, 'every line the learner is shown').toBe(30);
     expect(r.bad).toEqual([]);
     expect(r.unnamed, 'every crossing names the line that will speak it').toEqual([]);
     expect(r.status, 'the recording ships').toBe(200);
     expect(r.oggStatus, 'and so does the ogg the browser prefers').toBe(200);
-    /* 87.9, the length of the take that ships (87.85s): the original 36.13s with the owner's
-       recording of Part 2's nine questions and Level 2's five nudges appended, then the recorded
-       'tut-6b-piece' (tools/assemble-part2-vo.mjs). It was 71.0 with the generated lines, 71.9
-       with Swiftee's 'sw-help' in that place, 67.4 before it, 36.2 before Part 2's lines were
-       added, and 39.1 before that — a bound left at an old take stops checking anything. */
     expect(r.last, 'the last window is inside the take').toBeLessThan(87.9);
   });
 });

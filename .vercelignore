@@ -52,11 +52,9 @@ START GAME.bat
 # http it loads the modules in game/js, so the CDN never serves the bundle — 0.9 MB)
 /part2-frozen-rush/game/js/game.bundle.js
 /part2-frozen-rush/art-source
-/part2-frozen-rush/drafts
 /part2-frozen-rush/tests
 /part2-frozen-rush/tools
 /part2-frozen-rush/docs
-/part2-frozen-rush/RUNNER.md
 /part2-frozen-rush/playwright.config.mjs
 /part2-frozen-rush/playwright.part2.config.mjs
 /part2-frozen-rush/test-results
@@ -65,7 +63,5 @@ START GAME.bat
 /part2-frozen-rush/qa-report
 /part2-frozen-rush/vercel.json
 /part2-frozen-rush/game/vercel.json
-/part2-frozen-rush/game/.vercelignore
-/part2-frozen-rush/game/README.md
 /part2-frozen-rush/game/assets/vo-part-2-hindi
 

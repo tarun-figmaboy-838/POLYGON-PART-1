@@ -1,37 +1,4 @@
-/*!
- * input-mode.js — one pointer stream, routed by mode.
- *
- * The game asks for two very different things from the same finger: "move on
- * from this screen" and "drag this vertex". Those used to be the same
- * gesture, which meant the tap that dismissed a line of narration also landed
- * on the vertex underneath it and started a drag the child never meant.
- *
- * Advancing is now a button, not a tap: `Input.advance()` is the only thing
- * that emits 'advance', and only the Next button calls it. A tap on the
- * stage emits 'tap', which fast-forwards the narration text and nothing
- * else. One deliberate control for "I am ready", one forgiving one for "get
- * on with it".
- *
- * So there is exactly one authority on what a pointer event currently means:
- *
- *   locked     nothing is listening (transitions, animations)
- *   dialogue   a tap emits 'advance'; stage interactions ignore pointers
- *   polygon    stage interactions own the pointer; taps do not advance
- *
- * And one guard window. Every mode change arms `guarded` for a few frames,
- * during which stage.js's drag handlers bail out. That is what stops the
- * advancing tap from bleeding into the screen it just revealed. stage.js
- * checks `Input.guarded`; it does not need to know why.
- *
- *   Input.attach(el)
- *   Input.mode()            -> current mode
- *   Input.mode('dialogue')  -> set
- *   Input.mode('polygon', { unguarded: true })  -> set, without the guard
- *                           (the input handed back after he has replied: the
- *                           child's next touch is meant for the screen)
- *   Input.on('advance', fn) / Input.off('advance', fn)
- *   Input.guarded           -> boolean
- */
+// input-mode.js — one pointer stream, routed by mode.
 (function (global) {
   'use strict';
 
@@ -80,9 +47,6 @@
       el = target;
       if (!el) return Input;
       el.addEventListener('pointerdown', onDown);
-      // Listen for the release on the window: a finger that slides off the
-      // stage still ends the gesture, and a tap that started on the stage
-      // should not be lost because it lifted a pixel outside it.
       (el.ownerDocument.defaultView || global).addEventListener('pointerup', onUp);
       (el.ownerDocument.defaultView || global).addEventListener('pointercancel', onCancel);
       attached = true;
@@ -99,11 +63,6 @@
       return Input;
     },
 
-    /**
-     * Get or set the mode. Setting always re-arms the guard, including when
-     * the mode does not actually change — two consecutive dialogue screens
-     * each deserve their own protected window.
-     */
     mode: function (m, o) {
       if (m == null) return mode;
       if (MODES.indexOf(m) < 0) { if (global.console) console.warn('Input: unknown mode "' + m + '"'); return mode; }
@@ -114,11 +73,6 @@
       return mode;
     },
 
-    /**
-     * Move on. The Next button is the only caller — advancing is a decision
-     * the child makes on purpose, not something a stray tap can trigger.
-     * Ignored outside dialogue mode, so it can never cut short an exercise.
-     */
     advance: function () {
       if (mode !== 'dialogue' || guarded()) return false;
       arm();

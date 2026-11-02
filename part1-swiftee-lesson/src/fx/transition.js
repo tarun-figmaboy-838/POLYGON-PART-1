@@ -1,49 +1,7 @@
-/*!
- * transition.js — the snowfall between screens.
- *
- * A gentle shower of magical snowflakes sweeps the screen to move the story
- * forward. Flakes appear at the top and fall in three depths — big slow ones
- * in front, small soft ones behind — swaying, turning and twinkling as they
- * go. Under them a veil of pale ice thickens until the old screen is hidden;
- * the game rebuilds the scene behind it; then a soft bloom of light swells
- * over everything, the veil melts away under a denser flurry, and the new
- * screen comes up through the falling snow as it clears.
- *
- * It is a storybook effect, not weather: no wind, no blizzard, nothing fast.
- *
- * HOW THE GAME USES IT (game.js):
- *   Transition.mount(container)         once, over the whole game
- *   Transition.cover()  -> Promise      the snow builds until the screen is hidden
- *   Transition.covered()                is the screen hidden right now?
- *   Transition.reveal() -> Promise      the veil melts, the snow clears
- *   Transition.wipe(fn)                 cover, run fn, reveal
- *   Transition.play(onMidpoint, onComplete)   the same, as two callbacks
- *
- * WHERE TO TUNE IT: CONFIG below.
- * Every number that matters to the feel is there — duration, count, size
- * range, fall speed, drift, rotation, glow, peak density — nothing is buried
- * in the code.
- *
- * SOUND HOOKS (all optional, all through SFX if it is loaded):
- *   sfx.chime    as the first flakes appear
- *   sfx.whoosh   at the midpoint, as the veil begins to melt
- *   sfx.sparkle  with the denser flurry at the midpoint
- *
- * Every flake is the supplied artwork (assets/ui/snowflake.webp, built from
- * snowflake-src.webp by tools/build-snowflake.js): pale ice arms with a blue
- * rim and a gem at the heart, drawn at every size and depth.
- *
- * Reduced motion: the transition does nothing at all, and the game simply
- * changes screen. Performance: about two hundred nodes at the peak, all of
- * them animated with the Web Animations API on transform and opacity only,
- * all removed when the snow clears.
- */
+// transition.js — the snowfall between screens.
 (function (global) {
   'use strict';
 
-  /* ------------------------------------------------------------------ *
-   * Settings — the feel lives here
-   * ------------------------------------------------------------------ */
   var CONFIG = {
     coverMs: 1100,          // from the first flake to the old screen hidden
     revealMs: 1400,         // from the veil beginning to melt to the last flake gone
@@ -91,9 +49,6 @@
     if (global.Stage && Stage.flurry) { try { Stage.flurry(on); } catch (e) {} }
   }
 
-  /* ------------------------------------------------------------------ *
-   * Mounting
-   * ------------------------------------------------------------------ */
   function mount(container) {
     if (!container || !container.ownerDocument) return null;
     if (host && host.parentNode === container) return host;
@@ -106,9 +61,6 @@
       'position:absolute;inset:0;z-index:8;overflow:hidden;pointer-events:none;' +
       'opacity:0;visibility:hidden;';
 
-    // THE VEIL. Pale ice that thickens under the snow until the old screen is
-    // gone. It is what guarantees the cover: sixty flakes are a shower, not a
-    // wall, and a wall of flakes would be the clutter this must not be.
     veil = doc.createElement('div');
     veil.style.cssText =
       'position:absolute;inset:0;opacity:0;' +
@@ -116,9 +68,6 @@
       'linear-gradient(180deg,#e9f7ff 0%,#d4ecff 55%,#eef9ff 100%);';
     host.appendChild(veil);
 
-    // THE BLOOM. A soft light that swells and fades at the midpoint, over
-    // everything: it is the magic of the moment, and it hides the instant
-    // the veil begins to thin.
     bloom = doc.createElement('div');
     bloom.style.cssText =
       'position:absolute;inset:-10%;opacity:0;pointer-events:none;' +
@@ -141,20 +90,12 @@
     return host;
   }
 
-  /* The promises a cover or a reveal handed out, so a cover that interrupts
-     a reveal still lets whoever was waiting on the reveal go on. */
   var waiting = [];
   function settleAll() { waiting.splice(0).forEach(function (r) { try { r(); } catch (e) {} }); }
   function clear() {
     gen++;
     timers.forEach(function (t) { clearTimeout(t); });
     timers.length = 0;
-    // EVERYTHING THAT WAS MOVING STOPS, the overlay's own fade included. A
-    // reveal ends by fading the whole layer to nothing and holding it there;
-    // a cover that began before that fade was cancelled drew its snow into a
-    // layer pinned at opacity 0 — the new screen was built in full view. And
-    // each flake's sway and twinkle run forever, so without this they went on
-    // running on flakes that were no longer on the page.
     if (host) { try { host.getAnimations({ subtree: true }).forEach(function (a) { a.cancel(); }); } catch (e) {} }
     settleAll();
     Object.keys(layerEls).forEach(function (k) { var el = layerEls[k]; while (el.firstChild) el.removeChild(el.firstChild); });
@@ -163,16 +104,6 @@
     if (bloom) { try { bloom.getAnimations().forEach(function (a) { a.cancel(); }); } catch (e) {} bloom.style.opacity = '0'; }
   }
 
-  /* ------------------------------------------------------------------ *
-   * One flake
-   * ------------------------------------------------------------------ */
-
-  /**
-   * THE FLAKE IS THE ARTWORK. One painted snowflake — pale ice arms with a
-   * blue rim and a gem at the heart, supplied for this — drawn at every size
-   * and depth. A few carry a lavender cast for variety; the front ones carry
-   * a soft bloom. The image is decoded once and shared by every <img>.
-   */
   var flakeReady = null;
   function preloadFlake(doc) {
     if (flakeReady || !doc) return;
@@ -186,19 +117,6 @@
            'style="display:block;width:100%;height:100%;user-select:none;' + (f.length ? 'filter:' + f.join(' ') + ';' : '') + '">';
   }
 
-  /**
-   * Drop one flake from the top. TWO boxes, each one compositor layer: the outer falls,
-   * fades and twinkles; the inner sways, turns and breathes.
-   *
-   * TWO, NOT FOUR. It was three nested boxes plus a twinkle on the picture, and every box
-   * with a running transform or opacity animation is a layer of its own: at the peak of a
-   * cover on a 1600x900 window that was 477 layers at once, where the rest of the lesson
-   * uses two to eight — the kind of pile that makes a low-end tablet's compositor drop
-   * frames or tiles. The sway, the turn and the breath are now the inner box's three
-   * independent transform properties (translate, rotate, scale — which the browser applies
-   * in that order, so the sway stays level while the flake turns, exactly as the nested
-   * boxes did), and the twinkle is folded into the fall's own opacity.
-   */
   function drop(L, w, h, delay, scaleK) {
     var doc = host.ownerDocument, el = layerEls[L.id];
     var c = CONFIG;
@@ -218,8 +136,6 @@
     outer.appendChild(inner); el.appendChild(outer);
 
     var peak = L.opacity;
-    // the fall, with a soft arrival and a fade before the ground — and, for half of them, a
-    // twinkle on the way down (opacity-only keyframes between the fall's own, at its cadence)
     var fallKeys = [
       { transform: 'translate3d(0,0,0)', opacity: 0, offset: 0 },
       { transform: 'translate3d(0,' + (h * 0.08).toFixed(0) + 'px,0)', opacity: peak, offset: 0.1 },
@@ -292,10 +208,6 @@
     }
   }
 
-  /* ------------------------------------------------------------------ *
-   * The two halves
-   * ------------------------------------------------------------------ */
-
   /** The snow begins, and thickens until the old screen is hidden. */
   function cover() {
     if (reduced() || !host) return Promise.resolve();
@@ -311,8 +223,6 @@
     // and a few twinkles as the veil thickens
     for (var i = 0; i < Math.round(c.sparkles * 0.5); i++) twinkle(m.w, m.h, c.coverMs * (0.35 + 0.55 * Math.random()));
 
-    // the veil: nothing, then a haze, then a wall — behind the flakes, and
-    // late, so the snow is seen to bring it
     run(veil, [
       { opacity: 0, offset: 0 },
       { opacity: 0.18, offset: 0.4 },
@@ -330,15 +240,10 @@
     var g = gen;
     sfx(c.sfx.whoosh, { gain: 0.05 });
 
-    // THE MIDPOINT FLURRY: a little denser for a moment, with its twinkles,
-    // so the change of scene has a flourish
     shower(Math.round(m.count * Math.max(0, c.peakDensity - 1) + m.count * 0.25), 320, m, false);
     for (var i = 0; i < Math.round(c.sparkles * 0.6); i++) twinkle(m.w, m.h, rnd(0, 500));
     later(140, function () { sfx(c.sfx.sparkle, { gain: 0.05 }); });
 
-    // THE MELT. Not a sheet drawn off the screen: the veil thins everywhere
-    // at once under the flurry, slowly at first, and the new scene comes up
-    // through the falling snow — as the bloom fades from over it.
     var melt = c.revealMs * 0.78, wait = 140;
     run(veil, [
       { opacity: 1, offset: 0 },

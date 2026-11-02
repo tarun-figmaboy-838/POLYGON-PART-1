@@ -1,10 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { boot, G, waitState, force, cut, playLevelOne, jsErrors } from './helpers.mjs';
 
-/* These run in a real browser, so requestAnimationFrame, WebAudio, CSS animation
-   and image decoding all actually work. Everything asserted here is behaviour a
-   player would notice, and most of it is a defect this project has actually had. */
-
 test.describe('boot', () => {
   // cold start pulls the whole art set down before the game will run
   test.setTimeout(90_000);
@@ -32,14 +28,8 @@ test.describe('boot', () => {
       }
       return out;
     });
-    /* Three sheets, one explorer: run, jump, skid. shake and hurt were removed so that
-       only the delivered GIFs are used; those states fall back to jump poses. */
     expect(sheets.length).toBe(3);
     for (const s of sheets) {
-      /* One shared cell across every sheet of every character, so a character never
-         changes size between animations — the base 420x320 cell at DPR 1 (the hd set is
-         the same cell at 1.5x; see tests/hd.spec.mjs). Six columns, not a strip: a strip at
-         the hd cell would pass WebP's 16383px width limit (see tools/slice-char.mjs). */
       expect(s.cw, `${s.id}/${s.slot} cell`).toBe(420);
       expect(s.w, `${s.id}/${s.slot} width`).toBe(s.cw * Math.min(s.frames, s.cols));
       expect(s.h, `${s.id}/${s.slot} height`).toBe(s.ch * Math.ceil(s.frames / s.cols));
@@ -50,10 +40,6 @@ test.describe('boot', () => {
 test.describe('the cover', () => {
   test.setTimeout(90_000);
 
-  /* There is no character-select stage any more: with one explorer it was a screen that
-     asked a question with one answer. What the two tests here replace was really checking
-     that PLAY reaches the run and that the roster is what it claims — so that is what
-     they check now, one step shorter. */
   test('PLAY hands straight over to the run', async ({ page }) => {
     const errors = await boot(page, { skipScreens: false });
     await expect(page.locator('#cover')).toBeVisible();
@@ -76,9 +62,6 @@ test.describe('the cover', () => {
 
 test.describe('controls', () => {
   test('jump fires, arcs and lands', async ({ page }) => {
-    /* The arc is a fixed duration in GAME time, and game time runs slower than wall
-       clock on a renderer that cannot hold 30fps — see the note at the top of
-       helpers.mjs. Driven through the api, so fast-forward is safe here. */
     await boot(page, { fast: 4 });
     await waitState(page, 'RUN_SEGMENT_1');
     await page.waitForFunction('window.iceAgeGame.debug().jumpEnabled === true');
@@ -131,8 +114,6 @@ test.describe('controls', () => {
   test('pause freezes the world and resume restarts it', async ({ page }) => {
     await boot(page);
     await waitState(page, 'RUN_SEGMENT_1');
-    // measured entirely in-page: a round-trip between reads lets frames slip past
-    // the pause and makes the result look like a leak when it is not
     const r = await page.evaluate(async () => {
       const g = window.iceAgeGame;
       const wait = n => new Promise(res => {
@@ -172,8 +153,7 @@ test.describe('the run cycle', () => {
       return { seen, stride: p.stride, frames: p.F.run };
     });
     const frames = sample.seen.map(s => Number(s.f.split(':')[1]));
-    expect(new Set(frames).size).toBeGreaterThan(4);       // it is actually cycling
-    // every sample must satisfy frame == floor(dist/stride * n) % n
+    expect(new Set(frames).size).toBeGreaterThan(4);
     for (const s of sample.seen) {
       const want = Math.floor((s.d / sample.stride) * sample.frames) % sample.frames;
       expect(Number(s.f.split(':')[1])).toBe(want);
@@ -205,8 +185,6 @@ test.describe('the run cycle', () => {
       }
       return { min: Math.min(...bottoms), max: Math.max(...bottoms) };
     });
-    // bottom-aligning every frame glues the character to the ground and the run
-    // reads as sliding; the cycle has to rise and fall
     expect(bob.max - bob.min).toBeGreaterThan(8);
   });
 });
@@ -215,17 +193,6 @@ test.describe('Level 1', () => {
   // a full seven-phase playthrough is a long test by nature
   test.setTimeout(420_000);
   test('all six rope crossings can be completed', async ({ page }) => {
-    // the speed override is a supported playtest flag; a full run at the default
-    // pace is several minutes of wall clock
-    /* ?fast steps the simulation several times per rendered frame, which is the only
-       way a seven-phase playthrough fits in a sane budget: every beat in the game is
-       a fixed duration in milliseconds, so ?speed alone shortens nothing, and a
-       runner without a GPU spends most of each frame compositing. Physics is
-       unchanged — see the note in engine.js. */
-    /* THE JOURNEY IS NINE CROSSINGS NOW, not seven, and game time runs slower than
-       wall clock on a renderer that cannot hold 30fps (see helpers.mjs). Two more
-       crossings plus the avalanche put this past the old budget on this machine, and
-       it timed out mid-loop and reported a progression bug that was not happening. */
     test.setTimeout(720_000);
     const errors = await boot(page, { speed: 900, fast: 5 });
     const r = await playLevelOne(page, { budgetMs: 620_000 });
@@ -237,10 +204,6 @@ test.describe('Level 1', () => {
   });
 
   test('a wrong answer in every phase still completes the level', async ({ page }) => {
-    /* THE JOURNEY IS NINE CROSSINGS NOW, not seven, and game time runs slower than
-       wall clock on a renderer that cannot hold 30fps (see helpers.mjs). Two more
-       crossings plus the avalanche put this past the old budget on this machine, and
-       it timed out mid-loop and reported a progression bug that was not happening. */
     test.setTimeout(720_000);
     const errors = await boot(page, { speed: 900, fast: 5 });
     const r = await playLevelOne(page, { wrongFirst: true, budgetMs: 620_000 });
@@ -283,12 +246,6 @@ test.describe('Level 1', () => {
   });
 
   test('the crossing cannot be jumped, and sits in the middle of the stage', async ({ page }) => {
-    /* A ditch is now cut to the width of the piece that bridges it (133-200px), so the
-       old per-gap threshold of 400 fails by design — see the fuller note in
-       curriculum.spec. And the replacement is not a bigger width either: what stops
-       the player crossing is that the JUMP IS DISABLED for the whole puzzle, not the
-       geometry. So this asserts that, plus that the crossing is framed on the stage
-       rather than off at one edge. */
     await boot(page, { fast: 4 });
     await force(page, 'GLACIER_BREAK_1');
     await waitState(page, ['PHASE_INTRO', 'PHASE_ACTIVE'], 45_000);
@@ -309,12 +266,6 @@ test.describe('Level 1', () => {
   });
 
   test('slashing the rope with the pointer cuts that chunk', async ({ page }) => {
-    /* The one interaction the whole game rests on, driven the way a player drives
-       it: a real drag across the rope. Everything else calls _cut() directly, which
-       skips the hit test entirely — so nothing covered the case where the drawn rope
-       and the cuttable line disagree. */
-    /* No fast-forward here on purpose: the drag below is read-then-move, and the row
-       animates with game time. A generous wait instead — see helpers.mjs. */
     await boot(page);
     await force(page, 'GLACIER_BREAK_1');
     await waitState(page, 'PHASE_ACTIVE', 60_000);
@@ -356,8 +307,6 @@ test.describe('Level 1', () => {
   });
 
   test('a slash through empty sky cuts nothing', async ({ page }) => {
-    /* No fast-forward: this drives a real drag, and the row animates with game time.
-       A generous wait instead — see the note at the top of helpers.mjs. */
     await boot(page);
     await force(page, 'GLACIER_BREAK_1');
     await waitState(page, 'PHASE_ACTIVE', 60_000);
@@ -452,11 +401,6 @@ test.describe('Level 1', () => {
   test('the quake is a rumble, not per-frame noise', async ({ page }) => {
     await boot(page);
     await waitState(page, 'RUN_SEGMENT_1');
-    /* Measured on the offset the renderer actually applies, not a recomputation.
-       Smoothness = mean |second difference| / mean |value|. A band-limited rumble
-       moves a little between frames, so this stays low; white noise jumps the full
-       amplitude every frame and the ratio blows up. The one-shot impact shake is
-       still noise on purpose, which is why it is a separate signal. */
     const r = await page.evaluate(async () => {
       const g = window.iceAgeGame;
       g._force('GLACIER_BREAK_1');
@@ -478,30 +422,10 @@ test.describe('Level 1', () => {
       const ratio = (d2 / Math.max(1, xs.length - 2)) / (mag / Math.max(1, xs.length));
       return {
         n: xs.length, fps, ratio,
-        /* THE SAME QUANTITY, AT A FIXED SAMPLE RATE.
-
-           The raw ratio is not a property of the waveform on its own — it is a
-           property of the waveform AND the rate it was sampled at. For a sinusoid of
-           frequency f sampled at interval h it is about (2*pi*f*h)^2, so it grows
-           with the SQUARE of the frame time. Dividing by (60/fps)^2 cancels the h
-           term and leaves the waveform, which is the thing this test is about.
-
-           This is not a loosened threshold. At 60fps the two numbers are identical,
-           so the assertion below means exactly what it always meant; away from 60fps
-           it now means the same thing instead of drifting. Measured on this hardware
-           the raw ratio ranged 1.15-1.56 across runs of the SAME code purely on frame
-           rate (43-49fps) against a threshold of 1.4 — the test was reporting the
-           host's speed as a defect in the waveform. Normalised, the same runs land at
-           0.70-0.81, and white noise would still be 2.5-3. */
         at60: ratio / Math.pow(60 / Math.max(1, fps), 2)
       };
     });
     expect(r.n, 'the quake was sampled').toBeGreaterThan(20);
-    /* Below about 30fps the 13Hz component is past Nyquist, the measurement saturates,
-       and no amount of normalising recovers it — a rumble and white noise become
-       genuinely indistinguishable. A runner without a GPU spends 57ms a frame
-       compositing the backbuffer and lands there, so say so rather than report an
-       aliasing artefact as a fault. */
     if (r.fps < 30) {
       console.warn(`quake waveform not assessed: sampled at ${r.fps.toFixed(1)}fps, ` +
         'below the rate this measurement needs (30fps). Ratio was ' + r.ratio.toFixed(2) + '.');
@@ -516,20 +440,6 @@ test.describe('Level 1', () => {
 
 test.describe('crashing', () => {
   test('a crash plays out and the run resumes on its own', async ({ page }) => {
-    /* THERE IS NO FAILURE PANEL ANY MORE, and these two tests used to be about one.
-     * They asserted that the Ouch card appeared no sooner than 900ms into the knockout
-     * and that TRY AGAIN resumed the run.
-     *
-     * The card is gone: it was a modal interrupting a game to tell the player
-     * something they had just watched happen, and it popped up DURING the knockout
-     * animation, talking over the feedback it was a consequence of. A crash now plays
-     * the full animation and returns to the run by itself.
-     *
-     * So the assertion changes from "the panel is late enough" to the two things that
-     * actually have to hold: the animation is allowed to play, and the player is never
-     * stranded. The second is the one that matters — an auto-resume that fails leaves
-     * the game dead with no button to press, which is strictly worse than the modal it
-     * replaced, and nothing else in the suite would catch it. */
     const errors = await boot(page, { fast: 4 });
     await force(page, 'OBSTACLE_HIT');
 
@@ -542,8 +452,6 @@ test.describe('crashing', () => {
     expect(during.panel, 'no Ouch element exists in the markup').toBe(false);
     expect(during.moving, 'the run stops for the crash').toBe(false);
 
-    /* AND IT COMES BACK BY ITSELF. Generous, because the knockout is a fixed duration
-       in GAME time and this runner is slow — see the note at the top of helpers.mjs. */
     await page.waitForFunction('window.iceAgeGame.debug().moving === true', null, { timeout: 45_000 });
     const after = await G(page);
     expect(after.jumpEnabled, 'and the jump is available again').toBe(true);
@@ -590,8 +498,6 @@ test.describe('layout', () => {
   });
 
   test('the leap travels forward with a continuous opaque jump sequence', async ({ page }) => {
-    /* The character travels forward during flight and eases back after landing.
-       The collider follows the same horizontal position as the visible body. */
     await boot(page);
     await waitState(page, 'RUN_SEGMENT_1');
     await page.waitForFunction('window.iceAgeGame.debug().jumpEnabled === true');
@@ -637,7 +543,6 @@ test.describe('layout', () => {
       return { dx: p.dx, drawX: p.drawX };
     });
     expect(Math.abs(back.dx), 'the offset is spent').toBeLessThan(1);
-    // ...to within the same pixel the wait above stopped at: this is the ease arriving, not a snap
     expect(Math.abs(back.drawX - arc.colliderX), 'and he is drawn on the collider again').toBeLessThan(1.2);
   });
 
@@ -661,9 +566,6 @@ test.describe('layout', () => {
   });
 
   test('the tap target is the whole stage, and it is thumb-sized by definition', async ({ page }) => {
-    /* This used to measure the JUMP button against the 44px floor. There is no button:
-       the target is the stage itself, so what is worth holding is that the stage really
-       does take the tap — nothing invisible is laid over it swallowing pointer events. */
     await boot(page);
     await waitState(page, 'RUN_SEGMENT_1');
     await page.waitForFunction('window.iceAgeGame.debug().jumpEnabled === true');
@@ -682,10 +584,6 @@ test.describe('layout', () => {
   });
 });
 
-/* LEVEL 2 IS ATTACHED. This describe used to assert the exact opposite — that no
-   level-2 symbol was in the engine and no level-2 state was reachable — because the
-   level was a parked draft. It is the level now, so the check is inverted: the states
-   have to be reachable, and the full spec is in tests/level-two.spec.mjs. */
 test.describe('Level 2', () => {
   test('is attached: its states are reachable from the end of Level 1', async ({ page }) => {
     await boot(page);

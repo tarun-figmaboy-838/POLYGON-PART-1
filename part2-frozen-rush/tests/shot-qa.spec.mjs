@@ -1,6 +1,4 @@
-/* A visual sweep: the cover, the hand-off to the run, the play screen at three times of
-   day, and a settled repair. Not assertions — pictures to judge.
-     npx playwright test shot-qa --project=desktop                                 */
+// A visual sweep: the cover, the hand-off to the run, the play screen at three times of
 import { test } from '@playwright/test';
 
 // A visual sweep, not a pass/fail suite: run it deliberately with SHOTS=1.

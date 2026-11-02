@@ -1,24 +1,4 @@
-/*!
- * pack.js — play sampled audio through the sfx.js mix.
- *
- * Handles two kinds of clip from one store:
- *   Pack.play(name)    sound effects  -> sfxBus   (ducked under speech)
- *   Pack.speak(name)   voice-over     -> voiceBus (ducks everything else)
- *
- * Dependency-free. Decodes each file once into an AudioBuffer, then plays
- * from memory with no latency.
- *
- *   <script src="sfx.js"></script>
- *   <script src="pack.js"></script>
- *
- *   await Pack.load('assets/audio/manifest.json');
- *   await Pack.load('assets/vo/manifest.json');     // additive
- *   Pack.play('coin');
- *   await Pack.speak('now_measure_the_angle');      // effects duck for it
- *
- * Note: fetch() cannot read files over file://. Serve the folder — the Live
- * Server extension, or `npx serve`, or `python3 -m http.server`.
- */
+// pack.js — play sampled audio through the sfx.js mix.
 (function (global) {
   'use strict';
 
@@ -39,8 +19,6 @@
       sfxOut = global.SFX.bus();
       voiceOut = global.SFX.voiceBus();
     } else {
-      // Standalone fallback. No ducking without sfx.js — there is nothing
-      // to duck.
       ctx = new AC();
       sfxOut = ctx.createGain();
       sfxOut.gain.value = 0.6;
@@ -50,18 +28,6 @@
     return ctx;
   }
 
-  /* ------------------------------------------------------------------ *
-   * Loading
-   * ------------------------------------------------------------------ */
-
-  /**
-   * Load a manifest and decode everything it lists. Call more than once to
-   * merge several manifests (effects and voice-over, say) into one store.
-   *
-   * @param {string} manifestUrl
-   * @param {{concurrency?: number, onProgress?: function}} [opts]
-   * @returns {Promise<string[]>} names that decoded successfully
-   */
   function load(manifestUrl, opts) {
     opts = opts || {};
     var base = manifestUrl.replace(/[^/]*$/, '');
@@ -121,10 +87,6 @@
       });
   }
 
-  /* ------------------------------------------------------------------ *
-   * Playback
-   * ------------------------------------------------------------------ */
-
   function start(name, dest, opts) {
     var buf = buffers[name];
     if (!buf) return null;
@@ -156,19 +118,8 @@
     return src;
   }
 
-  /**
-   * A voice clip. Routed to the speech bus and never ducked; effects and
-   * music duck under it for its whole length.
-   *
-   * The duck is held by the clip, not by a timer — overlapping speech keeps
-   * it down until the last clip ends, and stopSpeaking() releases cleanly.
-   *
-   * @returns {Promise<void>} resolves when the clip finishes
-   */
   function speak(name, opts) {
     opts = opts || {};
-    // Voice should not be pitch-jittered; a wobbling narrator is worse than
-    // a repetitive one.
     if (opts.vary == null) opts.vary = 0;
 
     var src = start(name, voiceOut, opts);

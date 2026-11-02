@@ -1,30 +1,4 @@
-/* A DELIVERED SPRITE SHEET -> A GRID THE SLICER CAN READ.
- *
- * The companion to tools/gif-to-grid.mjs, for art delivered as a still PNG sheet rather
- * than as an animated GIF. Everything about WHY is the same and is written up there; what
- * this one adds:
- *
- *   POSES ARE FOUND, NOT CUT ON THE GRID. The first version cut the sheet on its nominal
- *   rows x cols boundaries, and the tremble delivery does not respect its own grid: the
- *   second pose's tusk reaches 17px into the third pose's cell. Cutting there sliced the
- *   tusk off one frame and pasted its tip into the next (seen in play as a floating tusk
- *   fragment). So poses are connected components on the alpha mask — every region at least
- *   a third the size of the biggest — read row by row, left to right, and each is cut on
- *   ITS OWN outline however far it strays from the grid. The rows/cols arguments are now
- *   only a check: the count found must match, or the tool refuses.
- *
- *   IT RE-GUTTERS. Each pose is composited into a cell with 48px of clear space around it,
- *   so the slicer downstream, which also uses blob detection, cannot merge two of them.
- *
- * The pre-scale is the same constant and the same metric as gif-to-grid: the character is
- * brought to a sqrt(opaque area) of --ref px so it comes out the same size as every other
- * animation. The slicer applies ONE scale to the whole set, so a sheet delivered at half
- * the size of the others would otherwise put a half-size character on the ice.
- *
- *     node tools/sheet-to-grid.mjs <sheet.png> <out-name.png> --rows=3 --cols=4 [--ref=340]
- *
- * Reads from and writes to art-source/char-sheets unless the path has a separator in it.
- */
+// A DELIVERED SPRITE SHEET -> A GRID THE SLICER CAN READ.
 import sharp from 'sharp';
 import { resolve, join, isAbsolute } from 'node:path';
 
@@ -68,8 +42,6 @@ for (let p = 0; p < W * H; p++) {
 }
 const biggest = Math.max(...regions.map(r => r.n));
 const poses = regions.filter(r => r.n >= biggest * MIN_AREA_FRAC);
-/* Reading order: rows by the nominal row height (a pose belongs to the row its centre
-   falls in), then left to right. */
 const rowOf = r => Math.min(ROWS - 1, Math.floor((r.y0 + r.h / 2) / (H / ROWS)));
 poses.sort((a, b) => (rowOf(a) - rowOf(b)) || (a.x0 - b.x0));
 poses.forEach((p, i) => { p.i = i; });
@@ -77,9 +49,6 @@ if (poses.length !== ROWS * COLS_IN) {
   console.error(`found ${poses.length} poses, expected ${ROWS * COLS_IN} — check the sheet (specks: ${regions.length - poses.length})`);
   process.exit(1);
 }
-/* Detached marks that belong to a pose — a "!" over the head, shake lines beside the
-   body — are small regions near a pose. They are folded into the nearest pose's box when
-   they sit inside that pose's nominal cell, so the slicer sees them as one frame. */
 for (const r of regions) {
   if (poses.includes(r) || r.n < 60) continue;
   const cx = r.x0 + r.w / 2, cy = r.y0 + r.h / 2;
@@ -97,18 +66,12 @@ console.log('pose boxes: ' + poses.map(p => `${p.w}x${p.h}${p.marks ? '+' + p.ma
 const strays = poses.filter(p => Math.floor(p.x0 / (W / COLS_IN)) !== Math.floor((p.x0 + p.w - 1) / (W / COLS_IN)));
 if (strays.length) console.log(`${strays.length} pose(s) cross a nominal cell edge (cut on their own outline): ` + strays.map(p => '#' + p.i).join(' '));
 
-/* One cell for the widest and tallest pose in the sheet, plus the gutter. The poses share
-   a bottom edge in their cells: a delivered sheet floats its poses at whatever height it
-   likes (this one puts its last row 45px higher than its first), and that is not a bob to
-   preserve — the slicer flattens held-pose sheets onto one foot line anyway. */
 const cw = Math.round(Math.max(...poses.map(p => p.w)) * k) + GUTTER;
 const ch = Math.round(Math.max(...poses.map(p => p.h)) * k) + GUTTER;
 const rowsOut = Math.ceil(poses.length / OUT_COLS);
 const tiles = [];
 for (const p of poses) {
   const dw = Math.max(1, Math.round(p.w * k)), dh = Math.max(1, Math.round(p.h * k));
-  /* The cut is the pose's OWN box, so a neighbour whose tusk reaches into it is masked
-     out: only pixels of this pose's region (or its folded-in marks) are kept. */
   const own = Buffer.alloc(p.w * p.h * 4);
   for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) {
     const si = ((p.y0 + y) * W + (p.x0 + x)) * C, di = (y * p.w + x) * 4;
@@ -120,7 +83,6 @@ for (const p of poses) {
     const ox0 = Math.max(p.x0, q.x0), ox1 = Math.min(p.x0 + p.w, q.x0 + q.w);
     const oy0 = Math.max(p.y0, q.y0), oy1 = Math.min(p.y0 + p.h, q.y0 + q.h);
     if (ox0 >= ox1 || oy0 >= oy1) continue;
-    // in the overlap, keep a pixel only if it is nearer this pose's centre than the other's
     const pcx = p.x0 + p.w / 2, qcx = q.x0 + q.w / 2;
     for (let y = oy0; y < oy1; y++) for (let x = ox0; x < ox1; x++) {
       if (Math.abs(x - pcx) > Math.abs(x - qcx)) own[((y - p.y0) * p.w + (x - p.x0)) * 4 + 3] = 0;

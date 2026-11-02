@@ -1,8 +1,4 @@
-/* Build a continuous jump take from Momo's original 36-frame GIF.
- * The first ten cells preserve the game's named reaction poses. Frames 10-23
- * are the unbroken take-off, flight and landing performance (GIF frames 14-27).
- * One scale and one foot anchor keep the body from resizing or bobbing on top
- * of the engine's physical jump arc. */
+// Build a continuous jump take from Momo's original 36-frame GIF.
 import sharp from 'sharp';
 import { join } from 'node:path';
 
@@ -34,7 +30,6 @@ for (const set of [
   { dir: join(root, 'game', 'assets', 'char'), old: join(root, 'art-source', 'char-sheets', 'mammoth-jump.webp'), cw: 420, ch: 320, quality: 82 },
   { dir: join(root, 'game', 'assets', 'char', 'hd'), old: join(root, 'art-source', 'char-sheets', 'hd', 'mammoth-jump.webp'), cw: 630, ch: 480, quality: 80 }
 ]) {
-  // the first jump take's sheet, whose first ten cells are the named reaction poses: a build input, kept in art-source
   const old = set.old;
   const base = sharp(old);
   const oldCells = [];

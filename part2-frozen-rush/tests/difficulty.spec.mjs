@@ -1,7 +1,4 @@
-/* THE RUNS GET HARDER. One obstacle in the tutorial; then two far apart; three spaced; one and a
-   near pair; three consecutive timed jumps; a rock -> log -> bone combination; pairs either side
-   of a breath. Held two ways: the table itself (monotone, and every gap clearable), and what the
-   spawner actually puts on the ice for a given stretch. */
+// THE RUNS GET HARDER.
 import { test, expect } from '@playwright/test';
 import { boot } from './helpers.mjs';
 
@@ -15,17 +12,11 @@ test.describe('the difficulty curve of the runs', () => {
       for (let i = 0; i < 6; i++) { const r = g._runPlan(i); out.push({ i, count: r.plan.room.length + 1, minRoom: Math.min(...r.plan.room), kinds: r.plan.kinds || null, leap: r.leap, speed: r.speed }); }
       return out;
     });
-    /* WHAT GROWS IS THE COUNT AND THE VARIETY, NOT THE TIGHTNESS. The curve used to close the
-       gaps as the level went on (down to 0.6 s, three consecutive jumps); on the owner's call the
-       runs between puzzles are a journey instead — every obstacle far from the next, arriving one
-       at a time — and the difficulty of the game lives in the polygons. So: the count still
-       climbs, the families still arrive, and NO gap is under the floor. */
     expect(t.map(x => x.count)).toEqual([2, 3, 3, 3, 3, 4]);
     const floor = await page.evaluate(async () => (await import('/js/engine.js')).CFG.obstacle.roomMin);
     expect(floor, 'a real floor').toBeGreaterThanOrEqual(2.4);
     for (const x of t) expect(x.minRoom, `stretch ${x.i} is a journey, not a rhythm`).toBeGreaterThanOrEqual(floor);
-    expect(t[0].minRoom).toBeGreaterThanOrEqual(3);          // generous first
-    // a combination is named before the fifth puzzle
+    expect(t[0].minRoom).toBeGreaterThanOrEqual(3);
     expect(t[4].kinds).toEqual(['rock', 'log', 'bone']);
     // clearable: the leap is always added on top of every gap
     for (const x of t) expect(x.minRoom).toBeGreaterThanOrEqual(0.5);
@@ -34,7 +25,6 @@ test.describe('the difficulty curve of the runs', () => {
 
   test('the spawner lays a stretch out from its plan: spacing and families', async ({ page }) => {
     await boot(page, { fast: 1 });
-    // stretch 4 is the combination: phase index 5 in the level (jumpBefore = [2,3,4,5,6,7])
     const laid = await page.evaluate(async () => {
       const g = window.iceAgeGame; const G = g.debug();
       G.phase = 5; G.phaseJumped = false;

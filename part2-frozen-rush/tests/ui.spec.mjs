@@ -1,13 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { boot, G, waitState, force, cut } from './helpers.mjs';
-/* The board's own rule for which word is set apart, imported rather than copied. This
-   test carried its own copy of it, the curriculum grew an adjective ("Cut the concave
-   polygon."), and the two drifted — the copy here still matched Part 1's shape, so the
-   test asserted a highlight the board had stopped producing on eight of nine questions. */
 import { KEY_WORD } from '../game/js/hud.js';
-
-/* The interface: controls, feedback, progress and tutorial guidance.
-   Every assertion here is something a player would notice if it broke. */
 
 test.describe('ui', () => {
   test.setTimeout(120_000);
@@ -28,16 +21,6 @@ test.describe('ui', () => {
       const names = [
         'icons/sound-on', 'icons/sound-off', 'icons/pause', 'icons/play', 'icons/restart',
         'icons/hint'
-        /* icons/check and icons/wrong are gone with the verdict mark: a right answer
-           showers confetti and a wrong one gets no mark (see cutShape). */
-        /* The six shapes/*.svg glyphs are gone from this list because the files are
-           gone. They were drawn on the instruction card until it became one line of
-           text, and were then kept "in case anything ever puts them back" — which is
-           the stale-guard pattern this repo argues against elsewhere (see the note at
-           the foot of .vercelignore). Nothing referenced them: not the engine, not the
-           stylesheets, not even a tool. A test asserting that six unused files are
-           well-formed is a test that fails when they are correctly deleted, which is
-           what happened. tools/make-ui.mjs can still regenerate them. */
       ];
       const out = [];
       for (const n of names) {
@@ -57,10 +40,6 @@ test.describe('ui', () => {
     }
   });
 
-  /* The hint / sound / pause cluster was removed on request. What is checked now is
-     that it is really gone and that nothing was left behind half-wired — the pause
-     panel's own buttons are still in the markup, so a stray rule or a stale listener
-     would be easy to miss. */
   test('the top-right control cluster is gone', async ({ page }) => {
     await boot(page);
     expect(await page.locator('.hud-controls').count(), 'the cluster').toBe(0);
@@ -126,15 +105,9 @@ test.describe('ui', () => {
   });
 
   test('the instruction is one readable sentence, and nothing else', async ({ page }) => {
-    /* The card used to pair the words with a drawn polygon. The glyph was removed on
-       request, so the sentence carries the whole instruction — which makes how big it
-       is set a functional requirement rather than a matter of taste. */
     await boot(page);
     await force(page, 'GLACIER_BREAK_1');
     await waitState(page, ['PHASE_INTRO', 'PHASE_ACTIVE'], 30_000);
-    /* THE SIGN ARRIVES ON ITS BEAT, not with the state. PHASE_INTRO shows the hole first and
-       holds its clock while the tremble plays, so the sentence comes a beat later (see the
-       staged intro in engine.js) — several seconds of wall time on a loaded runner. */
     await expect(page.locator('#instruction')).toBeVisible({ timeout: 30_000 });
 
     // the sentence is the phase's own, in full
@@ -152,8 +125,6 @@ test.describe('ui', () => {
     expect(await page.locator('#instruction-shapes').count(), 'the shape chip is gone').toBe(0);
     expect(await page.locator('#instruction-lead').count(), 'the split lead is gone').toBe(0);
 
-    /* Big enough to be the thing you look at. Measured against the STAGE height, not
-       in absolute pixels, because the stage is letterboxed and scales. */
     const size = await page.evaluate(() =>
       parseFloat(getComputedStyle(document.getElementById('instruction-text')).fontSize));
     const stage = await page.locator('#stage').boundingBox();
@@ -164,17 +135,9 @@ test.describe('ui', () => {
   });
 
   test('the instruction stays for the whole question, clear of the blocks, and leaves on completion', async ({ page }) => {
-    /* Asked for: the sentence must stay visible until the question is done, with the
-       polygon's name highlighted, so the learner always knows what to look for. It used to
-       leave before the blocks were cuttable and return only as a reminder. It must still
-       sit clear of the hanging options and take no pointer events, so a cut aimed behind it
-       lands. */
     await boot(page, { fast: 2 });
     await force(page, 'GLACIER_BREAK_1');
     await waitState(page, ['PHASE_INTRO', 'PHASE_ACTIVE'], 30_000);
-    /* THE SIGN ARRIVES ON ITS BEAT, not with the state. PHASE_INTRO shows the hole first and
-       holds its clock while the tremble plays, so the sentence comes a beat later (see the
-       staged intro in engine.js) — several seconds of wall time on a loaded runner. */
     await expect(page.locator('#instruction')).toBeVisible({ timeout: 30_000 });
     expect(await page.evaluate(() => window.iceAgeGame.debug().instruction)).not.toBe('');
     await waitState(page, 'PHASE_ACTIVE', 30_000);
@@ -227,7 +190,6 @@ test.describe('ui', () => {
     expect(bad).toBeTruthy();
     await page.evaluate(k => window.iceAgeGame._cut(k), bad);
     await page.waitForTimeout(300);
-    // no celebration for being wrong — and no cross either: the falling chunk is the answer
     expect(await confetti(), 'confetti after a wrong answer').toBe(0);
 
     await waitState(page, 'PHASE_ACTIVE', 25_000);
@@ -237,11 +199,6 @@ test.describe('ui', () => {
   });
 
   test('the idle hand appears only after a long wait, and leaves on contact', async ({ page }) => {
-    /* Fast-forwarded to reach the phase: the collapse is a fixed duration in GAME time
-       and this runner sets the frame rate, so 30s of wall clock is not reliably enough
-       under parallel workers — see the note at the top of helpers.mjs. Safe here
-       because nothing below aims at a moving target: the hint is summoned by setting
-       idleHand directly, and it is dismissed by contact ANYWHERE on the canvas. */
     await boot(page, { fast: 4 });
     await force(page, 'GLACIER_BREAK_1');
     await waitState(page, 'PHASE_ACTIVE', 45_000);
@@ -280,37 +237,20 @@ test.describe('ui', () => {
   });
 
   test('the snow is fairy flakes: evident one at a time, and few of them', async ({ page }) => {
-    /* Two asks, and they pull against each other. Real snowflakes instead of round dots, big
-       enough to be noticed — and then FEWER of them, because a crowd of flakes crossing the
-       play area is weather competing with the thing the player is reading. What settles it
-       is that a flake reads by its shape and its size, not by how many there are: each one
-       stays big and solid, and there are half as many. The banner is where a real snowfall
-       belongs and it has one (.cover-snow).
-
-       The flakes are one sprite drawn once and blitted (Atmosphere.flake), so a null sprite
-       — which silently falls back to dots — has to fail here too. */
     await boot(page);
     const s = await page.evaluate(() => window.iceAgeGame._snow());
     expect(s.sprite, 'the flake sprite is built, so nothing is falling back to dots').toBe(true);
-    /* 15..30px and alpha from 0.4: the first pass went to 31px at 0.7 and was reviewed as a
-       white sticker on the picture. A flake INSIDE the scene is smaller and a little
-       translucent — evident, not pasted on. */
     expect(Math.min(...s.drawnPx), 'a flake is big enough to see').toBeGreaterThanOrEqual(15);
     expect(Math.max(...s.drawnPx), 'and not so big it sits on the picture').toBeLessThan(30);
     expect(Math.min(...s.alpha), 'and solid enough to see').toBeGreaterThanOrEqual(0.4);
     expect(s.spins.every(v => Math.abs(v) > 0.05), 'each one turns as it falls').toBe(true);
     expect(new Set(s.spins.map(Math.sign)).size, 'and not all the same way').toBe(2);
-    // FEW. This is the number that was asked to come down; it is the whole point of the test.
     expect(s.near + s.mid, 'the flake layers stay sparse').toBeLessThanOrEqual(16);
     expect(s.near, 'and the layer that crosses the play area is the sparsest').toBeLessThanOrEqual(5);
     expect(s.near + s.mid, 'without switching the weather off').toBeGreaterThanOrEqual(8);
   });
 
   test('nothing falls in front of an open question', async ({ page }) => {
-    /* The near layer is the only snow drawn OVER the ice blocks. A 30px flake tumbling
-       across the shape a child is counting the sides of is the distraction that was asked
-       to go, so that layer stops for as long as a crossing is open — and starts again with
-       the run. The two layers behind it never stop, so the weather does not blink off. */
     await boot(page, { fast: 2 });
     const front = () => page.evaluate(() => {
       const g = window.iceAgeGame, before = g._particles().list.length;
@@ -326,8 +266,6 @@ test.describe('ui', () => {
   });
 
   test('gameplay stays the dominant thing on screen', async ({ page }) => {
-    /* Every panel and control together must stay a small fraction of the stage, or
-       the interface has started to overpower the game it is supporting. */
     await boot(page);
     await force(page, 'GLACIER_BREAK_1');
     await waitState(page, 'PHASE_ACTIVE', 30_000);

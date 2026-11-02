@@ -1,24 +1,5 @@
 #!/usr/bin/env node
-/*!
- * list-sprites.js — every sprite sheet the game actually plays.
- *
- *   node tools/list-sprites.js           grouped by the moment it appears
- *   node tools/list-sprites.js --files   just the file paths, one per line
- *   node tools/list-sprites.js --unused  the sheets nothing ever plays
- *
- * For redrawing the character. The rig ships 82 animations; this lesson plays
- * far fewer, so knowing which ones matter is the difference between
- * re-rendering a handful and re-rendering all of them. Read from the live
- * state table and the storyboard, so it cannot drift from what the game does.
- *
- * Whatever is redrawn must keep the invariants, or the character will jump
- * between expressions:
- *   - same uniform cell (512 @2x / 256 @1x), no trimming, no re-packing
- *   - pivot at the exact cell centre
- *   - feet on the baseline at 87.7% down the cell
- *   - 20 fps
- * Re-run `node tools/build-swiftee-frames.js` after replacing any sheet.
- */
+// list-sprites.js — every sprite sheet the game actually plays.
 'use strict';
 
 const path = require('path');

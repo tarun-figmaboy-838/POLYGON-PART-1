@@ -1,25 +1,5 @@
 #!/usr/bin/env node
-/**
- * fetch-sounds.js — pull CC0 sound effects from Freesound into your project.
- *
- * Authoring-time tool, not a runtime dependency. You run it once from the
- * VS Code terminal; it writes audio files, a manifest and a credits file
- * into your assets folder. The shipped game never talks to Freesound.
- *
- *   node fetch-sounds.js                      # fetch everything in sounds.config.json
- *   node fetch-sounds.js --dry-run            # show what it would fetch, download nothing
- *   node fetch-sounds.js --only coin,jump     # just those keys
- *   node fetch-sounds.js --force              # re-download files that already exist
- *   node fetch-sounds.js --search "cartoon boing"   # browse results, download nothing
- *
- * Auth: put your key in a .env file next to this script —
- *
- *   FREESOUND_KEY=your_key_here
- *
- * Get one at https://freesound.org/apiv2/apply (free, needs a Freesound account).
- *
- * Requires Node 18+ for global fetch. No npm install.
- */
+// fetch-sounds.js — pull CC0 sound effects from Freesound into your project.
 
 'use strict';
 
@@ -30,10 +10,6 @@ const API = 'https://freesound.org/apiv2';
 const CC0 = 'Creative Commons 0';
 const THROTTLE_MS = 350;          // be a good citizen; Freesound rate-limits
 const MAX_RETRIES = 3;
-
-/* ------------------------------------------------------------------ *
- * Setup
- * ------------------------------------------------------------------ */
 
 const [major] = process.versions.node.split('.').map(Number);
 if (major < 18) {
@@ -52,10 +28,6 @@ if (!KEY) {
     'Request a key at https://freesound.org/apiv2/apply'
   );
 }
-
-/* ------------------------------------------------------------------ *
- * API
- * ------------------------------------------------------------------ */
 
 const auth = { Authorization: 'Token ' + KEY };
 
@@ -85,10 +57,6 @@ async function request(url) {
   throw new Error('gave up after ' + MAX_RETRIES + ' retries: ' + url);
 }
 
-/**
- * Search for CC0 sounds. Freesound filter syntax is Solr's:
- *   filter=license:"Creative Commons 0" duration:[0.1 TO 3] avg_rating:[3 TO *]
- */
 function searchUrl(spec) {
   const filters = [`license:"${CC0}"`];
 
@@ -129,10 +97,6 @@ async function downloadPreview(sound, dest, quality) {
   fs.writeFileSync(dest, bytes);
   return bytes.length;
 }
-
-/* ------------------------------------------------------------------ *
- * Modes
- * ------------------------------------------------------------------ */
 
 async function browse(query) {
   const hits = await search({ query, maxDuration: 5, pageSize: 15 });
@@ -245,10 +209,6 @@ function credits(manifest) {
   ].join('\n');
 }
 
-/* ------------------------------------------------------------------ *
- * Helpers
- * ------------------------------------------------------------------ */
-
 function parseArgs(args) {
   const out = {};
   for (let i = 0; i < args.length; i++) {
@@ -281,10 +241,6 @@ const kb    = function (b) { return (b / 1024).toFixed(0) + ' KB'; };
 const log   = function (m) { console.log(m); };
 const warn  = function (m) { console.warn(m); };
 function die(m) { console.error('\n' + m + '\n'); process.exit(1); }
-
-/* ------------------------------------------------------------------ *
- * Entry
- * ------------------------------------------------------------------ */
 
 (async function main() {
   try {

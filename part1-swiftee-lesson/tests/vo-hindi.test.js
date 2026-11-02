@@ -1,23 +1,4 @@
-/*!
- * vo-hindi.test.js — the Hindi voice (?lan=hi) says the line on the screen, in step with its words.
- *
- *   node tests/vo-hindi.test.js
- *
- *   PART 1   Every clip in assets/vo/hi is a line the game asks for (an English VO id), has its
- *            mp3 and its Opus twin, a length, and one word onset per Hindi word the bubble shows
- *            for that line — the count game.js and Instruction.voice need before they step the
- *            words by the voice (a different count and the words fall back to a guess).
- *
- *   PART 2   The Hindi take's windows (game/js/vo-hi.js) are lines Frozen Rush says, in order and
- *            apart, inside the take, and each has one onset per Hindi word the plank or the
- *            tutorial shows (an em dash shares the onset of the word after it).
- *
- *   WHO SPEAKS   vo.js reads assets/vo/hi/ in Hindi, assets/vo/ in English, and nothing at all in
- *            a language with no recordings (Marathi); engine.js swaps in the Hindi take.
- *
- *   THE MAP  tools/vo-hindi.js names each recording once, and docs/vo-hindi.json was aligned
- *            against the Hindi words the game shows today (a re-worded line must be re-aligned).
- */
+// vo-hindi.test.js — the Hindi voice (?lan=hi) says the line on the screen, in step with its words.
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -39,7 +20,6 @@ global.POLYGON_LOCALES = DATA;
 const I18N = require('../src/core/i18n.js');
 const HI = I18N.make('hi');
 const words = (s) => String(s).replace(/<\/?strong>/g, '').trim().split(/\s+/).filter(Boolean);
-/** What the screen shows for a line: the English line, turned as game.js turns it. */
 const shown = (id) => HI.tr(String(DATA.en[id]).replace(/<\/?strong>/g, ''));
 
 /* ---- PART 1 ---- */
@@ -59,11 +39,8 @@ idx.clips.forEach((id) => {
   t(id + ': the first word is said at once (no long silence before it)', on[0] <= 400, on[0]);
   if (idx.spoken[id]) t(id + ': the last word starts before the speech ends', on[on.length - 1] < idx.spoken[id], [on[on.length - 1], idx.spoken[id]]);
 });
-// EVERY LINE IS VOICED: each line the lesson has an English clip and a Hindi text for has its Hindi
-// clip too (a new line needs its recording — docs/VO-HINDI.md lists any that have none)
 const unvoiced = en.clips.filter((id) => typeof DATA.en[id] === 'string' && typeof DATA.hi[id] === 'string' && idx.clips.indexOf(id) < 0);
 t('every line the lesson says has its Hindi clip (docs/VO-HINDI.md)', unvoiced.length === 0, unvoiced);
-// Swiftee's lines over Frozen Rush are said by the lesson's page (runner-stage.js), so they are Part 1's
 ['sw1', 'sw2', 'sw3'].forEach((id) => t(id + ' (over the game) is a Part 1 clip', idx.clips.indexOf(id) >= 0));
 
 /* ---- PART 2 ---- */

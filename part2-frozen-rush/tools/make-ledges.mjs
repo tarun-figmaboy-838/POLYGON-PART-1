@@ -1,34 +1,10 @@
-/* THE TWO LEDGES OF PART 1's HAND-OVER SCREEN, from Frozen Rush's own path art.
- *
- *   consumes  game/assets/env/path.webp, cap-l.webp, cap-r.webp   (Part 2's platform set)
- *   writes    ../part1-swiftee-lesson/assets/bg/ledge-l.webp       (a platform ending in a lip)
- *             ../part1-swiftee-lesson/assets/bg/ledge-r.webp       (a platform starting at one)
- *   prints    the geometry the Part 1 stage places them by
- *
- *     node tools/make-ledges.mjs
- *
- * WHY PART 2's ART. The screen after Part 1's summary says "You're ready! Now let's help
- * Momo." with Swiftee standing on the ground — and the ground he stands on is Momo's: the
- * same snow, ice band and rock as the path Frozen Rush opens on, broken by a gap. The
- * lesson hands over on the look of the game it hands over to.
- *
- * WHY BAKED, NOT STITCHED LIVE. Each ledge is a run of path with a crevasse lip at its end,
- * seated the way Part 2's engine seats them (GroundManager.drawCap): the cap scaled so its
- * snow-to-rock face matches the path's, its snow row a hair above the walking line, and the
- * inner 40% of it faded into the path so the grain has no seam. Doing that once here gives
- * the lesson two plain pictures, instead of a second copy of the engine's cap logic.
- *
- * AND THE ROCK GOES ON DOWN. The path's painted rock ends in a jagged edge, which is fine
- * where the screen ends first — but the lesson letterboxes on a 4:3 or 16:10 screen, and
- * there the ledge would stop in mid-air above the band under the board. See stone().
- */
+// THE TWO LEDGES OF PART 1's HAND-OVER SCREEN, from Frozen Rush's own path art.
 import sharp from 'sharp';
 import { mkdir } from 'node:fs/promises';
 
 const ENV = 'game/assets/env/';
 const OUT = '../part1-swiftee-lesson/assets/bg/';
 
-// path.webp, as CFG.path describes it: the walking line at 0.4377 of 530, the paint ending at 0.7321
 const P = { tileX: 56, tileW: 1536, H: 530, walk: 232, bottom: 388 };
 // cap-l / cap-r, as GroundManager.CAP measures them
 const CAP = { w: 150, h: 227, snowTop: 52, rockEnd: 226, fade: 0.4 };
@@ -44,7 +20,6 @@ const raw = async (file, resize) => {
 };
 const blank = (w, h) => ({ data: Buffer.alloc(w * h * 4), w, h });
 
-/** Source-over, straight alpha, with the source clipped to [clipX0, clipX1) of the target. */
 function over(dst, src, dx, dy, clipX0 = 0, clipX1 = dst.w) {
   for (let y = 0; y < src.h; y++) {
     const ty = y + dy; if (ty < 0 || ty >= dst.h) continue;
@@ -73,7 +48,6 @@ async function cap(side) {
     const i = (y * w + x) * 4 + 3;
     c.data[i] = Math.round(c.data[i] * m);
   }
-  // where its carved face is at the foot of the rock: the stone below must stop there
   const footY = Math.min(h - 1, Math.round(CAP.rockEnd * k) - 6);
   let face = side === 'l' ? 0 : w;
   for (let x = 0; x < w; x++) if (c.data[(footY * w + x) * 4 + 3] > 200) {
@@ -82,14 +56,6 @@ async function cap(side) {
   return { ...c, k, top: Math.round(P.walk - 3 - CAP.snowTop * k), face };
 }
 
-/* THE CLIFF BELOW THE PAINT FALLS AWAY INTO SHADOW. Tiling the path's own stone down it was
-   tried first and read as a brick wall: the band is only 28 rows deep, so every course cut
-   the rocks through the middle and the seams made stripes, and the longest icicles reach
-   into it as rows of blue teeth. A rock face under a lit ledge darkens as it goes down, so
-   this is the stone's own colour — the median of rows 340..366, where there is no ice — at
-   80% at the top (the rocks' own dark outlines sit on it), deepening to 40% at the foot, with the painted rock's jagged edge laid
-   over the top of it. It only ever shows on a screen taller than 16:9, in the band under
-   the lesson's board. */
 function stoneColour(tile) {
   const px = [];
   for (let y = 340; y < 366; y++) for (let x = 0; x < tile.w; x += 3) {
@@ -121,7 +87,6 @@ const path = await raw('path.webp');
 const tile = blank(P.tileW, P.H);
 over(tile, path, -P.tileX, 0);                        // the tile without its tapered ends
 
-// LEFT: path, then the lip at its right end, stone under both up to the carved face
 {
   const c = await cap('l');
   const cx = LEFT_W - c.w;                             // the cap's box ends the image
