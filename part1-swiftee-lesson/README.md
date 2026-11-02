@@ -1,9 +1,9 @@
 # Swiftee &amp; the Polygons
 
-> **`assets/source/` (voice masters, draft and reference art) is not in the working tree.** The game never loads it and the deploy never shipped it; it is kept, untouched, in git history (left out so the project zip is about 29 MB). Before running a tool that reads it, bring it back with:
+> **`assets/source/` (voice masters, draft and reference art) and `assets/vo-part-1-hindi/` (the raw Hindi takes) are not in the working tree.** The game never loads them and the deploy never shipped them; they are kept, untouched, in git history (left out so the project zip is about 24 MB). Before running a tool that reads them, bring them back with:
 >
 > ```bash
-> git checkout 1b6bf57 -- part1-swiftee-lesson/assets/source
+> git checkout 1b6bf57 -- part1-swiftee-lesson/assets/source part1-swiftee-lesson/assets/vo-part-1-hindi part2-frozen-rush/game/assets/vo-part-2-hindi
 > ```
 
 A 31-screen guided lesson: diagonals, convex and concave, regular and irregular,
