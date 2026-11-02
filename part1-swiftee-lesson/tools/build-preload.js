@@ -47,7 +47,9 @@ walk(path.join(ROOT, 'assets')).map(rel).filter((f) => !/^assets\/source\//.test
   .forEach((f) => { sizes[f] = fs.statSync(path.join(ROOT, f)).size; });
 
 // every literal asset URL in the scripts and the page, quoted or inside url(...)
-const sources = [path.join(ROOT, 'index.html')].concat(walk(path.join(ROOT, 'src')).filter((f) => /\.js$/.test(f) && f !== OUT));
+// (the sources, never the bundle made from them — src/lesson.min.js, tools/build-bundle.js — so the
+// list cannot depend on whether the bundle has been built)
+const sources = [path.join(ROOT, 'index.html')].concat(walk(path.join(ROOT, 'src')).filter((f) => /\.js$/.test(f) && f !== OUT && !/lesson\.min\.js$/.test(f)));
 const RE = /["'(](assets\/[A-Za-z0-9_\-./@]+\.(?:webp|png|jpg|svg))(\?v=[0-9a-f]+)?(?=["')])/g;
 const urls = new Set(), missing = [];
 sources.forEach((f) => {

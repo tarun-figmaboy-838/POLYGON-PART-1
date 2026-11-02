@@ -26,7 +26,8 @@ const errors=[]; w.addEventListener('error',e=>errors.push(e.message)); w.consol
 // Read the script list out of index.html rather than repeating it here. A
 // hardcoded copy silently drifts the moment a module is added, and the test
 // then proves the wrong build works.
-const SCRIPTS=[...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map(m=>m[1]);
+// (without the ?v= the page asks the bundle by — src/lesson.min.js, tools/build-bundle.js)
+const SCRIPTS=[...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map(m=>m[1].split('?')[0]);
 if(!SCRIPTS.length) errors.push('index.html: no scripts found');
 SCRIPTS.forEach(f=>{try{w.eval(fs.readFileSync(path.join(ROOT,f),'utf8'));}catch(e){errors.push(f+': '+e.message);}});
 

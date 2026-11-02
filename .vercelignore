@@ -15,7 +15,8 @@ START GAME.bat
 # the words' source: both parts load the locales.js generated from it (build-locales.js)
 /polygon-locales.json
 
-# Part 1 — the site is its index.html, src/ and assets/
+# Part 1 — the site is its index.html, src/ and assets/ (the page loads src/lesson.min.js, the
+# bundle tools/build-bundle.js makes from the sources; the sources stay beside it for its map)
 /part1-swiftee-lesson/drafts
 /part1-swiftee-lesson/tests
 /part1-swiftee-lesson/tools

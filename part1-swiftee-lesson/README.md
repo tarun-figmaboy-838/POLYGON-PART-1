@@ -2,11 +2,15 @@
 
 A 31-screen guided lesson: diagonals, convex and concave, regular and irregular,
 ending on an animated end-game summary that collects every idea it taught.
-Plain scripts, no build step, no framework. Open it and it runs.
+Plain scripts, no framework. The page loads them as one minified file, `src/lesson.min.js`,
+made from the sources in `src/` by `tools/build-bundle.js`; the sources stay the lesson, and
+`npm test` fails until the bundle on disk is the one they make.
 
 ```
-npm install          # test tooling only; the game itself needs nothing
+npm install          # test tooling, and esbuild for the bundle
 npm start            # http://localhost:8000
+npm run build:bundle # after editing src/: src/lesson.min.js (+ its map) and the ?v= in index.html
+                     # (build:bundle:watch keeps it current while you edit)
 npm test             # logic, storyboard and a full headless playthrough
 npm run test:browser # the same lesson played in a real Chrome
 ```
@@ -19,7 +23,10 @@ load.
 ## Layout
 
 ```
-index.html                 the page: markup, styling, script order
+index.html                 the page: markup, styling, the fonts, the bundle's address
+src/lesson.min.js          what the page loads: the scripts below, minified and joined in
+                           their dependency order (tools/build-bundle.js); its .map shows the
+                           sources in devtools
 serve.js                   local static server
 vercel.json                static deploy: no build, cache rules
 
@@ -57,8 +64,12 @@ assets/
   ui/*.webp                the card, button and flake kits, cut by the tools
                            below from the supplied art in assets/source (AVIF)
   swiftee/                 the character sprite sheets + the manifest
+  fonts/                   Nunito and Fredoka: the very WOFF2 files Google Fonts served, so
+                           the lesson no longer waits on Google (index.html, @font-face)
 
 tools/
+  build-bundle.js          src/*.js -> src/lesson.min.js + .map, and index.html's ?v=
+                           (--check in npm test; --watch while editing)
   build-swiftee-frames.js  manifest -> src/character/swiftee-frames.js
   build-sleigh-frames.js   measures the three intro sheets from their alpha
                            -> src/character/sleigh-frames.js
@@ -221,6 +232,7 @@ one speech — no screen here says more than one line, so it could never have ru
 
 | Suite | What it guards |
 | --- | --- |
+| `tools/build-bundle.js --check` | First in `npm test`: `src/lesson.min.js`, its map and the `?v=` in `index.html` are the ones the sources make |
 | `tests/polygon-math.test.js` | 77 checks. Every geometric judgement, including page 21's rhombus and rectangle traps |
 | `tests/director.test.js` | 38 checks. Ordering, cancellation, never-stuck, skip safety, branching |
 | `tests/screens.test.js` | 55 checks. Unique ids and VO ids, the instruction card simulated across all 31 screens, no wrong path containing words, no answer ghosts |
@@ -241,8 +253,11 @@ the full play needs real memory headroom for a software-rendered headless Chrome
 
 ## Deploying
 
-There is nothing to build. The repo root **is** the site: `index.html` plus
-`src/` and `assets/`.
+The repo root **is** the site: `index.html`, `src/lesson.min.js` (with its map) and
+`assets/`. The bundle is the one generated file, and it is committed, so the host builds
+nothing; run `node tools/build-bundle.js` before committing a change to `src/` (`npm test`
+refuses a stale one). The sources deploy beside the bundle as they always have: nobody
+fetches them but the map, which leads devtools to them.
 
 ```
 vercel            # preview
@@ -250,10 +265,10 @@ vercel --prod     # production
 ```
 
 `vercel.json` pins that: no install step, no build step, output directory `.`.
-The two cache rules matter — `assets/` is immutable for a year (the sprite
-sheets and the backdrop are 9.5 MB and never change without a filename change),
-while `index.html` and `src/` must revalidate, or a child gets yesterday's
-lesson against today's storyboard.
+The cache rules matter — the bundle is immutable for a year under its `?v=`
+hash (a new build has a new address), `assets/` is kept for an hour, and
+`index.html` must revalidate, or a child gets yesterday's lesson against today's
+storyboard.
 
 `.vercelignore` keeps the tests, the tools and the screenshot artifacts out of
 the deployment; they are development gates, not part of the game.

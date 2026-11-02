@@ -37,7 +37,8 @@
 const { JSDOM } = require('jsdom'); const fs = require('fs'); const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8').replace(/<link[^>]+fonts[^>]*>/g, '');
-const SCRIPTS = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1]);
+// (without the ?v= the page asks the bundle by — src/lesson.min.js, tools/build-bundle.js)
+const SCRIPTS = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1].split('?')[0]);
 const CLIP_MS = 700;
 
 let pass = 0, fail = 0;

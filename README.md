@@ -26,7 +26,9 @@ snowfall covers the screen and Part 2 opens. A **Part 2 ▶** button stands in t
 off. Part 2 opens on its title screen: its PLAY tap is also the gesture that lets the browser
 start its music.
 
-No framework and no build step. Everything is plain static files.
+No framework. Everything is plain static files; the only generated code is each part's
+committed bundle (Part 1: `part1-swiftee-lesson/src/lesson.min.js`, made from `src/` by its
+`tools/build-bundle.js`; Part 2: `game/js/game.bundle.js`), so the host builds nothing.
 
 ## Play it
 
@@ -74,8 +76,9 @@ serve.ps1               the same, for Windows with no Node (START GAME.bat)
 vercel.json             one static deploy for everything; cache rules for both parts
 .vercelignore           keeps tests, tools and source art off the CDN
 
-part1-swiftee-lesson/   PART 1, as its own project: index.html + src/ + assets/ is the site
-  README.md             how the lesson is built: director, storyboard, Swiftee rig, VO
+part1-swiftee-lesson/   PART 1, as its own project: index.html + src/lesson.min.js + assets/ is
+                        the site; src/ holds the sources the bundle is made from
+  README.md             how the lesson is built: director, storyboard, Swiftee rig, VO, bundle
   tests/ tools/ docs/
 
 part2-frozen-rush/      PART 2, as its own project: game/ is the site
@@ -116,14 +119,16 @@ goes from 797 KB to 34 KB). Each page asks the browser once whether it shows AVI
 (`ImgFormat`, the same probe in both parts); where it does, the scripts and the stylesheets'
 `image-set()` take the twin, and every other browser gets the WebP exactly as before. The
 sound ships as Ogg Opus, with the MP3 kept for browsers that cannot play it (Safari before
-it learned Ogg). Neither part has video or GIF animation: the characters move by sprite
+it learned Ogg). Part 1's two faces, Nunito and Fredoka, ship with it (`assets/fonts`, the
+files Google Fonts served) so the lesson never waits on Google; the other languages' Baloo
+faces still come from Google Fonts. Neither part has video or GIF animation: the characters move by sprite
 sheets the code steps, frame by frame, in time with the voice.
 
 ## Tests
 
 ```
 npm run setup        # installs each part's dev tools (jsdom, Playwright, sharp)
-npm test             # Part 1's logic + headless playthrough, and Part 2's build check
+npm test             # Part 1's bundle check, logic + headless playthrough, and Part 2's build check
 npm run test:part1:browser   # Part 1 played in a real Chrome
 npm run test:part2           # Part 2's full Playwright suite (heavy: one worker)
 ```
@@ -134,9 +139,10 @@ they did in the original repositories. See each part's README for what the suite
 ## Deploying
 
 The repo root is the site. With Vercel: import the repo, leave **Root Directory** empty, no
-build command. `vercel.json` sets the cache rules. Part 1's `src/` and every HTML page must
-revalidate. Part 2's assets are immutable for a year, which is safe because its build stamps
-every asset URL with a content hash (`?v=`). `trailingSlash: true` keeps each part's relative
+build command. `vercel.json` sets the cache rules. Every HTML page must revalidate. Part 1's bundle and
+Part 2's assets are immutable for a year, which is safe because each build stamps the URL with
+a content hash (`?v=`). Part 1's sources deploy beside its bundle, for the map to lead
+devtools to; nothing else fetches them. `trailingSlash: true` keeps each part's relative
 URLs resolving from its own folder.
 
 Any static host works the same way (GitHub Pages, Netlify, S3): serve the root, open `/`.
